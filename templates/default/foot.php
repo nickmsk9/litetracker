@@ -1,33 +1,25 @@
-<?
-if (!defined('LITETRACKER'))
+<?php
+if (!defined('LITETRACKER')) {
 	die('Direct access denied.');
+}
 ?>
+			</div>
 
- 
-<? show_blocks('d'); ?>
+			<div class="site-bottom-blocks">
+				<?php show_blocks('d'); ?>
+			</div>
+		</main>
+	</div>
+</div>
 
-
-<!--Bloggi (с)-->
-<!--U1BFOOTER1Z--><div style="background: none repeat scroll 0% 0% rgb(255, 255, 255);">
- <center>
- <table width="100%" cellspacing="0" cellpadding="0">
- <tbody><tr>
- <td valign="center">
-<hr><small>
- <center>
- <div><noindex><? echo LITETRACKER_COPYRIGHT;?></noindex></div>
- </center></small>
-</td>
-</tr>
-</tbody></table>
- </center>
-</div><!--/U1BFOOTER1Z-->
-<!--/Bloggi (с)-->
- 
- </div></div></div></div></div><div style="padding-top: 10px;"></div>
-
-
- 
-
- 
-</div></div></div></div></div></body></html>
+<div class="site-footer-band">
+	<div class="site-shell site-shell-band">
+		<footer class="site-footer">
+			<div class="site-footer-copy">
+				<noindex><?php echo LITETRACKER_COPYRIGHT; ?></noindex>
+			</div>
+		</footer>
+	</div>
+</div>
+</body>
+</html>

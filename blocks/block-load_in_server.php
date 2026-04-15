@@ -11,7 +11,7 @@ by jenaDI
 
 global $memcache , $db , $language;
 
-if (false === ($load_in_server = $memcache->get('load_in_server') ) ) {
+if (false === ($load_in_server = $memcache->get('load_in_server_v2') ) ) {
 			$sql = $db->query("SELECT  userid   FROM peers GROUP BY userid");
 			$connected = $db->num_rows($sql);
 
@@ -23,23 +23,19 @@ if (false === ($load_in_server = $memcache->get('load_in_server') ) ) {
 				$percent = $avgload;
 			}	
 				
-			if ($percent <= 50) {
-				$pic = "loadbargreen.gif";
-			}	
-			elseif($percent <= 70) {
-				$pic = "loadbaryellow.gif";
-			}else {
-				$pic = "loadbarred.gif";
-			}
-			
-			$width = $percent * 4;
-			$load_in_server =   "<center>
-			<table class=\"main\" border=\"0\" width=\"402\"><tr><td style=\"padding: 0px; background-repeat: repeat-x\" title=\"Нагрузка: ".$percent."%, Средняя (LA): ".$avgload."\">"
-			."<img height=\"15\" width=\"".$width."\" src=\"public/images/".$pic."\" alt=\"Нагрузка: ".$percent."%, Средняя (LA): ".$avgload."\" title=\"Нагрузка: ".$percent."%, Средняя (LA): ".$avgload."\">"
-			."</td></tr></table>"
-			."<b>".sprintf($language['load_in_server_2'] ,$connected)."</b></center>";
-			$memcache->set('load_in_server', $load_in_server  , 0, (15 * 60));
-}
+			$state = ($percent <= 50 ? 'green' : ($percent <= 70 ? 'yellow' : 'red'));
+			$percent_label = max(0, min(100, round($percent)));
+			$load_in_server = '<div class="load-widget">'
+			.'<div class="load-widget-text">Текущая нагрузка сервера и активность подключений.</div>'
+			.'<div class="load-widget-progress" title="Нагрузка: '.$percent.'%, Средняя (LA): '.$avgload.'">'
+			.'<div class="load-widget-progress-label"><strong>Нагрузка: '.$percent_label.'% (LA: '.$avgload.')</strong></div>'
+			.'<div class="load-widget-progress-bar load-widget-progress-bar-'.$state.'" style="width: 100%;"></div>'
+			.'</div>'
+			.'<div class="load-widget-meta">'.sprintf($language['load_in_server_2'] ,$connected).'</div>'
+			.'<div class="load-widget-action"><a href="browse.php?act=all" class="load-widget-button">Открыть каталог</a></div>'
+			.'</div>';
+			$memcache->set('load_in_server_v2', $load_in_server  , 0, (15 * 60));
+	}
 
 
 begin_frame($language['load_in_server_1']);

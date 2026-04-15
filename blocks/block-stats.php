@@ -62,14 +62,14 @@ else
 	$peers1 = $db->super_query("SELECT SUM(seeders) AS seeders , SUM(leechers) AS leechers FROM trackers");
 	
 
-	$seeders = number_format($peers1['seeders']);
+		$seeders = number_format((float) ($peers1['seeders'] ?? 0));
 	
 	
 	//Гости - сидеры
 	$seeders_guest = $db->super_query("SELECT  COUNT(*) AS count FROM peers WHERE userid = '0' AND seeder = '1'");
 	$seeders_guest = $seeders_guest['count'];
 	
-	$leechers = number_format($peers1['leechers']);
+		$leechers = number_format((float) ($peers1['leechers'] ?? 0));
 	
 	
 	//Подключения
@@ -77,8 +77,8 @@ else
 	$peers = $peers['c'];
 	
 	//Размер
-	$size = $db->super_query("SELECT SUM(size) AS count FROM torrents");
-	$size = mksize($size['count']);
+		$size = $db->super_query("SELECT SUM(size) AS count FROM torrents");
+		$size = mksize((float) ($size['count'] ?? 0));
 	
 	//Пользователи
 	$registered = $db->super_query("SELECT COUNT(*) AS count FROM users");
@@ -91,8 +91,8 @@ else
 	//Скачали
 	// $completed = $db->super_query("SELECT COUNT(*) AS c FROM peers WHERE finishedat <> '0'");
 	// $completed = number_format($completed['c']);
-	$completed = $db->super_query("SELECT SUM(completed) AS c FROM torrents ");
-	$completed = number_format($completed['c']);
+		$completed = $db->super_query("SELECT SUM(completed) AS c FROM torrents ");
+		$completed = number_format((float) ($completed['c'] ?? 0));
 	
 	
 	//Скачали гостей

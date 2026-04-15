@@ -16,7 +16,7 @@ require 'system/init.php';
 
 
 //Заголовок
-head('Home');
+head('Главная');
 
 //Подвал
 foot();
