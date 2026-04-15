@@ -75,7 +75,7 @@ if($_POST) {
 		err($language['default_1']   , $language['signup_20'] , 1);
 	}
 	//Добавляем новго пользователя
-	$db->query("INSERT INTO users (name , email , ip , added , password , password_code , class) VALUES ('".$db->safesql($name)."' , '".$email."' , '".getip()."' , NOW() , '".$password_hash."' , '".$password_code."' , '".$class."')");
+	$db->query("INSERT INTO users (name , avatar , email , password , password_code , ip , class , last_access , added , passkey , uploaded , downloaded , money , website , icq , last_chat , num_messages , num_friends) VALUES ('".$db->safesql($name)."' , '' , '".$db->safesql($email)."' , '".$password_hash."' , '".$password_code."' , '".ip2long_db(getip())."' , '".$class."' , NOW() , NOW() , '' , '0' , '0' , '0' , '' , '' , '0' , '0' , '0')");
 	header("Location:user_add.php?status=1");
 	die();
 }

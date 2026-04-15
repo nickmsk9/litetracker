@@ -127,7 +127,7 @@ if($_POST) {
 	
 	
 	//Добавляем нового пользователя
-	$db->query("INSERT INTO users (name , email , ip , added , password , password_code , class , confirm) VALUES ('".$db->safesql($name)."' , '".$db->safesql($email)."' , '".ip2long_db(getip())."' , NOW() , '".$password_hash."' , '".$password_code."' , '".$class."' ,  '".$confirm."' )");
+	$db->query("INSERT INTO users (name , avatar , email , password , password_code , ip , class , last_access , added , passkey , uploaded , downloaded , money , website , icq , last_chat , num_messages , num_friends , confirm) VALUES ('".$db->safesql($name)."' , '' , '".$db->safesql($email)."' , '".$password_hash."' , '".$password_code."' , '".ip2long_db(getip())."' , '".$class."' , NOW() , NOW() , '' , '0' , '0' , '0' , '' , '' , '0' , '0' , '0' , '".$confirm."' )");
 
 	//id user
 	$id = $db->insert_id();
