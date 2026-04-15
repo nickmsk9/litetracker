@@ -1,0 +1,125 @@
+/* -------------------------------------------------------------------
+// markItUp!
+// By Jay Salvat - http://markitup.jaysalvat.com/
+// ------------------------------------------------------------------*/
+.markItUp .b a	{
+	background-image:url(images/bold.png);
+}
+.markItUp .i a	{
+	background-image:url(images/italic.png);
+}
+.markItUp .u a	{
+	background-image:url(images/underline.png);
+}
+.markItUp .s a	{
+	background-image:url(images/stroke.png);
+}
+
+.markItUp .img a	{
+	background-image:url(images/picture.png);
+}
+.markItUp .url a	{
+	background-image:url(images/link.png);
+}
+
+.markItUp .size a	{
+	background-image:url(images/fonts.png);
+}
+.markItUp .li a	{
+	background-image:url(images/list-bullet.png);
+}
+.markItUp .hr a	{
+	background-image:url(images/hr.png);
+}
+
+.markItUp .alignments a {
+	background-image:url(images/align_left.png); 
+}
+.markItUp .left a	{
+	background-image:url(images/align_left.png);
+}
+.markItUp .center a	{
+	background-image:url(images/align_center.png);
+}
+.markItUp .right a	{
+	background-image:url(images/align_right.png);
+}
+.markItUp .justify a	{
+	background-image:url(images/align_justify.png);
+}
+
+.markItUp .colors a {
+	background-image:url(images/colors.png);
+}
+	.markItUp .colors ul {
+		width:81px;
+		padding:1px;	
+	}
+	.markItUp .colors  li {
+		border:1px solid white;
+		width:25px;	height:25px;
+		overflow:hidden;
+		padding:0px; margin:0px;
+		float:left;
+	}
+	.markItUp .colors ul a {
+		width:25px;	height:25px;
+	}
+	.markItUp .colors ul a:hover {
+		background-color:none;
+	}
+	
+	.markItUp .colors .col1-1 a {
+		background:yellow;
+	}
+	.markItUp .colors .col1-2 a {
+		background:maroon;
+	}
+	.markItUp .colors .col1-3 a {
+		background:red;
+	}
+	
+	.markItUp .colors .col2-1 a {
+		background:blue;
+	}
+	.markItUp .colors .col2-2 a {
+		background:teal;
+	}
+	.markItUp .colors .col2-3 a {
+		background:green;
+	}
+	
+	.markItUp .colors .col3-1 a {
+		background:white;
+	}
+	.markItUp .colors .col3-2 a {
+		background:gray;
+	}
+	.markItUp .colors .col3-3 a {
+		background:black;
+	}
+	
+.markItUp .quote a	{
+	background-image:url(images/quotes.png);
+}
+.markItUp .code a	{
+	background-image:url(images/code.png);
+}
+.markItUp .spoiler a	{
+	background-image:url(images/spoiler.png);
+}
+
+.markItUp .rutube a	{
+	background-image:url(images/rutube.png);
+}
+.markItUp .youtube a	{
+	background-image:url(images/youtube.png);
+}
+
+
+.markItUp .preview a {
+	background-image:url(images/preview.png);
+}
+.markItUp .previewc a {
+	background-image:url(images/delete.png);
+}

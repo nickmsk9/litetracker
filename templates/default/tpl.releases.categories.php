@@ -1,0 +1,29 @@
+<?
+if (!defined('LITETRACKER'))
+	die('Direct access denied.');
+
+
+////////////////////////////////////////////////////////
+//Шаблон для Вывода категорий
+////////////////////////////////////////////////////////
+
+?>
+<tr>
+<td width="1%">
+<a href="browse.php?id_category=<?=$id;?>"><img src="public/images/categories/<?=$cat_image;?>"></a>
+</td>
+
+<td valign="top" width="50%">
+<a href="browse.php?id_category=<?=$id;?>" title='Перейти к релизам'><?=$name;?></a>
+</td>
+
+<td class='altrow stats'>
+
+Загружено <?=$count;?> релизов <hr>
+<b>Общий размер <?=$size?></b>
+
+</ul>
+</td>
+
+</tr>
+

@@ -1,0 +1,33 @@
+/* Navigation */
+.navigation {
+	color: #555555; 
+	border: 0px;
+	width:50%
+}
+
+.navigation a:link,
+.navigation a:visited,
+.navigation a:active {
+	text-decoration: none;
+	color: #555555;
+	background-color: #ededed;
+	border: 1px solid #e1e1e3;
+	padding: 3px 6px;
+	font-size: 11px
+}
+
+.navigation a:hover {
+	background-color: #c4c4c4;
+	color: #ffffff;
+	border-color: #e1e1e3;
+}
+
+.navigation span {
+	text-decoration: none;
+	background-color: #ffffff;
+	padding: 3px 6px;
+	border: 1px solid #e1e1e3;
+	color: #555555;
+	font-size: 11px;
+}
+

@@ -1,0 +1,34 @@
+.date {
+ color: #777777;
+ font-size: 9px; 
+ }
+ 
+ a.messageSubject {
+  margin-right: 4px;
+  font-size: 11px;
+  color: #45688E; 
+  }
+  
+  a.messageBody {
+  font-size: 11px;
+  color: #89A8C6;
+  font-weight: normal; 
+  }
+
+  .messageSnippet { padding: 6px 15px 6px 15px;}
+
+  
+table.mailbox  td{
+	padding: 0x;	
+} 
+ 
+table.mailbox  th {
+  background: #f7f7f7;
+  border-bottom: 1px solid #DAE2E8;
+  color: gray;
+  font-size: 9px;
+  padding: 5px 5px 5px 5px;
+  text-align: left;
+
+}
+

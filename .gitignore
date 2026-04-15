@@ -1,0 +1,6 @@
+.DS_Store
+Thumbs.db
+
+docker-data/
+logs/*.log
+system/cache/*.cache

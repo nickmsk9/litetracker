@@ -1,0 +1,314 @@
+
+
+
+
+/* Message colors */
+.self
+{
+	color: #FF7700;
+}
+
+.other
+{
+	cursor: pointer;
+}
+.other:hover
+{
+	/*border-bottom: 1px dotted;*/
+	color: #999999;
+}
+
+.whisper
+{
+	color: #3333CC;
+}
+.whisperTo
+{
+	color: #3333CC;
+	cursor: pointer;
+}
+.whisperTo:hover
+{
+	/*border-bottom: 1px dotted #3366CC;*/
+	color: #999999;
+}
+.error
+{
+	color: #FF7070;
+}
+.msg_3 /* System */
+{
+	color: #33CC00;
+}
+
+
+
+/* User names colors */
+.nameSelf
+{
+	color: #FF7700;
+	font-weight: bold;
+	margin-bottom: 3px;
+	cursor: pointer;
+}
+
+.nameOther
+{
+	color: #3d3d3d;
+	font-weight: bold;
+	margin-bottom: 3px;
+	cursor: pointer;
+}
+.nameOther:hover
+{
+	/*border-bottom: 1px dotted #3d3d3d;*/
+	color: #999999;
+}
+
+/* footer */
+#footer
+{
+	text-align: center;
+	margin-top: 10px;
+	font-size: 11px;
+	color: #E0E0E0;
+}
+
+/* Sound bar */
+#sndBar
+{
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	visibility: hidden;
+}
+
+
+
+/* Login */
+#loginWrap
+{
+	width: 310px;
+	/*height: 234px;*/
+	position: absolute;
+	margin: -150px 0px 0px -155px;
+	left: 50%;
+	top: 50%;
+	display: block;
+	z-index: 999;
+}
+#loginTabBar
+{
+	width: 310px;
+	height: 29px;
+	background: url(../img/loginTabBarBg.gif) no-repeat right;
+	text-align: left;
+}
+#loginForm
+{
+	width: 310px;
+	height: 205px;
+	background-image:url(../img/loginFormBg.gif);
+	position: relative;
+}
+#loginLabel
+{
+	width: 260px;
+	text-align: left;
+	padding-top: 10px;
+	
+}
+#loginField
+{
+	width: 260px;
+	height: 24px;
+	text-align: left;
+	background-image: url(../img/loginFieldBg.gif);
+	margin-top: 3px;
+}
+input.loginField
+{
+	background: none;
+	width: 250px;
+	margin: 4.5px 5px 0px 5px;
+	padding: 0px;
+	border: 0px;
+	font-family: Tahoma, Arial, sans-serif;
+	font-size: 12px;
+}
+#loginSubmit
+{
+	width: 310px;
+	text-align: center;
+	position: absolute;
+	left: 0px;
+	bottom: 15px;
+}
+#loginSubmit input
+{
+	width: 100px;
+	height: 24px;
+	border: 0px;
+	cursor: pointer;
+}
+#loginSubmit input.login
+{
+	background-image: url(../img/loginSubmit1.gif);
+}
+#loginSubmit input.reglogin
+{
+	background-image: url(../img/loginSubmit2.gif);
+}
+div#loginForm div.error
+{
+	padding: 10px 30px 0px 30px;
+	color: #FF0000;
+}
+
+
+
+/* Wrap */
+#wrapper
+{
+	width: 880px;
+	/*height: 234px;*/
+	position: absolute;
+	margin: -260px 0px 0px -440px;
+	left: 50%;
+	top: 50%;
+	display: block;
+	z-index: 999;
+}
+#wrap
+{
+	width: 880px;
+	height: 510px;
+	position: relative;
+}
+
+
+
+/* Chat */
+#chat
+{
+	width: 670px;
+	height: 510px;
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	background-image: url(../img/chatBg.gif);
+}
+#chatWrap
+{
+	width: 670px;
+	height: 510px;
+	position: relative;
+	left: 0px;
+	top: 0px;
+}
+#chatInput
+{
+	width: 640px;
+	height: 24px;
+	position: absolute;
+	left: 15px;
+	bottom: 15px;
+	text-align: left;
+	background-image: url(../img/chatInputBg.gif);
+}
+#chatInput input
+{
+	background: none;
+	width: 630px;
+	margin: 4.5px 5px 0px 5px;
+	padding: 0px;
+	border: 0px;
+	font-family: Tahoma, Arial, sans-serif;
+	font-size: 12px;
+}
+#chatLog
+{
+	width: 640px;
+	height: 453px;
+	position: absolute;
+	left: 15px;
+	bottom: 42px;
+	text-align: left;
+	overflow: auto;
+}
+#chatLog p {
+	margin: 0;
+}
+
+
+
+/* List */
+#list
+{
+	width: 210px;
+	height: 510px;
+	position: absolute;
+	right: 0px;
+	top: 0px;
+	background-image: url(../img/listBg.gif);
+}
+#listWrap
+{
+	width: 180px;
+	height: 480px;
+	position: relative;
+	margin: 15px 15px 15px 15px;
+	left: 0px;
+	top: 0px;
+}
+#listContent
+{
+	width: 180px;
+	height: 453px;
+	position: absolute;
+	text-align: left;
+	left: 0px;
+	top: 0px;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+#listContent div.header
+{
+	width: 180px;
+	height: 16px;
+	margin-bottom: 10px;
+	border-bottom: 1px dashed #CCCCCC;
+	color: #999999;
+}
+#listActions
+{
+	width: 180px;
+	height: 24px;
+	position: absolute;
+	text-align: left;
+	left: 0px;
+	bottom: 0px;
+	background-image: url(../img/listActionsBg.gif);
+}
+#listActions div.left
+{
+	float: left;
+}
+#listActions div.right
+{
+	float: right;
+}
+#listActions div.left img
+{
+	margin: 4px 0px 0px 4px;
+	cursor: pointer;
+}
+#listActions div.right img
+{
+	margin: 4px 4px 0px 0px;
+	cursor: help;
+}
+.clame {border: solid 1px #C0C0C0;margin-top:10px;padding:10px;}
+.clame h1 {color:#A0A0A0; margin-top:0;font-size:15px; }
+.clame a {color:gray;}
+.clametext {color:#A0A0A0;font-size:11px;line-height:10px;}

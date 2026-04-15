@@ -1,0 +1,29 @@
+
+#rateTopZero{
+background: rgb(255, 255, 255) url(../images/rate/zero2.gif) repeat-x scroll 0pt 0pt; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial; padding-left: 110px;
+}
+
+#rateBottomZero{
+border-left: 1px solid rgb(233, 233, 233); border-right: 1px solid rgb(233, 233, 233); border-bottom: 1px solid rgb(233, 233, 233); padding: 3px 3px 3px 6px; background: rgb(249, 249, 249) none repeat scroll 0% 0%; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial; text-align: center;
+}
+
+#rateTopGreen{
+background: rgb(255, 255, 255) url(../images/rate/green2.gif) repeat-x scroll 0pt 0pt; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial; padding-left: 110px;
+}
+#rateBottomGreen{
+border-left: 1px solid rgb(168, 211, 155); border-right: 1px solid rgb(168, 211, 155); border-bottom: 1px solid rgb(168, 211, 155); padding: 3px 3px 3px 6px; background: rgb(243, 253, 240) none repeat scroll 0% 0%; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial; text-align: center;
+}
+
+#rateTopGold{
+background: rgb(255, 255, 255) url(../images/rate/gold2.gif) repeat-x scroll 0pt 0pt; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial; padding-left: 110px;
+}
+#rateBottomGold{
+border-left: 1px solid rgb(226, 218, 166); border-right: 1px solid rgb(226, 218, 166); border-bottom: 1px solid rgb(226, 218, 166); padding: 3px 3px 3px 6px; background: rgb(245, 235, 187) none repeat scroll 0% 0%; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial; text-align: center;
+}
+
+#rateTopDarkgold{
+background: rgb(255, 255, 255) url(../images/rate/darkgold2.gif) repeat-x scroll 0pt 0pt; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial; padding-left: 110px;
+}
+#rateBottomDarkgold{
+border-left: 1px solid rgb(165, 146, 80); border-right: 1px solid rgb(165, 146, 80); border-bottom: 1px solid rgb(165, 146, 80); padding: 3px 3px 3px 6px; background: rgb(201, 179, 110) none repeat scroll 0% 0%; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial; text-align: center;
+}

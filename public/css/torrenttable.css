@@ -1,0 +1,20 @@
+
+
+table.tt {
+    border-collapse: collapse;
+    width: 97%;
+    
+}
+
+table.tt td {
+    border: 1px solid #d0d0d0;
+    padding: 5px;
+}
+
+table.tt td.tt {
+	
+    background: url(../images/torrenttable/backbtn.gif);
+    /*background-color: #777;*/
+    padding: 5px;
+}
+

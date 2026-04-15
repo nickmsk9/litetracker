@@ -1,0 +1,43 @@
+﻿*{
+	/* Универсальные установки страницы */
+	margin:0;
+	padding:0;
+}
+
+
+
+/* Выпадающее окно */
+#box{
+	background:url('../images/box_bg.jpg') repeat-x center top #fcfcfc;
+	height:115px;
+	padding:20px;
+	margin-top:-30px;
+	padding-top:30px;
+	width:400px;
+	border:1px solid #fcfcfc;
+	color:#494848;
+	text-shadow:1px 1px 0 white;
+	font-family:'Myriad Pro',Arial,Helvetica,sans-serif;
+	position:absolute;
+}
+
+#box p{
+	font-size:25px;
+	background:url('../images/warning.png') no-repeat 10px center;
+	padding-left:90px;
+}
+
+#box p b{
+	font-size:52px;
+	display:block;
+}
+
+#box,
+#main,
+a.button{
+	-moz-border-radius:10px;
+	-webkit-border-radius:10px;
+	border-radius:10px;
+}
+
+/* Дизайн большой кнопки */

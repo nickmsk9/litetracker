@@ -1,0 +1,16 @@
+div#ajaxerror { 
+    background: #FFDDDD url(../images/error.gif) no-repeat 5px 50%; 
+    padding:5px 5px 5px 24px; 
+    text-align:left; 
+    font-family:Verdana, Arial, Helvetica, sans-serif; 
+    color:#333; 
+    font-size:11px; 
+    }
+div#ajaxsuccess { 
+    background: #E7FFCE url(../images/ok.gif) no-repeat 5px 50%; 
+    padding:5px 5px 5px 24px; 
+    text-align:left; 
+    font-family:Verdana, Arial, Helvetica, sans-serif; 
+    color:#333; 
+    font-size:11px; 
+    }
