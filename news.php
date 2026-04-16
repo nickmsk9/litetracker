@@ -70,6 +70,7 @@ if($act == 'edit' && $id) {
 		
 		//Удаляем старый кеш
 		$memcache->delete('news');
+		$memcache->delete('sidebar_news_all');
 		header("Location:news.php?id=".$id."");
 		die();
 	}
@@ -164,6 +165,7 @@ if($act == 'add') {
 		
 		//Удаляем старый кеш
 		$memcache->delete('news');
+		$memcache->delete('sidebar_news_all');
 		header("Location:news.php?id=".$id."");
 		die();
 	}
@@ -238,6 +240,7 @@ if($act == 'delete' && $id) {
 	
 	//Удаляем старый кеш
 	$memcache->delete('news');
+	$memcache->delete('sidebar_news_all');
 	header("Location:news.php?status=1");
 	die();
 }
@@ -301,7 +304,7 @@ if($id && $act == '') {
 	//Подключаем шаблон
 	require 'templates/'.$config['template'].'/tpl.news.php';
 	
-	foot();
+	stdfoot();
 	die();
 }
 
@@ -377,7 +380,7 @@ if(!$db->num_rows() ) {
 }
 
 //Подвал
-foot();
+stdfoot();
 
 
 ?>

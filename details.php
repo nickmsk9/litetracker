@@ -264,7 +264,7 @@ if($USER) {
 }
 
 //Заголовок
-head( $name , true);
+head($name);
 
 //Выводим статусы
 comment_status();
@@ -278,5 +278,5 @@ if($_GET['edit'] == '1') {
 require 'templates/'.$config['template'].'/tpl.details.php';	
 
 //Подвал
-foot(true);
+stdfoot();
 ?>

@@ -24,6 +24,12 @@ $config  = array(
 'begin_money' => '3', //Начальный деньги при регистрации
 'wmz_number' => 'Z223695950388' , //Кошелек WMZ
 'wmr_number' => 'R266587927979' , //Кошелек WMR
+'project_help_text' => 'Оплата аренды сервера, принимаем любую помощь.' ,
+'project_help_period' => '' ,
+'project_help_current' => 5873 ,
+'project_help_goal' => 4900 ,
+'project_help_button_label' => 'Помочь проекту' ,
+'project_help_button_href' => '' ,
 
 'registeronline' => 1, //Регистрация открыта
 'announce_url' => (((int) ($_SERVER['SERVER_PORT'] ?? 80) === 443) ? 'https://' : 'http://').htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'localhost', ENT_QUOTES, 'UTF-8').'/announce.php' , //Адрес URL. Не менять , если не знаешь что это такое

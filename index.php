@@ -19,7 +19,7 @@ require 'system/init.php';
 head('Главная');
 
 //Подвал
-foot();
+stdfoot();
 
 
 ?>

@@ -15,7 +15,7 @@ require 'system/init.php';
 
 
 //Заголовок
-head('Расширенный поиск' , true);
+head('Расширенный поиск');
 
 //Поисковая форма
 require 'templates/'.$config['template'].'/blocks/block.search.php';
@@ -24,6 +24,6 @@ require 'templates/'.$config['template'].'/blocks/block.search.php';
 begin_frame('Результат');
 require 'modules/releases.php';
 end_frame();
-foot(true);
+stdfoot();
 
 ?>

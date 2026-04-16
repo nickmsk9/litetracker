@@ -175,6 +175,13 @@ function foot($light = false) {
 	}	
 }
 
+function stdfoot($light = false)
+{
+	$GLOBALS['LITETRACKER_STANDARD_SIDEBAR'] = true;
+
+	foot($light);
+}
+
 
 //Определяем пользователя
 function user_check() {

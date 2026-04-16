@@ -2,6 +2,8 @@
 if (!defined('LITETRACKER')) {
 	die('Direct access denied.');
 }
+
+$showStandardSidebar = (!defined('LIGHT') && !empty($GLOBALS['LITETRACKER_STANDARD_SIDEBAR']));
 ?>
 			</div>
 
@@ -9,6 +11,10 @@ if (!defined('LITETRACKER')) {
 				<?php show_blocks('d'); ?>
 			</div>
 		</main>
+
+		<?php if ($showStandardSidebar) { ?>
+			<?php render_standard_sidebar(); ?>
+		<?php } ?>
 	</div>
 </div>
 
