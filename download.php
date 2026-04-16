@@ -116,8 +116,10 @@ if($USER)
 else
 	$announce_urls_list[] = $config['announce_url'];
 
-//openbittorrent.com
-$announce_urls_list[] = "http://retracker.local/announce";
+$useLocalRetracker = (!$USER || !isset($USER['download_local_retracker']) || !empty($USER['download_local_retracker']));
+if ($useLocalRetracker) {
+	$announce_urls_list[] = "http://retracker.local/announce";
+}
 
 $announce_sql = $db->query("SELECT tracker FROM trackers WHERE torrent='".$id."' AND tracker<>'localhost'");
 while (list($announce) = mysql_fetch_array($announce_sql) ) $announce_urls_list[] = $announce;

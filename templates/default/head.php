@@ -29,6 +29,10 @@ $loginHref = 'login.php';
 if ($requestUri !== '' && strpos($requestUri, 'login.php') !== 0) {
 	$loginHref .= '?referer='.rawurlencode($requestUri);
 }
+$bodyClasses = array();
+if (!empty($USER['theme_dark'])) {
+	$bodyClasses[] = 'theme-dark';
+}
 ?>
 <!doctype html>
 <html lang="ru">
@@ -39,7 +43,7 @@ if ($requestUri !== '' && strpos($requestUri, 'login.php') !== 0) {
 <link href="templates/<?=$tpl;?>/css/buttons.css" rel="stylesheet" type="text/css">
 <link href="templates/<?=$tpl;?>/css/my.css" rel="stylesheet" type="text/css">
 </head>
-<body>
+<body<?=($bodyClasses ? ' class="'.htmlspecialchars(implode(' ', $bodyClasses), ENT_QUOTES, 'UTF-8').'"' : '');?>>
 <div class="site-header-band">
 	<div class="site-shell site-shell-band">
 	<header class="site-header">

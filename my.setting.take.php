@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -9,422 +9,374 @@ by jenaDI
 ===================================================================
 */
 
-//Подключаем главный системный файл
 require 'system/init.php';
 
-//Проверяем пользователя
 is_login();
 
-//Определяем номер пользователя
-$id = (int)$_GET['id'];
+function prepare_user_avatar_upload($fieldName, $userId, $userRow)
+{
+	global $config, $language;
 
-if(!$id || $id == $USER['id']) {
-	$id = $USER['id'];
-	$arr = $USER;
-}else {
-	$arr = $db->super_query("SELECT * FROM users WHERE id='".$id."'");
-	$priv = get_priv_info($arr['class']);
-	if(!$PRIV['setting_user'] || $priv['EDIT_PRIV']) {
-		err($language['default_1'] , $language['setting_1'] , 1);
-	}
-}	
-
-
-//////////////////////////////////////////////////////////////
-//Бан IP
-//////////////////////////////////////////////////////////////
-if($_GET['act'] == 'ban_ip') {
-	$ip = ip2long_db($arr['ip']);
-	$db->query("SELECT * FROM bans  WHERE '".$ip."'  >= first AND '".$ip."' <= last");
-	//Добавляем IP в бан
-	if(!$db->num_rows()) {
-		$db->query("INSERT INTO bans (first , last , id_user , date) VALUES ( '".$ip."' , '".$ip."' , ".$USER['id']." , NOW() )");
-		$memcache->delete('ip_bans_'.$ip , 0);
-		header('Location:my.setting.php?id='.$id.'&status=11');
-		die();
-	}else{
-		$db->query("DELETE FROM bans   WHERE '".$ip."'  >= first AND '".$ip."' <= last");
-		$memcache->delete('ip_bans_'.$ip  , 0);
-		header('Location:my.setting.php?id='.$id.'&status=12');
-		die();
-	}
-	
-}
-
-//////////////////////////////////////////////////////////////
-//Бан аккаунта
-//////////////////////////////////////////////////////////////
-if($_GET['act'] == 'ban_account') {
-	//Баним аккаунт
-	if($arr['banned'] == 0) {
-		$db->query("UPDATE users SET banned='1' WHERE id=".$id);
-			$memcache->delete('user_'.$id , 0);
-			header('Location:my.setting.php?id='.$id.'&status=9');
-			die();	
-	} else {
-	//Убираем бан
-		$db->query("UPDATE users SET banned='0' WHERE id=".$id);
-		$memcache->delete('user_'.$id , 0);
-		header('Location:my.setting.php?id='.$id.'&status=10');
-		die();	
+	if (empty($_FILES[$fieldName]['name'])) {
+		return false;
 	}
 
-	
-}
-
-
-//////////////////////////////////////////////////////////////
-//Удаление фотографии
-//////////////////////////////////////////////////////////////
-if($_GET['act'] == 'foto_delete') {
-	@unlink("public/avatars/".$arr['avatar']);
-	@unlink("public/avatars/small/".$arr['avatar']);
-	$db->query("UPDATE users SET avatar='' WHERE id='".$id."'");
-	$memcache->delete('user_'.$id , 0);
-	header('Location:my.setting.php?id='.$id.'&status=8');
-	die();	
-	
-}
-
-
-//////////////////////////////////////////////////////////////
-//Загрузка фотографии
-//////////////////////////////////////////////////////////////
-if($_GET['act'] == 'foto') {
-
-	
-	$allowed_types = array(
-	"image/gif" => "gif",
-	"image/pjpeg" => "jpg",
-	"image/jpeg" => "jpg",
-	"image/jpg" => "jpg",
-	"image/png" => "png" , 
-	"image/bmp"=> "bmp" 
-	// Add more types here if you like
+	$allowedTypes = array(
+		'image/gif' => 'gif',
+		'image/pjpeg' => 'jpg',
+		'image/jpeg' => 'jpg',
+		'image/jpg' => 'jpg',
+		'image/png' => 'png',
+		'image/bmp' => 'bmp',
 	);
 
-
-	if (!($_FILES["foto"]['name'] == "")) {
-
-		// Is valid filetype?
-		if (!array_key_exists($_FILES['foto']['type'], $allowed_types) ) {
-			err($language['default_1'] , $language['setting_60'] , 1);
-		}
-
-		if (!preg_match('/^(.+)\.(jpg|jpeg|png|gif)$/si', $_FILES['foto']['name']) ) {
-			err($language['default_1'] , $language['setting_61'] , 1);
-		}
-		
-		//Директории для загрузки
-		$dir_dest = 'public/avatars/';
-		$dir_dest_small = 'public/avatars/small/';
-		
-		//Используем класс загрузки
-		require 'system/classes/class.upload.php';
-		
-		
-		//Большая фотография
-		$photo = new Upload($_FILES['foto']);
-		
-		if ($photo->uploaded) {
-			
-			//Удаляем старые аватарки
-			if($arr['avatar'])  {
-				@unlink('public/avatars/small/'.$arr['avatar']);
-				@unlink('public/avatars/'.$arr['avatar']);
-			}
-
-			$photo->file_max_size = $config['max_size_image']; // 1KB // максимальный размер загружаемого фото
-			$photo->file_new_name_body = $USER['id']; // будущие имя файла
-			$photo->image_resize = true;  // изменение размера
-			$photo->image_convert = jpg; // конвертирование фото в формат .JPG
-			$photo->image_x = 600; // Максимальный размер в ширину
-			$photo->image_y = 600; // Максимальный размер в высоту
-			$photo->image_ratio = true; // Сохранение пропорций
-			$photo->image_text = 'LITETRACKER ENGINE'; // Подпись на фото графии
-			$photo->image_text_position = 'RB'; // Расположение подписи на фотографии
-			$photo->image_text_padding = 5; // Отступ подписи от краев в пикселях
-			$photo->Process($dir_dest);
-			$name = $photo->file_dst_name;
-				
-			//Загружаем , если все нормально
-			if ($photo->processed) {
-					$db->query("UPDATE users SET avatar='".$db->safesql($name)."' WHERE id='".$id."'");
-					
-			}
-			// $photo->Clean();
-		} else {
-			err('Ошибка' , $photo->error , 1);
-		}
-		
-	
-		//Маленькая
-		
-		$photo_small = new Upload($_FILES['foto']);
-		$photo_small->file_max_size = $config['max_size_image']; // 1KB // максимальный размер загружаемого фото
-		$photo_small->file_new_name_body = $USER['id']; // будущие имя файла
-		$photo_small->image_resize = true;  // изменение размера
-		$photo_small->image_convert = jpg; // конвертирование фото в формат .JPG
-		$photo_small->image_x = 100; // Максимальный размер в ширину
-		$photo_small->image_y = 100; // Максимальный размер в высоту
-		$photo_small->image_ratio = true; // Сохранение пропорций
-		// $photo_small->image_text = 'http://Torrent - Tracker.Ru'; // Подпись на фото графии
-		// $photo_small->image_text_position = 'RB'; // Расположение подписи на фотографии
-		// $photo_small->image_text_padding = 5; // Отступ подписи от краев в пикселях
-		$photo_small->Process($dir_dest_small);
-		$photo_small->Clean();
-		
-		// err('Ошибка' , $photo_small->error , 1);
-	
-		//Удаляем кеш , и перенаправляем
-		$memcache->delete('user_'.$id , 0);
-		header('Location:my.setting.php?id='.$id.'&status=7');
-	
-	} else {
-		header('Location:my.setting.php?id='.$id.'&status=6');
-		die();	
+	if (!array_key_exists($_FILES[$fieldName]['type'], $allowedTypes)) {
+		err($language['default_1'], $language['setting_60'], 1);
 	}
 
+	if (!preg_match('/^(.+)\.(jpg|jpeg|png|gif)$/si', $_FILES[$fieldName]['name'])) {
+		err($language['default_1'], $language['setting_61'], 1);
+	}
+
+	require_once 'system/classes/class.upload.php';
+
+	$dirDest = 'public/avatars/';
+	$dirDestSmall = 'public/avatars/small/';
+
+	if (!empty($userRow['avatar'])) {
+		@unlink($dirDest.$userRow['avatar']);
+		@unlink($dirDestSmall.$userRow['avatar']);
+	}
+
+	$photo = new Upload($_FILES[$fieldName]);
+	if (!$photo->uploaded) {
+		err('Ошибка', $photo->error, 1);
+	}
+
+	$photo->file_max_size = $config['max_size_image'];
+	$photo->file_new_name_body = (string) $userId;
+	$photo->image_resize = true;
+	$photo->image_convert = 'jpg';
+	$photo->image_x = 600;
+	$photo->image_y = 600;
+	$photo->image_ratio = true;
+	$photo->image_text = 'LITETRACKER ENGINE';
+	$photo->image_text_position = 'RB';
+	$photo->image_text_padding = 5;
+	$photo->Process($dirDest);
+
+	if (!$photo->processed) {
+		err('Ошибка', $photo->error, 1);
+	}
+
+	$fileName = $photo->file_dst_name;
+	$photo->Clean();
+
+	$photoSmall = new Upload($_FILES[$fieldName]);
+	if (!$photoSmall->uploaded) {
+		err('Ошибка', $photoSmall->error, 1);
+	}
+
+	$photoSmall->file_max_size = $config['max_size_image'];
+	$photoSmall->file_new_name_body = (string) $userId;
+	$photoSmall->image_resize = true;
+	$photoSmall->image_convert = 'jpg';
+	$photoSmall->image_x = 100;
+	$photoSmall->image_y = 100;
+	$photoSmall->image_ratio = true;
+	$photoSmall->Process($dirDestSmall);
+
+	if (!$photoSmall->processed) {
+		err('Ошибка', $photoSmall->error, 1);
+	}
+
+	$photoSmall->Clean();
+
+	return $fileName;
 }
 
-//////////////////////////////////////////////////////////////
-//Изменение Пасскей
-//////////////////////////////////////////////////////////////
-if($_GET['act'] == 'passkey') {
-	$db->query("UPDATE users SET passkey='' WHERE id='".$id."'");
-	$memcache->delete('user_'.$id , 0);
-	header('Location:my.setting.php?id='.$id.'&status=5');
-	die();	
+$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+
+if (!$id || $id == $USER['id']) {
+	$id = (int) $USER['id'];
+	$arr = $db->super_query("SELECT * FROM users WHERE id='".$id."'");
+} else {
+	$arr = $db->super_query("SELECT * FROM users WHERE id='".$id."'");
+	$priv = get_priv_info($arr['class']);
+	if (!$PRIV['setting_user'] || $priv['EDIT_PRIV']) {
+		err($language['default_1'], $language['setting_1'], 1);
+	}
 }
 
-//////////////////////////////////////////////////////////////
-//Изменение e-mail
-//////////////////////////////////////////////////////////////
-if($_GET['act'] == 'email') {
-	
-	$email = trim($_POST['email']);
-	if($email == $arr['email'] || empty($email) ) {
-		header('Location:my.setting.php?id='.$id.'&status=3');
-		die();	
-	}
-	
-	//Валидность email
-	if (!validemail($email) ) {
-		err($language['default_1'] , $language['setting_64'] , 1); 
-	}	
+if (!$arr) {
+	err($language['default_1'], $language['profile_1'], 1);
+}
 
-	//Проверяем email на уникальность
-	$email_check = $db->query("SELECT * FROM users WHERE email='".$db->safesql($email)."'");
-	if($db->num_rows() >= 1) {
-		err($language['default_1'] , $language['setting_65'] , 1);
+$act = trim((string) ($_GET['act'] ?? ''));
+
+if($act == 'ban_ip') {
+	$ip = ip2long_db($arr['ip']);
+	$db->query("SELECT * FROM bans WHERE '".$ip."' >= first AND '".$ip."' <= last");
+	if(!$db->num_rows()) {
+		$db->query("INSERT INTO bans (first , last , id_user , date) VALUES ('".$ip."' , '".$ip."' , ".$USER['id']." , NOW())");
+		$memcache->delete('ip_bans_'.$ip, 0);
+		header('Location:my.setting.php?id='.$id.'&status=11');
+		die();
 	}
-	
-	/*
-	...
-	Подтверждение e-mail
-	...
-	*/
-	
-	
-	$db->query("UPDATE users SET email='".$db->safesql($email)."' WHERE id='".$id."'");
-	$memcache->delete('user_'.$id , 0);
-	header('Location:my.setting.php?id='.$id.'&status=4');
+
+	$db->query("DELETE FROM bans WHERE '".$ip."' >= first AND '".$ip."' <= last");
+	$memcache->delete('ip_bans_'.$ip, 0);
+	header('Location:my.setting.php?id='.$id.'&status=12');
 	die();
 }
 
+if($act == 'ban_account') {
+	if($arr['banned'] == 0) {
+		$db->query("UPDATE users SET banned='1' WHERE id=".$id);
+		$memcache->delete('user_'.$id, 0);
+		header('Location:my.setting.php?id='.$id.'&status=9');
+		die();
+	}
 
+	$db->query("UPDATE users SET banned='0' WHERE id=".$id);
+	$memcache->delete('user_'.$id, 0);
+	header('Location:my.setting.php?id='.$id.'&status=10');
+	die();
+}
 
+if($act == 'foto_delete') {
+	@unlink('public/avatars/'.$arr['avatar']);
+	@unlink('public/avatars/small/'.$arr['avatar']);
+	$db->query("UPDATE users SET avatar='' WHERE id='".$id."'");
+	$memcache->delete('user_'.$id, 0);
+	header('Location:my.setting.php?id='.$id.'&status=8');
+	die();
+}
 
-//////////////////////////////////////////////////////////////
-//Изменение пароля
-//////////////////////////////////////////////////////////////
-if($_GET['act'] == 'password') {
-	
-	//Старый пароль
+if($act == 'foto') {
+	$fileName = prepare_user_avatar_upload('foto', $id, $arr);
+	if ($fileName === false) {
+		header('Location:my.setting.php?id='.$id.'&status=6');
+		die();
+	}
+
+	$db->query("UPDATE users SET avatar='".$db->safesql($fileName)."' WHERE id='".$id."'");
+	$memcache->delete('user_'.$id, 0);
+	header('Location:my.setting.php?id='.$id.'&status=7');
+	die();
+}
+
+if($act == 'passkey') {
+	$db->query("UPDATE users SET passkey='' WHERE id='".$id."'");
+	$memcache->delete('user_'.$id, 0);
+	header('Location:my.setting.php?id='.$id.'&status=5');
+	die();
+}
+
+if($act == 'password') {
 	if(!$PRIV['setting_user']) {
-		$old_password = trim($_POST['old_password']);
-		if($arr['password'] != md5($arr['password_code'].$old_password.$arr['password_code']) ) {
-			err($language['default_1'] ,  $language['setting_66'] , 1);
+		$oldPassword = trim((string) ($_POST['old_password'] ?? ''));
+		if($arr['password'] != md5($arr['password_code'].$oldPassword.$arr['password_code'])) {
+			err($language['default_1'], $language['setting_66'], 1);
 		}
 	}
-	
-	//Новые пароли
-	$new_password = trim($_POST['new_password']);
-	$new_password_1 = trim($_POST['new_password_1']);
-	
-	//Валидность пароля
-	if (strlen($new_password) < 6) {
-		err($language['default_1'] , $language['setting_67'] , 1); 
+
+	$newPassword = trim((string) ($_POST['new_password'] ?? ''));
+	$newPasswordRepeat = trim((string) ($_POST['new_password_1'] ?? ''));
+
+	if (strlen($newPassword) < 6) {
+		err($language['default_1'], $language['setting_67'], 1);
 	}
 
-	if (strlen($new_password) > 40) {
-		err($language['default_1'] , $language['setting_68'] ,  1); 
+	if (strlen($newPassword) > 40) {
+		err($language['default_1'], $language['setting_68'], 1);
 	}
-	
-	if($new_password != $new_password)  {
-		err($language['default_1'] , $language['setting_69'],  1); 
+
+	if($newPassword != $newPasswordRepeat) {
+		err($language['default_1'], $language['setting_69'], 1);
 	}
-	
-	$password_code = mksecret(32); //Формируем секретный код
-	$password_hash = md5($password_code . $new_password . $password_code); // Пасс для Базы
-	
-	
-	$db->query("UPDATE users SET password='".$password_hash."' , password_code='".$password_code."' WHERE id='".$id."'");
-	$memcache->delete('user_'.$id , 0);
+
+	$passwordCode = mksecret(32);
+	$passwordHash = md5($passwordCode.$newPassword.$passwordCode);
+
+	$db->query("UPDATE users SET password='".$passwordHash."' , password_code='".$passwordCode."' WHERE id='".$id."'");
+	$memcache->delete('user_'.$id, 0);
+
+	if ((int) $USER['id'] === (int) $id) {
+		logout_cookie();
+		login_cookie($id, $passwordHash);
+	}
+
 	header('Location:my.setting.php?id='.$id.'&status=2');
 	die();
 }
 
+if($act == 'email') {
+	$email = trim((string) ($_POST['email'] ?? ''));
+	if($email == $arr['email'] || empty($email)) {
+		header('Location:my.setting.php?id='.$id.'&status=3');
+		die();
+	}
 
-//////////////////////////////////////////////////////////////
-//Общие настройки
-//////////////////////////////////////////////////////////////
+	if (!validemail($email)) {
+		err($language['default_1'], $language['setting_64'], 1);
+	}
+
+	$emailCheck = $db->query("SELECT * FROM users WHERE email='".$db->safesql($email)."'");
+	if($db->num_rows() >= 1) {
+		err($language['default_1'], $language['setting_65'], 1);
+	}
+
+	$db->query("UPDATE users SET email='".$db->safesql($email)."' WHERE id='".$id."'");
+	$memcache->delete('user_'.$id, 0);
+	header('Location:my.setting.php?id='.$id.'&status=4');
+	die();
+}
+
 $update = array();
 
-//Ник
-$name = trim($_POST['name']);
+$name = trim((string) ($_POST['name'] ?? ''));
 if($arr['name'] != $name) {
-	if(empty($name) ) {
-		err($language['default_1'] , $language['setting_70'] , 1);
+	if(empty($name)) {
+		err($language['default_1'], $language['setting_70'], 1);
 	}
-	//Валидность ника
-	if (!validusername($name) ) {
-	  err($language['default_1'] , $language['setting_71'] , 1); 
-	}   
-	if (strlen($nick) > 12) {
-		err( $language['default_1'] ,$language['setting_72'] , 1); 
+	if (!validusername($name)) {
+		err($language['default_1'], $language['setting_71'], 1);
+	}
+	if (strlen($name) > 12) {
+		err($language['default_1'], $language['setting_72'], 1);
 	}
 
-	//Проверяем ник на уникальность
-	$email_check = $db->query("SELECT * FROM users WHERE name='".$db->safesql($name)."'");
+	$emailCheck = $db->query("SELECT * FROM users WHERE name='".$db->safesql($name)."' AND id <> ".$id);
 	if($db->num_rows() >= 1) {
-		err($language['default_1'] ,$language['setting_73'] , 1);
+		err($language['default_1'], $language['setting_73'], 1);
 	}
 
 	$update[] = "name='".$db->safesql($name)."'";
 }
 
+$email = trim((string) ($_POST['email'] ?? ''));
+if($email != $arr['email']) {
+	if (empty($email) || !validemail($email)) {
+		err($language['default_1'], $language['setting_64'], 1);
+	}
 
-//Пол
-$sex = ((int)$_POST['sex'] == 1 ? '1' : '0');
+	$emailCheck = $db->query("SELECT * FROM users WHERE email='".$db->safesql($email)."' AND id <> ".$id);
+	if($db->num_rows() >= 1) {
+		err($language['default_1'], $language['setting_65'], 1);
+	}
+
+	$update[] = "email='".$db->safesql($email)."'";
+}
+
+$sex = ((int) ($_POST['sex'] ?? 1) == 1 ? '1' : '0');
 if($arr['sex'] != $sex) {
 	$update[] = "sex='".$sex."'";
 }
 
-//Веб-сайт
-$website = trim($_POST['website']);
+$website = trim((string) ($_POST['website'] ?? ''));
 if($arr['website'] != $website) {
-	$pattern = "#^(http://)?[-a-z0-9_\.]+([-a-z0-9_]+\.(html|php|pl|cgi))?([-a-z0-9_:@&\?=+\.!/~*'%$]+)?$#i";
-	if(preg_match($pattern  , $website) ) {
+	if($website === '') {
+		$update[] = "website=''";
+	} else {
+		$pattern = "#^(http://|https://)?[-a-z0-9_\.]+([-a-z0-9_]+\.(html|php|pl|cgi))?([-a-z0-9_:@&\?=+\.!/~*'%$]+)?$#i";
+		if(!preg_match($pattern, $website)) {
+			err($language['default_1'], $language['setting_37'], 1);
+		}
 		$update[] = "website='".$db->safesql($website)."'";
 	}
 }
 
-//ICQ
-$icq = (int)$_POST['icq'];
-if($arr['icq'] != $icq) {
-	if(is_numeric($icq) && strlen($icq) < 13) {
-		$update[] = "icq='".$icq."'";	
-	}
+$birthdayDay = trim((string) ($_POST['birthday_day'] ?? ''));
+$birthdayMonth = trim((string) ($_POST['birthday_month'] ?? ''));
+$birthdayYear = trim((string) ($_POST['birthday_year'] ?? ''));
+$birthdayDate = null;
+
+if ($birthdayDay === '' && $birthdayMonth === '' && $birthdayYear === '') {
+	$birthdayDate = null;
+} elseif ($birthdayDay !== '' && $birthdayMonth !== '' && $birthdayYear !== '' && checkdate((int) $birthdayMonth, (int) $birthdayDay, (int) $birthdayYear)) {
+	$birthdayDate = sprintf('%04d-%02d-%02d', $birthdayYear, $birthdayMonth, $birthdayDay);
+} else {
+	err('Ошибка', 'Дата рождения указана неверно.', 1);
 }
 
-
-//Skype
-$skype = trim($_POST['skype']);
-if($arr['skype'] != $skype ) {
-	if(strlen($skype) < 30 && validusername($skype) ) {
-		$update[] = 'skype="'.$db->safesql($skype).'"';
-	}	
+$currentBirthday = (!empty($arr['birthday_date']) && $arr['birthday_date'] !== '0000-00-00' ? $arr['birthday_date'] : null);
+if ($currentBirthday !== $birthdayDate) {
+	$update[] = ($birthdayDate === null ? "birthday_date=NULL" : "birthday_date='".$db->safesql($birthdayDate)."'");
 }
 
-//ID Vkontakte
-$id_vkontakte = (int)$_POST['id_vkontakte'];
-if($arr['id_vkontakte'] != $id_vkontakte) {
-	$update[] = "id_vkontakte='".$id_vkontakte."'";	
+$profileText = trim((string) ($_POST['profile_text'] ?? ''));
+if ((string) $arr['profile_text'] !== $profileText) {
+	$update[] = "profile_text='".$db->safesql($profileText)."'";
 }
 
-//Использовать показ профиля
-if($config['vkontakte_profile'] && $config['vkontakte_use']) {
-	$use_vkontakte = ($_POST['use_vkontakte'] ? 1 : 0);
-	$update[] = "use_vkontakte='".$use_vkontakte."'";	
+$notifyComments = (!empty($_POST['notify_comments']) ? 1 : 0);
+if ((int) $arr['notify_comments'] !== $notifyComments) {
+	$update[] = "notify_comments='".$notifyComments."'";
 }
 
-//Административная часть
+$downloadLocalRetracker = (!isset($_POST['download_local_retracker']) ? 0 : 1);
+if ((int) $arr['download_local_retracker'] !== $downloadLocalRetracker) {
+	$update[] = "download_local_retracker='".$downloadLocalRetracker."'";
+}
+
+$themeDark = (!empty($_POST['theme_dark']) ? 1 : 0);
+if ((int) $arr['theme_dark'] !== $themeDark) {
+	$update[] = "theme_dark='".$themeDark."'";
+}
+
+$avatarFileName = prepare_user_avatar_upload('avatar_upload', $id, $arr);
+if ($avatarFileName !== false) {
+	$update[] = "avatar='".$db->safesql($avatarFileName)."'";
+}
+
 if($PRIV['setting_user'] || $PRIV['EDIT_PRIV']) {
-
-
-	//Скачал
-	$downloaded = (int)$_POST['downloaded']; //Число
-	$down_command = ($_POST['down_command'] == '+' ? '+' : '-');
-	$down_format = ($_POST['down_format']  == 'mb' ? (1024*1024) : (1024*1024*1024) );
-	if($downloaded >= 0 ) {
-		//Переводим в байты
-		$bytes = $downloaded  * $down_format;
-		
-		//Какую команду будем делать
-		if($down_command == '+') {
+	$downloaded = (int) ($_POST['downloaded'] ?? 0);
+	$downCommand = ((string) ($_POST['down_command'] ?? '+') == '+' ? '+' : '-');
+	$downFormat = (((string) ($_POST['down_format'] ?? 'mb') == 'mb') ? (1024*1024) : (1024*1024*1024));
+	if($downloaded > 0) {
+		$bytes = $downloaded * $downFormat;
+		if($downCommand == '+') {
 			$update[] = "downloaded=('".$bytes."' + downloaded)";
 		} else {
 			if($arr['downloaded'] < $bytes) {
-				err($language['default_1'] , $language['setting_74'] , 1);
+				err($language['default_1'], $language['setting_74'], 1);
 			}
 			$update[] = "downloaded=(downloaded - '".$bytes."')";
 		}
-			
 	}
-	
-	
-	
-	//Раздал
-	$uploaded = (int)$_POST['uploaded']; //Число
-	$up_command = ($_POST['up_command'] == '+' ? '+' : '-');
-	$up_format = ($_POST['up_format']  == 'mb' ? (1024*1024) : (1024*1024*1024) );
-	if($downloaded >= 0 ) {
-		//Переводим в байты
-		$bytes = $uploaded  * $up_format;
-		
-		//Какую команду будем делать
-		if($up_command == '+') {
+
+	$uploaded = (int) ($_POST['uploaded'] ?? 0);
+	$upCommand = ((string) ($_POST['up_command'] ?? '+') == '+' ? '+' : '-');
+	$upFormat = (((string) ($_POST['up_format'] ?? 'mb') == 'mb') ? (1024*1024) : (1024*1024*1024));
+	if($uploaded > 0) {
+		$bytes = $uploaded * $upFormat;
+		if($upCommand == '+') {
 			$update[] = "uploaded=('".$bytes."' + uploaded)";
 		} else {
 			if($arr['uploaded'] < $bytes) {
-				err($language['default_1'] , $language['setting_75'] , 1);
+				err($language['default_1'], $language['setting_75'], 1);
 			}
 			$update[] = "uploaded=(uploaded - '".$bytes."')";
 		}
-			
 	}
-	
-	
-	//Класс
+
 	if($PRIV['EDIT_PRIV']) {
-		$class = (int)$_POST['class'];
-		
-		//Проверяем, существует ли данный класс
+		$class = (int) ($_POST['class'] ?? $arr['class']);
 		$db->query("SELECT * FROM priv WHERE id > 0 AND id=".$class);
 		if($arr['class'] != $class && $db->num_rows()) {
 			$update[] = "class='".$class."'";
-			
-			$info_class = get_priv_info($class);
-
-			//Отправляем сообщение
-			send_msg($language['setting_76']  , sprintf($language['setting_77'] , $info_class['NAME']) , $id  , 0 );	
+			$infoClass = get_priv_info($class);
+			send_msg($language['setting_76'], sprintf($language['setting_77'], $infoClass['NAME']), $id, 0);
 		}
-		
 	}
-	
-	
-
 }
 
-
-
-//Обновляем данные
-if(count($update) ) {
-	$sql = $db->query("UPDATE users SET ".implode(',' , $update)." WHERE id='".$id."'");
+if(count($update)) {
+	$db->query("UPDATE users SET ".implode(',', $update)." WHERE id='".$id."'");
 }
 
-$memcache->delete('user_'.$id , 0);
+$memcache->delete('user_'.$id, 0);
 header('Location:my.setting.php?id='.$id.'&status=1');
 die();
 ?>

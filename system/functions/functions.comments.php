@@ -13,10 +13,30 @@ by jenaDI
 //Форма добавления комментария
 function addComment($type = "" ,$object_id = "" , $file = '') {
 	global $USER ,$language , $rewrite;
-	if($USER) {	
-		// echo '<div id="addComment" style="display:none;padding:10; width:100">';
+	if($USER) {
+		if ($type == 'users') {
+			$avatar = 'public/images/default_avatar.gif';
+			if (!empty($USER['avatar']) && is_file('public/avatars/small/'.$USER['avatar'])) {
+				$avatar = 'public/avatars/small/'.$USER['avatar'];
+			}
+
+			echo '<form class="wall-form" name="addComment" method="POST" action="comments.take.php">';
+			echo '<div class="wall-form-row">';
+			echo '<div class="wall-form-avatar"><img src="'.$avatar.'" alt="'.htmlspecialchars($USER['name'], ENT_QUOTES, 'UTF-8').'" width="28" height="28"></div>';
+			echo '<div class="wall-form-body">';
+			echo '<textarea class="wall-form-textarea" id="wall-comment-text" name="text">'.htmlspecialchars((string) ($_POST['text'] ?? ''), ENT_QUOTES, 'UTF-8').'</textarea>';
+			echo '<div class="wall-form-controls"><input class="wall-form-submit" value="Отправить" type="submit"></div>';
+			echo '</div>';
+			echo '</div>';
+			echo '<input type="hidden" value="'.$object_id.'" name="object_id">';
+			echo '<input type="hidden" value="'.$type.'" name="type">';
+			echo '<input type="hidden" value="'.$file.'" name="file">';
+			echo '<input type="hidden" value="add" name="act">';
+			echo '</form>';
+			return;
+		}
+
 		echo '<form name="addComment" method="POST" action="comments.take.php"> ';
-		// echo '<textarea name="text" style="width:100%;height:50"> </textarea>';
 		textbb('text' , $_POST['descr'] ?? '',  '95%' , '300px');
 		echo '<br><input value="'.$language['comments_1'].'"  type="submit" >';
 		echo '<input type="hidden" value="'.$object_id.'" name="object_id">';
@@ -56,7 +76,11 @@ function listComment($type = "" , $object_id = "" , $file = "" , $desc = 0) {
 
 	//Проверка, существуют ли комментарии
 	if(!$db->num_rows($sql) ) {
-		msg($language['comments_2'], '' , 'error');	
+		if ($type == 'users') {
+			echo '<div class="wall-comment-empty">На стене пока нет комментариев.</div>';
+		} else {
+			msg($language['comments_2'], '' , 'error');
+		}
 	} else {
 		echo $pagertop;
 		//Выводим в цикле комментарии
@@ -68,7 +92,12 @@ function listComment($type = "" , $object_id = "" , $file = "" , $desc = 0) {
 			
 			$user = get_user_info($arr['id_user']);
 			$user_id = $user['id']; //Номер пользователя
-			$avatar = ($user['avatar'] == "" ? '<center><img src="public/images/default_avatar.gif" border="0" width="50"></center>' : '<center><img src="public/avatars/'.$user['avatar'].'" border="0" width="50"></center>'); //Фотография пользователя
+			if ($type == 'users') {
+				$avatarPath = (!empty($user['avatar']) && is_file('public/avatars/small/'.$user['avatar']) ? 'public/avatars/small/'.$user['avatar'] : 'public/images/default_avatar.gif');
+				$avatar = '<img src="'.$avatarPath.'" border="0" width="28" height="28" alt="'.htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8').'">';
+			} else {
+				$avatar = ($user['avatar'] == "" ? '<center><img src="public/images/default_avatar.gif" border="0" width="50"></center>' : '<center><img src="public/avatars/'.$user['avatar'].'" border="0" width="50"></center>'); //Фотография пользователя
+			}
 			
 			$user_name = $user['name']; //Имя пользователя
 			$user_class = $user['class']; //Класс пользователя

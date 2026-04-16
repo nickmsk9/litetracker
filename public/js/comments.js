@@ -22,4 +22,18 @@ function downCommentForm() {
 	return false;	
 }
 
+function replyWallComment(userName) {
+	var field = document.getElementById('wall-comment-text');
+	if (!field) {
+		return false;
+	}
+
+	var prefix = '[b]' + userName + '[/b], ';
+	if (field.value.indexOf(prefix) !== 0) {
+		field.value = prefix + field.value;
+	}
+
+	field.focus();
+	return false;
+}
 

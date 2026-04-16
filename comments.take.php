@@ -47,6 +47,19 @@ if($_REQUEST['act'] == 'add') {
 	
 	//Добавляем комментарий
 	$db->query("INSERT INTO ".$table_name." (id_user , ".$object_name." , date , text) VALUES (".$USER['id']." , ".$object_id." , NOW() , '".$db->safesql($text)."')" , 0);
+
+	if ($type == 'users' && $USER['id'] != $object_id) {
+		$wallOwner = $db->super_query("SELECT id, name, notify_comments FROM users WHERE id=".(int) $object_id);
+		if (!empty($wallOwner['id']) && !empty($wallOwner['notify_comments'])) {
+			send_msg(
+				'Новый комментарий на стене',
+				'Пользователь [b]'.$USER['name'].'[/b] оставил новый комментарий на вашей стене.'."\n".'Ссылка: profile.php?id='.(int) $object_id,
+				(int) $wallOwner['id'],
+				0
+			);
+		}
+	}
+
 	header('Location:'.$file.'id='.$object_id.'&status=1');
 	die();
 }

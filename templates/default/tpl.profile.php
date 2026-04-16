@@ -1,303 +1,67 @@
-<?
-if (!defined('LITETRACKER'))
+<?php
+if (!defined('LITETRACKER')) {
 	die('Direct access denied.');
-
-
-////////////////////////////////////////////////////////
-//Шаблон для Профиля
-////////////////////////////////////////////////////////
-//$id - id пользовтаеля
-
-begin_frame('Просмотр профиля');
-?>
-<link href="public/css/torrenttable.css" rel="StyleSheet" type="text/css">
-<table width="100%" cellpadding="3">
-<tr>
-
-<td valign="top">
-<?
-// begin_frame($language['profile_6']);
-?>
-<table cellspacing="7" cellpadding="0" class="tt">
-
-     <tbody>	
-	 
-	
-	
-	<tr>
-     <td class="label">Ник:</td>
-     <td class="data">
-      <div class="dataWrap">
-      <?=$name;?> <?=$online;?>
-      </div>
-     </td>
-    </tr>
-	
-	
-	<tr>
-     <td class="label"><?=$language['profile_7'];?>:</td>
-     <td class="data">
-      <div class="dataWrap">
-      <?=$date;?>
-      </div>
-     </td>
-    </tr>
-	<? if($PRIV['setting_user'] || $arr['id'] == $USER['id']) { ?>
-	<tr>
-     <td class="label"><?=$language['profile_8'];?>:</td>
-     <td class="data">
-      <div class="dataWrap">
-      <?=$email;?> <div style="float:right">(<?=$language['profile_9'];?>)</div>
-      </div>
-     </td>
-    </tr>
-
-	<tr>
-     <td class="label"><?=$language['profile_10'];?>:</td>
-     <td class="data">
-      <div class="dataWrap">
-      <?=$ip;?> <div style="float:right">(<?=$language['profile_9'];?>)</div>
-      </div>
-     </td>
-    </tr>	
-	<? } ?>
-	
-	<tr>
-     <td class="label"><?=$language['profile_11'];?>:</td>
-     <td class="data">
-      <div class="dataWrap">
-      <?=$last_access;?>
-      </div>
-     </td>
-    </tr>
-
-	<tr>
-     <td class="label"><?=$language['profile_12'];?>:</td>
-     <td class="data">
-      <div class="dataWrap">
-      <?=$banned;?>
-      </div>
-     </td>
-    </tr>	
-	
-     </tbody></table>
-<?
-// end_frame();
-
-// begin_frame($language['profile_13']);
-?>
-<br><br>
-<table cellspacing="7" cellpadding="0" class="tt">
-
-     <tbody>	
-	 
-	
-	<tr>
-     <td class="label"><?=$language['setting_33'];?>:</td>
-     <td class="data">
-      <div class="dataWrap">
-      <?=$sex;?>
-      </div>
-     </td>
-    </tr>
-	
-	<? if($USER) { ?>
-		<? if($icq) { ?>
-		<tr>
-		 <td class="label"><?=$language['setting_38'];?>:</td>
-		 <td class="data">
-		  <div class="dataWrap">
-		  <?=$icq;?>
-		  </div>
-		 </td>
-		</tr>	
-		<? } ?>
-		
-		<? if($skype) { ?>
-			<tr>
-			 <td class="label">Skype:</td>
-			 <td class="data">
-			  <div class="dataWrap">
-			  <?=$skype;?>
-			  </div>
-			 </td>
-			</tr>	
-		<? } ?>
-		
-		
-		<? if($id_vkontakte) { ?>
-			<tr>
-			 <td class="label">Я ВКонтакте:</td>
-			 <td class="data">
-			  <div class="dataWrap">
-				<a href="http://vk.com/id<?=$id_vkontakte;?>" target="_blank">http://vk.com/id<?=$id_vkontakte;?></a>
-			  </div>
-			 </td>
-			</tr>	
-		<? } ?>
-		
-		<? if(!empty($website) ) { ?>
-		<tr>
-		 <td class="label"><?=$language['setting_36'];?>:</td>
-		 <td class="data">
-		  <div class="dataWrap">
-		  <?=$website;?>
-		  </div>
-		 </td>
-		</tr>
-		<? } ?>
-		
-	<? } ?>
-	
-	
-	<tr>
-     <td class="label"><?=$language['setting_41'];?>:</td>
-     <td class="data">
-      <div class="dataWrap">
-      <?=$downloaded;?>
-      </div>
-     </td>
-    </tr>	
-	<tr>
-     <td class="label"><?=$language['setting_43'];?>:</td>
-     <td class="data">
-      <div class="dataWrap">
-      <?=$uploaded;?>
-      </div>
-     </td>
-    </tr>		
-	
-     </tbody></table>
-<?
-// end_frame();
-?>
-
-
-</td>
-
-<td width="180" valign="top">
-<?
-//Постер
-// begin_frame();
-
-//Аватар
-echo '<script type="text/javascript" src="/public/js/jquery.lightbox.js"></script>
-<link rel="stylesheet" type="text/css" href="/public/css/lightbox.css" />';
-
-echo '<ul id="avatar" class="gallery">';
-echo ' <li class="gallery"> <a rel="lightbox-tour" href="public/avatars/'.$arr['avatar'].'" title="Фотография пользователя" >'.$avatar.'</a></li>';
-echo '</ul>';
-
-echo '
-	<script type="text/javascript">
-	
-		$("#avatar a").lightbox();
-		$.Lightbox.construct({
-			"speed": 500,
-			"show_linkback": true,
-			"keys": {
-				close:	"q",
-				prev:	"z",
-				next:	"x"
-			},
-			"opacity": 0.2,
-			text: {
-				image:		"Картинка",
-				of:			"из",
-				close:		"Закрыть",
-				closeInfo:	"Завершить просмотр можно, кликнув мышью вне картинки.",
-				help: {
-					close:		"Закрыть",
-					interact:	"Закрыть скриншоты"
-				},
-				about: {
-					text: 	"",
-					title:	"",
-					link:	""
-				}
-			},
-			files: {
-				images: {
-					prev:		"public/images/lightbox/prev.gif",
-					next:		"public/images/lightbox/next.gif",
-					blank:		"public/images/lightbox/blank.gif",
-					loading:	"public/images/lightbox/loading.gif"
-				}
-			}
-		});
-	
-	</script>';
-
-
-
-
-
-get_user_rating($arr['uploaded'] ,  $arr['downloaded']);
-// end_frame();
-
-//Функции
-// begin_frame($language['profile_15']);
-echo ($USER['id'] == $arr['id'] || $PRIV['setting_user'] ? '<a class="proleft" href="my.setting.php?id='.$id.'">'.$language['profile_16'].'</a>' : '');
-echo ($USER['id'] != $arr['id'] ? '<a class="proleft" href="my.mail.php?act=send&id_user='.$arr['id'].'">'.$language['profile_17'].'</a>' : '');
-
-echo '<a class="proleft" href="browse.php?search=&id_user='.$arr['id'].'">'.$language['profile_18'].'</a>';
-
-
-if($USER && $arr['id'] != $USER['id'])  {
-	$friends = check_friend($arr['id'] , $USER['id']);
-	if($friends['count']) {
-		echo '<a class="proleft" href="my.friends.php?act=check&friendid='.$arr['id'].'&check=delete">Убрать из друзей</a>';
-	} else { 
-		echo '<a class="proleft" href="my.friends.php?act=add&friendid='.$arr['id'].'">Добавить в друзья</a>';
-	}
 }
-
-echo ($PRIV['EDIT_PRIV'] ? '<a class="proleft" href="my.mail.php?id_user='.$arr['id'].'"><b>Читать сообщения</b></a>' : '');
-
-
-
-
-if($config['vkontakte_profile'] && $arr['use_vkontakte']) {
-	vkontakte_profile($id_vkontakte);
-}
-
-// end_frame();
-
-
-
 ?>
-</td>
+<div class="profile-page">
+	<div class="profile-layout">
+		<div class="profile-primary">
+			<section class="profile-card">
+				<div class="profile-card-media">
+					<div class="profile-card-avatar">
+						<img src="<?=$avatarLarge;?>" alt="<?=$profileName;?>" width="90" height="90">
+					</div>
+				</div>
 
-</tr>
+				<div class="profile-card-main">
+					<h1 class="profile-card-name"><?=$profileName;?></h1>
+					<div class="profile-status <?=$profileStatusClass;?>"><?=$profileStatusLabel;?></div>
+					<?php if ($profileAbout !== '') { ?>
+					<div class="profile-card-text"><?=$profileAbout;?></div>
+					<?php } else { ?>
+					<div class="profile-card-text">На трекере с <?=$profileSince;?>. Последняя активность: <?=$profileLastAccess;?>.</div>
+					<?php } ?>
 
-</table>
+					<?php if ($primaryAction) { ?>
+					<div class="profile-card-actions">
+						<a class="<?=$primaryAction['class'];?>" href="<?=$primaryAction['href'];?>"><?=$primaryAction['label'];?></a>
+					</div>
+					<?php } ?>
+				</div>
+			</section>
 
-<?
+			<section class="profile-wall">
+				<div class="profile-wall-header">
+					<h2 class="profile-wall-title">Стена пользователя</h2>
+				</div>
+				<div class="profile-wall-body">
+					<?php listComment('users', $id, 'profile.php?', 0); ?>
+				</div>
+			</section>
+		</div>
 
+		<aside class="profile-sidebar">
+			<div class="profile-sidebar-nav">
+				<?php foreach ($sidebarLinks as $item) { ?>
+				<a class="profile-sidebar-link<?=(!empty($item['active']) ? ' profile-sidebar-link-active' : '');?>" href="<?=$item['href'];?>"><?=$item['label'];?></a>
+				<?php } ?>
+			</div>
 
-end_frame();
+			<section class="profile-sidebar-card">
+				<h2 class="profile-sidebar-stats-title">Статистика</h2>
+				<div class="profile-sidebar-stat-bonus">Бонус: <strong><?=template_format_number($profileStats['voice']);?></strong></div>
 
+				<div class="profile-sidebar-stat-peers">
+					<span class="profile-sidebar-stat-peer"><img src="public/images/up.png" alt="" width="10" height="10"> <?=$profileStats['seeders'];?></span>
+					<span class="profile-sidebar-stat-divider">|</span>
+					<span class="profile-sidebar-stat-peer"><img src="public/images/down.png" alt="" width="10" height="10"> <?=$profileStats['leechers'];?></span>
+				</div>
 
-begin_frame('Друзья пользователя ');
-
-if($friends_arr) {
-	echo '<table>';
-	foreach($friends_arr AS $rows) { 
-		$user  = get_user_info($rows['userid']);
-		echo '<td align="center"><a href="profile.php?id='.$user['id'].'">'.($user['avatar'] ? '<img src="public/avatars/'.$user['avatar'].'" width="50" height="50">' : '<img src="public/images/default_avatar.gif" width="50" width="50">').'</a>
-		<br><a href="profile.php?id='.$user['id'].'">'.get_user_color($user['class'] , $user['name']).'</a></td>';
-	}
-	
-	echo '<input type="button" value="Посмотреть всех" onClick="window.location.href=\'my.friends.php?id='.$id.'\'">';
-	echo '</table>';
-} else { 
-	msg('Внимание' , "Пользователь ни с кем не дружит :(");
-}
-end_frame();
-
-
-//Комментарии
-begin_frame('Стена пользователя');
-listComment('users' , $id , 'profile.php?' , 1);
-end_frame();
-?>
+				<div class="profile-sidebar-stat-transfer">
+					<div class="profile-sidebar-stat-transfer-item profile-sidebar-stat-transfer-down"><?=$profileStats['downloaded'];?></div>
+					<div class="profile-sidebar-stat-transfer-item profile-sidebar-stat-transfer-up"><?=$profileStats['uploaded'];?></div>
+				</div>
+			</section>
+		</aside>
+	</div>
+</div>

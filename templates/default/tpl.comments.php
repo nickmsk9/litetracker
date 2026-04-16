@@ -1,12 +1,34 @@
-<?
-if (!defined('LITETRACKER'))
+<?php
+if (!defined('LITETRACKER')) {
 	die('Direct access denied.');
+}
 
-
-////////////////////////////////////////////////////////
-//Шаблон для Комментарий
-////////////////////////////////////////////////////////
-//$id - id пользовтаеля
+if ($type == 'users') {
+	?>
+	<article class="wall-comment">
+		<a class="wall-comment-avatar" href="<?=$rewrite->encode('profile.php?id='.$user_id);?>"><?=$avatar;?></a>
+		<div class="wall-comment-body">
+			<div class="wall-comment-meta">
+				<a class="wall-comment-author" href="<?=$rewrite->encode('profile.php?id='.$user_id);?>"><?=htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8');?></a>
+				<span class="wall-comment-date"><?=($append_edit ? htmlspecialchars($append_edit, ENT_QUOTES, 'UTF-8') : htmlspecialchars($date, ENT_QUOTES, 'UTF-8'));?></span>
+			</div>
+			<div class="wall-comment-text"><?=$text;?></div>
+			<div class="wall-comment-actions">
+				<?php if ($USER) { ?>
+				<button class="wall-comment-button" type="button" onclick="return replyWallComment('<?=htmlspecialchars(addslashes($user_name), ENT_QUOTES, 'UTF-8');?>');">Ответить</button>
+				<?php } ?>
+				<?php if($USER['id'] == $user_id || $PRIV['comments_edit']) { ?>
+				<a class="wall-comment-button" href="comments.take.php?type=<?=$type;?>&object_id=<?=$object_id;?>&id_comment=<?=$id;?>&act=edit&file=<?=$file;?>"><?=$language['comments_4'];?></a>
+				<?php } ?>
+				<?php if($USER['id'] == $user_id || $PRIV['comments_delete']) { ?>
+				<a class="wall-comment-button" href="comments.take.php?type=<?=$type;?>&object_id=<?=$object_id;?>&id_comment=<?=$id;?>&act=delete&file=<?=$file;?>"><?=$language['comments_5'];?></a>
+				<?php } ?>
+			</div>
+		</div>
+	</article>
+	<?php
+	return;
+}
 
 begin_frame();
 ?>
@@ -35,52 +57,3 @@ begin_frame();
         </table>
       
 <? end_frame();?>
-<!--
-<table width="70%" cellpadding="2" style="border:1px">
-<tr>
-<td valign="top" width="80"><a href="<?=$rewrite->encode('profile.php?id='.$user_id);?>"><?=$avatar;?></a></td>
-<td  valign="top" >
-
-
-
-	<table cellspacing="7" cellpadding="0" class="profileTable" width="100%">
-
-		 <tbody>	
-		 <tr>
-		
-		 <td class="data">
-		  <div class="dataWrap">
-			<a href="<?=$rewrite->encode('profile.php?id='.$user_id);?>"><?=get_user_color($user_class ,$user_name);?></a><br>
-			<?=($append_edit ? '<small>'.$append_edit.'</small>' : '<small>'.$date.'</small>');?>
-		  </div>
-		 </td>
-		</tr>
-		
-		
-		<tr>
-		 <td class="data">
-			<div class="dataWrap">
-			<?=$text;?>
-			
-			</div>
-		 </td>
-		</tr>
-		
-		<tr>
-		 <td class="data">
-			<div class="dataWrap">
-			<? if($USER['id'] == $user_id || $USER['class']  >= UC_MODERATOR) { ?>
-				<input type="button" value="<?=$language['comments_4'];?>" onClick="window.location.href='comments.take.php?type=<?=$type;?>&object_id=<?=$object_id;?>&id_comment=<?=$id;?>&act=edit&file=<?=$file;?>'">
-				<input type="button" value="<?=$language['comments_5'];?>" onClick="window.location.href='comments.take.php?type=<?=$type;?>&object_id=<?=$object_id;?>&id_comment=<?=$id;?>&act=delete&file=<?=$file;?>'">
-			<? } ?>
-			
-			</div>
-		 </td>
-		</tr>
-		
-		
-		 </tbody></table>
-</td>
-
-</tr>
-</table>-->
