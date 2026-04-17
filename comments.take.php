@@ -1,9 +1,9 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by nikita
 -------------------------------------------------------------------
 Назначение: Обработка комментариев
 ===================================================================
@@ -11,134 +11,178 @@ by jenaDI
 
 require 'system/init.php';
 
-
-//Проверяем пользователя
+// Проверяем пользователя
 is_login();
 
+$act = isset($_REQUEST['act']) ? trim((string) $_REQUEST['act']) : '';
+$type = isset($_REQUEST['type']) ? preg_replace('~[^a-z0-9_]~i', '', (string) $_REQUEST['type']) : '';
+$object_id = isset($_REQUEST['object_id']) ? (int) $_REQUEST['object_id'] : 0;
+$file = isset($_REQUEST['file']) ? trim((string) $_REQUEST['file']) : '';
 
+$file_explode = explode('?', $file, 2);
+$file_name = isset($file_explode[0]) ? trim((string) $file_explode[0]) : '';
 
-$type = (string)$_REQUEST['type']; //Тип комментирования
-$object_id = (int)$_REQUEST['object_id']; //Номер объекта
-$file = (string)$_REQUEST['file']; //Файл
-$file_explode = explode('?' , $file);
-if(!is_file($file_explode[0])) {
-	err($language['default_1'] , $language['comments_14']  , 1);
+function comment_debug_log($message)
+{
+    $logFile = __DIR__ . '/comments_debug.log';
+    @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL, FILE_APPEND);
 }
 
-//Проверяем объект
-$db->query("SELECT * FROM ".$type." WHERE id=".$object_id."" , 0);
-if(!@$db->num_rows() ) {
-	err($language['default_1'] , $language['comments_8'] , 1);
+comment_debug_log('REQUEST=' . print_r($_REQUEST, true));
+
+if ($type === '' || $object_id <= 0 || $file_name === '') {
+    comment_debug_log('Ошибка: пустой type/object_id/file');
+    err($language['default_1'], $language['comments_14'], 1);
 }
 
-//////////////////////////////////////////////////////////////
-//Добавление комментария
-//////////////////////////////////////////////////////////////
-if($_REQUEST['act'] == 'add') {
-	//Текст комментария
-	$text = trim($_REQUEST['text']);
-	if(empty($text) ) {
-		err($language['default_1'] , $language['comments_9'] ,1);
-	}
-	
-	$table_name = 'comments_'.$type; //Имя таблицы
-	$object_name = 'id_'.$type; //К чему мы добавляем комментарий
-	
-	
-	//Добавляем комментарий
-	$db->query("INSERT INTO ".$table_name." (id_user , ".$object_name." , date , text) VALUES (".$USER['id']." , ".$object_id." , NOW() , '".$db->safesql($text)."')" , 0);
-
-	if ($type == 'users' && $USER['id'] != $object_id) {
-		$wallOwner = $db->super_query("SELECT id, name, notify_comments FROM users WHERE id=".(int) $object_id);
-		if (!empty($wallOwner['id']) && !empty($wallOwner['notify_comments'])) {
-			send_msg(
-				'Новый комментарий на стене',
-				'Пользователь [b]'.$USER['name'].'[/b] оставил новый комментарий на вашей стене.'."\n".'Ссылка: profile.php?id='.(int) $object_id,
-				(int) $wallOwner['id'],
-				0
-			);
-		}
-	}
-
-	header('Location:'.$file.'id='.$object_id.'&status=1');
-	die();
+if (!is_file($file_name)) {
+    comment_debug_log('Ошибка: файл не найден: ' . $file_name);
+    err($language['default_1'], $language['comments_14'], 1);
 }
-//////////////////////////////////////////////////////////////
-//Удаление комментария
-//////////////////////////////////////////////////////////////
-if($_REQUEST['act'] == 'delete' && $_REQUEST['id_comment']) {
-	$id_comment = (int)$_REQUEST['id_comment'];
-	$db->query("SELECT id_user FROM comments_".$type." WHERE id=".$id_comment , 0);
-	$arr = $db->get_row();
-	
-	//Проверяем права
-	if($USER['id'] != $arr['id_user'] && !$PRIV['comments_delete']) {
-		err($language['default_1'] , $language['comments_10'] , 1);
-	}
-	
-	//Удаляем комментарий
-	$db->query("DELETE FROM comments_".$type." WHERE id=".$id_comment." AND id_".$type."=".$object_id , 0);
-	header('Location:'.$file.'id='.$object_id.'&status=2');
-	die();
 
+$table_name = 'comments_' . $type;
+$object_name = 'id_' . $type;
+
+// Проверяем объект
+$object_exists = $db->super_query("SELECT id FROM `{$type}` WHERE id = {$object_id} LIMIT 1");
+if (empty($object_exists['id'])) {
+    comment_debug_log('Ошибка: объект не найден. type=' . $type . ', object_id=' . $object_id);
+    err($language['default_1'], $language['comments_8'], 1);
 }
 
 //////////////////////////////////////////////////////////////
-//Редактирование комментария
+// Добавление комментария
 //////////////////////////////////////////////////////////////
-if($_REQUEST['act'] == 'edit' && $_REQUEST['id_comment']) {
-	$id_comment = (int)$_REQUEST['id_comment'];
-	$db->query("SELECT * FROM comments_".$type." WHERE id=".$id_comment , 0);
-	$arr = $db->get_row();
-	
-	//Проверяем права
-	if($USER['id'] != $arr['id_user'] && !$PRIV['comments_edit']) {
-		err($language['default_1'] , $language['comments_11'] , 1);
-	}
-	
-	//Обработка
-	if($_POST) {
-		$update = array();
-		
-		//Текст
-		$text  = trim($_REQUEST['text']);
-		if($arr['text'] != $text) {
-			if(empty($text) ) {
-				err($language['default_1'] , $language['comments_9'] ,1);
-			}
-			$update[] = 'text="'.$db->safesql($text).'"';
-			$update[] = 'id_user_edit='.$USER['id'];
-			$update[] = 'date_edit=NOW()';
-		}
-		
-		$table_name = 'comments_'.$type; //Имя таблицы
-		$object_name = 'id_'.$type; //К чему мы добавляем комментарий
-		
-		//Обновляем комментарий
-		if(count($update) ) {
-			$db->query("UPDATE ".$table_name." SET ".implode(',' ,$update)." WHERE id=".$id_comment , 0);
-		}
-		header('Location:'.$file.'id='.$object_id.'&status=3');
-		die();
-	}
-	
-	//Форма
-	head($language['comments_12']);
-	begin_frame($language['comments_12']);
-	echo '<form name="addComment" method="POST" action="comments.take.php" >';
-	
-	textbb('text' , $arr['text'],  '90%' , '300');
-	echo '<br>';
-	echo '<input value="'.$language['comments_4'].'"  type="submit" >&nbsp';
-	echo '<input value="'.$language['default_5'].'"  type="button" onClick="history.go(-1);">';
-	echo '<input type="hidden" value="'.$object_id.'" name="object_id">';
-	echo '<input type="hidden" value="'.$type.'" name="type">';
-	echo '<input type="hidden" value="'.$id_comment.'" name="id_comment">';
-	echo '<input type="hidden" value="'.$file.'" name="file">';
-	echo '<input type="hidden" value="edit" name="act">';
-	echo '</form>';
-	end_frame();
-	foot();
-	die();
+if ($act === 'add') {
+    $text = '';
+
+    if (isset($_REQUEST['text'])) {
+        $text = trim((string) $_REQUEST['text']);
+    } elseif (isset($_REQUEST['descr'])) {
+        $text = trim((string) $_REQUEST['descr']);
+    }
+
+    if ($text === '') {
+        err($language['default_1'], $language['comments_9'], 1);
+    }
+
+    $text_sql = $db->safesql($text);
+    $user_id = (int) $USER['id'];
+
+    $insert_sql = "INSERT INTO `{$table_name}` (`id_user`, `{$object_name}`, `date`, `text`)
+                   VALUES ({$user_id}, {$object_id}, NOW(), '{$text_sql}')";
+
+    comment_debug_log('INSERT SQL: ' . $insert_sql);
+    $db->query($insert_sql, 0);
+
+    if (method_exists($db, 'insert_id')) {
+        comment_debug_log('INSERT ID: ' . (int) $db->insert_id());
+    }
+
+    if ($type === 'users' && $USER['id'] != $object_id) {
+        $wallOwner = $db->super_query("SELECT id, name, notify_comments FROM users WHERE id=" . (int) $object_id);
+        if (!empty($wallOwner['id']) && !empty($wallOwner['notify_comments'])) {
+            send_msg(
+                'Новый комментарий на стене',
+                'Пользователь [b]' . $USER['name'] . '[/b] оставил новый комментарий на вашей стене.' . "\n" . 'Ссылка: profile.php?id=' . (int) $object_id,
+                (int) $wallOwner['id'],
+                0
+            );
+        }
+    }
+
+header('Location:' . $file . 'id=' . $object_id);
+    die();
+}
+
+//////////////////////////////////////////////////////////////
+// Удаление комментария
+//////////////////////////////////////////////////////////////
+if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
+    $id_comment = (int) $_REQUEST['id_comment'];
+
+    $arr = $db->super_query("SELECT id, id_user FROM `{$table_name}` WHERE id = {$id_comment} LIMIT 1");
+    if (empty($arr['id'])) {
+        comment_debug_log('DELETE: комментарий не найден: id=' . $id_comment);
+        err($language['default_1'], $language['comments_8'], 1);
+    }
+
+    if ($USER['id'] != $arr['id_user'] && empty($PRIV['comments_delete'])) {
+        comment_debug_log('DELETE: нет прав. user=' . $USER['id'] . ', owner=' . $arr['id_user']);
+        err($language['default_1'], $language['comments_10'], 1);
+    }
+
+    $delete_sql = "DELETE FROM `{$table_name}` WHERE id = {$id_comment} AND `{$object_name}` = {$object_id}";
+    comment_debug_log('DELETE SQL: ' . $delete_sql);
+    $db->query($delete_sql, 0);
+
+    header('Location:' . $file . 'id=' . $object_id . '&status=3');
+    die();
+}
+
+//////////////////////////////////////////////////////////////
+// Редактирование комментария
+//////////////////////////////////////////////////////////////
+if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
+    $id_comment = (int) $_REQUEST['id_comment'];
+
+    $arr = $db->super_query("SELECT * FROM `{$table_name}` WHERE id = {$id_comment} LIMIT 1");
+    if (empty($arr['id'])) {
+        comment_debug_log('EDIT: комментарий не найден: id=' . $id_comment);
+        err($language['default_1'], $language['comments_8'], 1);
+    }
+
+    if ($USER['id'] != $arr['id_user'] && empty($PRIV['comments_edit'])) {
+        comment_debug_log('EDIT: нет прав. user=' . $USER['id'] . ', owner=' . $arr['id_user']);
+        err($language['default_1'], $language['comments_11'], 1);
+    }
+
+    if ($_POST) {
+        $update = array();
+
+        $text = '';
+        if (isset($_REQUEST['text'])) {
+            $text = trim((string) $_REQUEST['text']);
+        } elseif (isset($_REQUEST['descr'])) {
+            $text = trim((string) $_REQUEST['descr']);
+        }
+
+        if ((string) $arr['text'] !== $text) {
+            if ($text === '') {
+                comment_debug_log('EDIT: пустой текст');
+                err($language['default_1'], $language['comments_9'], 1);
+            }
+
+            $update[] = 'text="' . $db->safesql($text) . '"';
+            $update[] = 'id_user_edit=' . (int) $USER['id'];
+            $update[] = 'date_edit=NOW()';
+        }
+
+        if (count($update)) {
+            $update_sql = "UPDATE `{$table_name}` SET " . implode(',', $update) . " WHERE id = {$id_comment}";
+            comment_debug_log('UPDATE SQL: ' . $update_sql);
+            $db->query($update_sql, 0);
+        }
+
+        header('Location:' . $file . 'id=' . $object_id . '&status=2');
+        die();
+    }
+
+    head($language['comments_12']);
+    begin_frame($language['comments_12']);
+    echo '<form name="addComment" method="POST" action="comments.take.php">';
+    textbb('text', $arr['text'], '90%', '300');
+    echo '<br>';
+    echo '<input value="' . $language['comments_4'] . '" type="submit">&nbsp';
+    echo '<input value="' . $language['default_5'] . '" type="button" onClick="history.go(-1);">';
+    echo '<input type="hidden" value="' . $object_id . '" name="object_id">';
+    echo '<input type="hidden" value="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '" name="type">';
+    echo '<input type="hidden" value="' . $id_comment . '" name="id_comment">';
+    echo '<input type="hidden" value="' . htmlspecialchars($file, ENT_QUOTES, 'UTF-8') . '" name="file">';
+    echo '<input type="hidden" value="edit" name="act">';
+    echo '</form>';
+    end_frame();
+    foot();
+    die();
 }
 ?>

@@ -115,16 +115,19 @@ if (!empty($USER['theme_dark'])) {
 	</div>
 </div>
 
+
+
+
 <div class="site-shell site-shell-content">
 	<div class="site-layout">
 		<main class="site-main">
 			<div class="blockContent">
-				<?php
+				<?php /*
 				if (!empty($USER['bad_rating']) && !empty($PRIV['bad_rating'])) {
 					begin_frame();
 					msg($language['template_6']);
 					end_frame();
-				}
+				} */
 				?>
 
 				<?php show_blocks('c'); ?>

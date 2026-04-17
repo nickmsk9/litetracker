@@ -10,142 +10,196 @@ by jenaDI
 */
 
 
-//Форма добавления комментария
-function addComment($type = "" ,$object_id = "" , $file = '') {
-	global $USER ,$language , $rewrite;
-	if($USER) {
-		if ($type == 'users') {
-			$avatar = 'public/images/default_avatar.gif';
-			if (!empty($USER['avatar']) && is_file('public/avatars/small/'.$USER['avatar'])) {
-				$avatar = 'public/avatars/small/'.$USER['avatar'];
-			}
+// Форма добавления комментария
+function addComment($type = '', $object_id = '', $file = '')
+{
+    global $USER, $language;
 
-			echo '<form class="wall-form" name="addComment" method="POST" action="comments.take.php">';
-			echo '<div class="wall-form-row">';
-			echo '<div class="wall-form-avatar"><img src="'.$avatar.'" alt="'.htmlspecialchars($USER['name'], ENT_QUOTES, 'UTF-8').'" width="28" height="28"></div>';
-			echo '<div class="wall-form-body">';
-			echo '<textarea class="wall-form-textarea" id="wall-comment-text" name="text">'.htmlspecialchars((string) ($_POST['text'] ?? ''), ENT_QUOTES, 'UTF-8').'</textarea>';
-			echo '<div class="wall-form-controls"><input class="wall-form-submit" value="Отправить" type="submit"></div>';
-			echo '</div>';
-			echo '</div>';
-			echo '<input type="hidden" value="'.$object_id.'" name="object_id">';
-			echo '<input type="hidden" value="'.$type.'" name="type">';
-			echo '<input type="hidden" value="'.$file.'" name="file">';
-			echo '<input type="hidden" value="add" name="act">';
-			echo '</form>';
-			return;
-		}
+    if (empty($USER) || !is_array($USER)) {
+        return;
+    }
 
-		echo '<form name="addComment" method="POST" action="comments.take.php"> ';
-		textbb('text' , $_POST['descr'] ?? '',  '95%' , '300px');
-		echo '<br><input value="'.$language['comments_1'].'"  type="submit" >';
-		echo '<input type="hidden" value="'.$object_id.'" name="object_id">';
-		echo '<input type="hidden" value="'.$type.'" name="type">';
-		echo '<input type="hidden" value="'.$file.'" name="file">';
-		echo '<input type="hidden" value="add" name="act">';
-		echo '</form>';
-		echo '<br>';
-	}	
-}
+    $type = (string) $type;
+    $object_id = (int) $object_id;
+    $file = (string) $file;
 
-//Форма добавления комментария
-function listComment($type = "" , $object_id = "" , $file = "" , $desc = 0) {
-	global $USER , $PRIV , $config , $db, $language , $rewrite , $memcache;
-	
-	
-	//Js functions
-	echo '<script src="/public/js/comments.js"> </script>';
-	
-	//////////////////////////////////////////////////////////////////
-	//Вывод комментариев
-	//////////////////////////////////////////////////////////////////
-	//Постраничная навигация
-	$res = $db->query("SELECT * FROM comments_".$type."  WHERE id_".$type."=".$object_id."");
-	
-	$count = $db->num_rows();
-	list($pagertop, $pagerbottom, $limit) = pager('20', $count, $file.'id='.$object_id.'&' ,  array('lastpagedefault' => 1)); //Делим на страницы
-	
-	
-	$query = queryComment($type , $object_id ,$limit , $desc);
-	$sql = $db->query($query);
-	
-	
-	// echo ($USER ?  "<input type=\"button\" value=\"".$language['comments_1']."\" onClick=\"upCommentForm();return false;\">" : '');
-	
-	
+    // Поддерживаем оба варианта, чтобы не ломать старую логику:
+    // некоторые части системы могли отправлять text, а некоторые descr.
+    $postedText = '';
+    if (isset($_POST['text'])) {
+        $postedText = (string) $_POST['text'];
+    } elseif (isset($_POST['descr'])) {
+        $postedText = (string) $_POST['descr'];
+    }
 
-	//Проверка, существуют ли комментарии
-	if(!$db->num_rows($sql) ) {
-		if ($type == 'users') {
-			echo '<div class="wall-comment-empty">На стене пока нет комментариев.</div>';
-		} else {
-			msg($language['comments_2'], '' , 'error');
-		}
-	} else {
-		echo $pagertop;
-		//Выводим в цикле комментарии
-		while($arr  = $db->get_row($sql) )
-        {
-			$id = $arr['comment_id']; //Номер комментария
-			$text = cleanhtml($arr['text']); //Текст комментария
-			
-			
-			$user = get_user_info($arr['id_user']);
-			$user_id = $user['id']; //Номер пользователя
-			if ($type == 'users') {
-				$avatarPath = (!empty($user['avatar']) && is_file('public/avatars/small/'.$user['avatar']) ? 'public/avatars/small/'.$user['avatar'] : 'public/images/default_avatar.gif');
-				$avatar = '<img src="'.$avatarPath.'" border="0" width="28" height="28" alt="'.htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8').'">';
-			} else {
-				$avatar = ($user['avatar'] == "" ? '<center><img src="public/images/default_avatar.gif" border="0" width="50"></center>' : '<center><img src="public/avatars/'.$user['avatar'].'" border="0" width="50"></center>'); //Фотография пользователя
-			}
-			
-			$user_name = $user['name']; //Имя пользователя
-			$user_class = $user['class']; //Класс пользователя
-			$date = convent_date($arr['date']);
-			
-			$append_edit = ($arr['date_edit'] != '0000-00-00 00:00:00' ?   $language['comments_3'].' '.convent_date($arr['date_edit']) : ''); //Дата правки комментария
-			
-			require 'templates/'.$config['template'].'/tpl.comments.php';
-		}
-		
-		echo $pagertop;	
-	}
-	
-	
-	//////////////////////////////////////////////////////////////////
-	//Форма добавления
-	//////////////////////////////////////////////////////////////////
-	addComment($type , $object_id, $file );
-	
+    if ($type === 'users') {
+        $avatar = 'public/images/default_avatar.gif';
+        if (!empty($USER['avatar']) && is_file('public/avatars/small/' . $USER['avatar'])) {
+            $avatar = 'public/avatars/small/' . $USER['avatar'];
+        }
 
-	
+        echo '<form class="wall-form" name="addComment" method="post" action="comments.take.php">';
+        echo '<div class="wall-form-row">';
+        echo '<div class="wall-form-avatar"><img src="' . $avatar . '" alt="' . htmlspecialchars((string) ($USER['name'] ?? ''), ENT_QUOTES, 'UTF-8') . '" width="28" height="28"></div>';
+        echo '<div class="wall-form-body">';
+        echo '<textarea class="wall-form-textarea" id="wall-comment-text" name="text">' . htmlspecialchars($postedText, ENT_QUOTES, 'UTF-8') . '</textarea>';
+        echo '<div class="wall-form-controls"><input class="wall-form-submit" value="Отправить" type="submit"></div>';
+        echo '</div>';
+        echo '</div>';
+        echo '<input type="hidden" name="object_id" value="' . $object_id . '">';
+        echo '<input type="hidden" name="type" value="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '">';
+        echo '<input type="hidden" name="file" value="' . htmlspecialchars($file, ENT_QUOTES, 'UTF-8') . '">';
+        echo '<input type="hidden" name="act" value="add">';
+        echo '</form>';
+        return;
+    }
+
+    echo '<form name="addComment" method="post" action="comments.take.php">';
+    textbb('text', $postedText, '95%', '300px');
+    echo '<br><input value="' . htmlspecialchars((string) ($language['comments_1'] ?? 'Отправить'), ENT_QUOTES, 'UTF-8') . '" type="submit">';
+    echo '<input type="hidden" name="object_id" value="' . $object_id . '">';
+    echo '<input type="hidden" name="type" value="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '">';
+    echo '<input type="hidden" name="file" value="' . htmlspecialchars($file, ENT_QUOTES, 'UTF-8') . '">';
+    echo '<input type="hidden" name="act" value="add">';
+    echo '</form>';
+    echo '<br>';
 }
 
 
-//Запрос комментирования
-function queryComment($type , $object_id , $limit , $desc) {
+// Список комментариев
+function listComment($type = '', $object_id = '', $file = '', $desc = 0)
+{
+    global $USER, $PRIV, $config, $db, $language;
 
-	//Query to database
-	$query  = "SELECT comments_".$type.".* , comments_".$type.".id AS comment_id 
-			   FROM comments_".$type."  
-			   LEFT JOIN ".$type." ON ".$type.".id =  comments_".$type.".id_".$type."
-			   WHERE comments_".$type.".id_".$type." = ".$object_id."
-			   ORDER BY  comments_".$type.".date ".($desc ? 'DESC' : 'ASC')."
-			   ".$limit."
-			   ";
-	return $query;		   
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $object_id = (int) $object_id;
+    $file = (string) $file;
+    $desc = (int) $desc;
+
+    if ($type === '' || $object_id <= 0) {
+        return;
+    }
+
+    echo '<script src="/public/js/comments.js"></script>';
+
+    $countRow = $db->super_query("SELECT COUNT(*) AS cnt FROM comments_{$type} WHERE id_{$type} = {$object_id}");
+    $count = isset($countRow['cnt']) ? (int) $countRow['cnt'] : 0;
+
+    list($pagertop, $pagerbottom, $limit) = pager('20', $count, $file . 'id=' . $object_id . '&', array('lastpagedefault' => 1));
+    $showPager = ($count > 20);
+
+    $query = queryComment($type, $object_id, $limit, $desc);
+    $sql = $db->query($query);
+
+    if (!$db->num_rows($sql)) {
+        if ($type === 'users') {
+            echo '<div class="wall-comment-empty">На стене пока нет комментариев.</div>';
+        } else {
+            msg($language['comments_2'] ?? 'Комментариев пока нет.', '', 'error');
+        }
+    } else {
+        if ($showPager) {
+            echo $pagertop;
+        }
+
+        if ($type === 'users') {
+            echo '<div class="wall-comments-list">';
+        }
+
+        while ($arr = $db->get_row($sql)) {
+            $id = isset($arr['comment_id']) ? (int) $arr['comment_id'] : 0;
+            if ($id <= 0) {
+                continue;
+            }
+            $text = cleanhtml((string) ($arr['text'] ?? ''));
+
+            $user = get_user_info((int) ($arr['id_user'] ?? 0));
+            $user_id = isset($user['id']) ? (int) $user['id'] : 0;
+            $user_name = (string) ($user['name'] ?? 'Unknown');
+            $user_class = isset($user['class']) ? $user['class'] : 0;
+
+            if ($type === 'users') {
+                $avatarPath = 'public/images/default_avatar.gif';
+                if (!empty($user['avatar']) && is_file('public/avatars/small/' . $user['avatar'])) {
+                    $avatarPath = 'public/avatars/small/' . $user['avatar'];
+                }
+                $avatar = '<img src="' . $avatarPath . '" border="0" width="28" height="28" alt="' . htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8') . '">';
+            } else {
+                if (!empty($user['avatar']) && is_file('public/avatars/' . $user['avatar'])) {
+                    $avatar = '<center><img src="public/avatars/' . htmlspecialchars($user['avatar'], ENT_QUOTES, 'UTF-8') . '" border="0" width="50"></center>';
+                } else {
+                    $avatar = '<center><img src="public/images/default_avatar.gif" border="0" width="50"></center>';
+                }
+            }
+
+            $date = !empty($arr['date']) ? convent_date($arr['date']) : '';
+            $append_edit = (!empty($arr['date_edit']) && $arr['date_edit'] !== '0000-00-00 00:00:00')
+                ? (($language['comments_3'] ?? 'Изменено:') . ' ' . convent_date($arr['date_edit']))
+                : '';
+
+            if ($append_edit === '' && empty($arr['date'])) {
+                $append_edit = '';
+            }
+
+            $templateFile = 'templates/' . $config['template'] . '/tpl.comments.php';
+            if (is_file($templateFile)) {
+                require $templateFile;
+            } else {
+                echo '<div class="wall-comment-fallback">';
+                echo '<strong>' . htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8') . '</strong><br>';
+                echo $text;
+                echo '</div>';
+            }
+        }
+
+        if ($type === 'users') {
+            echo '</div>';
+        }
+
+        if ($showPager) {
+            echo $pagerbottom;
+        }
+    }
+
+    addComment($type, $object_id, $file);
 }
 
-//Статусы
-function comment_status() {
-	global $language;
-	if($_GET['status'] == '1') {
-		msg($language['comments_6']);
-	} elseif($_GET['status'] == '2') {
-		msg($language['comments_7']);
-		
-	}elseif($_GET['status'] == '3') {
-		msg($language['comments_8']);	
-	}
+
+// Запрос списка комментариев
+function queryComment($type, $object_id, $limit, $desc)
+{
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $object_id = (int) $object_id;
+    $desc = (int) $desc;
+    $limit = trim((string) $limit);
+
+    if ($type === '' || $object_id <= 0) {
+        return 'SELECT 1 WHERE 0';
+    }
+
+    $query = "SELECT comments_{$type}.*, comments_{$type}.id AS comment_id
+              FROM comments_{$type}
+              WHERE comments_{$type}.id_{$type} = {$object_id}
+              ORDER BY comments_{$type}.date " . ($desc ? 'DESC' : 'ASC') . "
+              {$limit}";
+
+    return $query;
+}
+
+
+// Статусы
+function comment_status()
+{
+    global $language;
+
+    $status = isset($_GET['status']) ? (string) $_GET['status'] : '';
+
+    if ($status === '1') {
+        msg($language['comments_6'] ?? 'Комментарий успешно добавлен.');
+    } elseif ($status === '2') {
+        msg($language['comments_7'] ?? 'Комментарий успешно изменен.');
+    } elseif ($status === '3') {
+        msg($language['comments_8'] ?? 'Комментарий удален.');
+    }
 }
 ?>
