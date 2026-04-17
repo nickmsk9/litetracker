@@ -13,6 +13,8 @@ by jenaDI
 require 'system/init.php';
 require 'system/functions/functions.benc.php';
 
+$act = isset($_GET['act']) ? (string)$_GET['act'] : '';
+
 //Проверка авторизации
 is_login();
 
@@ -21,15 +23,15 @@ if(!$PRIV['upload']) {
 }
 
 
-//Проверка категории 
-if($_GET['act'] == 'next' || $_GET['act'] == 'take') {
+//Проверка категории
+if($act === 'next' || $act === 'take') {
 	//Категория
-	$catid = (int)$_REQUEST['catid'];	
+	$catid = (int)$_REQUEST['catid'];
 	$db->query("SELECT * FROM categories WHERE id=".$catid);
 	if($db->num_rows() == 0) {
 		err($language['default_1'] , $language['upload_3'] , 1 );
 	}
-	
+
 	$arr = $db->get_row();
 	$template = $arr['template'];
 }
@@ -37,7 +39,7 @@ if($_GET['act'] == 'next' || $_GET['act'] == 'take') {
 /////////////////////////////////////////////////////////////////////
 //Вывод категорий
 /////////////////////////////////////////////////////////////////////
-if($_GET['act'] == '' || !isset($_GET['act']) ) {
+if($act === '') {
 	//Получаем список категорий
 	if (false === ($cache_result = $memcache->get('upload_categories')))
 	{
@@ -45,7 +47,7 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 		$cats = $db->query("SELECT * FROM categories") or sqlerr(__FILE__, __LINE__);
 		while($arr = $db->get_row() )
 			$categories_who[] = $arr;
-		
+
 		$memcache->set('upload_categories', $categories_who , 0, (24*60*60));
 		$cache_result = $categories_who;
 	}
@@ -77,7 +79,7 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 	//Подвал
 	foot(true);
 	die();
-} elseif($_GET['act'] == 'next') {
+} elseif($act === 'next') {
 /////////////////////////////////////////////////////////////////////
 //Вывод формы
 /////////////////////////////////////////////////////////////////////
@@ -87,17 +89,17 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 	msg('Все поля которые выделены чертой , обязательны к заполнению' , 'Релиз будет активный если у него есть торрент-файл, и обложка!');
 	begin_frame('Загрузка');
 	?>
-	
+
 
 	<!--ТЕГИ-->
 	<script type="text/javascript" src="public/js/tagto.js"> </script>
 	<script type="text/javascript">
-		
+
 		$(document).ready(function(){
 			$("#from").tagTo("#tags");
-		});	
-		
-	
+		});
+
+
 	</script>
 
 
@@ -139,10 +141,10 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 			<input type="file" name="screenshot[]" size="50%"> <br>
 		</td><td>
 	   </td></tr>
-	  
-	
 
-	
+
+
+
 	<!--Название -->
 
 	<tr>
@@ -151,15 +153,15 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 		</td>
 		<td style="padding: 0px;">
 		 <input type="text" style="margin: 0px;" size="50%"  name="name" class="inputText">
-		
+
 		</td><td>
 	   </td></tr>
-	   
+
 
 	<!--Описание-->
 
 	<tr>
-		<td colspan="2"><?=textbb('descr' , ($_POST['descr'] ? $_POST['descr']  : upload_text_category($template) ) ,  '95%' , '300');?></td>
+		<td colspan="2"><?=textbb('descr', isset($_POST['descr']) && $_POST['descr'] !== '' ? (string)$_POST['descr'] : upload_text_category($template), '95%', '300');?></td>
 	</tr>
 
 	<tr>
@@ -167,26 +169,26 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 		 <span class="grey"><?=$language['upload_12'];?>:</span>
 		</td>
 		<td style="padding: 0px;">
-		<input type="text" name="tags" id="tags" size="70"> 
+		<input type="text" name="tags" id="tags" size="70">
 		<?
 		///////////////////////////////////////////////////////////
 		//Теги
 		///////////////////////////////////////////////////////////
-		
+
 		$tags = taggenrelist($catid);
-		
+		$tags_echo = '';
 		$tags_echo .= '<div id="from">';
 		if (!$tags) {
-			$tags_echo .=  '<small>'.$language['upload_13'].'</small>';	
-		}	
+			$tags_echo .=  '<small>'.$language['upload_13'].'</small>';
+		}
 		else {
 			foreach ($tags as $row)
 				$tags_echo .= "<a href='#'>" . htmlspecialchars($row["name"]) . "</a>\n";
 		}
-		$tags_echo .= "</div>\n";	
-		
+		$tags_echo .= "</div>\n";
+
 		msg_ajax($tags_echo , (!$tags ? 'ajaxerror' : 'ajaxsuccess'));
-		?>	
+		?>
 		</td><td>
 	   </td></tr>
 
@@ -199,8 +201,8 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 			<input type="checkbox" name="multi" value="1"/>&nbsp<?=$language['upload_15'];?>
 		</td><td>
 	   </td></tr>
-	   
-	  <tr> 
+
+	  <tr>
 		  <td class="ta_r">
 		 <span class="grey"><?=$language['upload_16'];?>:</span>
 		</td>
@@ -208,20 +210,20 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 			<input type="text" name="video_vkontakte" size="70"/>
 			<br> <small><br><?=$language['upload_17'];?></small>
 		</td><td>
-	   </td></tr> 
+	   </td></tr>
 
 	 <?
 	 if($PRIV['edit_news']) { ?>
-	   <tr> 
+	   <tr>
 		  <td class="ta_r">
 		 <span class="grey"><?=$language['upload_39'];?>:</span>
 		</td>
 		<td style="padding: 0px;">
 			<input type="checkbox" value="1" name="news">&nbsp<?=$language['upload_40'];?>
-			
+
 		</td><td>
-	   </td></tr> 
-	 
+	   </td></tr>
+
 	 <? } ?>
 
 	</tbody>
@@ -241,11 +243,11 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 	foot(true);
 	die();
 
-} elseif ($_GET['act'] == 'take') {
+} elseif ($act === 'take') {
 /////////////////////////////////////////////////////////////////////
 //Обработка
 /////////////////////////////////////////////////////////////////////
-	
+
 	/*
 	===================================
 	Торрент
@@ -253,27 +255,27 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 	*/
 
 	//Файл
-	$f = $_FILES["file"];
-	
+	$f = isset($_FILES['file']) && is_array($_FILES['file']) ? $_FILES['file'] : array('name' => '', 'tmp_name' => '', 'type' => '', 'size' => 0, 'error' => 0);
+
 	//Если есть торрент проверяем его
 	if(!($_FILES['file']['name'] == ""))  {
 		//Имя файла
 		$fname = trim($f["name"]);
 		if (empty($fname) ) {
-			err($language['default_1'] , $language['upload_19'] , 1); 
-		}	
-
-		//Проверяем имя торрент-файла	
-		if (!validfilename($fname) ) {
-			err($language['default_1'] , $language['upload_20'] , 1); 
+			err($language['default_1'] , $language['upload_19'] , 1);
 		}
-			
+
+		//Проверяем имя торрент-файла
+		if (!validfilename($fname) ) {
+			err($language['default_1'] , $language['upload_20'] , 1);
+		}
+
 		//Проверяем формат
 		if (!preg_match('/^(.+)\.torrent$/si', $fname, $matches) ) {
-			err($language['default_1'] , $language['upload_21'] , 1); 
-		}	
+			err($language['default_1'] , $language['upload_21'] , 1);
+		}
 
-			
+
 		//Проверяем, загрузиться ли файл через HTTP POST
 		$tmpname = $f["tmp_name"];
 		if (!is_uploaded_file($tmpname)) {
@@ -299,7 +301,7 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 		unset($dict['value']['publisher-url']);
 		unset($dict['value']['publisher-url.windows-1251']);
 
-		$multi =  ($_POST['multi'] == 1 ? 1 : 0);
+		$multi = (isset($_POST['multi']) && (string)$_POST['multi'] === '1') ? 1 : 0;
 
 
 		if (!$multi) {
@@ -348,13 +350,13 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 				err("filename error");
 				$ffe = implode("/", $ffa);
 				$filelist[] = array($ffe, $ll);
-				
+
 				if ($ffe == 'Thumbs.db'){
 					err($language['default_1'], $language['upload_44'] , 1);
 				}
 			}
 			$type = 'multi';
-			
+
 		}
 
 
@@ -362,28 +364,28 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 		$infohash = sha1($info["string"]);
 
 	}
-	
-	
+
+
 	/*
 	===================================
 	Содержимое(описание)
 	===================================
 	*/
-	//Имя 
-	$name = trim($_POST['name']);
+	//Имя
+	$name = isset($_POST['name']) ? trim((string)$_POST['name']) : '';
 	if(empty($name) ) {
 		err($language['default_1']  , $language['upload_25'] , 1);
 	}
 
-	//Описание 
-	$descr = $_POST['descr'];
+	//Описание
+	$descr = isset($_POST['descr']) ? (string)$_POST['descr'] : '';
 
 	if(empty($descr) ) {
 		err($language['default_1']  , $language['upload_26'] , 1);
 	}
 
 
-	
+
 	/*
 	===================================
 	Обложка
@@ -399,14 +401,13 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 		"image/png" => "png"
 	);
 
+	if (isset($_FILES['image']['name']) && $_FILES['image']['name'] !== '') {
 
-	if (!($_FILES['image']['name'] == "")) {
-		
 			//Проверяем тип обложки
 			if (!array_key_exists($_FILES['image']['type'], $allowed_types) ) {
 				err($language['default_1'] , $language['upload_27'] , 1);
 			}
-			
+
 			if (!preg_match('/^(.+)\.(jpg|jpeg|png|gif)$/si', $_FILES['image']['name']) ) {
 				err($language['default_1'] , $language['upload_28'] , 1);
 			}
@@ -434,10 +435,10 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 			if (!$copy) {
 				err($language['default_1'] , $language['upload_30'] , 1);
 			}
-		
+
 			$image = $ifilename;
 
-	} 
+	}
 
 
 	/*
@@ -445,10 +446,14 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 	Скриншоты
 	===================================
 	*/
+	if (!isset($next_id)) {
+		$row = $db->super_query("SHOW TABLE STATUS LIKE 'torrents'");
+		$next_id = isset($row['Auto_increment']) ? (int)$row['Auto_increment'] : 0;
+	}
 	$screenshot = array();
 	for ($x=0; $x < 4; $x++) {
 
-		if (!($_FILES['screenshot']['name'][$x] == "")) {
+		if (isset($_FILES['screenshot']['name'][$x]) && $_FILES['screenshot']['name'][$x] !== '') {
 			$y = $x + 1;
 
 			// Is valid filetype?
@@ -486,20 +491,20 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 
 	}
 
-	//Теги 
-	$tags = trim($_POST['tags']);
+	//Теги
+	$tags = isset($_POST['tags']) ? trim((string)$_POST['tags']) : '';
 	// $tags = str_replace($replace, ",", $_POST["tags"], MB_CASE_TITLE, $config['mysql']['charset'])));
 
 
 	//Видео Вконтакте
-	$video_vkontakte = trim($_POST['video_vkontakte']);
+	$video_vkontakte = isset($_POST['video_vkontakte']) ? trim((string)$_POST['video_vkontakte']) : '';
 	if(!preg_match("#http\:\\/\\/vkontakte\.ru\\/video_ext\.php\?oid=(\d+)|-(\d+)\&id=(\d+)\&hash=(.*?)\&hd=1#i" , $video_vkontakte) && !empty($video_vkontakte) ) {
 		err($language['default_1'] , $language['upload_36'] , 1);
 	}
 
 	//Новинка месяца
 	if($PRIV['edit_news']) {
-		$news = ($_POST['news'] == '1' ? '1' : '0');
+		$news = (isset($_POST['news']) && (string)$_POST['news'] === '1') ? '1' : '0';
 	} else {
 		$news = '0';
 	}
@@ -509,9 +514,20 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 	Добавление в базу
 	===================================
 	*/
-	
-	
-	
+
+	$fname = isset($fname) ? $fname : '';
+	$type = isset($type) ? $type : '';
+	$totallen = isset($totallen) ? $totallen : 0;
+	$infohash = isset($infohash) ? $infohash : '';
+	$image = isset($image) ? $image : '';
+	$multi = isset($multi) ? $multi : 0;
+	$filelist = isset($filelist) && is_array($filelist) ? $filelist : array();
+	$anarray = isset($anarray) && is_array($anarray) ? $anarray : array();
+	$screenshot[0] = isset($screenshot[0]) ? $screenshot[0] : '';
+	$screenshot[1] = isset($screenshot[1]) ? $screenshot[1] : '';
+	$screenshot[2] = isset($screenshot[2]) ? $screenshot[2] : '';
+	$screenshot[3] = isset($screenshot[3]) ? $screenshot[3] : '';
+
 	$add = $db->query("INSERT INTO torrents  (name , filename , num_files , type ,  size , descr , infohash , tags , id_category , id_user , added , image , multi  , screen_1 , screen_2 , screen_3 , screen_4 , video_vkontakte , news) VALUES ('".$db->safesql($name)."' , '".$db->safesql($fname)."' ,  ".count($filelist).", '".$type."' ,  '".$totallen."' ,  '".$db->safesql($descr)."' , '".$db->safesql($infohash)."' , '".$db->safesql($tags)."' ,  '".$catid."' , '".$USER['id']."' ,  NOW() ,  '".$db->safesql($image)."' , '".$multi."' , '".$db->safesql($screenshot['0'])."' ,   '".$db->safesql($screenshot['1'])."' ,  '".$db->safesql($screenshot['2'])."' ,  '".$db->safesql($screenshot['3'])."' , '".$db->safesql($video_vkontakte)."' , '".$news."')" , 0);
 	if(!$add) {
 		err($language['default_1'] , $language['upload_37'] , 1);
@@ -519,19 +535,19 @@ if($_GET['act'] == '' || !isset($_GET['act']) ) {
 
 	//ID торрента
 	$id = $db->insert_id();
-	
+
 	//Создаем информацию о торренте
 	$db->query("DELETE FROM files WHERE id_torrent=".$id); //Удаляем старые данные
 	foreach ($filelist as $file) {
 		$db->query("INSERT INTO files (id_torrent, filename, size) VALUES (".$id.", '".$db->safesql($file[0])."', '".$file[1]."')");
 	}
-	
-	
+
+
 	//Добавляем локальные трекеры
 	$db->query("INSERT INTO trackers (torrent,tracker) VALUES ('".$id."','localhost')");
 
 	//Добавляем мультитрекеры
-	if ($anarray) {
+	if (!empty($anarray)) {
 			foreach ($anarray as $anurl) $db->query("INSERT INTO trackers (torrent,tracker) VALUES ('".$id."','".$db->safesql($anurl)."')");
 	}
 
