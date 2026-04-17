@@ -9,7 +9,7 @@ if ($type == 'users') {
         <a class="wall-comment-avatar" href="<?=profile_href($user_id);?>"><?=$avatar;?></a>
         <div class="wall-comment-body">
             <div class="wall-comment-meta">
-                <a class="wall-comment-author" href="<?=profile_href($user_id);?>"><?=htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8');?></a>
+                <a class="wall-comment-author" href="<?=profile_href($user_id);?>"><?=get_user_color($user_class, htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8'));?></a>
                 <span class="wall-comment-date"><?=($append_edit ? htmlspecialchars($append_edit, ENT_QUOTES, 'UTF-8') : htmlspecialchars($date, ENT_QUOTES, 'UTF-8'));?></span>
             </div>
             <div class="wall-comment-text"><?=$text;?></div>
@@ -18,11 +18,11 @@ if ($type == 'users') {
                     <button class="wall-comment-button" type="button" onclick="return replyWallComment('<?=htmlspecialchars(addslashes($user_name), ENT_QUOTES, 'UTF-8');?>');">Ответить</button>
                 <?php } ?>
 
-                <?php if (!empty($USER['id']) && ($USER['id'] == $user_id || !empty($PRIV['comments_edit']))) { ?>
+                <?php if (!empty($PRIV['comments_edit'])) { ?>
                     <a class="wall-comment-button" href="comments.take.php?type=<?=urlencode($type);?>&amp;object_id=<?=(int)$object_id;?>&amp;id_comment=<?=(int)$id;?>&amp;act=edit&amp;file=<?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?>"><?=$language['comments_4'];?></a>
                 <?php } ?>
 
-                <?php if (!empty($USER['id']) && ($USER['id'] == $user_id || !empty($PRIV['comments_delete']))) { ?>
+                <?php if (!empty($PRIV['comments_delete'])) { ?>
                     <a class="wall-comment-button" href="comments.take.php?type=<?=urlencode($type);?>&amp;object_id=<?=(int)$object_id;?>&amp;id_comment=<?=(int)$id;?>&amp;act=delete&amp;file=<?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?>"><?=$language['comments_5'];?></a>
                 <?php } ?>
             </div>

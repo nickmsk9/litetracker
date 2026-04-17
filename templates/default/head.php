@@ -44,6 +44,8 @@ if (!empty($USER['theme_dark'])) {
 <link href="templates/<?=$tpl;?>/css/my.css" rel="stylesheet" type="text/css">
 </head>
 <body<?=($bodyClasses ? ' class="'.htmlspecialchars(implode(' ', $bodyClasses), ENT_QUOTES, 'UTF-8').'"' : '');?>>
+<div class="site-wrapper">
+	<div class="site-content">
 <div class="site-header-band">
 	<div class="site-shell site-shell-band">
 	<header class="site-header">
@@ -66,7 +68,7 @@ if (!empty($USER['theme_dark'])) {
 
 			<div class="site-header-tools">
 				<?php if ($USER) { ?>
-				<a class="site-alert-button<?=($messagesCount > 0 ? ' site-alert-button-active' : '');?>" href="my.mail.php" aria-label="Сообщения<?=($messagesCount > 0 ? ': '.$messagesBadge : '');?>">
+				<a class="site-alert-button<?=($messagesCount > 0 ? ' site-alert-button-active' : '');?>" href="my.mail.php?act=conversation&amp;system=1" aria-label="Оповещения<?=($messagesCount > 0 ? ': '.$messagesBadge : '');?>">
 					<svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M12 3a5 5 0 0 0-5 5v2.42c0 .8-.32 1.56-.88 2.12L4.3 14.36a1 1 0 0 0 .7 1.71h14a1 1 0 0 0 .7-1.71l-1.82-1.82A3 3 0 0 1 17 10.42V8a5 5 0 0 0-5-5Zm0 18a3 3 0 0 0 2.82-2H9.18A3 3 0 0 0 12 21Z" fill="currentColor"/>
 					</svg>
@@ -78,7 +80,7 @@ if (!empty($USER['theme_dark'])) {
 				<details class="site-user-dropdown">
 					<summary class="site-user-summary">
 						<span class="site-user-avatar"><img src="<?=$avatar;?>" alt="<?=htmlspecialchars($USER['name'], ENT_QUOTES, 'UTF-8');?>" width="38" height="38"></span>
-						<span class="site-user-name"><?=htmlspecialchars($USER['name'], ENT_QUOTES, 'UTF-8');?></span>
+						<span class="site-user-name"><?=get_user_color((int) ($USER['class'] ?? 0), htmlspecialchars((string) $USER['name'], ENT_QUOTES, 'UTF-8'));?></span>
 						<span class="site-user-arrow">
 							<svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true">
 								<path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

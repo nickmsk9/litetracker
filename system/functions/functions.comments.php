@@ -296,6 +296,8 @@ function user_wall_render_node($node, $objectId, $level = 0)
     $commentUserId = (int) ($node['id_user'] ?? 0);
     $commentUser = get_user_info($commentUserId);
     $commentUserName = (string) ($commentUser['name'] ?? 'Unknown');
+    $commentUserNameSafe = htmlspecialchars($commentUserName, ENT_QUOTES, 'UTF-8');
+    $commentUserColored = get_user_color((int) ($commentUser['class'] ?? 0), $commentUserNameSafe);
     $commentProfileHref = profile_href($commentUserId);
     $commentAvatarPath = 'public/images/default_avatar.gif';
 
@@ -310,17 +312,17 @@ function user_wall_render_node($node, $objectId, $level = 0)
     $commentText = cleanhtml((string) ($node['text'] ?? ''));
     $commentTextRaw = (string) ($node['text'] ?? '');
     $children = (!empty($node['children']) && is_array($node['children']) ? $node['children'] : array());
-    $canEdit = (!empty($USER['id']) && ((int) $USER['id'] === $commentUserId || !empty($PRIV['comments_edit'])));
-    $canDelete = (!empty($USER['id']) && ((int) $USER['id'] === $commentUserId || !empty($PRIV['comments_delete'])));
+    $canEdit = (!empty($USER['id']) && !empty($PRIV['comments_edit']));
+    $canDelete = (!empty($USER['id']) && !empty($PRIV['comments_delete']));
     $canReport = (!empty($USER['id']) && (int) $USER['id'] !== $commentUserId);
 
     echo '<article class="wall-comment'.($children ? ' wall-comment-has-children' : '').'" data-comment-id="'.$commentId.'" data-wall-level="'.$level.'">';
     echo '<a class="wall-comment-avatar" href="'.$commentProfileHref.'">';
-    echo '<img src="'.$commentAvatarPath.'" alt="'.htmlspecialchars($commentUserName, ENT_QUOTES, 'UTF-8').'" width="28" height="28">';
+    echo '<img src="'.$commentAvatarPath.'" alt="'.$commentUserNameSafe.'" width="28" height="28">';
     echo '</a>';
     echo '<div class="wall-comment-body">';
     echo '<div class="wall-comment-meta">';
-    echo '<a class="wall-comment-author" href="'.$commentProfileHref.'">'.htmlspecialchars($commentUserName, ENT_QUOTES, 'UTF-8').'</a>';
+    echo '<a class="wall-comment-author" href="'.$commentProfileHref.'">'.$commentUserColored.'</a>';
     echo '<span class="wall-comment-date">'.htmlspecialchars(($commentEditedLabel !== '' ? $commentEditedLabel : $commentDate), ENT_QUOTES, 'UTF-8').'</span>';
     echo '</div>';
     echo '<div class="wall-comment-text">'.$commentText.'</div>';
@@ -329,7 +331,7 @@ function user_wall_render_node($node, $objectId, $level = 0)
     echo '<div class="wall-comment-actions">';
 
     if (!empty($USER)) {
-        echo '<button class="wall-comment-button" type="button" data-wall-reply="1" data-comment-id="'.$commentId.'" data-author-name="'.htmlspecialchars($commentUserName, ENT_QUOTES, 'UTF-8').'">Ответить</button>';
+        echo '<button class="wall-comment-button" type="button" data-wall-reply="1" data-comment-id="'.$commentId.'" data-author-name="'.$commentUserNameSafe.'">Ответить</button>';
     }
 
     if ($canEdit) {

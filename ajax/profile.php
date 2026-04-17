@@ -110,7 +110,7 @@ if ($action === 'wall_edit') {
 		profile_ajax_response(false, 'Комментарий не найден.');
 	}
 
-	if ((int) $USER['id'] !== (int) $comment['id_user'] && empty($PRIV['comments_edit'])) {
+	if (empty($PRIV['comments_edit'])) {
 		profile_ajax_response(false, 'У вас недостаточно прав для редактирования.');
 	}
 
@@ -141,7 +141,7 @@ if ($action === 'wall_delete') {
 		profile_ajax_response(false, 'Комментарий не найден.');
 	}
 
-	if ((int) $USER['id'] !== (int) $comment['id_user'] && empty($PRIV['comments_delete'])) {
+	if (empty($PRIV['comments_delete'])) {
 		profile_ajax_response(false, 'У вас недостаточно прав для удаления.');
 	}
 

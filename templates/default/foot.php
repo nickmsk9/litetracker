@@ -17,15 +17,46 @@ $showStandardSidebar = (!defined('LIGHT') && !empty($GLOBALS['LITETRACKER_STANDA
 		<?php } ?>
 	</div>
 </div>
-
-<div class="site-footer-band">
-	<div class="site-shell site-shell-band">
-		<footer class="site-footer">
-			<div class="site-footer-copy">
-				<noindex><?php echo LITETRACKER_COPYRIGHT; ?></noindex>
-			</div>
-		</footer>
-	</div>
 </div>
+
+<div style="clear: both;"></div>
+<footer class="footer">
+	<div class="wrapper pd20 clearfix">
+		<div class="pull-left mr20">
+			<a href="/" class="logo">LiteTracker</a>
+		</div>
+
+		<div class="pull-left">
+			<div>LiteTracker &copy; 2026</div>
+
+			<div class="clearfix">
+				<div class="pull-left mr40"><a href="/rules.php" class="u">Правила</a></div>
+				<div class="pull-left mr40"><a href="/faq.php" class="u">FAQ</a></div>
+				<div class="pull-left mr40"><a href="/topten.php" class="u">Топ</a></div>
+				<div class="pull-left mr40"><a href="/browse.php" class="u">Торренты</a></div>
+				<div class="pull-left mr40"><a href="/upload.php" class="u">Загрузка</a></div>
+				<div class="pull-left"><a href="/contact.php" class="u">Обратная связь</a></div>
+			</div>
+		</div>
+	</div>
+
+	<hr class="m0">
+
+	<div class="wrapper pd20 clearfix">
+		<div class="adults-only pull-left mr20">
+			<i class="s-icons-18plus iblock pull-left mr20"></i>
+			<div class="oh">Сайт может содержать материалы не&nbsp;предназначенные для лиц младше 18&nbsp;лет.</div>
+		</div>
+
+		<div class="social-links pull-right clearfix">
+			<a target="_blank" href="https://vk.com/animelayer" class="iblock pull-left mr10 s-icons-vkontakte"></a>
+			<a target="_blank" href="https://www.facebook.com/animelayer" class="iblock pull-left mr10 s-icons-facebook"></a>
+			<a target="_blank" href="https://twitter.com/animelayer" class="iblock pull-left mr10 s-icons-twitter"></a>
+			<a target="_blank" href="/rss/" class="iblock pull-left s-icons-rss"></a>
+		</div>
+	</div>
+</footer>
+</div>
+
 </body>
 </html>

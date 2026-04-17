@@ -12,13 +12,13 @@ by jenaDI
 //Информация о пользователе
 function get_user_info($id) {
 	global $db , $memcache;
-	
+
 	//Если нету id
-	if(!$id) { 
+	if(!$id) {
 		return false;
 	}
-	
-	//Запрос к таблице users 
+
+	//Запрос к таблице users
 	if (false === ($row = $memcache->get('user_'.$id)))
 	{
 		$sql = $db->query("SELECT * FROM users WHERE id = ".$id);
@@ -26,7 +26,7 @@ function get_user_info($id) {
 		$db->free($sql);
 		$memcache->set('user_'.$id, $row  , 0, rand(1500 , 3000) );
 	}
-	
+
 	return $row;
 }
 
@@ -231,21 +231,21 @@ function gzip() {
 //Head голова сайта
 function head($title = '' , $light = false , $description = '' , $keywords = '' ) {
 	global $config , $language , $USER , $db , $memcache, $PRIV , $rewrite;
-	
+
 	//Сайт открыт
 	if($config['siteonline'] == 0 ) {
 		die($language['template_26']);
 	}
-	
+
 	//Тема трекера
 	$tpl = $config['template'];
-	
+
 	//Название сайа | Название страницы
 	$sitename = $config['sitename'];
 	$title = (empty($title) ? '' : $title);
 	$header = '';
 
-	
+
 	//Формируем header
 	$header .= '<script type="text/javascript" src="public/js/jquery.js"></script>
 	';
@@ -253,17 +253,17 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 	';
 	$header .= '<script type="text/javascript" src="public/js/jquery.form.js"></script>
 	';
-	
+
 
 	$header .= '<script src="public/js/jquery-ui-1.8.4.custom.min.js" type="text/javascript" charset="utf-8"></script>
 				';
-	$header .= '<style type="text/css" media="all"> 
+	$header .= '<style type="text/css" media="all">
 				@import url(public/css/ajax_msg.css);
 				</style>';
-		
-	$header .= '<style type="text/css" media="all"> 
+
+	$header .= '<style type="text/css" media="all">
 				@import url(public/css/navigation.css);
-				</style>';			
+				</style>';
 	$header .=	'<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 	';
 	$header .=	'<title>'.$sitename.' » '.$title.'</title>
@@ -278,7 +278,7 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 	';
 	$header .= '<link href="public/css/ratio.css" rel="StyleSheet" type="text/css" />
 	';
-	
+
 	if($config['vkontakte_use']) {
 		$header .= '<script src="https://vk.com/js/api/openapi.js" type="text/javascript" charset="utf-8"></script>
 		';
@@ -292,66 +292,66 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 		</script>
 		';
 	}
-	
-	
-	
-	
-	//Подключаем шаблон	
-	require 'templates/'.$tpl.'/template.php';	
-	
+
+
+
+
+	//Подключаем шаблон
+	require 'templates/'.$tpl.'/template.php';
+
 	//Если шаблон легкий
 	if($light == true && !defined('LIGHT')) {
 		define('LIGHT'  , true);
 	}
-	
-	
+
+
 	require 'templates/'.$tpl.'/head.php';
 
-	
+
 
 }
 
 //Подвал сайта
 function foot($light = false) {
 	global $config , $language , $USER , $db , $memcache , $timer ,$PRIV , $rewrite , $CRON ;
-	
+
 	//Тема трекера
 	$tpl = $config['template'];
-	
-	
+
+
 	$timer['b'] = timer();
-	
+
 	//За сколько секунд загрузилась страница
 	$seconds = number_format($timer['b'] - $timer['a'] , 8);
-	
-	
+
+
 	//Если шаблон легкий
 	if($light == true && !defined('LIGHT')) {
 		define('LIGHT'  , true);
 	}
-	
-	
-	//Подключаем шаблон	
-	require 'templates/'.$tpl.'/foot.php';	
-	
+
+
+	//Подключаем шаблон
+	require 'templates/'.$tpl.'/foot.php';
+
 	//DEGUB SQL
 	if(DEGUB_SQL) {
 		foreach($db->query_list AS $res) {
 			echo '<b>'.$res['num'].' - ('.(round($res['time'] , 1) >= 0.6 ? '<font color="red">'.$res['time'].'</font>' : '<font color="green">'.$res['time'].'</font>' ).')</b>'.' - '.$res['query'].'<br><br>';
 		}
-	
+
 	}
-	
+
 	if(!$config['crontab']) {
 		//Autoclean system
 		if( (time() - $CRON['autoclean_last'] ) > $CRON['autoclean_interval'] ) {
 			echo '<img src="autoclean.php" border="0" width="0" height="0">';
 		}
 		//Multi Remote
-		if ($CRON['multi_remote'] && ( (time() - $CRON['last_remotecheck']) > $CRON['remotecheck_interval'])) { 
+		if ($CRON['multi_remote'] && ( (time() - $CRON['last_remotecheck']) > $CRON['remotecheck_interval'])) {
 			echo '<img width="0px" height="0px" alt="" title="" src="update.peers.php"/>';
 		}
-	}	
+	}
 }
 
 function stdfoot($light = false)
@@ -365,12 +365,12 @@ function stdfoot($light = false)
 //Определяем пользователя
 function user_check() {
 	global $config,$memcache , $db;
-	
+
 	//Удаляем USER
 	unset($GLOBALS["USER"]);
 	$updateset = array();
 
-	
+
 	$uid = (int)($_COOKIE[COOKIE_ID] ?? 0); //ID пользователя
 	$pass = $_COOKIE[COOKIE_PASSWORD] ?? ''; //PASSWORD пользователя
 
@@ -388,11 +388,11 @@ function user_check() {
 		$GLOBALS["PRIV"] = get_priv_info(0);
         return;
 	}
-	
+
 	//Информация о пользователе
 	$row = get_user_info($uid);
-	
-	
+
+
 	//Если запрос возвращает false
     if (!$row) {
 		//check user session
@@ -400,8 +400,8 @@ function user_check() {
 		$GLOBALS["PRIV"] = get_priv_info(0);
         return;
 	}
-	
-	
+
+
     $subnet = explode('.', getip());
 	$subnet[2] = $subnet[3] = 0;
 	$subnet = implode('.', $subnet); // 255.255.0.0
@@ -418,42 +418,42 @@ function user_check() {
     if ($ip != $row['ip']) {
         $updateset[] = 'ip = "'. $ip . '"';
 	}
-	
-	
+
+
 	//Обновляем время, если оно изменилось
     if (strtotime($row['last_access']) <= strtotime(get_date_time(gmtime() - (10*60)) ) ) {
        $updateset[] = 'last_access = "' . $db->safesql(get_date_time()).'"';
-	}   
-	
+	}
+
 	//Если что-нибудь требует обновлению - обновляем :D
     if (sizeof($updateset)) {
 		// $memcache->delete('user_'.$uid);
         $sql = $db->query("UPDATE LOW_PRIORITY users SET ".implode(", ", $updateset)." WHERE id=" . $row["id"]);
 		// $db->free($sql);
 	}
-		
+
 	//Определяем IP-адрем пользователя
     $row['ip'] = $ip;
 	//Определяем USER
-    $GLOBALS["USER"] = $row;	
+    $GLOBALS["USER"] = $row;
 	$GLOBALS["PRIV"] = get_priv_info($row['class']);
-	
-	
+
+
 	//check user session
 	user_session();
 }
 
 //Определяем сессию
-function user_session() 
+function user_session()
 {
 	global $USER , $config , $memcache ,$db;
-	
+
 	$update = array();
-	
+
 	//Определяем session_id
 	$session_id = session_id();
 	$update[] = 'session_id="'.$db->safesql($session_id).'"';
-	
+
 	//Определяем id пользователя
 	if($USER) {
 		$user_id = $USER['id'];
@@ -462,42 +462,42 @@ function user_session()
 		$user_id = '-1';
 	}
 	$update[] = 'user_id="'.$db->safesql($user_id).'"';
-	
-	
+
+
 	//Определяем время последнее вермя посещения сайта
 	$last_access = get_date_time(time());
 	$update[] = 'last_access="'.$last_access.'"';
-	
+
 	//Определяем ip
 	$ip = ip2long_db($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
 	$update[] = 'ip="'.$ip.'"';
-	
-	
+
+
 	//Определяем user_agent
 	$user_agent =  $_SERVER["HTTP_USER_AGENT"] ?? '';
 	$update[] = 'user_agent="'.$db->safesql($user_agent).'"';
-	
+
 	//Определяем php_self
 	$php_self = $_SERVER['PHP_SELF'] ?? '';
 	$update[] = 'php_self="'.$db->safesql($php_self).'"';
-	
-	
 
-	if (sizeof($update)) {	
-		
+
+
+	if (sizeof($update)) {
+
 		// if (false === ($memcache->get('user_session') ) ) {
 			$sql = $db->query("INSERT INTO sessions (session_id, user_id, last_access, ip , user_agent, php_self) VALUES ('{$session_id}', '{$user_id}', '{$last_access}', '{$ip}' , '{$user_agent}', '{$php_self}') ON DUPLICATE KEY UPDATE ".implode(", ", $update));
 			// $db->free($sql);
 			$memcache->set('user_session', "1" , 0, 50);
 		// }
 	}
-								
+
 	return;
 }
 
 
 //IP адрес
-function getip() 
+function getip()
 {
   if (isset($_SERVER)) {
     if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
@@ -518,7 +518,7 @@ function getip()
   }
 
   return $ip;
-  
+
 }
 
 //Определяем время
@@ -536,7 +536,7 @@ function gmtime() {
 //Цвет и ник пользователя
 function get_user_color($class, $username) {
 	$priv = get_priv_info($class);
-	return "<font  title=\"".htmlspecialchars($priv['NAME'])."\" style=\"color:#".htmlspecialchars($priv['COLOR'])."\">" . $username . "</font>";		
+	return "<font  title=\"".htmlspecialchars($priv['NAME'])."\" style=\"color:#".htmlspecialchars($priv['COLOR'])."\">" . $username . "</font>";
 }
 
 
@@ -550,12 +550,12 @@ function get_user_class()
 //Имя класса
 function get_user_class_name($class)
 {
-	$priv = get_priv_info($class);	
+	$priv = get_priv_info($class);
 	return "<font>".htmlspecialchars($priv['NAME'])."</font>";
-  
+
 }
 
-//Вывод сообщения 
+//Вывод сообщения
 function msg($subject = '' , $text = '' , $type = 'success') {
 
 	echo '<table width="97%" align="center"><tr><td><p class="message">';
@@ -572,10 +572,10 @@ function msg($heading = '', $text = '', $div = 'success') {
     }
     print("<table class=\"main\" width=\"95%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" align=\"center\"><tr><td class=\"embedded\">\n");
     print("<div class=\"$div\">".($heading ? "<b>$heading</b><br />" : "")." ".$text."</div></td></tr></table>\n");
-	
+
 }
 */
- 
+
 //Для ajax
 function msg_ajax($text , $type = 'ajaxsuccess') {
 	echo '<div id="'.$type.'">'.$text.'</div>';
@@ -627,16 +627,16 @@ $set = array("a","A","b","B","c","C","d","D","e","E","f","F","g","G","h","H","i"
 //Добавление cookies
 function login_cookie($id, $password_hash,  $expires = 0x7fffffff) {
 	global $memcache , $config;
-   
+
    $subnet = explode('.', getip());
 	$subnet[2] = $subnet[3] = 0;
 	$subnet = implode('.', $subnet); // 255.255.0.0
-   
+
 	if($config['cookies_mode']) {
 		// хак от wennet'a
 		$domain = $_SERVER['HTTP_HOST'];
 		if ( strtolower( substr($domain, 0, 4) ) == 'www.' )
-			$domain = substr($domain, 4);	// Fix the domain to accept domains with and without 'www.'. 
+			$domain = substr($domain, 4);	// Fix the domain to accept domains with and without 'www.'.
 		if ( substr($domain, 0, 1) != '.' )
 			$domain = '.'.$domain;	// Add the dot prefix to ensure compatibility with subdomains
 	} else {
@@ -646,7 +646,7 @@ function login_cookie($id, $password_hash,  $expires = 0x7fffffff) {
 	logout_cookie();
 	//Добавляем cookies
 	setcookie(COOKIE_ID, $id, $expires, "/" , $domain , false , true);
-	setcookie(COOKIE_PASSWORD, md5($password_hash.COOKIE_SALT.$subnet) , $expires, "/" , $domain ,  false, true); 
+	setcookie(COOKIE_PASSWORD, md5($password_hash.COOKIE_SALT.$subnet) , $expires, "/" , $domain ,  false, true);
 
 
 	//Удаляем memcached файл
@@ -662,15 +662,15 @@ function logout_cookie() {
 	if($config['cookies_mode']) {
 		$domain = $_SERVER['HTTP_HOST'];
 		if ( strtolower( substr($domain, 0, 4) ) == 'www.' )
-			$domain = substr($domain, 4);	// Fix the domain to accept domains with and without 'www.'. 
+			$domain = substr($domain, 4);	// Fix the domain to accept domains with and without 'www.'.
 		if ( substr($domain, 0, 1) != '.' )
 			$domain = '.'.$domain;	// Add the dot prefix to ensure compatibility with subdomains
 	} else {
 		$domain = '';
 	}
 
-	setcookie(COOKIE_ID, "", 0x7fffffff, "/" , $domain , false , true); 
-	setcookie(COOKIE_PASSWORD, "", 0x7fffffff, "/" , $domain , false , true); 
+	setcookie(COOKIE_ID, "", 0x7fffffff, "/" , $domain , false , true);
+	setcookie(COOKIE_PASSWORD, "", 0x7fffffff, "/" , $domain , false , true);
 	//Удаляем memcached файл
 	if($USER && isset($USER['id'])) {
 		$memcache->delete('user_'.$USER['id']);
@@ -687,7 +687,7 @@ function is_login() {
 }
 
 //Вывод ошибки
-function err($subject = '' , $text = '' , $pref = 0 , $type = 'error') {	
+function err($subject = '' , $text = '' , $pref = 0 , $type = 'error') {
 	global $language;
 	head(($type == 'success' ? 'Успешно' : 'Ошибка') , true);
 	// begin_frame('Ошибка');
@@ -695,24 +695,24 @@ function err($subject = '' , $text = '' , $pref = 0 , $type = 'error') {
 	// end_frame();
 	foot(true);
 	die();
-} 
+}
 
 //Вывод тегов для категории
 function taggenrelist($cat) {
 	global $memcache , $db;
 	$ret = array();
-	
+
 	if (false === ($ret = $memcache->get("taggenrelist_".$cat)))
 	{
 		$cache = array();
 		$res = $db->query("SELECT id, name, howmuch FROM tags WHERE category=".$db->safesql($cat)." ORDER BY name ASC") or sqlerr(__FILE__ , __LINE__);
 		while ($row = $db->get_row() )
 			$cache[] = $row;
-		
+
 		$memcache->set("taggenrelist_".$cat, $cache , 0, 500);
 		$ret = $cache;
 	}
-	
+
 	return $ret;
 }
 
@@ -724,7 +724,7 @@ function addtags($addtags) {
 		if(!empty($addtags))
 			$tags .= "<a style=\"font-weight:normal;\" href=\"browse.php?text=".$tag."&type=tags\">".$tag."</a>, ";
 	}
-	
+
 	if ($tags)
 		$tags = substr($tags, 0, -2);
 	if (empty($addtags))
@@ -737,7 +737,7 @@ function addtags($addtags) {
 function antixss() {
 	//Запрещенные элементы
 	$array = array('./' , '../' , '\'' , '<script>' , 'document.cookie' , '</script>' );
-		
+
 	//GET
 	$query = $_GET;
 	if( sizeof($query) ) {
@@ -745,9 +745,9 @@ function antixss() {
 			$clear_xss = str_replace($array , '[xss]' , $value);
 			$_GET[$arr]  = $clear_xss;
 		}
-		
+
 	}
-	
+
 	//GET
 	$query = $_POST;
 	if( sizeof($query) ) {
@@ -755,10 +755,10 @@ function antixss() {
 			$clear_xss = str_replace($array , '[xss]' , $value);
 			$_POST[$arr]  = $clear_xss;
 		}
-		
+
 	}
-	
-	
+
+
 	return true;
 }
 
@@ -796,7 +796,7 @@ function pager($rpp, $count, $href, $opts = array()) {
 	else
 		$page = $pagedefault;
 
-	   
+
 
 	$mp = $pages - 1;
 	$as = "Назад";
@@ -842,7 +842,7 @@ function pager($rpp, $count, $href, $opts = array()) {
 				  }
 		$pagerstr = join("", $pagerarr);
 		$pagertop = "<br><center><table class=\"navigation\"><tr>$pager $pagerstr $pager2</tr></table></center><br>\n";
-	
+
 	}
 	else {
 		$pagertop = $pager;
@@ -888,7 +888,7 @@ function sql_timestamp_to_unix_timestamp($s)
 }
 
 //Преобразование даты / времени
-//гггг-мм-дд чч:мм:сс 
+//гггг-мм-дд чч:мм:сс
 function convent_date($date = '' ) {
 	global $language;
 	//Название месяцев
@@ -906,32 +906,32 @@ function convent_date($date = '' ) {
 			'11' => $language['month_11'],
 			'12' => $language['month_12'],
 			);
-	
-	
+
+
 	//////////////////////////////////////////////
 	//$explode['0'] - дата
 	//$explode['1'] - время
 	//////////////////////////////////////////////
 	//Разбиваем на дата / время
 	$explode = explode(' '  , $date);
-	
-	
-	
+
+
+
 	//////////////////////////////////////////////
 	//$explode_date['0'] - год
 	//$explode_date['1'] - месяц
 	//$explode_date['2'] - день
 	//////////////////////////////////////////////
-	//Разбиваем дату на гггг-мм-дд 
+	//Разбиваем дату на гггг-мм-дд
 	$explode_date = explode('-' , $explode['0']);
-	
+
 	//Удаляем нуль перез числом
 	if(substr($explode_date['2'] ,0,1) == '0' ) {
 		$explode_date['2'] = str_replace('0' , '' , $explode_date['2']);
 	}
-		
-	
-	
+
+
+
 	//////////////////////////////////////////////
 	//$explode_time['0'] - час
 	//$explode_time['1'] - минута
@@ -939,21 +939,21 @@ function convent_date($date = '' ) {
 	//////////////////////////////////////////////
 	//Разбиваем время на чч:мм:cc
 	$explode_time = explode(':' , $explode['1']);
-	
-	return ($explode_date['2'] == date('d') ? $language['month_13'] : $explode_date['2'] .' '.$mounth[$explode_date['1']]).' '. ($explode_date['2'] != date('d') ? $explode_date['0'].' года' : '' ) . ' , '.$explode_time['0'].':'.$explode_time['1'];	
+
+	return ($explode_date['2'] == date('d') ? $language['month_13'] : $explode_date['2'] .' '.$mounth[$explode_date['1']]).' '. ($explode_date['2'] != date('d') ? $explode_date['0'].' года' : '' ) . ' , '.$explode_time['0'].':'.$explode_time['1'];
 }
 
 
 //Вывод рейтинга пользователю или гостю
 function get_user_rating($uploaded = '' , $downloaded = '') {
 	global $USER , $language;
-	
+
 	if(!empty($uploaded)  && !empty($downloaded) ) {
 		$down =	$downloaded;
 		$up =	$uploaded;
-	} 
-	
-	
+	}
+
+
 
 	$ratio = get_ratio($up , $down);
 	if($ratio <= 0){
@@ -965,12 +965,12 @@ function get_user_rating($uploaded = '' , $downloaded = '') {
 	}elseif($ratio > 100){
 		echo '<div id="rateTopDarkgold"><img src="public/images/rate/darkgold1.gif"></div><div id="rateBottomDarkgold"><font color="#fff2c8">'.$language['rating_1'].': '.$ratio.'%</font></a></div>';
 	}
-	
+
 }
 
 //Определяем ратио
 function get_ratio($uploaded , $downloaded) {
-	
+
 	if($downloaded > 0) {
 		$ratio =  ($uploaded / ($downloaded / 10) / 1);
 		$ratio = number_format($ratio);
@@ -1004,7 +1004,7 @@ function get_elapsed_time($date,$showseconds=true,$unix=true){
     if(!$unix){$U = date('U',strtotime($date));}else{$U=$date;};
     $N = time();
     $diff = $N-$U;
-    
+
 
     if($diff>=31536000){
         $Iyear = floor($diff/31536000);
@@ -1086,7 +1086,7 @@ function get_server_load() {
 
 /**
  * Узнаем сколько времени прошло с определенной даты
- * @param datetime $time 
+ * @param datetime $time
  * @return array (years , months , days)
  */
 function get_certain_time($time) {
@@ -1098,8 +1098,8 @@ function get_certain_time($time) {
 	$years = floor($diff / (365*60*60*24));
 	$months = floor(($diff - $years * 365*60*60*24) / (30*60*60*24));
 	$days = floor(($diff - $years * 365*60*60*24 - $months*30*60*60*24)/ (60*60*24));
-	
-	
+
+
 	$array = array('years' => $years , 'months' => $months , 'days' => $days);
 	return $array;
 }
@@ -1114,8 +1114,8 @@ function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {
 
 	if(empty($name) ) {
 		$name = 'Re:';
-	}	
-	
+	}
+
 	if(empty($text) ) {
 		return 0;
 	}
@@ -1197,32 +1197,32 @@ $s = preg_replace("#\[spoiler=\s*((\s|.)+?)\s*\]#si",
 "<div style=\"position: static;\" class=\"news-wrap\"><div class=\"news-head folded clickable\"><i>\\1</i></div><div class=\"news-body\">", $s);
 
 $s = str_replace("[/spoiler]","</div></div>",$s);
-	
-	
+
+
 	while (preg_match("#\[quote\](.*?)\[/quote\]#si", $s)) $s = encode_quote($s);
 	while (preg_match("#\[quote=(.+?)\](.*?)\[/quote\]#si", $s)) $s = encode_quote_from($s);
 	while (preg_match("#\[hide\](.*?)\[/hide\]#si", $s)) $s = encode_spoiler($s);
 	while (preg_match("#\[hide=(.+?)\](.*?)\[/hide\]#si", $s)) $s = encode_spoiler_from($s);
 	if (preg_match("#\[code\](.*?)\[/code\]#si", $s)) $s = encode_code($s);
 	if (preg_match("#\[php\](.*?)\[/php\]#si", $s)) $s = encode_php($s);
-/////////////////////////////////Tag [youtube][/youtube] 
+/////////////////////////////////Tag [youtube][/youtube]
 while (preg_match("/\[youtube\]((\s|.)+?)\[\/youtube\]/i", $s)) {
 $s = str_replace("watch?v=","v/", $s);
 $s = preg_replace ("/\[youtube\]((\s|.)+?)\[\/youtube\]/i", "<object width='640' height='505'><param name=movie value='\\1&hl=ru&fs=1&'></param><param name='allowFullScreen' value='true'></param><param name='allowscriptaccess' value='always'></param><embed src='\\1&hl=ru&fs=1&' type='application/x-shockwave-flash' allowscriptaccess='always' allowfullscreen='true' width='640' height='505'></embed></object>", $s);
 }
-///////////////////////////////////end tag youtube  
+///////////////////////////////////end tag youtube
 
-/////////////////////////////////Tag [rutube][/rutube] 
+/////////////////////////////////Tag [rutube][/rutube]
 while (preg_match("/\[rutube\]((\s|.)+?)\[\/rutube\]/i", $s)) {
 $s = preg_replace("/http:\/\/rutube.ru\/tracks\/([0-9]+)\.html\?v\=/","http://video.rutube.ru/", $s);
 $s = preg_replace ("/\[rutube\]((\s|.)+?)\[\/rutube\]/i", "<object width='640' height='505'><param name=movie value='\\1'></param><param name='allowFullScreen' value='true'></param><param name='allowscriptaccess' value='always'></param><embed src='\\1' type='application/x-shockwave-flash' allowscriptaccess='always' allowfullscreen='true' width='640' height='505'></embed></object>", $s);
 }
-///////////////////////////////////end tag rutube  
+///////////////////////////////////end tag rutube
 
 	// URLs
 	$s = format_urls($s);
-	
-	
+
+
 
 	return $s;
 }
@@ -1359,16 +1359,16 @@ function get_categories() {
 	{
 		$categories_who = array();
 		$cats = $db->query("SELECT c.* , COUNT(t.id)  AS count , SUM(t.size) AS size
-					FROM categories AS c 
+					FROM categories AS c
 					LEFT JOIN torrents AS t ON t.id_category = c.id
 					GROUP BY c.id");
 		while($arr = $db->get_row() )
 			$categories_who[] = $arr;
-		
+
 		$memcache->set('upload_categories', $categories_who , 0, (24*60*60));
 		$cache_result = $categories_who;
 	}
-	
+
 	return $cache_result;
 }
 */
@@ -1376,32 +1376,50 @@ function get_categories() {
 
 //Получение списка категорий
 function categories_array($id = 0) {
-	global $memcache , $db;
-	$id = (int)$id;
-	
-	if (false === ($categories_who = $memcache->get('categories_'.$id)))
-	{
-		// $categories_who = array();
-		$sql  = $db->query("SELECT c.* , COUNT(t.id)  AS count , SUM(t.size) AS size
-					FROM categories AS c 
-					LEFT JOIN torrents AS t ON t.id_category = c.id
-					".($id ? 'WHERE c.id='.$id : '')."
-					GROUP BY c.id
-					ORDER BY c.id DESC");
-					
-		//Для одной категории или , массив категорий			
-		if($id) {
+	global $memcached, $db;
+
+	$id = (int) $id;
+	$cacheKey = 'categories_' . $id;
+	$categories_who = false;
+
+	// Пытаемся читать из кеша только если объект Memcached реально есть
+	if ($memcached instanceof Memcached) {
+		$categories_who = $memcached->get($cacheKey);
+
+		// если ключа нет, Memcached вернет false
+		if ($memcached->getResultCode() !== Memcached::RES_SUCCESS) {
+			$categories_who = false;
+		}
+	}
+
+	if ($categories_who === false) {
+		$sql = $db->query("
+			SELECT c.*, COUNT(t.id) AS count, SUM(t.size) AS size
+			FROM categories AS c
+			LEFT JOIN torrents AS t ON t.id_category = c.id
+			" . ($id ? "WHERE c.id = " . $id : "") . "
+			GROUP BY c.id
+			ORDER BY c.id DESC
+		");
+
+		if ($id) {
 			$categories_who = $db->get_row($sql);
+			if (!$categories_who) {
+				$categories_who = array();
+			}
 		} else {
-			while($arr = $db->get_row($sql) ) {
+			$categories_who = array();
+			while ($arr = $db->get_row($sql)) {
 				$categories_who[] = $arr;
 			}
 		}
-		
-		//Заносим в кеш
-		$memcache->set('categories_'.$id , $categories_who , 0, 1000);
-		
+
+		// Пишем в кеш только если Memcached реально доступен
+		if ($memcached instanceof Memcached) {
+			$memcached->set($cacheKey, $categories_who, 1000);
+		}
 	}
+
 	return $categories_who;
 }
 
@@ -1417,10 +1435,10 @@ function get_list_dir($dir , $nameSelect = "" , $elemSelected = "" ) {
 			}
 		}
 		$list .=  '</select>';
-		
+
 		return $list;
 
-}	
+}
 
 
 //Получение массива языков
@@ -1440,21 +1458,21 @@ function get_languages() {
 //Получение списка языков
 function get_select_language() {
 	global $USER , $config;
-	
+
 	if($_COOKIE['language']) {
 		$select_language = $_COOKIE['language'];
-	} else {	
+	} else {
 		$select_language = $config['lang'];
-	}	
-	
+	}
+
 	$languages = get_languages();
-	
+
 	$select .= '<form action="language.php" method="post">';
 	$select .= '<select name="language">';
 	foreach ($languages as $language) {
 		$select .= '<option value="'.$language.'" '.($select_language == $language ? 'selected' : '').'>'.$language.'</option>';
-	}	
-	$select .= '<input type="submit" value="OK">';	
+	}
+	$select .= '<input type="submit" value="OK">';
 	$select .= '</select></form>';
 	return $select;
 }
@@ -1469,9 +1487,9 @@ function is_language($language = "") {
 //Информация о правах класса
 function get_priv_info($class) {
 	global $memcache , $db;
-	
+
 	$class = (int)$class;
-	
+
 	//Определяем права пользовател
 	if (false === ($row = $memcache->get('priv_'.$class)))
 	{
@@ -1504,7 +1522,7 @@ function get_priv_info($class) {
 //Получение списка классов
 function get_classes_list() {
 	global $memcache , $db;
-	
+
 	//Определяем права пользовател
 	if (false === ($result = $memcache->get('priv_all'))) {
 		$db->query("SELECT * FROM priv WHERE id > 0 ");
@@ -1527,7 +1545,7 @@ function is_valid_id($id) {
 */
 function check_friend($id_user  , $id_friend) {
 	global $db;
-		
+
 	//Запрос к friends
 	$check = $db->super_query("SELECT COUNT(*) AS count , id FROM friends  WHERE  status='yes' AND friendid=".$id_friend."  AND  userid=".$id_user." GROUP BY id ");
 	return $check;

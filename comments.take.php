@@ -107,7 +107,8 @@ if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
         err($language['default_1'], $language['comments_8'], 1);
     }
 
-    if ($USER['id'] != $arr['id_user'] && empty($PRIV['comments_delete'])) {
+    $canDeleteComment = (!empty($PRIV['comments_delete']) || ($type !== 'users' && (int) $USER['id'] === (int) $arr['id_user']));
+    if (!$canDeleteComment) {
         comment_debug_log('DELETE: нет прав. user=' . $USER['id'] . ', owner=' . $arr['id_user']);
         err($language['default_1'], $language['comments_10'], 1);
     }
@@ -132,7 +133,8 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
         err($language['default_1'], $language['comments_8'], 1);
     }
 
-    if ($USER['id'] != $arr['id_user'] && empty($PRIV['comments_edit'])) {
+    $canEditComment = (!empty($PRIV['comments_edit']) || ($type !== 'users' && (int) $USER['id'] === (int) $arr['id_user']));
+    if (!$canEditComment) {
         comment_debug_log('EDIT: нет прав. user=' . $USER['id'] . ', owner=' . $arr['id_user']);
         err($language['default_1'], $language['comments_11'], 1);
     }

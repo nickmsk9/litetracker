@@ -22,7 +22,7 @@ if (!defined('LITETRACKER')) {
 				</div>
 
 				<div class="profile-card-main">
-					<h1 class="profile-card-name"><?=$profileName;?></h1>
+					<h1 class="profile-card-name"><?=get_user_color((int) ($arr['class'] ?? 0), $profileName);?></h1>
 					<div class="profile-status <?=$profileStatusClass;?>"><?=$profileStatusLabel;?></div>
 
 					<?php if ($isOwnProfile && $profileAbout !== '') { ?>
@@ -143,11 +143,15 @@ if (!defined('LITETRACKER')) {
 
 		<aside class="profile-sidebar">
 			<?php if ($isOwnProfile) { ?>
-			<div class="profile-sidebar-nav">
-				<?php foreach ($sidebarLinks as $item) { ?>
-				<a class="profile-sidebar-link<?=(!empty($item['active']) ? ' profile-sidebar-link-active' : '');?>" href="<?=$item['href'];?>"><?=$item['label'];?></a>
-				<?php } ?>
-			</div>
+			<section class="profile-sidebar-card profile-sidebar-nav-card">
+				<div class="profile-sidebar-nav">
+					<?php foreach ($sidebarLinks as $item) { ?>
+					<div class="profile-sidebar-nav-item">
+						<a class="profile-sidebar-link<?=(!empty($item['active']) ? ' profile-sidebar-link-active' : '');?>" href="<?=$item['href'];?>"><?=$item['label'];?></a>
+					</div>
+					<?php } ?>
+				</div>
+			</section>
 
 			<section class="profile-sidebar-card">
 				<h2 class="profile-sidebar-stats-title">Статистика</h2>
@@ -186,7 +190,7 @@ if (!defined('LITETRACKER')) {
 			<textarea class="profile-modal-textarea" id="profile-message-text" name="text"></textarea>
 			<div class="profile-modal-actions">
 				<button class="profile-card-button" type="submit">Отправить</button>
-				<button class="wall-comment-button" type="button" data-profile-close-message="1">Отмена</button>
+
 			</div>
 			<input type="hidden" name="user_id" value="<?=$id;?>">
 			<input type="hidden" name="name" value="Сообщение">

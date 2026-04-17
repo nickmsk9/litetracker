@@ -17,80 +17,117 @@ function prepare_user_avatar_upload($fieldName, $userId, $userRow)
 {
 	global $config, $language;
 
-	if (empty($_FILES[$fieldName]['name'])) {
+	if (
+		empty($_FILES[$fieldName]) ||
+		!is_array($_FILES[$fieldName]) ||
+		!isset($_FILES[$fieldName]['error']) ||
+		(int) $_FILES[$fieldName]['error'] === UPLOAD_ERR_NO_FILE ||
+		empty($_FILES[$fieldName]['tmp_name'])
+	) {
 		return false;
 	}
 
-	$allowedTypes = array(
-		'image/gif' => 'gif',
-		'image/pjpeg' => 'jpg',
-		'image/jpeg' => 'jpg',
-		'image/jpg' => 'jpg',
-		'image/png' => 'png',
-		'image/bmp' => 'bmp',
-	);
-
-	if (!array_key_exists($_FILES[$fieldName]['type'], $allowedTypes)) {
-		err($language['default_1'], $language['setting_60'], 1);
+	if ((int) $_FILES[$fieldName]['error'] !== UPLOAD_ERR_OK) {
+		err($language['default_1'], 'Ошибка загрузки файла.', 1);
 	}
 
-	if (!preg_match('/^(.+)\.(jpg|jpeg|png|gif)$/si', $_FILES[$fieldName]['name'])) {
-		err($language['default_1'], $language['setting_61'], 1);
+	if (!is_uploaded_file($_FILES[$fieldName]['tmp_name'])) {
+		err($language['default_1'], 'Файл загружен некорректно.', 1);
 	}
 
-	require_once 'system/classes/class.upload.php';
+	$imageInfo = @getimagesize($_FILES[$fieldName]['tmp_name']);
+	if (!$imageInfo || empty($imageInfo[2])) {
+		err($language['default_1'], 'Можно загружать только изображения JPG, PNG или GIF.', 1);
+	}
+
+	$type = (int) $imageInfo[2];
+	$allowedTypes = array(IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF);
+	if (!in_array($type, $allowedTypes, true)) {
+		err($language['default_1'], 'Можно загружать только изображения JPG, PNG или GIF.', 1);
+	}
+
+	if (!function_exists('imagecreatetruecolor') || !function_exists('imagejpeg') || !function_exists('imagecreatefromstring')) {
+		err($language['default_1'], 'На сервере не включена библиотека GD для обработки изображений.', 1);
+	}
+
+	$maxFileSize = isset($config['max_size_image']) ? (int) $config['max_size_image'] : 0;
+	if ($maxFileSize > 0 && isset($_FILES[$fieldName]['size']) && (int) $_FILES[$fieldName]['size'] > $maxFileSize) {
+		err($language['default_1'], 'Файл слишком большой.', 1);
+	}
 
 	$dirDest = 'public/avatars/';
 	$dirDestSmall = 'public/avatars/small/';
+
+	if (!is_dir($dirDest) && !@mkdir($dirDest, 0777, true)) {
+		err('Ошибка', 'Не удалось создать папку для аватаров.', 1);
+	}
+
+	if (!is_dir($dirDestSmall) && !@mkdir($dirDestSmall, 0777, true)) {
+		err('Ошибка', 'Не удалось создать папку для миниатюр аватаров.', 1);
+	}
+
+	$imageBinary = @file_get_contents($_FILES[$fieldName]['tmp_name']);
+	if ($imageBinary === false || $imageBinary === '') {
+		err('Ошибка', 'Не удалось прочитать загруженное изображение.', 1);
+	}
+
+	$sourceImage = @imagecreatefromstring($imageBinary);
+	if (!$sourceImage) {
+		err('Ошибка', 'Не удалось обработать изображение.', 1);
+	}
+
+	$sourceWidth = imagesx($sourceImage);
+	$sourceHeight = imagesy($sourceImage);
+	if ($sourceWidth <= 0 || $sourceHeight <= 0) {
+		imagedestroy($sourceImage);
+		err('Ошибка', 'Некорректный размер изображения.', 1);
+	}
+
+	$fileName = (string) $userId . '.jpg';
+	$mainPath = $dirDest . $fileName;
+	$smallPath = $dirDestSmall . $fileName;
 
 	if (!empty($userRow['avatar'])) {
 		@unlink($dirDest.$userRow['avatar']);
 		@unlink($dirDestSmall.$userRow['avatar']);
 	}
 
-	$photo = new Upload($_FILES[$fieldName]);
-	if (!$photo->uploaded) {
-		err('Ошибка', $photo->error, 1);
+	$saveResizedJpeg = function ($srcImage, $srcWidth, $srcHeight, $targetPath, $maxWidth, $maxHeight) {
+		$ratio = min($maxWidth / $srcWidth, $maxHeight / $srcHeight, 1);
+		$newWidth = max(1, (int) round($srcWidth * $ratio));
+		$newHeight = max(1, (int) round($srcHeight * $ratio));
+
+		$targetImage = imagecreatetruecolor($newWidth, $newHeight);
+		if (!$targetImage) {
+			return false;
+		}
+
+		$imageWhite = imagecolorallocate($targetImage, 255, 255, 255);
+		imagefill($targetImage, 0, 0, $imageWhite);
+
+		if (!imagecopyresampled($targetImage, $srcImage, 0, 0, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight)) {
+			imagedestroy($targetImage);
+			return false;
+		}
+
+		$result = imagejpeg($targetImage, $targetPath, 90);
+		imagedestroy($targetImage);
+
+		return $result;
+	};
+
+	$mainSaved = $saveResizedJpeg($sourceImage, $sourceWidth, $sourceHeight, $mainPath, 600, 600);
+	$smallSaved = $saveResizedJpeg($sourceImage, $sourceWidth, $sourceHeight, $smallPath, 100, 100);
+	imagedestroy($sourceImage);
+
+	if (!$mainSaved || !$smallSaved) {
+		@unlink($mainPath);
+		@unlink($smallPath);
+		err('Ошибка', 'Не удалось сохранить аватар.', 1);
 	}
 
-	$photo->file_max_size = $config['max_size_image'];
-	$photo->file_new_name_body = (string) $userId;
-	$photo->image_resize = true;
-	$photo->image_convert = 'jpg';
-	$photo->image_x = 600;
-	$photo->image_y = 600;
-	$photo->image_ratio = true;
-	$photo->image_text = 'LITETRACKER ENGINE';
-	$photo->image_text_position = 'RB';
-	$photo->image_text_padding = 5;
-	$photo->Process($dirDest);
-
-	if (!$photo->processed) {
-		err('Ошибка', $photo->error, 1);
-	}
-
-	$fileName = $photo->file_dst_name;
-	$photo->Clean();
-
-	$photoSmall = new Upload($_FILES[$fieldName]);
-	if (!$photoSmall->uploaded) {
-		err('Ошибка', $photoSmall->error, 1);
-	}
-
-	$photoSmall->file_max_size = $config['max_size_image'];
-	$photoSmall->file_new_name_body = (string) $userId;
-	$photoSmall->image_resize = true;
-	$photoSmall->image_convert = 'jpg';
-	$photoSmall->image_x = 100;
-	$photoSmall->image_y = 100;
-	$photoSmall->image_ratio = true;
-	$photoSmall->Process($dirDestSmall);
-
-	if (!$photoSmall->processed) {
-		err('Ошибка', $photoSmall->error, 1);
-	}
-
-	$photoSmall->Clean();
+	@chmod($mainPath, 0666);
+	@chmod($smallPath, 0666);
 
 	return $fileName;
 }
@@ -153,26 +190,6 @@ if($act == 'foto_delete') {
 	die();
 }
 
-if($act == 'foto') {
-	$fileName = prepare_user_avatar_upload('foto', $id, $arr);
-	if ($fileName === false) {
-		header('Location:my.setting.php?id='.$id.'&status=6');
-		die();
-	}
-
-	$db->query("UPDATE users SET avatar='".$db->safesql($fileName)."' WHERE id='".$id."'");
-	$memcache->delete('user_'.$id, 0);
-	header('Location:my.setting.php?id='.$id.'&status=7');
-	die();
-}
-
-if($act == 'passkey') {
-	$db->query("UPDATE users SET passkey='' WHERE id='".$id."'");
-	$memcache->delete('user_'.$id, 0);
-	header('Location:my.setting.php?id='.$id.'&status=5');
-	die();
-}
-
 if($act == 'password') {
 	if(!$PRIV['setting_user']) {
 		$oldPassword = trim((string) ($_POST['old_password'] ?? ''));
@@ -182,7 +199,8 @@ if($act == 'password') {
 	}
 
 	$newPassword = trim((string) ($_POST['new_password'] ?? ''));
-	$newPasswordRepeat = trim((string) ($_POST['new_password_1'] ?? ''));
+
+	// Removed password repeat validation block as per instructions
 
 	if (strlen($newPassword) < 6) {
 		err($language['default_1'], $language['setting_67'], 1);
@@ -190,10 +208,6 @@ if($act == 'password') {
 
 	if (strlen($newPassword) > 40) {
 		err($language['default_1'], $language['setting_68'], 1);
-	}
-
-	if($newPassword != $newPasswordRepeat) {
-		err($language['default_1'], $language['setting_69'], 1);
 	}
 
 	$passwordCode = mksecret(32);
@@ -211,81 +225,14 @@ if($act == 'password') {
 	die();
 }
 
-if($act == 'email') {
-	$email = trim((string) ($_POST['email'] ?? ''));
-	if($email == $arr['email']) {
-		header('Location:my.setting.php?id='.$id.'&status=3');
-		die();
-	}
-
-	if ($email !== '' && !validemail($email)) {
-		err($language['default_1'], $language['setting_64'], 1);
-	}
-
-	$emailCheck = ($email !== '' ? $db->query("SELECT * FROM users WHERE email='".$db->safesql($email)."'") : false);
-	if($email !== '' && $db->num_rows() >= 1) {
-		err($language['default_1'], $language['setting_65'], 1);
-	}
-
-	$db->query("UPDATE users SET email='".$db->safesql($email)."' WHERE id='".$id."'");
-	$memcache->delete('user_'.$id, 0);
-	header('Location:my.setting.php?id='.$id.'&status=4');
-	die();
-}
-
 $update = array();
-
-$name = trim((string) ($_POST['name'] ?? ''));
-if($arr['name'] != $name) {
-	if(empty($name)) {
-		err($language['default_1'], $language['setting_70'], 1);
-	}
-	if (!validusername($name)) {
-		err($language['default_1'], $language['setting_71'], 1);
-	}
-	if (strlen($name) > 12) {
-		err($language['default_1'], $language['setting_72'], 1);
-	}
-
-	$emailCheck = $db->query("SELECT * FROM users WHERE name='".$db->safesql($name)."' AND id <> ".$id);
-	if($db->num_rows() >= 1) {
-		err($language['default_1'], $language['setting_73'], 1);
-	}
-
-	$update[] = "name='".$db->safesql($name)."'";
-}
-
-$email = trim((string) ($_POST['email'] ?? ''));
-if($email != $arr['email']) {
-	if ($email !== '' && !validemail($email)) {
-		err($language['default_1'], $language['setting_64'], 1);
-	}
-
-	$emailCheck = ($email !== '' ? $db->query("SELECT * FROM users WHERE email='".$db->safesql($email)."' AND id <> ".$id) : false);
-	if($email !== '' && $db->num_rows() >= 1) {
-		err($language['default_1'], $language['setting_65'], 1);
-	}
-
-	$update[] = "email='".$db->safesql($email)."'";
-}
 
 $sex = ((int) ($_POST['sex'] ?? 1) == 1 ? '1' : '0');
 if($arr['sex'] != $sex) {
 	$update[] = "sex='".$sex."'";
 }
 
-$website = trim((string) ($_POST['website'] ?? ''));
-if($arr['website'] != $website) {
-	if($website === '') {
-		$update[] = "website=''";
-	} else {
-		$pattern = "#^(http://|https://)?[-a-z0-9_\.]+([-a-z0-9_]+\.(html|php|pl|cgi))?([-a-z0-9_:@&\?=+\.!/~*'%$]+)?$#i";
-		if(!preg_match($pattern, $website)) {
-			err($language['default_1'], $language['setting_37'], 1);
-		}
-		$update[] = "website='".$db->safesql($website)."'";
-	}
-}
+// Removed website validation/update block as per instructions
 
 $birthdayDay = trim((string) ($_POST['birthday_day'] ?? ''));
 $birthdayMonth = trim((string) ($_POST['birthday_month'] ?? ''));
@@ -330,7 +277,7 @@ if ($avatarFileName !== false) {
 	$update[] = "avatar='".$db->safesql($avatarFileName)."'";
 }
 
-if($PRIV['setting_user'] || $PRIV['EDIT_PRIV']) {
+if($PRIV['setting_user']) {
 	$downloaded = (int) ($_POST['downloaded'] ?? 0);
 	$downCommand = ((string) ($_POST['down_command'] ?? '+') == '+' ? '+' : '-');
 	$downFormat = (((string) ($_POST['down_format'] ?? 'mb') == 'mb') ? (1024*1024) : (1024*1024*1024));
@@ -361,7 +308,7 @@ if($PRIV['setting_user'] || $PRIV['EDIT_PRIV']) {
 		}
 	}
 
-	if($PRIV['EDIT_PRIV']) {
+	if($PRIV['EDIT_PRIV'] && isset($_POST['class'])) {
 		$class = (int) ($_POST['class'] ?? $arr['class']);
 		$db->query("SELECT * FROM priv WHERE id > 0 AND id=".$class);
 		if($arr['class'] != $class && $db->num_rows()) {
