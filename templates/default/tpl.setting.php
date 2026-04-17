@@ -105,7 +105,7 @@ if (!defined('LITETRACKER')) {
 						</div>
 
 						<div class="settings-field">
-							<label class="settings-field-label" for="settings_email">E-mail</label>
+							<label class="settings-field-label" for="settings_email">E-mail (необязательно)</label>
 							<input id="settings_email" type="email" name="email" value="<?=htmlspecialchars($arr['email'], ENT_QUOTES, 'UTF-8');?>">
 						</div>
 

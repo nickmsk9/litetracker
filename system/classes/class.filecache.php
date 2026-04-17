@@ -46,7 +46,12 @@ class Filecache {
 	}
 	
 	//Запись
-	function set( $file ,$data , $time) {
+	function set($file, $data, $flagsOrExpiration = 0, $expiration = 0) {
+		global $config;
+
+		if(!$config['filecache']['use'] )  {
+			return false;
+		}
 		
 		$shell = $this->dir.$file.$this->type;
 		
@@ -60,6 +65,8 @@ class Filecache {
 			fwrite($fh, serialize($data));
 			fclose($fh);
 		}
+
+		return true;
 	}
 	
 	//Удаление

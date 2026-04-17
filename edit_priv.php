@@ -167,7 +167,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 	if($_POST) {
 	
 		//Массив с правами
-		$array = array('polls_moderate' , 'faq_moderate'  , 'edit_banned' ,'edit_news' , 'user_add' , 'bad_rating' , 'news_add' ,'upload', 'cats', 'chat_delete', 'chat_view', 'chat_clear',  'comments_edit', 'comments_delete', 'details_banned_view', 'details_view', 'download_torrent', 'download_magnet', 'edit_release', 'messages', 'multitracker_accounts', 'setting_user', 'ip_util', 'profile_view', 'search_query', 'sessions_view', 'sessions_clear', 'users_view' , 'block_moderators' ,  'block_administrators');
+		$array = array('faq_moderate'  , 'edit_banned' ,'edit_news' , 'user_add' , 'bad_rating' , 'news_add' ,'upload', 'cats', 'chat_delete', 'chat_view', 'chat_clear',  'comments_edit', 'comments_delete', 'details_banned_view', 'details_view', 'download_torrent', 'download_magnet', 'edit_release', 'messages', 'multitracker_accounts', 'setting_user', 'ip_util', 'profile_view', 'search_query', 'sessions_view', 'sessions_clear', 'users_view' , 'block_moderators' ,  'block_administrators');
 		$update = array();
 		
 		//Обрабатываем данные
@@ -578,18 +578,6 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 	   </td></tr> 
 	   
 	   
-	   <tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" >Управление опросами:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="checkbox" name="polls_moderate" value="1" <?=($arr['polls_moderate'] ? 'checked' : '');?> \>
-			<small>Возможность создавать , удалять , редактировать опросы</small>
-		</td><td>
-	   </td></tr> 
-	   
-	   
-	    
 		<tr>
 		<td class="ta_r" valign="top" colspan="2">
 		 <span class="grey" ><b>Профиль</b></span>

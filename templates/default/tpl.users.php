@@ -63,7 +63,7 @@ begin_frame();
 		 <td class="data" colspan="2">
 				<?
 				echo ($USER['id'] == $arr['id'] || $PRIV['setting_user'] ? '<Input type="button" value="'.$language['profile_16'].'" onCLick="window.location.href=\'my.setting.php?id='.$id.'\'">&nbsp' : '');
-				echo ($USER['id'] != $arr['id'] ? '<Input type="button" value="'.$language['profile_17'].'" onCLick="window.location.href=\'my.mail.php?act=send&id_user='.$arr['id'].'\'">&nbsp' : '');
+				echo ($USER['id'] != $arr['id'] ? '<Input type="button" value="'.$language['profile_17'].'" onCLick="window.location.href=\'my.mail.php?act=conversation&id_user='.$arr['id'].'\'">&nbsp' : '');
 
 
 				?>

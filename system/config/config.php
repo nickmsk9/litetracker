@@ -77,22 +77,41 @@ $config  = array(
 //Настройка отправки писем
 'mail' => array(
 			'use' => 1 , //Использовать e-mail функции
-			'type' => 'mail' , //Тип отправки почты 
+			'type' => 'mail' , //Тип отправки почты
 								   //mail - по умолчанию , отправка функцией mail
 								   //smtp - отправка smtp
 			'from' => 'admin@litetracker.ru'  , //Какой e-mail указывать
-			'from_name' => 'Torrent - Tracker', 
+			'from_name' => 'Torrent - Tracker',
 			//Если используете SMTP
 			'host' => '' , //Хост сервера
 			'port' => 25 , //Порт сервера
 			'login' => '' , //Логин
 			'password' => '' ,  //Пароль
-			
-			//Модули трекера
-			'signup' => 0 , //Использовать подтверждение по e-mail
-			
 		),
-		
+
+//Настройка кеша
+'cache' => array(
+			'driver' => 'filecache', //filecache | memcached
+			'memcached' => array(
+				'host' => '127.0.0.1',
+				'port' => 11213,
+				'connect_timeout_ms' => 150,
+				'poll_timeout_ms' => 150,
+				'send_timeout_ms' => 150,
+				'recv_timeout_ms' => 150,
+				'retry_timeout' => 1,
+				'server_failure_limit' => 1,
+				'remove_failed_servers' => 1,
+			),
+		),
+
+'filecache' => array(
+			'use' => 1,
+			'dir' => (!empty($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : dirname(__DIR__, 2)).'/system/cache/',
+			'type' => '.cache',
+			'timeout' => 60,
+		),
+
 'crontab' => 0 , //Использовать планировщик заданий cronNNLite 
 					//При использовании данной функции требуется программа cronNNLite или добавить задание в etc/crontab
 					//[Внимание! При включение данной фукнции, все части трекера (к примеру : обновление, автоочистка) отключаются]

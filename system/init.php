@@ -51,7 +51,6 @@ require __DIR__ . '/functions/functions.php';
 require __DIR__ . '/functions/functions.vkontakte.php';
 require __DIR__ . '/functions/functions.blocks.php';
 require __DIR__ . '/functions/functions.upload.php';
-require __DIR__ . '/functions/functions.polls.php';
 
 
 
@@ -105,23 +104,8 @@ $db->connect($mysql['user'] , $mysql['password'] , $mysql['db'] ,  $mysql['host'
 $rewrite = new rewrite;
 
 //Запускаем memcached/filecache
-require_once __DIR__ . '/classes/class.memcached.php';
-
-if(class_exists('Memcached', false)) {
-	$memcacheHost = getenv('LITETRACKER_MEMCACHED_HOST');
-	if (!$memcacheHost) {
-		$memcacheHost = gethostbyname('memcached') !== 'memcached' ? 'memcached' : '127.0.0.1';
-	}
-
-	$memcachePort = (int) (getenv('LITETRACKER_MEMCACHED_PORT') ?: ($memcacheHost === '127.0.0.1' ? 11213 : 11211));
-
-	$memcache = new MemcachedCache;
-	$memcache->connect($memcacheHost, $memcachePort);
-} else {
-	require __DIR__ . '/config/config.filecache.php';
-	require __DIR__ . '/classes/class.filecache.php';
-	$memcache = new Filecache;
-}
+require_once __DIR__ . '/bootstrap/cache.php';
+$memcache = lt_create_cache_driver();
 
 //Cron system
 if (false === ($CRON = $memcache->get('CRON'))) {

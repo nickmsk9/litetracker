@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -9,484 +9,498 @@ by jenaDI
 ===================================================================
 */
 
-//Подключаем главный системный файл
 require 'system/init.php';
 
-//Проверяем пользователя
 is_login();
 
-$_GET['act'] = (string)$_GET['act'];
-if(!$_GET['act']) {
-	$_GET['act'] = 'in_message';
-}
-//////////////////////////////////////////////////////////////
-//Восстановление сообщение
-//////////////////////////////////////////////////////////////
-if($_GET['act'] == 'restore' && $_GET['id']) {
-	$id = (int)$_GET['id'];
-	$db->query("SELECT * FROM mail WHERE id=".$id." AND (id_user_in=".$USER['id']." OR id_user_out=".$USER['id'].")");
-	if(!$db->num_rows()) {
-		err('Ошибка' , 'Данного сообщения не существует' , 1);
+function mail_build_href($act = 'list', $targetUserId = 0, $system = false, $extra = array())
+{
+	$params = array('act' => $act);
+
+	if ($targetUserId > 0) {
+		$params['id_user'] = (int) $targetUserId;
 	}
-	$arr = $db->get_row();
-	
-	//Если пользователь получатель
-	if($arr['id_user_in'] == $USER['id'] && $arr['delete_in'] == 1) {
-		$db->query("UPDATE mail SET delete_in='0' WHERE id=".$id);
-		if(!$arr['reading']) {
-			$db->query("UPDATE users SET num_messages=(num_messages + 1) WHERE id=".$USER['id']);
-			$memcache->delete('user_'.$USER['id'] , 0);
+
+	if ($system) {
+		$params['system'] = 1;
+	}
+
+	foreach ($extra as $key => $value) {
+		if ($value === null || $value === '') {
+			continue;
 		}
-			
+
+		$params[$key] = $value;
 	}
-	
-	//Если пользователь отправитель
-	if($arr['id_user_out'] == $USER['id'] && $arr['delete_out'] == 1) {
-		$db->query("UPDATE mail SET delete_out='0' WHERE id=".$id);
+
+	return 'my.mail.php?'.http_build_query($params);
+}
+
+function mail_partner_id($message, $currentUserId)
+{
+	$currentUserId = (int) $currentUserId;
+	return ((int) $message['id_user_in'] === $currentUserId ? (int) $message['id_user_out'] : (int) $message['id_user_in']);
+}
+
+function mail_avatar_path($user)
+{
+	$defaultAvatar = 'public/images/default_avatar.gif';
+	if (empty($user) || empty($user['avatar'])) {
+		return $defaultAvatar;
 	}
-	
-	// header("Location:my.mail.php?status=4&act=".($arr['id_user_in'] == $USER['id'] ? 'in_message' : 'out_message')."");
-	header("Location:my.mail.php?status=4&act=".($_GET['type'] == 'in_message'  ? 'in_message' : 'out_message')."");
+
+	if (is_file('public/avatars/small/'.$user['avatar'])) {
+		return 'public/avatars/small/'.$user['avatar'];
+	}
+
+	if (is_file('public/avatars/'.$user['avatar'])) {
+		return 'public/avatars/'.$user['avatar'];
+	}
+
+	return $defaultAvatar;
+}
+
+function mail_preview_text($text, $limit = 160)
+{
+	$text = trim(strip_tags(format_comment((string) $text)));
+	$text = preg_replace('~\s+~u', ' ', $text);
+
+	if ($text === '') {
+		return '';
+	}
+
+	if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+		if (mb_strlen($text, 'UTF-8') > $limit) {
+			return mb_substr($text, 0, $limit, 'UTF-8').'...';
+		}
+
+		return $text;
+	}
+
+	if (strlen($text) > $limit) {
+		return substr($text, 0, $limit).'...';
+	}
+
+	return $text;
+}
+
+function mail_plural($count, $one, $two, $five)
+{
+	$count = abs((int) $count) % 100;
+	$last = $count % 10;
+
+	if ($count > 10 && $count < 20) {
+		return $five;
+	}
+
+	if ($last > 1 && $last < 5) {
+		return $two;
+	}
+
+	if ($last == 1) {
+		return $one;
+	}
+
+	return $five;
+}
+
+function mail_conversation_where($currentUserId, $targetUserId = 0, $system = false, $alias = 'm')
+{
+	$currentUserId = (int) $currentUserId;
+	$targetUserId = (int) $targetUserId;
+	$prefix = ($alias !== '' ? $alias.'.' : '');
+
+	if ($system) {
+		return "({$prefix}id_user_in = {$currentUserId} AND {$prefix}id_user_out = 0 AND {$prefix}delete_in = 0)";
+	}
+
+	return "((".$prefix."id_user_in = {$currentUserId} AND ".$prefix."id_user_out = {$targetUserId} AND ".$prefix."delete_in = 0) OR (".$prefix."id_user_out = {$currentUserId} AND ".$prefix."id_user_in = {$targetUserId} AND ".$prefix."delete_out = 0))";
+}
+
+function mail_load_message($messageId, $currentUserId)
+{
+	global $db;
+
+	$messageId = (int) $messageId;
+	$currentUserId = (int) $currentUserId;
+
+	if ($messageId <= 0) {
+		return false;
+	}
+
+	return $db->super_query("SELECT * FROM mail WHERE id = {$messageId} AND (id_user_in = {$currentUserId} OR id_user_out = {$currentUserId}) LIMIT 1");
+}
+
+$currentUserId = (int) $USER['id'];
+$act = trim((string) ($_GET['act'] ?? 'list'));
+$messageId = (int) ($_GET['id'] ?? 0);
+$targetUserId = (int) ($_GET['id_user'] ?? 0);
+$systemConversation = !empty($_GET['system']);
+$status = trim((string) ($_GET['status'] ?? ''));
+$statusMessageId = (int) ($_GET['id_message'] ?? 0);
+
+if ($act === '') {
+	$act = 'list';
+}
+
+if ($act === 'in_message' || $act === 'out_message') {
+	$act = 'list';
+}
+
+if ($act === 'send') {
+	$act = 'conversation';
+}
+
+if ($act === 'view' && $messageId > 0) {
+	$message = mail_load_message($messageId, $currentUserId);
+	if(!$message) {
+		err('Ошибка', 'Данного сообщения не существует', 1);
+	}
+
+	$targetUserId = mail_partner_id($message, $currentUserId);
+	$systemConversation = ($targetUserId === 0);
+
+	header('Location: '.mail_build_href('conversation', $targetUserId, $systemConversation));
 	die();
 }
 
-//////////////////////////////////////////////////////////////
-//Удаление сообщение
-//////////////////////////////////////////////////////////////
-if($_GET['act'] == 'del' && $_GET['id']) {
-	$id =  (int)$_GET['id'];
-	$db->query("SELECT * FROM mail WHERE id=".$id." AND (id_user_in=".$USER['id']." OR id_user_out=".$USER['id'].")");
-	if(!$db->num_rows()) {
-		err('Ошибка' , 'Данного сообщения не существует' , 1);
+if ($act === 'restore' && $messageId > 0) {
+	$message = mail_load_message($messageId, $currentUserId);
+	if(!$message) {
+		err('Ошибка', 'Данного сообщения не существует', 1);
 	}
-	$arr = $db->get_row();
-	
-	//Если кто - то  уже удалил сообщение, удаляем его из базы
-	// if($arr['delete_in'] || $arr['delete_out']) {
-		// $db->query("DELETE FROM mail WHERE id=".$id);
-		// header("Location:my.mail.php?status=2");
-		// die();
-	// }
-	
-	//Если пользователь получатель
-	if($arr['id_user_in'] == $USER['id'] && $arr['delete_in'] == 0) {
-		$db->query("UPDATE mail SET delete_in='1' WHERE id=".$id);
-		if(!$arr['reading'] && $USER['num_messages'] > 0) {
-			$db->query("UPDATE users SET num_messages=(num_messages - 1) WHERE id=".$USER['id']);
-			$memcache->delete('user_'.$USER['id'] , 0);
+
+	$targetUserId = mail_partner_id($message, $currentUserId);
+	$systemConversation = ($targetUserId === 0);
+
+	if ((int) $message['id_user_in'] === $currentUserId && (int) $message['delete_in'] === 1) {
+		$db->query("UPDATE mail SET delete_in = '0' WHERE id = ".$message['id']);
+		if (!(int) $message['reading']) {
+			$db->query("UPDATE users SET num_messages = (num_messages + 1) WHERE id = ".$currentUserId);
+			$USER['num_messages'] = (int) $USER['num_messages'] + 1;
+			$memcache->delete('user_'.$currentUserId, 0);
 		}
-		$arr['delete_in'] = 0;
-		
 	}
-	
-	//Если пользователь отправитель
-	if($arr['id_user_out'] == $USER['id'] && $arr['delete_out'] == 0) {
-		$db->query("UPDATE mail SET delete_out='1' WHERE id=".$id);
-		$arr['delete_out'] = 0;
+
+	if ((int) $message['id_user_out'] === $currentUserId && (int) $message['delete_out'] === 1) {
+		$db->query("UPDATE mail SET delete_out = '0' WHERE id = ".$message['id']);
 	}
-	
-	//Если обе стороны удалили сообщение, удаляем его из базы
-	if($arr['delete_in'] == 1 && $arr['delete_out'] == 1) {
-		$db->query("DELETE FROM mail WHERE id=".$id);
-		header("Location:my.mail.php?status=2");
-		
-	} else {
-		header("Location:my.mail.php?status=3&id_message=".$id."&act=".($_GET['type'] == 'in_message'  ? 'in_message' : 'out_message')."");
-		// header("Location:my.mail.php?status=3&id_message=".$id."&act=".($arr['id_user_in'] == $USER['id'] ? 'in_message' : 'out_message')."");
-	}
-	
+
+	header('Location: '.mail_build_href('conversation', $targetUserId, $systemConversation, array('status' => 4)));
 	die();
 }
 
-//////////////////////////////////////////////////////////////
-//Вывод сообщения
-//////////////////////////////////////////////////////////////
-if($_GET['act'] == 'view' && $_GET['id']) {
-	
-	//Возможность читать директорам
-	if($_GET['id_user'] && $PRIV['EDIT_PRIV']) {
-		$id_user = (int)$_GET['id_user'];
-		$check_user = $db->query("SELECT * FROM users WHERE id=".$id_user);
-		if(!$db->num_rows($check_user) ) {
-			err('Ошибка' , 'Данного пользователя не найдено' , 1);
-		}	
-		
-	} else { 
-		$id_user = $USER['id'];
+if ($act === 'del' && $messageId > 0) {
+	$message = mail_load_message($messageId, $currentUserId);
+	if(!$message) {
+		err('Ошибка', 'Данного сообщения не существует', 1);
 	}
 
-	
-	$id = (int)$_GET['id'];
-	$db->query("SELECT m.* , u.name AS user_name , u.class , u.id AS id_user , u.avatar FROM mail AS m 
-				LEFT JOIN users AS u ON u.id = ".($_GET['type'] == 'out_message' ? 'm.id_user_in'  : 'm.id_user_out'  )." 
-				WHERE m.id=".$id." AND (m.id_user_in=".$id_user." OR m.id_user_out=".$id_user.")");
-	if(!$db->num_rows() ) {
-		err('Ошибка', 'Данного сообщения не существует' , 1);
-	}
-	
-	$arr = $db->get_row();
-	
-	//Делаем сообщение прочитаным
-	if(!$arr['reading'] && $arr['id_user_in'] == $USER['id']) {
-		$db->query("UPDATE users SET num_messages=(num_messages - 1) WHERE id=".$USER['id']);
-		$db->query("UPDATE mail SET reading='1' WHERE id='".$id."'");
-		
-		$USER['num_messages'] = ($USER['num_messages'] - 1);  //Удаляем из массива одно непрочитанное сообщение
-		$memcache->delete('user_'.$USER['id'] , 0);
-	}
-	
-	head('Просмотр сообщения');
-	begin_frame('Просмотр сообщения');
-	?>
-	
-		
-	
-	
-	<form action="my.mail.php?act=send&id_user=<?=$arr['id_user'];?>&id_message=<?=$id;?>" method="post">
-	
-	<table width="100%" cellspacing="7" cellpadding="0" border="0" align="center">
-	<tbody>
-		<tr>
-		<th rowspan="10" valign="top" width="40%">
-		<?
-		if($arr['id_user'] != 0) {
-			echo '<a href="profile.php?id='.$arr['id_user'].'">'.($arr['avatar'] ? '<img src="public/avatars/'.$arr['avatar'].'" width="70">' : '<img src="public/images/default_avatar.gif" width="70">').'</a>';
-		} else {
-			echo '<img src="public/images/default_avatar.gif" width="70">';
+	$targetUserId = mail_partner_id($message, $currentUserId);
+	$systemConversation = ($targetUserId === 0);
+
+	$deleteIn = (int) $message['delete_in'];
+	$deleteOut = (int) $message['delete_out'];
+
+	if ((int) $message['id_user_in'] === $currentUserId && $deleteIn === 0) {
+		$db->query("UPDATE mail SET delete_in = '1' WHERE id = ".$message['id']);
+		$deleteIn = 1;
+
+		if (!(int) $message['reading'] && (int) $USER['num_messages'] > 0) {
+			$db->query("UPDATE users SET num_messages = GREATEST(num_messages - 1, 0) WHERE id = ".$currentUserId);
+			$USER['num_messages'] = max(0, (int) $USER['num_messages'] - 1);
+			$memcache->delete('user_'.$currentUserId, 0);
 		}
-		?>
-		</th>
-		</tr>
-		<tr >
-		<td class="ta_r">
-		 <span class="grey"><?=($_GET['type'] == 'out_message' ? 'Кому:' : 'От:');?></span>
-		</td>
-		<td style="padding: 0px;">
-			<?
-			if($arr['id_user'] != 0) {
-				echo '<a href="profile.php?id='.$arr['id_user'].'">'.get_user_color($arr['class'] ,$arr['user_name']).'</a>';
-			} else {
-				echo 'System';
-			}	
-			?>	
-		 
-		</td><td>
-	   </td></tr>
-		<tr>
-		<td class="ta_r" width="10%">
-		 <span class="grey" width="1%">Тема:</span>
-		</td>
-		<td style="padding: 0px;">
-			<?=htmlspecialchars($arr['name']);?>
-		</td><td>
-	   </td></tr>
-	   
-	   	<tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey">Сообщение:</span>
-		</td>
-		<td style="padding: 0px;">
-		 <?=format_comment($arr['text']);?>
-		</td><td>
-	   </td></tr>
-	   
-	   
-	  
-	
-	</tbody>
-	</table>
-	
-	
-	 <? if($arr['id_user'] != 0 ) { ?>
-		<table align="center">
-	   	<tr>
-		
-		<td style="padding: 0px;" colspan="2">
-		 <?=textbb('text' , '' ,  '100%' , '300');?>
-		</td><td>
-	   </td></tr>
-	   
-
-	   	<tr>
-		<td class="ta_r">
-		 <span class="grey"></span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="submit" value="Ответить">
-		</td><td>
-	   </td></tr>
-	   </table>
-		<? } ?>
-	
-	</form>
-	<?
-	end_frame();
-	foot();
-	die();
-}
-
-
-
-
-//////////////////////////////////////////////////////////////
-//Отправка сообщений
-//////////////////////////////////////////////////////////////
-if($_GET['act'] == 'send' && $_GET['id_user']) {
-	//ID Пользователя
-	$id_user = (int)$_GET['id_user'];
-	if($id_user == $USER['id']) {
-		err('Ошибка' , 'Вы не можете отправлять сообщения самому себе' , 1);
 	}
-	
-	$db->query("SELECT * FROM users WHERE id=".$id_user);
-	if(!$db->num_rows() ) {
-		err('Ошибка' , 'Данного получателя не существует' , 1);
+
+	if ((int) $message['id_user_out'] === $currentUserId && $deleteOut === 0) {
+		$db->query("UPDATE mail SET delete_out = '1' WHERE id = ".$message['id']);
+		$deleteOut = 1;
 	}
-	$arr = $db->get_row();
-	
-	
-	
-	//Обработка
-	if($_POST) {
-	
-		//Тема сообщения
-		
-		$id_message = (int)$_GET['id_message'];
-		
-		//Ответ на сообщение
-		if($id_message) {
-			$db->query("SELECT * FROM mail WHERE id=".$id_message." AND (id_user_in=".$USER['id']." OR id_user_out=".$USER['id'].")");	
-			if(!$db->num_rows() ) {
-				err('Ошибка' , 'Данного сообщения не существует' , 1);
-			}
-			$arr = $db->get_row();
-			
-			//Добавляем к теме фразу: Re
-			$name = 'Re:'.$arr['name'];
-		} else {
-			//Написать сообщение
-			$name = trim($_POST['name']);
-			if(empty($name) ) {
-				$name = 'Re:';
-			}
-		}
-		
-		//Сообщение
-		$text =  trim($_POST['text']);
-		if(empty($text) ) {
-			err('Ошибка' , 'Вы не ввели текст сообщения' , 1);
-		}
-		
-		//Добавляем сообщение
-		$db->query("INSERT INTO mail (name ,text , date , id_user_in , id_user_out) VALUES('".$db->safesql($name)."' , '".$db->safesql($text)."' , NOW() , ".$id_user." , ".$USER['id'].")");
-		$db->query("UPDATE  users SET num_messages=(num_messages+1) WHERE id=".$id_user);
-		$memcache->delete('user_'.$id_user , 0);
-		header("Location:my.mail.php?status=1");
+
+	if ($deleteIn === 1 && $deleteOut === 1) {
+		$db->query("DELETE FROM mail WHERE id = ".$message['id']);
+		header('Location: '.mail_build_href('list', 0, false, array('status' => 2)));
 		die();
 	}
-	
-	//Вывод формы
-	head('Отправка сообщения');
-	begin_frame('Отправка сообщения');
-	?>
-	<form action="my.mail.php?act=send&id_user=<?=$id_user;?>" method="post">
-	<table width="100%" cellspacing="7" cellpadding="0" border="0" align="center">
-	<tbody>
-		<tr>
-		<td class="ta_r" width="10%">
-		 <span class="grey">Кому:</span>
-		</td>
-		<td style="padding: 0px;">
-		 <a href="profile.php?id=<?=$arr['id'];?>"><?=get_user_color($arr['class'] , $arr['name']);?></a>
-		</td><td>
-	   </td></tr>
-		<tr>
-		<td class="ta_r">
-		 <span class="grey">Тема:</span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="text" style="margin: 0px;" size="55"  name="name" class="inputText" value="<?=htmlspecialchars($_POST['name']);?>">
-		</td><td>
-	   </td></tr>
-	   
-	   	<tr>
-		
-		<td style="padding: 0px;" colspan="2">
-		
-		 <?=textbb('text' , $_POST['text'],  '95%' , '300');?>
-		</td><td>
-	   </td></tr>
-	   
-	   	<tr>
-	
-		<td style="padding: 0px;" colspan="2">
-		 <input type="submit" value="Отправить">
-		</td><td>
-	   </td></tr>
-	
-	</tbody>
-	</table>
-	</form>
-	<?
-	end_frame();
-	foot();
+
+	header('Location: '.mail_build_href('conversation', $targetUserId, $systemConversation, array('status' => 3, 'id_message' => $message['id'])));
 	die();
-	
 }
 
-//////////////////////////////////////////////////////////////
-//Мои сообщения (Полученные/Отправленные)
-//////////////////////////////////////////////////////////////
+$participant = null;
+$conversationTitle = 'Диалоги';
+$conversationSubtitle = 'Все личные сообщения сгруппированы по собеседникам.';
+$messages = array();
 
-//Возможность читать директорам
-if($_GET['id_user'] && $PRIV['EDIT_PRIV']) {
-	$id_user = (int)$_GET['id_user'];
-	$check_user = $db->query("SELECT * FROM users WHERE id=".$id_user);
-	if(!$db->num_rows($check_user) ) {
-		err('Ошибка' , 'Данного пользователя не найдено' , 1);
-	}	
-	
-} else { 
-	$id_user = $USER['id'];
+if ($act === 'conversation') {
+	if ($systemConversation) {
+		$participant = array(
+			'id' => 0,
+			'name' => 'System',
+			'avatar' => '',
+			'class' => 0,
+			'last_access' => '',
+		);
+		$conversationTitle = 'Системные сообщения';
+		$conversationSubtitle = 'Уведомления от движка и администрации.';
+	} else {
+		if ($targetUserId <= 0) {
+			err('Ошибка', 'Получатель не выбран.', 1);
+		}
+
+		if ($targetUserId === $currentUserId) {
+			err('Ошибка', 'Вы не можете отправлять сообщения самому себе', 1);
+		}
+
+		$participant = $db->super_query("SELECT id, name, class, avatar, last_access FROM users WHERE id = ".$targetUserId." LIMIT 1");
+		if(!$participant) {
+			err('Ошибка', 'Данного пользователя не существует', 1);
+		}
+
+		$conversationTitle = (string) $participant['name'];
+		$conversationSubtitle = 'Был на сайте '.convent_date($participant['last_access']);
+	}
+
+	if($_POST && !$systemConversation) {
+		$replyToId = (int) ($_GET['id_message'] ?? 0);
+		$subject = trim((string) ($_POST['name'] ?? ''));
+
+		if ($replyToId > 0) {
+			$sourceMessage = mail_load_message($replyToId, $currentUserId);
+			if(!$sourceMessage) {
+				err('Ошибка', 'Данного сообщения не существует', 1);
+			}
+
+			$subject = trim((string) $sourceMessage['name']);
+			if ($subject === '') {
+				$subject = 'Сообщение';
+			} elseif (stripos($subject, 'Re:') !== 0) {
+				$subject = 'Re: '.$subject;
+			}
+		}
+
+		if ($subject === '') {
+			$subject = 'Сообщение';
+		}
+
+		$text = trim((string) ($_POST['text'] ?? ''));
+		if($text === '') {
+			err('Ошибка', 'Вы не ввели текст сообщения', 1);
+		}
+
+		$db->query("INSERT INTO mail (name, text, date, id_user_in, id_user_out) VALUES ('".$db->safesql($subject)."', '".$db->safesql($text)."', NOW(), ".$targetUserId.", ".$currentUserId.")");
+		$db->query("UPDATE users SET num_messages = (num_messages + 1) WHERE id = ".$targetUserId);
+		$memcache->delete('user_'.$targetUserId, 0);
+
+		header('Location: '.mail_build_href('conversation', $targetUserId, false, array('status' => 1)));
+		die();
+	}
+
+	if (!$systemConversation) {
+		$unread = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out = {$targetUserId} AND delete_in = 0 AND reading = 0");
+		$unreadCount = (int) ($unread['c'] ?? 0);
+
+		if ($unreadCount > 0) {
+			$db->query("UPDATE mail SET reading = '1' WHERE id_user_in = {$currentUserId} AND id_user_out = {$targetUserId} AND delete_in = 0 AND reading = 0");
+			$db->query("UPDATE users SET num_messages = GREATEST(num_messages - {$unreadCount}, 0) WHERE id = {$currentUserId}");
+			$USER['num_messages'] = max(0, (int) $USER['num_messages'] - $unreadCount);
+			$memcache->delete('user_'.$currentUserId, 0);
+		}
+	}
+
+	$sql = $db->query("SELECT m.*, u.name AS sender_name, u.class AS sender_class, u.avatar AS sender_avatar FROM mail AS m LEFT JOIN users AS u ON u.id = m.id_user_out WHERE ".mail_conversation_where($currentUserId, $targetUserId, $systemConversation, 'm')." ORDER BY m.date ASC, m.id ASC");
+	while($row = $db->get_row($sql)) {
+		$messages[] = $row;
+	}
 }
-
-
-
 
 head('Мои сообщения');
-
 echo '<link type="text/css" href="public/css/mail.css" rel="stylesheet">';
 
-//Статусы
-if($_GET['status'] == '1') {
-	msg('Успешно' , 'Сообщение успешно отправлено');
-}elseif($_GET['status'] == '2') {
-	msg('Успешно' , 'Сообщение успешно удалено');
-}elseif($_GET['status'] == '3' && $_GET['id_message']) {
-	$id_message = (int)$_GET['id_message'];
-	msg('Успешно' , 'Сообщение успешно удалено <br> <a href="my.mail.php?act=restore&id='.$id_message.'&type='.htmlspecialchars($_GET['act']).'">Восстановить</a>');
-}elseif($_GET['status'] == '4') {
-	msg('Успешно' , 'Сообщение успешно восстановлено');
+if($status === '1') {
+	msg('Успешно', 'Сообщение успешно отправлено.');
+} elseif($status === '2') {
+	msg('Успешно', 'Сообщение окончательно удалено.');
+} elseif($status === '3' && $statusMessageId > 0) {
+	$restoreLink = mail_build_href('restore', $targetUserId, $systemConversation, array('id' => $statusMessageId));
+	msg('Успешно', 'Сообщение скрыто из списка. <a href="'.$restoreLink.'">Восстановить</a>');
+} elseif($status === '4') {
+	msg('Успешно', 'Сообщение восстановлено.');
 }
 
+$conversations = array();
+$conversationsSql = $db->query("SELECT IF(id_user_in = {$currentUserId}, id_user_out, id_user_in) AS partner_id, MAX(date) AS last_date, COUNT(*) AS total_messages, SUM(IF(id_user_in = {$currentUserId} AND reading = 0 AND delete_in = 0, 1, 0)) AS unread_messages FROM mail WHERE ((id_user_in = {$currentUserId} AND delete_in = 0) OR (id_user_out = {$currentUserId} AND delete_out = 0)) GROUP BY partner_id ORDER BY last_date DESC");
 
+while($conversation = $db->get_row($conversationsSql)) {
+	$partnerId = (int) $conversation['partner_id'];
+	$isSystem = ($partnerId === 0);
 
-
-
-//Выводим функции
-begin_frame('Функции');
-echo '<input type="button" value="Полученные" onCLick="window.location.href=\'my.mail.php?act=in_message'.($_GET['id_user'] ? '&id_user='.(int)$_GET['id_user'] : '').'\'">&nbsp';
-echo '<input type="button" value="Отправленные" onCLick="window.location.href=\'my.mail.php?act=out_message'.($_GET['id_user'] ? '&id_user='.(int)$_GET['id_user'] : '').'\'">&nbsp';
-end_frame();
-
-begin_frame('Мои сообщения');
-
-
-//Постраничная навигация
-$db->query("SELECT m.*  
-			FROM mail AS m
-			WHERE ".($_GET['act'] == 'out_message' ? 'm.id_user_out='.$id_user  :  'm.id_user_in='.$id_user)."  
-			AND ".($_GET['act'] == 'out_message' ?  'delete_out="0"'  :  'delete_in="0"')." 
-			" , 1);
-						
-$count = $db->num_rows();
-list($pagertop, $pagerbottom, $limit) = pager('50', $count, 'my.mail.php?act='.$_GET['act'].'&id_user='.$id_user.'&');
-
-$sql  = $db->query("SELECT m.* , u.name AS user_name , u.class AS user_class , u.id AS id_user , u.avatar
-		   FROM mail AS m 
-		   LEFT JOIN users AS u ON u.id = ".($_GET['act'] == 'out_message' ?  'm.id_user_in'  :  'm.id_user_out')."  
-		   WHERE ".($_GET['act'] == 'out_message' ? 'm.id_user_out='.$id_user  :  'm.id_user_in='.$id_user)." 
-		   AND ".($_GET['act'] == 'out_message' ?  'delete_out="0"'  :  'delete_in="0"')." 
-		   ORDER BY m.date DESC
-		   ".$limit."");
-		   
-if(!$db->num_rows($sql) ) {
-	msg('Извините' , 'Сообщений не найдено');
-} else {
-	echo $pagertop;
-	?>
-		<table width="100%" cellspacing="0" cellpadding="3" border="0" align="center" class="mailbox" >
-		<tbody>
-			
-			<tr>
-				<th width="1%">&nbsp </th>
-				<th width="10%"><?=($_GET['act'] == 'out_message' ? 'Получатель' : 'Отправитель');?></th>
-				<th>Сообщение</th>
-				<th width="10%">Действия</th>
-				
-			</tr>
-			
-		<?
-	
-	while($arr = $db->get_row($sql) ) {
-	
-		//Название сообщения
-		if (strlen($arr['name']) > 30) {
-			$arr['name'] = substr($arr['name'] , 0, 30).'...'; 
+	if ($isSystem) {
+		$partner = array(
+			'id' => 0,
+			'name' => 'System',
+			'avatar' => '',
+			'class' => 0,
+			'last_access' => '',
+		);
+		$lastMessage = $db->super_query("SELECT * FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out = 0 AND delete_in = 0 ORDER BY date DESC, id DESC LIMIT 1");
+		$subtitle = 'Системные уведомления';
+	} else {
+		$partner = get_user_info($partnerId);
+		if (!$partner) {
+			continue;
 		}
-		$arr['name'] = htmlspecialchars($arr['name']);
-		
-		//Текст сообщения
-		if (strlen($arr['text']) > 100) {
-			$arr['text'] = substr($arr['text'] , 0, 100).'...'; 
-		}
-		
-			
-			
-		?>
-		<tr <?=(!$arr['reading'] ? 'style="background:	#f7f7f7;"' : '');?>>
-		
-		<!--Отправитель-->
-		<td valign="top" width="100" align="center">
-			<?
-			if($arr['id_user'] != 0) {
-				echo '<a href="profile.php?id='.$arr['id_user'].'">'.($arr['avatar'] ? '<img src="public/avatars/small/'.$arr['avatar'].'">' : '<img src="public/images/default_avatar.gif" width="50">').'</a>';
-			} else {
-				echo '<img src="public/images/default_avatar.gif" width="50">';
-			}
-			?>
-			
-		</td>
-		<td width="70" valign="top">
-			<?
-			if($arr['id_user'] != 0) {
-				echo '<a href="profile.php?id='.$arr['id_user'].'">'.get_user_color($arr['user_class'] ,$arr['user_name']).'</a>';
-			} else {
-				echo 'System';
-			}	
-			?>	
-			<div class="date"><?=convent_date($arr['date']);?></div>
-		</td>
-		
-		<!--Сообщение-->
-		<td valign="top" class="messageSnippet">
-			<div><a href="my.mail.php?id=<?=$arr['id'];?>&act=view&type=<?=htmlspecialchars($_GET['act']);?><?=($id_user ? '&id_user='.$id_user : '');?>" class="messageSubject"><?=htmlspecialchars($arr['name']);?></a></div>
-			<div><a href="my.mail.php?id=<?=$arr['id'];?>&act=view&type=<?=htmlspecialchars($_GET['act']);?><?=($id_user ? '&id_user='.$id_user : '');?>" class="messageBody"><?=cleanhtml($arr['text']);?></a></div>	
-		</td>
-		
-		
-		<!--Действия-->
-		<td width="70">
-		<small><a href="my.mail.php?act=del&id=<?=$arr['id'];?>&type=<?=htmlspecialchars($_GET['act']);?>">Удалить</a></small>
-		<small><a href="my.mail.php?act=view&id=<?=$arr['id'];?>&type=<?=htmlspecialchars($_GET['act']);?>">Ответить</a></small>
-		<!--<input type="button" value="Удалить" style="width:100" onCLick="window.location.href='my.mail.php?act=del&id=<?=$arr['id'];?>'">
-		<br>
-		<input type="button" value="Ответить" style="width:100" onCLick="window.location.href='my.mail.php?act=view&id=<?=$arr['id'];?>&type=<?=htmlspecialchars($_GET['act']);?>'">-->
-		</td>
-		</tr>
-		
-		<tr><td colspan="4"><hr></td></tr>
-		<?
+
+		$lastMessage = $db->super_query("SELECT * FROM mail WHERE ".mail_conversation_where($currentUserId, $partnerId, false, '')." ORDER BY date DESC, id DESC LIMIT 1");
+		$subtitle = 'Был на сайте '.convent_date($partner['last_access']);
 	}
-	?>
-	<tr>
-			<td colspan="4"><?=$pagertop;?></td>
-			</tr>
-			</tbody></table>
-	<?
-	
+
+	$conversations[] = array(
+		'partner_id' => $partnerId,
+		'system' => $isSystem,
+		'partner' => $partner,
+		'last_message' => $lastMessage,
+		'subtitle' => $subtitle,
+		'total_messages' => (int) $conversation['total_messages'],
+		'unread_messages' => (int) $conversation['unread_messages'],
+	);
 }
-		   
-end_frame();
+?>
+
+<div class="mail-page">
+	<div class="mail-shell">
+		<aside class="mail-sidebar">
+			<a class="mail-sidebar-link<?=($act === 'list' ? ' mail-sidebar-link-active' : '');?>" href="<?=mail_build_href('list');?>">Диалоги</a>
+			<?php if ($act === 'conversation') { ?>
+			<a class="mail-sidebar-link mail-sidebar-link-active" href="<?=mail_build_href('conversation', $targetUserId, $systemConversation);?>">Текущий диалог</a>
+			<?php } ?>
+		</aside>
+
+		<section class="mail-panel">
+			<?php if ($act === 'conversation') { ?>
+			<div class="mail-panel-header">
+				<div class="mail-panel-heading">
+					<div class="mail-panel-title"><?=$conversationTitle;?></div>
+					<div class="mail-panel-subtitle"><?=$conversationSubtitle;?></div>
+				</div>
+				<div class="mail-panel-actions">
+					<a class="mail-button mail-button-secondary" href="<?=mail_build_href('list');?>">Назад к диалогам</a>
+					<?php if (!$systemConversation) { ?>
+					<a class="mail-button" href="profile.php?id=<?=(int) $participant['id'];?>">Профиль</a>
+					<?php } ?>
+				</div>
+			</div>
+
+			<div class="mail-conversation">
+				<div class="mail-conversation-stream">
+					<?php if (!$messages) { ?>
+					<div class="mail-empty-state">Сообщений пока нет. Можно начать диалог прямо сейчас.</div>
+					<?php } ?>
+
+					<?php foreach($messages as $row) { ?>
+					<?php
+					$isOutgoing = ((int) $row['id_user_out'] === $currentUserId);
+					$messageAvatarUser = ($isOutgoing ? $USER : array(
+						'avatar' => $row['sender_avatar'],
+						'name' => ($row['sender_name'] ?? 'System'),
+					));
+					$messageAuthor = ($isOutgoing ? 'Вы' : (!empty($row['sender_name']) ? $row['sender_name'] : 'System'));
+					$messageDeleteHref = mail_build_href('del', $targetUserId, $systemConversation, array('id' => $row['id']));
+					?>
+					<article class="mail-message<?=($isOutgoing ? ' mail-message-outgoing' : '');?><?=(!$isOutgoing && !(int) $row['reading'] ? ' mail-message-unread' : '');?>">
+						<div class="mail-message-avatar">
+							<img src="<?=mail_avatar_path($messageAvatarUser);?>" alt="<?=htmlspecialchars($messageAuthor, ENT_QUOTES, 'UTF-8');?>" width="44" height="44">
+						</div>
+						<div class="mail-message-body">
+							<div class="mail-message-meta">
+								<span class="mail-message-author"><?=htmlspecialchars($messageAuthor, ENT_QUOTES, 'UTF-8');?></span>
+								<span class="mail-message-date"><?=convent_date($row['date']);?></span>
+							</div>
+							<?php if (trim((string) $row['name']) !== '') { ?>
+							<div class="mail-message-subject"><?=htmlspecialchars((string) $row['name'], ENT_QUOTES, 'UTF-8');?></div>
+							<?php } ?>
+							<div class="mail-message-text"><?=format_comment($row['text']);?></div>
+							<div class="mail-message-actions">
+								<a href="<?=$messageDeleteHref;?>">Удалить</a>
+							</div>
+						</div>
+					</article>
+					<?php } ?>
+				</div>
+
+				<?php if (!$systemConversation) { ?>
+				<form class="mail-reply-form" action="<?=mail_build_href('conversation', $targetUserId);?>" method="post">
+					<input type="hidden" name="name" value="Сообщение">
+					<label class="mail-reply-label" for="mail_reply_text">Новое сообщение</label>
+					<textarea class="mail-reply-textarea" id="mail_reply_text" name="text"><?=htmlspecialchars((string) ($_POST['text'] ?? ''), ENT_QUOTES, 'UTF-8');?></textarea>
+					<div class="mail-reply-actions">
+						<button class="mail-button" type="submit">Отправить</button>
+					</div>
+				</form>
+				<?php } ?>
+			</div>
+			<?php } else { ?>
+			<div class="mail-panel-header">
+				<div class="mail-panel-heading">
+					<div class="mail-panel-title">Сообщения</div>
+					<div class="mail-panel-subtitle">Здесь собраны все диалоги по пользователям, а не отдельные письма вперемешку.</div>
+				</div>
+			</div>
+
+			<div class="mail-thread-list">
+				<?php if (!$conversations) { ?>
+				<div class="mail-empty-state">У вас пока нет сообщений.</div>
+				<?php } ?>
+
+				<?php foreach($conversations as $conversation) { ?>
+				<?php
+				$partner = $conversation['partner'];
+				$lastMessage = $conversation['last_message'];
+				$partnerName = (!empty($partner['name']) ? $partner['name'] : 'System');
+				$openHref = mail_build_href('conversation', $conversation['partner_id'], $conversation['system']);
+				$preview = ($lastMessage ? mail_preview_text($lastMessage['text']) : '');
+				$countLabel = $conversation['total_messages'].' '.mail_plural($conversation['total_messages'], 'сообщение', 'сообщения', 'сообщений');
+				?>
+				<article class="mail-thread-card<?=($conversation['unread_messages'] > 0 ? ' mail-thread-card-unread' : '');?>">
+					<a class="mail-thread-avatar" href="<?=$openHref;?>">
+						<img src="<?=mail_avatar_path($partner);?>" alt="<?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?>" width="56" height="56">
+					</a>
+
+					<div class="mail-thread-body">
+						<div class="mail-thread-topline">
+							<div class="mail-thread-title"><?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?></div>
+							<?php if ($lastMessage) { ?>
+							<div class="mail-thread-date"><?=convent_date($lastMessage['date']);?></div>
+							<?php } ?>
+						</div>
+
+						<div class="mail-thread-subtitle"><?=$conversation['subtitle'];?></div>
+
+						<?php if ($lastMessage && trim((string) $lastMessage['name']) !== '') { ?>
+						<div class="mail-thread-subject"><?=htmlspecialchars((string) $lastMessage['name'], ENT_QUOTES, 'UTF-8');?></div>
+						<?php } ?>
+
+						<?php if ($preview !== '') { ?>
+						<div class="mail-thread-preview"><?=htmlspecialchars($preview, ENT_QUOTES, 'UTF-8');?></div>
+						<?php } ?>
+					</div>
+
+					<div class="mail-thread-side">
+						<div class="mail-thread-count"><?=$countLabel;?></div>
+						<?php if ($conversation['unread_messages'] > 0) { ?>
+						<div class="mail-thread-badge"><?=$conversation['unread_messages'];?> новых</div>
+						<?php } ?>
+						<a class="mail-button" href="<?=$openHref;?>"><?=($conversation['system'] ? 'Открыть' : 'Написать');?></a>
+					</div>
+				</article>
+				<?php } ?>
+			</div>
+			<?php } ?>
+		</section>
+	</div>
+</div>
+
+<?php
 foot();
 ?>

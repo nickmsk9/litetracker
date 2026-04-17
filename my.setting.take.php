@@ -213,17 +213,17 @@ if($act == 'password') {
 
 if($act == 'email') {
 	$email = trim((string) ($_POST['email'] ?? ''));
-	if($email == $arr['email'] || empty($email)) {
+	if($email == $arr['email']) {
 		header('Location:my.setting.php?id='.$id.'&status=3');
 		die();
 	}
 
-	if (!validemail($email)) {
+	if ($email !== '' && !validemail($email)) {
 		err($language['default_1'], $language['setting_64'], 1);
 	}
 
-	$emailCheck = $db->query("SELECT * FROM users WHERE email='".$db->safesql($email)."'");
-	if($db->num_rows() >= 1) {
+	$emailCheck = ($email !== '' ? $db->query("SELECT * FROM users WHERE email='".$db->safesql($email)."'") : false);
+	if($email !== '' && $db->num_rows() >= 1) {
 		err($language['default_1'], $language['setting_65'], 1);
 	}
 
@@ -257,12 +257,12 @@ if($arr['name'] != $name) {
 
 $email = trim((string) ($_POST['email'] ?? ''));
 if($email != $arr['email']) {
-	if (empty($email) || !validemail($email)) {
+	if ($email !== '' && !validemail($email)) {
 		err($language['default_1'], $language['setting_64'], 1);
 	}
 
-	$emailCheck = $db->query("SELECT * FROM users WHERE email='".$db->safesql($email)."' AND id <> ".$id);
-	if($db->num_rows() >= 1) {
+	$emailCheck = ($email !== '' ? $db->query("SELECT * FROM users WHERE email='".$db->safesql($email)."' AND id <> ".$id) : false);
+	if($email !== '' && $db->num_rows() >= 1) {
 		err($language['default_1'], $language['setting_65'], 1);
 	}
 

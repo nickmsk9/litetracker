@@ -74,7 +74,7 @@ begin_frame();
 		 <td class="data" colspan="2">
 				<?=$action;?>
 				<?
-				echo ($USER['id'] != $userid ? '<Input type="button" value="'.$language['profile_17'].'" onCLick="window.location.href=\'my.mail.php?act=send&id_user='.$userid.'\'">&nbsp' : '');
+				echo ($USER['id'] != $userid ? '<Input type="button" value="'.$language['profile_17'].'" onCLick="window.location.href=\'my.mail.php?act=conversation&id_user='.$userid.'\'">&nbsp' : '');
 
 
 				?>

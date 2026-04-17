@@ -162,24 +162,6 @@ LOCK TABLES `comments_users` WRITE;
 INSERT INTO `comments_users` VALUES (1,2,2,'2026-04-16 15:46:35','вапвапывафывфыв',0,NULL);
 /*!40000 ALTER TABLE `comments_users` ENABLE KEYS */;
 UNLOCK TABLES;
-DROP TABLE IF EXISTS `confirm`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `confirm` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `code` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
-  `date` datetime NOT NULL,
-  `id_user` int unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id` (`id`),
-  UNIQUE KEY `id_user` (`id_user`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-LOCK TABLES `confirm` WRITE;
-/*!40000 ALTER TABLE `confirm` DISABLE KEYS */;
-/*!40000 ALTER TABLE `confirm` ENABLE KEYS */;
-UNLOCK TABLES;
 DROP TABLE IF EXISTS `cron`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -319,12 +301,12 @@ CREATE TABLE `orbital_blocks` (
   KEY `title` (`title`),
   KEY `weight` (`weight`),
   KEY `active` (`active`)
-) ENGINE=MyISAM AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `orbital_blocks` WRITE;
 /*!40000 ALTER TABLE `orbital_blocks` DISABLE KEYS */;
-INSERT INTO `orbital_blocks` VALUES (1,'Поиск','c',1,1,'block-search.php','all','index'),(2,'Чат','c',2,1,'block-chat.php','all','index'),(3,'Новинки месяца','c',3,1,'block-newreleases.php','all','index'),(4,'Нагрузка на сервер','c',4,1,'block-load_in_server.php','all','index'),(5,'Категории','l',1,1,'block-categories.php','all','all'),(6,'Теги','d',2,1,'block-tags.php','all','browse'),(7,'ВКонтакте','l',3,1,'block-vkontakte.php','all','all'),(15,'Кто он-лайн','d',1,1,'block-online.php','all','index'),(9,'Новости','l',5,1,'block-news.php','all','index'),(17,'Опрос','c',2,1,'block-poll.php','users','index'),(16,'Статистика','d',1,1,'block-stats.php','all','index');
+INSERT INTO `orbital_blocks` VALUES (1,'Поиск','c',1,1,'block-search.php','all','index'),(2,'Чат','c',2,1,'block-chat.php','all','index'),(3,'Новинки месяца','c',3,1,'block-newreleases.php','all','index'),(4,'Нагрузка на сервер','c',4,1,'block-load_in_server.php','all','index'),(5,'Категории','l',1,1,'block-categories.php','all','all'),(6,'Теги','d',2,1,'block-tags.php','all','browse'),(7,'ВКонтакте','l',3,1,'block-vkontakte.php','all','all'),(15,'Кто он-лайн','d',1,1,'block-online.php','all','index'),(9,'Новости','l',5,1,'block-news.php','all','index'),(16,'Статистика','d',1,1,'block-stats.php','all','index');
 /*!40000 ALTER TABLE `orbital_blocks` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `peers`;
@@ -363,54 +345,6 @@ CREATE TABLE `peers` (
 LOCK TABLES `peers` WRITE;
 /*!40000 ALTER TABLE `peers` DISABLE KEYS */;
 /*!40000 ALTER TABLE `peers` ENABLE KEYS */;
-UNLOCK TABLES;
-DROP TABLE IF EXISTS `polls`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `polls` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `subject` varchar(300) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
-  `sort` smallint NOT NULL DEFAULT '0',
-  `date` datetime NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-LOCK TABLES `polls` WRITE;
-/*!40000 ALTER TABLE `polls` DISABLE KEYS */;
-/*!40000 ALTER TABLE `polls` ENABLE KEYS */;
-UNLOCK TABLES;
-DROP TABLE IF EXISTS `polls_questions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `polls_questions` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `id_poll` int NOT NULL,
-  `subject` varchar(300) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-LOCK TABLES `polls_questions` WRITE;
-/*!40000 ALTER TABLE `polls_questions` DISABLE KEYS */;
-/*!40000 ALTER TABLE `polls_questions` ENABLE KEYS */;
-UNLOCK TABLES;
-DROP TABLE IF EXISTS `polls_voting`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `polls_voting` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `id_poll` int NOT NULL,
-  `id_question` int NOT NULL,
-  `id_user` int NOT NULL,
-  `date` datetime NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-LOCK TABLES `polls_voting` WRITE;
-/*!40000 ALTER TABLE `polls_voting` DISABLE KEYS */;
-/*!40000 ALTER TABLE `polls_voting` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `priv`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -452,14 +386,13 @@ CREATE TABLE `priv` (
   `faq_moderate` smallint NOT NULL DEFAULT '0',
   `block_administrators` smallint NOT NULL DEFAULT '0',
   `block_moderators` smallint NOT NULL DEFAULT '0',
-  `polls_moderate` smallint unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `priv` WRITE;
 /*!40000 ALTER TABLE `priv` DISABLE KEYS */;
-INSERT INTO `priv` VALUES (1,0,1,'0000-00-00 00:00:00','68838B','Пользователи',1,0,0,1,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0),(2,0,0,'0000-00-00 00:00:00','00BFFF','VIP',1,1,0,1,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0),(3,0,0,'0000-00-00 00:00:00','FFA500','Релизеры',1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0),(4,0,0,'0000-00-00 00:00:00','CD3333','Модераторы',1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,0,0,1,0,0,0,1,0,1,1),(5,0,0,'0000-00-00 00:00:00','9ACD32','Администраторы',1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,1,1,1,1),(6,1,0,'0000-00-00 00:00:00','9B30FF','Создатели',1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1),(7,0,0,'2011-01-02 16:32:31','','Гости',0,0,0,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0);
+INSERT INTO `priv` VALUES (1,0,1,'0000-00-00 00:00:00','68838B','Пользователи',1,0,0,1,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,0),(2,0,0,'0000-00-00 00:00:00','00BFFF','VIP',1,1,0,1,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0),(3,0,0,'0000-00-00 00:00:00','FFA500','Релизеры',1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0),(4,0,0,'0000-00-00 00:00:00','CD3333','Модераторы',1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,0,0,1,0,0,0,1,0,1),(5,0,0,'0000-00-00 00:00:00','9ACD32','Администраторы',1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,1,1,1),(6,1,0,'0000-00-00 00:00:00','9B30FF','Создатели',1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1),(7,0,0,'2011-01-02 16:32:31','','Гости',0,0,0,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0);
 /*!40000 ALTER TABLE `priv` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `retrackers`;
@@ -638,7 +571,7 @@ CREATE TABLE `users` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(12) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `avatar` text CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
-  `email` varchar(200) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
+  `email` varchar(200) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL DEFAULT '',
   `password` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `password_code` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `ip` int NOT NULL,
@@ -684,4 +617,3 @@ UNLOCK TABLES;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-

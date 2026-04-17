@@ -58,7 +58,7 @@ if ($canEditProfile) {
 } elseif ($USER && (int) $USER['id'] !== (int) $arr['id']) {
 	$primaryAction = array(
 		'label' => 'Сообщение',
-		'href' => 'my.mail.php?act=send&id_user='.(int) $arr['id'],
+		'href' => 'my.mail.php?act=conversation&id_user='.(int) $arr['id'],
 		'class' => 'profile-card-button',
 	);
 }
