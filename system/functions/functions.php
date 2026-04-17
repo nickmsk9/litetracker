@@ -141,19 +141,20 @@ function profile_href($user, $view = 'profile', $params = array())
 		$view = 'profile';
 	}
 
-	$path = 'user/'.profile_public_id($userId).'/';
+	$extraParams = (is_array($params) ? $params : array());
+	$params = array('id' => $userId);
+
 	if ($view !== 'profile') {
-		$path .= $view.'/';
+		$params['view'] = $view;
 	}
 
-	if (!empty($params) && is_array($params)) {
-		$query = http_build_query($params);
-		if ($query !== '') {
-			$path .= '?'.$query;
-		}
+	if ($extraParams) {
+		$params = array_merge($params, $extraParams);
 	}
 
-	return $path;
+	$query = http_build_query($params);
+
+	return 'profile.php'.($query !== '' ? '?'.$query : '');
 }
 
 function user_is_online($userId, $thresholdMinutes = 15)

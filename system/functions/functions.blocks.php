@@ -14,6 +14,9 @@ by jenaDI
  *	Выводим блок
 */
 function render_blocks($blockfile) {
+	if ($blockfile === 'block-poll.php') {
+		return null;
+	}
 	
 	//Проверяем файл , существует ли он 
 	if (file_exists ('blocks/'.$blockfile) and $blockfile != '') {

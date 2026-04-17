@@ -316,12 +316,12 @@ hr {
 .site-nav-link {
   display: inline-flex;
   align-items: center;
-  min-height: 38px;
-  padding: 8px 10px;
+  min-height: 42px;
+  padding: 8px 14px;
   border: 1px solid transparent;
   border-radius: 4px;
   color: var(--text);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
 }
 
@@ -347,10 +347,15 @@ hr {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 4px;
   color: #c9cfd8;
+}
+
+.site-alert-button .site-icon {
+  width: 24px;
+  height: 24px;
 }
 
 .site-alert-button:hover {
@@ -693,11 +698,11 @@ hr {
 }
 
 .profile-layout-own {
-  grid-template-columns: minmax(0, 1fr) 190px;
+  grid-template-columns: minmax(0, 1fr) 260px;
 }
 
 .profile-layout-foreign {
-  grid-template-columns: minmax(0, 1fr) 254px;
+  grid-template-columns: minmax(0, 1fr) 260px;
 }
 
 .profile-primary,
@@ -1079,7 +1084,7 @@ hr {
 }
 
 .profile-sidebar-card {
-  padding: 14px;
+  padding: 20px;
 }
 
 .profile-about-card {
