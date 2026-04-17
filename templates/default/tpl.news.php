@@ -14,7 +14,7 @@ begin_frame($name);
 <table width="100%">
 <tr>
 <td valign="top" width="50">
-<a href="profile.php?id=<?=$user_id;?>"><?=$avatar;?></a>
+<a href="<?=profile_href($user_id);?>"><?=$avatar;?></a>
 </td>
 <td valign="top">
 	<table cellspacing="3" cellpadding="0" class="profileTable" width="100%">
@@ -33,7 +33,7 @@ begin_frame($name);
 		 <td class="label"><b><?=$language['news_15'];?></b>:</td>
 		 <td class="data">
 		  <div class="dataWrap">
-			<a href="profile.php?id=<?=$user_id;?>"><?=get_user_color($user_class , $user_name);?></a>
+			<a href="<?=profile_href($user_id);?>"><?=get_user_color($user_class , $user_name);?></a>
 		  </div>
 		 </td>
 		</tr>

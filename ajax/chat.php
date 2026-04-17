@@ -44,7 +44,7 @@ if(($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') == 'XMLHttpRequest') {
 					echo '<small><a href="javascript:void(0);" onClick="confirm_message_delete('.$arr['id'].')"><img src="public/images/broom.png" border="0" title="'.$language['chat_8'].'"/></a></small>&nbsp';
 				}
 
-				echo '<small><a href="profile.php?id='.$arr['id_user'].'"><img src="public/images/users.png" border="0" title="'.$language['chat_9'].'"/></a></small>&nbsp';
+				echo '<small><a href="'.profile_href($arr['id_user']).'"><img src="public/images/users.png" border="0" title="'.$language['chat_9'].'"/></a></small>&nbsp';
 				echo '</td>';
 				
 				echo '<td width="10%">';

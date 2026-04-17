@@ -232,6 +232,8 @@ $participant = null;
 $conversationTitle = 'Диалоги';
 $conversationSubtitle = 'Все личные сообщения сгруппированы по собеседникам.';
 $messages = array();
+$blockedByParticipant = false;
+$blockedByCurrent = false;
 
 if ($act === 'conversation') {
 	if ($systemConversation) {
@@ -258,11 +260,21 @@ if ($act === 'conversation') {
 			err('Ошибка', 'Данного пользователя не существует', 1);
 		}
 
+		$blockedByParticipant = user_is_blacklisted($targetUserId, $currentUserId);
+		$blockedByCurrent = user_is_blacklisted($currentUserId, $targetUserId);
 		$conversationTitle = (string) $participant['name'];
 		$conversationSubtitle = 'Был на сайте '.convent_date($participant['last_access']);
 	}
 
 	if($_POST && !$systemConversation) {
+		if ($blockedByParticipant) {
+			err('Ошибка', 'Пользователь добавил вас в ЧС.', 1);
+		}
+
+		if ($blockedByCurrent) {
+			err('Ошибка', 'Сначала уберите пользователя из ЧС.', 1);
+		}
+
 		$replyToId = (int) ($_GET['id_message'] ?? 0);
 		$subject = trim((string) ($_POST['name'] ?? ''));
 
@@ -387,7 +399,7 @@ while($conversation = $db->get_row($conversationsSql)) {
 				<div class="mail-panel-actions">
 					<a class="mail-button mail-button-secondary" href="<?=mail_build_href('list');?>">Назад к диалогам</a>
 					<?php if (!$systemConversation) { ?>
-					<a class="mail-button" href="profile.php?id=<?=(int) $participant['id'];?>">Профиль</a>
+					<a class="mail-button" href="<?=profile_href((int) $participant['id']);?>">Профиль</a>
 					<?php } ?>
 				</div>
 			</div>
@@ -430,6 +442,11 @@ while($conversation = $db->get_row($conversationsSql)) {
 				</div>
 
 				<?php if (!$systemConversation) { ?>
+				<?php if ($blockedByParticipant) { ?>
+				<div class="mail-empty-state">Пользователь добавил вас в ЧС. Отправка новых сообщений недоступна.</div>
+				<?php } elseif ($blockedByCurrent) { ?>
+				<div class="mail-empty-state">Пользователь находится в вашем ЧС. Уберите его из списка, чтобы написать сообщение.</div>
+				<?php } else { ?>
 				<form class="mail-reply-form" action="<?=mail_build_href('conversation', $targetUserId);?>" method="post">
 					<input type="hidden" name="name" value="Сообщение">
 					<label class="mail-reply-label" for="mail_reply_text">Новое сообщение</label>
@@ -438,6 +455,7 @@ while($conversation = $db->get_row($conversationsSql)) {
 						<button class="mail-button" type="submit">Отправить</button>
 					</div>
 				</form>
+				<?php } ?>
 				<?php } ?>
 			</div>
 			<?php } else { ?>

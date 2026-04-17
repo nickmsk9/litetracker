@@ -64,7 +64,7 @@ if($db->num_rows($sql)) {
 		if($arr['user_id'] == '-1') {
 			echo 'Гость';
 		}else {
-			echo '<a href="profile.php?id='.$arr['user_id'].'">'.get_user_color($arr['class'] , $arr['name']).'</a>';
+			echo '<a href="'.profile_href($arr['user_id']).'">'.get_user_color($arr['class'] , $arr['name']).'</a>';
 		}
 		echo '</td>';
 		

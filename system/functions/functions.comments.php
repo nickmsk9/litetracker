@@ -186,6 +186,181 @@ function queryComment($type, $object_id, $limit, $desc)
     return $query;
 }
 
+function user_wall_supports_threads()
+{
+    return lt_column_exists('comments_users', 'parent_id');
+}
+
+function user_wall_fetch_rows($objectId)
+{
+    global $db;
+
+    $objectId = (int) $objectId;
+    if ($objectId <= 0) {
+        return array();
+    }
+
+    $parentSelect = (user_wall_supports_threads() ? 'parent_id' : '0 AS parent_id');
+    $sql = $db->query(
+        "SELECT id, id_users, id_user, date, text, id_user_edit, date_edit, {$parentSelect}
+         FROM comments_users
+         WHERE id_users = {$objectId}
+         ORDER BY date ASC, id ASC"
+    );
+
+    $rows = array();
+    while ($row = $db->get_row($sql)) {
+        $rows[] = $row;
+    }
+
+    return $rows;
+}
+
+function user_wall_build_tree($rows)
+{
+    $comments = array();
+    foreach ($rows as $row) {
+        $commentId = (int) ($row['id'] ?? 0);
+        if ($commentId <= 0) {
+            continue;
+        }
+
+        $row['id'] = $commentId;
+        $row['parent_id'] = (int) ($row['parent_id'] ?? 0);
+        $comments[$commentId] = $row;
+    }
+
+    $childrenMap = array();
+    foreach ($comments as $commentId => $row) {
+        $parentId = (int) ($row['parent_id'] ?? 0);
+        if ($parentId > 0 && !isset($comments[$parentId])) {
+            $parentId = 0;
+        }
+
+        if (!isset($childrenMap[$parentId])) {
+            $childrenMap[$parentId] = array();
+        }
+
+        $childrenMap[$parentId][] = $commentId;
+    }
+
+    return user_wall_build_tree_branch(0, $comments, $childrenMap);
+}
+
+function user_wall_build_tree_branch($parentId, $comments, $childrenMap)
+{
+    $result = array();
+    $childrenIds = $childrenMap[$parentId] ?? array();
+
+    foreach ($childrenIds as $commentId) {
+        if (empty($comments[$commentId])) {
+            continue;
+        }
+
+        $node = $comments[$commentId];
+        $node['children'] = user_wall_build_tree_branch($commentId, $comments, $childrenMap);
+        $result[] = $node;
+    }
+
+    return $result;
+}
+
+function user_wall_render_list($objectId)
+{
+    $objectId = (int) $objectId;
+    $tree = user_wall_build_tree(user_wall_fetch_rows($objectId));
+
+    ob_start();
+    echo '<div class="wall-comments-list">';
+
+    if (!$tree) {
+        echo '<div class="wall-comment-empty">На стене пока нет комментариев.</div>';
+    } else {
+        foreach ($tree as $node) {
+            user_wall_render_node($node, $objectId, 0);
+        }
+    }
+
+    echo '</div>';
+
+    return ob_get_clean();
+}
+
+function user_wall_render_node($node, $objectId, $level = 0)
+{
+    global $USER, $PRIV, $language;
+
+    $objectId = (int) $objectId;
+    $level = max(0, (int) $level);
+    $commentId = (int) ($node['id'] ?? 0);
+    $commentUserId = (int) ($node['id_user'] ?? 0);
+    $commentUser = get_user_info($commentUserId);
+    $commentUserName = (string) ($commentUser['name'] ?? 'Unknown');
+    $commentProfileHref = profile_href($commentUserId);
+    $commentAvatarPath = 'public/images/default_avatar.gif';
+
+    if (!empty($commentUser['avatar']) && is_file('public/avatars/small/' . $commentUser['avatar'])) {
+        $commentAvatarPath = 'public/avatars/small/' . $commentUser['avatar'];
+    }
+
+    $commentDate = (!empty($node['date']) ? convent_date($node['date']) : '');
+    $commentEditedLabel = (!empty($node['date_edit']) && $node['date_edit'] !== '0000-00-00 00:00:00')
+        ? (($language['comments_3'] ?? 'Изменено:') . ' ' . convent_date($node['date_edit']))
+        : '';
+    $commentText = cleanhtml((string) ($node['text'] ?? ''));
+    $commentTextRaw = (string) ($node['text'] ?? '');
+    $children = (!empty($node['children']) && is_array($node['children']) ? $node['children'] : array());
+    $canEdit = (!empty($USER['id']) && ((int) $USER['id'] === $commentUserId || !empty($PRIV['comments_edit'])));
+    $canDelete = (!empty($USER['id']) && ((int) $USER['id'] === $commentUserId || !empty($PRIV['comments_delete'])));
+    $canReport = (!empty($USER['id']) && (int) $USER['id'] !== $commentUserId);
+
+    echo '<article class="wall-comment'.($children ? ' wall-comment-has-children' : '').'" data-comment-id="'.$commentId.'" data-wall-level="'.$level.'">';
+    echo '<a class="wall-comment-avatar" href="'.$commentProfileHref.'">';
+    echo '<img src="'.$commentAvatarPath.'" alt="'.htmlspecialchars($commentUserName, ENT_QUOTES, 'UTF-8').'" width="28" height="28">';
+    echo '</a>';
+    echo '<div class="wall-comment-body">';
+    echo '<div class="wall-comment-meta">';
+    echo '<a class="wall-comment-author" href="'.$commentProfileHref.'">'.htmlspecialchars($commentUserName, ENT_QUOTES, 'UTF-8').'</a>';
+    echo '<span class="wall-comment-date">'.htmlspecialchars(($commentEditedLabel !== '' ? $commentEditedLabel : $commentDate), ENT_QUOTES, 'UTF-8').'</span>';
+    echo '</div>';
+    echo '<div class="wall-comment-text">'.$commentText.'</div>';
+    echo '<textarea class="wall-comment-source" hidden>'.htmlspecialchars($commentTextRaw, ENT_QUOTES, 'UTF-8').'</textarea>';
+    echo '<div class="wall-comment-editor-slot"></div>';
+    echo '<div class="wall-comment-actions">';
+
+    if (!empty($USER)) {
+        echo '<button class="wall-comment-button" type="button" data-wall-reply="1" data-comment-id="'.$commentId.'" data-author-name="'.htmlspecialchars($commentUserName, ENT_QUOTES, 'UTF-8').'">Ответить</button>';
+    }
+
+    if ($canEdit) {
+        echo '<button class="wall-comment-button" type="button" data-wall-edit="1" data-comment-id="'.$commentId.'">'.htmlspecialchars((string) ($language['comments_4'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8').'</button>';
+    }
+
+    if ($canDelete) {
+        echo '<button class="wall-comment-button" type="button" data-wall-delete="1" data-comment-id="'.$commentId.'">'.htmlspecialchars((string) ($language['comments_5'] ?? 'Удалить'), ENT_QUOTES, 'UTF-8').'</button>';
+    }
+
+    echo '</div>';
+
+    if ($canReport) {
+        echo '<button class="wall-comment-report" type="button" title="Пожаловаться" aria-label="Пожаловаться">';
+        echo '<span class="wall-comment-report-icon">&#9888;</span>';
+        echo '<span class="wall-comment-report-label">Пожаловаться</span>';
+        echo '</button>';
+    }
+
+    if ($children) {
+        echo '<div class="wall-comment-children">';
+        foreach ($children as $childNode) {
+            user_wall_render_node($childNode, $objectId, $level + 1);
+        }
+        echo '</div>';
+    }
+
+    echo '</div>';
+    echo '</article>';
+}
+
 
 // Статусы
 function comment_status()

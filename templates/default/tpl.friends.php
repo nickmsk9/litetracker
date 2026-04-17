@@ -11,8 +11,8 @@ if (!defined('LITETRACKER'))
 <!--
 <table>
 	<tr>
-		<td width="100" align="center"><a href="profile.php?id=<?=$userid;?>"><?=$avatar;?></a></td>
-		<td valign="top"><font size="3"><a href="profile.php?id=<?=$userid;?>"><?=$name;?></a></font> 
+		<td width="100" align="center"><a href="<?=profile_href($userid);?>"><?=$avatar;?></a></td>
+		<td valign="top"><font size="3"><a href="<?=profile_href($userid);?>"><?=$name;?></a></font> 
 		<br> <?=$date;?> <br>
 		<?=$action;?></td>
 	</tr>
@@ -24,7 +24,7 @@ begin_frame();
 <table width="70%" cellpadding="3" style="border:1px">
 <tr>
 <td valign="top" width="50" align="center">
-<a href="profile.php?id=<?=$userid;?>"><?=$avatar;?></a>
+<a href="<?=profile_href($userid);?>"><?=$avatar;?></a>
 </td>
 <td  valign="top" >
 
@@ -40,7 +40,7 @@ begin_frame();
 		 <td class="label" width="15%"><b><?=$language['users_16'];?></b></td>
 		 <td class="data">
 		  <div class="dataWrap" style="float:left">
-			<a href="profile.php?id=<?=$id;?>"><?=$name;?></a> <?=$online;?>
+			<a href="<?=profile_href($id);?>"><?=$name;?></a> <?=$online;?>
 		  </div>
 		  
 		 

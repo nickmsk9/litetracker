@@ -6,10 +6,10 @@ if (!defined('LITETRACKER')) {
 if ($type == 'users') {
     ?>
     <article class="wall-comment">
-        <a class="wall-comment-avatar" href="<?=$rewrite->encode('profile.php?id=' . $user_id);?>"><?=$avatar;?></a>
+        <a class="wall-comment-avatar" href="<?=profile_href($user_id);?>"><?=$avatar;?></a>
         <div class="wall-comment-body">
             <div class="wall-comment-meta">
-                <a class="wall-comment-author" href="<?=$rewrite->encode('profile.php?id=' . $user_id);?>"><?=htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8');?></a>
+                <a class="wall-comment-author" href="<?=profile_href($user_id);?>"><?=htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8');?></a>
                 <span class="wall-comment-date"><?=($append_edit ? htmlspecialchars($append_edit, ENT_QUOTES, 'UTF-8') : htmlspecialchars($date, ENT_QUOTES, 'UTF-8'));?></span>
             </div>
             <div class="wall-comment-text"><?=$text;?></div>
@@ -33,14 +33,14 @@ if ($type == 'users') {
     begin_frame();
     ?>
 
-    <a href="<?=$rewrite->encode('profile.php?id=' . $user_id);?>"><?=get_user_color($user_class, $user_name);?></a> написал<br>
+    <a href="<?=profile_href($user_id);?>"><?=get_user_color($user_class, $user_name);?></a> написал<br>
     <?=($append_edit ? '<small>' . $append_edit . '</small>' : '<small>' . $date . '</small>');?>
     <hr>
 
     <table>
         <tbody>
             <tr>
-                <td><a href="<?=$rewrite->encode('profile.php?id=' . $user_id);?>"><?=$avatar;?></a></td>
+                <td><a href="<?=profile_href($user_id);?>"><?=$avatar;?></a></td>
                 <td valign="top">
                     <?=$text;?>
                     <hr>

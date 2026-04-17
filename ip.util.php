@@ -71,7 +71,7 @@ if($_GET['act'] == 'bans_ip') {
 		echo '<td><a href="ip.util.php?ip='.long2ip($arr['last']).'">'.long2ip($arr['last']).'</a></td>';
 		
 		echo '<td>'.convent_date($arr['date']).'</td>';
-		echo '<td><A href="profile.php?id='.$arr['id_user'].'">'.get_user_color($arr['class_user'] , $arr['user_name']).'</a></td>';
+		echo '<td><A href="'.profile_href($arr['id_user']).'">'.get_user_color($arr['class_user'] , $arr['user_name']).'</a></td>';
 		echo '<td>'.(empty($arr['text']) ? '<i>Без комментария...</i>' : htmlspecialchars($arr['text']) ).'</td>';
 		echo '<td><input type="button" value="Разблокировать IP" onClick="window.location.href=\'ip.util.php?id='.$arr['id'].'&act=unlock_ip\'">
 		</td>';
@@ -244,7 +244,7 @@ if($_GET['act'] == 'bans_account') {
 	while($arr = $db->get_row($sql) ) {
 		echo '<tr>';
 		
-		echo '<td><a href="profile.php?id='.$arr['id'].'">'.get_user_color($arr['class'] , $arr['name']).'</a></td>';
+		echo '<td><a href="'.profile_href($arr['id']).'">'.get_user_color($arr['class'] , $arr['name']).'</a></td>';
 		echo '<td>'.get_ratio($arr['uploaded'] , $arr['downloaded']).'%</td>';
 		echo '<td>'.convent_date($arr['added']).'</td>';
 		echo '<td>'.htmlspecialchars($arr['email']).'</td>';
@@ -406,7 +406,7 @@ if($_GET['ip']) {
 		while($arr = $db->get_row() ) {
 			echo '<tr>';
 			
-			echo '<td><a href="profile.php?id='.$arr['id'].'">'.get_user_color($arr['class'] , $arr['name']).'</a></td>';
+			echo '<td><a href="'.profile_href($arr['id']).'">'.get_user_color($arr['class'] , $arr['name']).'</a></td>';
 			echo '<td>'.get_ratio($arr['uploaded'] , $arr['downloaded']).'%</td>';
 			echo '<td>'.convent_date($arr['added']).'</td>';
 			echo '<td>'.htmlspecialchars($arr['email']).'</td>';

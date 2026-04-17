@@ -161,7 +161,7 @@ begin_frame($language['details_4']);
      <td class="label"><?=$language['details_15'];?>:</td>
      <td class="data">
       <div class="dataWrap">
-		<a href="profile.php?id=<?=$id_user;?>"><?=get_user_color($user_class, $user_name);?></a>
+		<a href="<?=profile_href($id_user);?>"><?=get_user_color($user_class, $user_name);?></a>
       </div>
      </td>
     </tr>

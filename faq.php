@@ -45,7 +45,7 @@ if($act == 'view') {
 		$user1 = get_user_info($arr['last_edit_user']);
 	}
 	
-	echo '<hr><small>Добавил <a href="profile.php?id='.$user['id'].'">'.get_user_color($user['class'] , $user['name']).'</a> , '.convent_date($arr['added']).' </small> '.($arr['last_edit'] != '0000-00-00 00:00:00' ? '<br> <small> И редактировал <a href="profile.php?id='.$user1['id'].'">'.get_user_color($user1['class'] , $user1['name']).'</a> , '.convent_date($arr['last_edit']).'</small>' : '')
+	echo '<hr><small>Добавил <a href="'.profile_href($user['id']).'">'.get_user_color($user['class'] , $user['name']).'</a> , '.convent_date($arr['added']).' </small> '.($arr['last_edit'] != '0000-00-00 00:00:00' ? '<br> <small> И редактировал <a href="'.profile_href($user1['id']).'">'.get_user_color($user1['class'] , $user1['name']).'</a> , '.convent_date($arr['last_edit']).'</small>' : '')
 	.($PRIV['faq_moderate'] ? '<div style="float:right"><small><a href="faq.php?act=topic&type=edit&id='.$id.'">[Редактировать]</a> <a href="faq.php?act=del&id='.$id.'">[Удалить]</a></small></div>' : '');
 	end_frame();
 	
@@ -196,7 +196,7 @@ if(!$db->num_rows($sql) ) {
 		echo '<tr>
 		<td><a href="faq.php?act=view&id='.$arr['id'].'"><b>'.htmlspecialchars($arr['subject']).'</b></a></td>
 		<td>'.convent_date($arr['added']).'</td>
-		<td><a href="profile.php?id='.$user['id'].'">'.get_user_color($user['class'] , $user['name']).'</a></td>
+		<td><a href="'.profile_href($user['id']).'">'.get_user_color($user['class'] , $user['name']).'</a></td>
 		</tr>';
 	}
 

@@ -30,6 +30,184 @@ function get_user_info($id) {
 	return $row;
 }
 
+function lt_table_exists($tableName)
+{
+	global $db;
+	static $cache = array();
+
+	$tableName = preg_replace('~[^a-z0-9_]~i', '', (string) $tableName);
+	if ($tableName === '') {
+		return false;
+	}
+
+	if (array_key_exists($tableName, $cache)) {
+		return $cache[$tableName];
+	}
+
+	$row = $db->super_query("SHOW TABLES LIKE '".$db->safesql($tableName)."'");
+	$cache[$tableName] = !empty($row);
+
+	return $cache[$tableName];
+}
+
+function lt_column_exists($tableName, $columnName)
+{
+	global $db;
+	static $cache = array();
+
+	$tableName = preg_replace('~[^a-z0-9_]~i', '', (string) $tableName);
+	$columnName = preg_replace('~[^a-z0-9_]~i', '', (string) $columnName);
+
+	if ($tableName === '' || $columnName === '') {
+		return false;
+	}
+
+	$key = $tableName.'.'.$columnName;
+	if (array_key_exists($key, $cache)) {
+		return $cache[$key];
+	}
+
+	if (!lt_table_exists($tableName)) {
+		$cache[$key] = false;
+		return false;
+	}
+
+	$row = $db->super_query("SHOW COLUMNS FROM `".$tableName."` LIKE '".$db->safesql($columnName)."'");
+	$cache[$key] = !empty($row['Field']);
+
+	return $cache[$key];
+}
+
+function profile_public_mask()
+{
+	static $mask = null;
+
+	if ($mask === null) {
+		$mask = (int) hexdec(substr(md5('profile-mask|'.COOKIE_SALT), 0, 8));
+	}
+
+	return $mask;
+}
+
+function profile_public_id($userId)
+{
+	$userId = (int) $userId;
+	if ($userId <= 0) {
+		return '';
+	}
+
+	$maskedId = ($userId ^ profile_public_mask());
+	if ($maskedId < 0) {
+		$maskedId = $maskedId + 4294967296;
+	}
+
+	return sprintf('%08x', $maskedId).substr(md5('profile-public|'.$userId.'|'.COOKIE_SALT), 0, 16);
+}
+
+function profile_user_id_from_public($publicId)
+{
+	$publicId = strtolower(trim((string) $publicId));
+	if (!preg_match('~^[a-f0-9]{24}$~', $publicId)) {
+		return 0;
+	}
+
+	$maskedId = (int) hexdec(substr($publicId, 0, 8));
+	$userId = ($maskedId ^ profile_public_mask());
+
+	if ($userId <= 0) {
+		return 0;
+	}
+
+	return (profile_public_id($userId) === $publicId ? $userId : 0);
+}
+
+function profile_href($user, $view = 'profile', $params = array())
+{
+	$userId = 0;
+
+	if (is_array($user)) {
+		$userId = (int) ($user['id'] ?? 0);
+	} else {
+		$userId = (int) $user;
+	}
+
+	if ($userId <= 0) {
+		return 'profile.php';
+	}
+
+	$view = trim((string) $view);
+	$allowedViews = array('profile', 'torrents', 'bonus');
+	if (!in_array($view, $allowedViews, true)) {
+		$view = 'profile';
+	}
+
+	$path = 'user/'.profile_public_id($userId).'/';
+	if ($view !== 'profile') {
+		$path .= $view.'/';
+	}
+
+	if (!empty($params) && is_array($params)) {
+		$query = http_build_query($params);
+		if ($query !== '') {
+			$path .= '?'.$query;
+		}
+	}
+
+	return $path;
+}
+
+function user_is_online($userId, $thresholdMinutes = 15)
+{
+	global $db;
+	static $cache = array();
+
+	$userId = (int) $userId;
+	$thresholdMinutes = max(1, (int) $thresholdMinutes);
+
+	if ($userId <= 0) {
+		return false;
+	}
+
+	$cacheKey = $userId.':'.$thresholdMinutes;
+	if (array_key_exists($cacheKey, $cache)) {
+		return $cache[$cacheKey];
+	}
+
+	$onlineFrom = $db->safesql(get_date_time(gmtime() - ($thresholdMinutes * 60)));
+	$row = $db->super_query("SELECT user_id FROM sessions WHERE user_id = ".$userId." AND last_access >= '".$onlineFrom."' LIMIT 1");
+	$cache[$cacheKey] = !empty($row['user_id']);
+
+	return $cache[$cacheKey];
+}
+
+function user_blacklist_available()
+{
+	return lt_table_exists('users_blacklist');
+}
+
+function user_is_blacklisted($userId, $blockedUserId)
+{
+	global $db;
+	static $cache = array();
+
+	$userId = (int) $userId;
+	$blockedUserId = (int) $blockedUserId;
+
+	if ($userId <= 0 || $blockedUserId <= 0 || !user_blacklist_available()) {
+		return false;
+	}
+
+	$cacheKey = $userId.':'.$blockedUserId;
+	if (array_key_exists($cacheKey, $cache)) {
+		return $cache[$cacheKey];
+	}
+
+	$row = $db->super_query("SELECT id FROM users_blacklist WHERE user_id = ".$userId." AND blocked_user_id = ".$blockedUserId." LIMIT 1");
+	$cache[$cacheKey] = !empty($row['id']);
+
+	return $cache[$cacheKey];
+}
+
 
 
 //Gzip сжатие

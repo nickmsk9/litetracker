@@ -13,7 +13,7 @@ begin_frame();
 <table width="70%" cellpadding="3" style="border:1px">
 <tr>
 <td valign="top" width="50">
-<a href="profile.php?id=<?=$id;?>"><?=$avatar;?></a>
+<a href="<?=profile_href($id);?>"><?=$avatar;?></a>
 </td>
 <td  valign="top" >
 
@@ -29,7 +29,7 @@ begin_frame();
 		 <td class="label" width="15%"><b><?=$language['users_16'];?></b></td>
 		 <td class="data">
 		  <div class="dataWrap" style="float:left">
-			<a href="profile.php?id=<?=$id;?>"><?=$name;?></a> <?=$online;?>
+			<a href="<?=profile_href($id);?>"><?=$name;?></a> <?=$online;?>
 		  </div>
 		  
 		 

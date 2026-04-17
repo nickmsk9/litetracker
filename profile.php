@@ -15,7 +15,145 @@ if (!$PRIV['profile_view']) {
 	err($language['default_1'], $language['profile_20'], 1);
 }
 
-$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+function profile_normalize_view($view)
+{
+	$view = trim((string) $view);
+	$allowedViews = array('profile', 'torrents', 'bonus');
+
+	return (in_array($view, $allowedViews, true) ? $view : 'profile');
+}
+
+function profile_normalize_torrent_tab($tab)
+{
+	$tab = trim((string) $tab);
+	$allowedTabs = array('uploaded', 'downloaded', 'leeching', 'seeding');
+
+	return (in_array($tab, $allowedTabs, true) ? $tab : 'uploaded');
+}
+
+function profile_get_torrent_tab_labels()
+{
+	return array(
+		'uploaded' => 'Залил',
+		'downloaded' => 'Скачал',
+		'leeching' => 'Качаю',
+		'seeding' => 'Раздаю',
+	);
+}
+
+function profile_load_torrent_rows($userId, $tab)
+{
+	global $db;
+
+	$userId = (int) $userId;
+	$tab = profile_normalize_torrent_tab($tab);
+	$rows = array();
+
+	if ($userId <= 0) {
+		return $rows;
+	}
+
+	if ($tab === 'uploaded') {
+		$sql = $db->query(
+			"SELECT t.id, t.name, t.size, t.added AS activity_date, c.name AS category_name
+			 FROM torrents AS t
+			 LEFT JOIN categories AS c ON c.id = t.id_category
+			 WHERE t.id_user = {$userId}
+			 ORDER BY t.added DESC, t.id DESC
+			 LIMIT 100"
+		);
+	} elseif ($tab === 'downloaded') {
+		$sql = $db->query(
+			"SELECT t.id, t.name, t.size,
+			        IF(s.completedat > 0, FROM_UNIXTIME(s.completedat), IF(s.startedat > 0, FROM_UNIXTIME(s.startedat), t.added)) AS activity_date,
+			        c.name AS category_name
+			 FROM snatched AS s
+			 LEFT JOIN torrents AS t ON t.id = s.torrent
+			 LEFT JOIN categories AS c ON c.id = t.id_category
+			 WHERE s.userid = {$userId}
+			 ORDER BY s.completedat DESC, s.startedat DESC, s.id DESC
+			 LIMIT 100"
+		);
+	} else {
+		$seederFlag = ($tab === 'seeding' ? 1 : 0);
+		$sql = $db->query(
+			"SELECT t.id, t.name, t.size, p.last_action AS activity_date, c.name AS category_name
+			 FROM peers AS p
+			 LEFT JOIN torrents AS t ON t.id = p.torrent
+			 LEFT JOIN categories AS c ON c.id = t.id_category
+			 WHERE p.userid = {$userId} AND p.seeder = {$seederFlag}
+			 ORDER BY p.last_action DESC, p.id DESC
+			 LIMIT 100"
+		);
+	}
+
+	while ($row = $db->get_row($sql)) {
+		if (empty($row['id'])) {
+			continue;
+		}
+
+		$rows[] = $row;
+	}
+
+	return $rows;
+}
+
+function profile_get_bonus_options()
+{
+	return array(
+		array(
+			'id' => '1gb',
+			'label' => '1Гб к раздаче',
+			'description' => 'Обменять бонусные очки на 1Гб трафика, который будет приплюсован к сумме Вашей раздачи.',
+			'cost' => 75,
+			'bytes' => 1 * 1073741824,
+		),
+		array(
+			'id' => '2_5gb',
+			'label' => '2.5Гб к раздаче',
+			'description' => 'Обменять бонусные очки на 2.5Гб трафика, который будет приплюсован к сумме Вашей раздачи.',
+			'cost' => 150,
+			'bytes' => (int) round(2.5 * 1073741824),
+		),
+		array(
+			'id' => '5gb',
+			'label' => '5Гб к раздаче',
+			'description' => 'Обменять бонусные очки на 5Гб трафика, который будет приплюсован к сумме Вашей раздачи.',
+			'cost' => 250,
+			'bytes' => 5 * 1073741824,
+		),
+		array(
+			'id' => '10gb',
+			'label' => '10Гб к раздаче',
+			'description' => 'Обменять бонусные очки на 10Гб трафика, который будет приплюсован к сумме Вашей раздачи.',
+			'cost' => 400,
+			'bytes' => 10 * 1073741824,
+		),
+		array(
+			'id' => 'all',
+			'label' => 'Обменять всё',
+			'description' => 'Обменять все бонусные очки на трафик, который будет приплюсован к сумме Вашей раздачи.',
+			'cost' => null,
+			'bytes' => null,
+		),
+	);
+}
+
+$profileView = profile_normalize_view($_GET['view'] ?? 'profile');
+$profilePublicId = trim((string) ($_GET['uid'] ?? ''));
+$id = 0;
+
+if ($profilePublicId !== '') {
+	$id = profile_user_id_from_public($profilePublicId);
+	if (!$id) {
+		err($language['default_1'], $language['profile_1'], 1);
+	}
+}
+
+if (!$id) {
+	$id = (int) ($_GET['id'] ?? 0);
+}
+
 if (!$id && $USER) {
 	$id = (int) $USER['id'];
 }
@@ -24,64 +162,145 @@ if (!$id) {
 	err($language['default_1'], $language['profile_1'], 1);
 }
 
-$db->query("SELECT * FROM users WHERE id=".$id);
+$db->query("SELECT * FROM users WHERE id = ".$id);
 if (!$db->num_rows()) {
 	err($language['default_1'], $language['profile_1'], 1);
 }
-$arr = $db->get_row();
 
-$isOwnProfile = ($USER && (int) $USER['id'] === (int) $arr['id']);
+$arr = $db->get_row();
+$id = (int) $arr['id'];
+$isOwnProfile = ($USER && (int) $USER['id'] === $id);
 $canEditProfile = ($isOwnProfile || !empty($PRIV['setting_user']));
-$profileName = htmlspecialchars($arr['name'], ENT_QUOTES, 'UTF-8');
-$profileTitle = 'Профиль: '.$profileName;
+$canViewBonus = ($isOwnProfile || !empty($PRIV['setting_user']));
+
+if (!$isOwnProfile && $profileView !== 'profile') {
+	header('Location: '.profile_href($id));
+	die();
+}
+
+if ($profileView === 'bonus' && !$canViewBonus) {
+	header('Location: '.profile_href($id));
+	die();
+}
+
+$profileNameRaw = (string) $arr['name'];
+$profileName = htmlspecialchars($profileNameRaw, ENT_QUOTES, 'UTF-8');
+$profileTitle = 'Профиль: '.$profileNameRaw;
 $profileSince = convent_date($arr['added']);
 $profileLastAccess = convent_date($arr['last_access']);
-$profileAboutRaw = trim((string) $arr['profile_text']);
+$profileAboutRaw = trim((string) ($arr['profile_text'] ?? ''));
 $profileAbout = ($profileAboutRaw !== '' ? nl2br(htmlspecialchars($profileAboutRaw, ENT_QUOTES, 'UTF-8')) : '');
 $avatarLarge = 'public/images/default_avatar.gif';
 if (!empty($arr['avatar']) && is_file('public/avatars/'.$arr['avatar'])) {
 	$avatarLarge = 'public/avatars/'.$arr['avatar'];
 }
 
-$onlineThreshold = get_date_time(gmtime() - 100);
-$isOnline = ($arr['last_access'] > $onlineThreshold);
-$profileStatusLabel = ($isOnline ? 'Онлайн' : 'Не в сети');
+$isOnline = user_is_online($id, 15);
+$profileStatusLabel = ($isOnline ? 'Онлайн' : 'Был на сайте '.$profileLastAccess);
 $profileStatusClass = ($isOnline ? 'profile-status-online' : 'profile-status-offline');
+$profileFlashMessage = null;
 
-$primaryAction = null;
-if ($canEditProfile) {
-	$primaryAction = array(
-		'label' => 'Редактировать',
-		'href' => 'my.setting.php?id='.(int) $arr['id'],
-		'class' => 'profile-card-button',
-	);
-} elseif ($USER && (int) $USER['id'] !== (int) $arr['id']) {
-	$primaryAction = array(
-		'label' => 'Сообщение',
-		'href' => 'my.mail.php?act=conversation&id_user='.(int) $arr['id'],
-		'class' => 'profile-card-button',
+if ($profileView === 'bonus' && $canViewBonus && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['act'] ?? '') === 'exchange_bonus') {
+	$bonusOptions = profile_get_bonus_options();
+	$selectedOptionId = trim((string) ($_POST['bonus_option'] ?? 'all'));
+	$selectedOption = null;
+
+	foreach ($bonusOptions as $option) {
+		if ($option['id'] === $selectedOptionId) {
+			$selectedOption = $option;
+			break;
+		}
+	}
+
+	if (!$selectedOption) {
+		$profileFlashMessage = array(
+			'type' => 'error',
+			'text' => 'Выберите вариант обмена.',
+		);
+	} else {
+		$currentBonus = (float) ($arr['voice'] ?? 0);
+		$cost = ($selectedOption['cost'] !== null ? (float) $selectedOption['cost'] : $currentBonus);
+		$bytes = ($selectedOption['bytes'] !== null ? (int) $selectedOption['bytes'] : (int) round(($currentBonus / 75) * 1073741824));
+
+		if ($cost <= 0 || $bytes <= 0) {
+			$profileFlashMessage = array(
+				'type' => 'error',
+				'text' => 'Недостаточно бонусов для обмена.',
+			);
+		} elseif ($currentBonus < $cost) {
+			$profileFlashMessage = array(
+				'type' => 'error',
+				'text' => 'У вас недостаточно бонусов для этого обмена.',
+			);
+		} else {
+			$db->query("UPDATE users SET uploaded = (uploaded + {$bytes}), voice = (voice - {$cost}) WHERE id = {$id}");
+			$memcache->delete('user_'.$id, 0);
+			header('Location: '.profile_href($id, 'bonus', array('status' => 'bonus_exchanged')));
+			die();
+		}
+	}
+}
+
+if (($_GET['status'] ?? '') === 'bonus_exchanged') {
+	$profileFlashMessage = array(
+		'type' => 'success',
+		'text' => 'Бонусы успешно обменяны.',
 	);
 }
 
-$sidebarLinks = array(
-	array(
-		'label' => ($isOwnProfile ? 'Мой профиль' : 'Профиль пользователя'),
-		'href' => 'profile.php?id='.(int) $arr['id'],
-		'active' => true,
-	),
-	array(
-		'label' => ($isOwnProfile ? 'Мои торренты' : 'Торренты пользователя'),
-		'href' => 'browse.php?search=&id_user='.(int) $arr['id'],
-		'active' => false,
-	),
-);
+$profileActions = array();
+$profileCanMessage = (!empty($USER['id']) && (int) $USER['id'] !== $id);
+$profileBlacklistEnabled = ($profileCanMessage && user_blacklist_available());
+$profileBlacklisted = ($profileBlacklistEnabled ? user_is_blacklisted((int) $USER['id'], $id) : false);
 
-if ($USER) {
-	$sidebarLinks[] = array(
-		'label' => ($isOwnProfile ? 'Мои бонусы' : 'Бонусы'),
-		'href' => 'shop.php',
-		'active' => false,
+if ($canEditProfile) {
+	$profileActions[] = array(
+		'type' => 'link',
+		'label' => 'Редактировать',
+		'href' => 'my.setting.php?id='.$id,
+		'class' => 'profile-card-button',
 	);
+} elseif ($profileCanMessage) {
+	$profileActions[] = array(
+		'type' => 'button',
+		'label' => 'Написать сообщение',
+		'class' => 'profile-card-button',
+		'attributes' => ' data-profile-open-message="1"',
+	);
+
+	if ($profileBlacklistEnabled) {
+		$profileActions[] = array(
+			'type' => 'button',
+			'label' => ($profileBlacklisted ? 'Убрать из ЧС' : 'Добавить в ЧС'),
+			'class' => 'profile-card-button profile-card-button-dark'.($profileBlacklisted ? ' profile-card-button-dark-active' : ''),
+			'attributes' => ' data-profile-toggle-blacklist="1" data-user-id="'.$id.'" data-blacklisted="'.($profileBlacklisted ? '1' : '0').'"',
+		);
+	}
+}
+
+$sidebarLinks = array();
+
+if ($isOwnProfile) {
+	$sidebarLinks = array(
+		array(
+			'label' => 'Мой профиль',
+			'href' => profile_href($id),
+			'active' => ($profileView === 'profile'),
+		),
+		array(
+			'label' => 'Мои торренты',
+			'href' => profile_href($id, 'torrents'),
+			'active' => ($profileView === 'torrents'),
+		),
+	);
+
+	if ($canViewBonus) {
+		$sidebarLinks[] = array(
+			'label' => 'Мои бонусы',
+			'href' => profile_href($id, 'bonus'),
+			'active' => ($profileView === 'bonus'),
+		);
+	}
 }
 
 $peerStats = $db->super_query(
@@ -89,15 +308,15 @@ $peerStats = $db->super_query(
 		COUNT(IF(seeder = 1, 1, NULL)) AS seeders,
 		COUNT(IF(seeder = 0, 1, NULL)) AS leechers
 	FROM peers
-	WHERE userid = ".(int) $arr['id']
+	WHERE userid = ".$id
 );
 
 $profileStats = array(
-	'voice' => (float) $arr['voice'],
+	'voice' => (float) ($arr['voice'] ?? 0),
 	'seeders' => (int) ($peerStats['seeders'] ?? 0),
 	'leechers' => (int) ($peerStats['leechers'] ?? 0),
-	'downloaded' => mksize($arr['downloaded']),
-	'uploaded' => mksize($arr['uploaded']),
+	'downloaded' => mksize((int) ($arr['downloaded'] ?? 0)),
+	'uploaded' => mksize((int) ($arr['uploaded'] ?? 0)),
 );
 
 $currentUserWallAvatar = 'public/images/default_avatar.gif';
@@ -105,8 +324,14 @@ if ($USER && !empty($USER['avatar']) && is_file('public/avatars/small/'.$USER['a
 	$currentUserWallAvatar = 'public/avatars/small/'.$USER['avatar'];
 }
 
+$wallCommentsHtml = user_wall_render_list($id);
+$torrentTabLabels = profile_get_torrent_tab_labels();
+$torrentTab = profile_normalize_torrent_tab($_GET['torrent_tab'] ?? 'uploaded');
+$profileTorrentRows = ($profileView === 'torrents' ? profile_load_torrent_rows($id, $torrentTab) : array());
+$bonusOptions = profile_get_bonus_options();
+$selectedBonusOption = trim((string) ($_POST['bonus_option'] ?? 'all'));
+
 head($profileTitle);
-comment_status();
 
 require 'templates/'.$config['template'].'/tpl.profile.php';
 

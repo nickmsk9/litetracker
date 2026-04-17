@@ -84,7 +84,7 @@ if ($act === 'add') {
         if (!empty($wallOwner['id']) && !empty($wallOwner['notify_comments'])) {
             send_msg(
                 'Новый комментарий на стене',
-                'Пользователь [b]' . $USER['name'] . '[/b] оставил новый комментарий на вашей стене.' . "\n" . 'Ссылка: profile.php?id=' . (int) $object_id,
+                'Пользователь [b]' . $USER['name'] . '[/b] оставил новый комментарий на вашей стене.' . "\n" . 'Ссылка: ' . profile_href((int) $object_id),
                 (int) $wallOwner['id'],
                 0
             );

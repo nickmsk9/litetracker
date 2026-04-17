@@ -24,12 +24,12 @@ if (!defined('LITETRACKER'))
 	?>
 		<tr>
 		<td width="1%">
-		<a href="profile.php?id=<?=$arr['id'];?>"><?=($arr['avatar'] ? '<img src="public/avatars/'.$arr['avatar'].'" width="50">' : '<img src="public/images/default_avatar.gif" width="50">');?></a>
+		<a href="<?=profile_href($arr['id']);?>"><?=($arr['avatar'] ? '<img src="public/avatars/'.$arr['avatar'].'" width="50">' : '<img src="public/images/default_avatar.gif" width="50">');?></a>
 		
 		</td>
 		
 		<td>
-		<a href="profile.php?id=<?=$arr['id'];?>"><?=get_user_color($arr['class'] , $arr['name']);?></a>
+		<a href="<?=profile_href($arr['id']);?>"><?=get_user_color($arr['class'] , $arr['name']);?></a>
 		<br>
 		<b>Раздал:</b><?=mksize($arr['uploaded']);?>
 		<br>

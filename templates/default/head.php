@@ -17,7 +17,7 @@ if ($USER) {
 		array('href' => 'my.setting.php', 'label' => 'Настройки'),
 		array('href' => 'my.mail.php', 'label' => 'Сообщения'),
 		array('href' => 'my.book.php', 'label' => 'Закладки'),
-		array('href' => 'profile.php?id='.(int) $USER['id'], 'label' => 'Профиль'),
+		array('href' => profile_href((int) $USER['id']), 'label' => 'Профиль'),
 		array('href' => 'exit.php', 'label' => 'Выход'),
 	);
 }

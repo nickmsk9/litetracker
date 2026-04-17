@@ -105,7 +105,7 @@ if($db->num_rows()) {
 	while($arr = $db->get_row() ) {
 		echo '<tr>';
 		
-		echo '<td><a href="profile.php?id='.$arr['id_user'].'">'.get_user_color($arr['class'] , $arr['name']).'</a></td>';
+		echo '<td><a href="'.profile_href($arr['id_user']).'">'.get_user_color($arr['class'] , $arr['name']).'</a></td>';
 		echo '<td><a href="browse.php?search='.htmlspecialchars($arr['text']).'">'.htmlspecialchars($arr['text']).'</a></td>';
 		echo '<td>'.convent_date($arr['last_date']).'</td>';
 		echo '<td>'.$arr['num_views'].'</td>';

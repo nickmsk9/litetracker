@@ -107,7 +107,7 @@ if(isset($_GET['peers']) ) {
 		if($PRIV['ip_util']) {
 			echo '<td><a href="ip.util.php?ip='.$row['ip'].'">'.$row['ip'].'</a></td>';
 		}
-		echo '<td>'.($user ? '<a href="profile.php?id='.$user['id'].'">'.get_user_color($user['class'] , $user['name']).'</a>' : 'Гость').'</td>';
+		echo '<td>'.($user ? '<a href="'.profile_href($user['id']).'">'.get_user_color($user['class'] , $user['name']).'</a>' : 'Гость').'</td>';
 		echo '<td><font color="green">'.mksize($row['uploaded']).'</font></td>';
 		echo '<td><font color="red">'.mksize($row['downloaded']).'</font></td>';
 		echo '<td>'.convent_date($row['started']).'</td>';

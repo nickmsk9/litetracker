@@ -51,7 +51,7 @@ if($count) {
 	";
 	foreach ($array as $v) 
 	{
-		print "<tr><td>".($v['id'] == 0 ? ' Гость' : "<a href=/profile.php?id=".$v["id"].">".$v["name"]."</a>")."</td><td>";
+		print "<tr><td>".($v['id'] == 0 ? ' Гость' : "<a href=\"".profile_href($v["id"])."\">".$v["name"]."</a>")."</td><td>";
 	 
 		foreach ($v["ips"] as $ip)
 			print "<a href=/ip.util.php?ip=".$ip.">".$ip."</a><br />";

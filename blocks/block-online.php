@@ -69,7 +69,7 @@ if(count($online['list']) ) {
 		{
 			$numUsers++;
 			$userName = htmlspecialchars($arr['name']);
-			$arrayOnline[] =  '<a href="profile.php?id='.$arr['user_id'].'" class="online">'.get_user_color($arr['class'], $userName).' '.($arr['sex'] ? '<img src="public/images/male.png" title="Мужской">' : '<img src="public/images/female.png" title="Женский">').'</a>';
+			$arrayOnline[] =  '<a href="'.profile_href($arr['user_id']).'" class="online">'.get_user_color($arr['class'], $userName).' '.($arr['sex'] ? '<img src="public/images/male.png" title="Мужской">' : '<img src="public/images/female.png" title="Женский">').'</a>';
 		}
 		else {
 			$numGuests++;
