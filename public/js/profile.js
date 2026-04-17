@@ -220,6 +220,7 @@
         var replyButton = event.target.closest('[data-wall-reply]');
         var editButton = event.target.closest('[data-wall-edit]');
         var deleteButton = event.target.closest('[data-wall-delete]');
+        var reportButton = event.target.closest('[data-wall-report]');
         var comment;
         var formData;
 
@@ -272,6 +273,32 @@
             replaceWall(payload.html || '');
             showNotice(payload.message || 'Комментарий удален.');
             resetReplyState();
+          }, function (message) {
+            showNotice(message, true);
+          });
+
+          return;
+        }
+
+        if (reportButton) {
+          event.preventDefault();
+
+          comment = reportButton.closest('.wall-comment');
+          if (!comment) {
+            return;
+          }
+
+          if (!window.confirm('Отправить жалобу администрации?')) {
+            return;
+          }
+
+          formData = new FormData();
+          formData.append('action', 'wall_report');
+          formData.append('object_id', String(profileUserId));
+          formData.append('comment_id', String(comment.getAttribute('data-comment-id') || '0'));
+
+          sendRequest(formData, function (payload) {
+            showNotice(payload.message || 'Жалоба отправлена.');
           }, function (message) {
             showNotice(message, true);
           });

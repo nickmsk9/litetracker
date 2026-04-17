@@ -154,6 +154,48 @@ if ($action === 'wall_delete') {
 	profile_ajax_wall_payload($objectId, 'Комментарий удален.');
 }
 
+if ($action === 'wall_report') {
+	profile_ajax_require_login();
+
+	$objectId = (int) ($_POST['object_id'] ?? 0);
+	$commentId = (int) ($_POST['comment_id'] ?? 0);
+
+	if ($objectId <= 0 || $commentId <= 0) {
+		profile_ajax_response(false, 'Комментарий не найден.');
+	}
+
+	$comment = $db->super_query("SELECT id, id_users, id_user, text FROM comments_users WHERE id = {$commentId} AND id_users = {$objectId} LIMIT 1");
+	if (empty($comment['id'])) {
+		profile_ajax_response(false, 'Комментарий не найден.');
+	}
+
+	if ((int) $comment['id_user'] === (int) $USER['id']) {
+		profile_ajax_response(false, 'Нельзя пожаловаться на свой комментарий.');
+	}
+
+	user_wall_reports_ensure_table();
+	$tableName = user_wall_reports_table_name();
+	$existingReport = $db->super_query(
+		"SELECT id
+		 FROM `".$tableName."`
+		 WHERE comment_id = {$commentId}
+		   AND reporter_user_id = ".(int) $USER['id']."
+		   AND status = 'open'
+		 LIMIT 1"
+	);
+
+	if (!empty($existingReport['id'])) {
+		profile_ajax_response(false, 'Вы уже пожаловались на этот комментарий.');
+	}
+
+	$db->query(
+		"INSERT INTO `".$tableName."` (`comment_id`, `object_id`, `comment_user_id`, `reporter_user_id`, `comment_text_snapshot`, `status`, `created_at`)
+		 VALUES ({$commentId}, {$objectId}, ".(int) $comment['id_user'].", ".(int) $USER['id'].", '".$db->safesql((string) ($comment['text'] ?? ''))."', 'open', NOW())"
+	);
+
+	profile_ajax_response(true, 'Жалоба отправлена администрации.');
+}
+
 if ($action === 'send_message') {
 	profile_ajax_require_login();
 

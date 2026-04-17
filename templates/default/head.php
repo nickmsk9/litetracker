@@ -20,6 +20,12 @@ if ($USER) {
 		array('href' => profile_href((int) $USER['id']), 'label' => 'Профиль'),
 		array('href' => 'exit.php', 'label' => 'Выход'),
 	);
+
+	if (user_wall_reports_can_moderate()) {
+		array_splice($userMenu, 4, 0, array(
+			array('href' => user_wall_reports_href(), 'label' => 'Жалобы'),
+		));
+	}
 }
 
 $messagesCount = (!empty($USER['num_messages']) ? (int) $USER['num_messages'] : 0);

@@ -191,6 +191,68 @@ function user_wall_supports_threads()
     return lt_column_exists('comments_users', 'parent_id');
 }
 
+function user_wall_reports_can_moderate()
+{
+    global $PRIV;
+
+    return (!empty($PRIV['comments_edit']) || !empty($PRIV['comments_delete']) || !empty($PRIV['setting_user']));
+}
+
+function user_wall_reports_table_name()
+{
+    return 'comments_users_reports';
+}
+
+function user_wall_reports_ensure_table()
+{
+    global $db;
+    static $ready = null;
+
+    if ($ready !== null) {
+        return $ready;
+    }
+
+    $tableName = user_wall_reports_table_name();
+    $tableExists = $db->super_query("SHOW TABLES LIKE '".$db->safesql($tableName)."'");
+
+    if (empty($tableExists)) {
+        $db->query(
+            "CREATE TABLE IF NOT EXISTS `".$tableName."` (
+                `id` int NOT NULL AUTO_INCREMENT,
+                `comment_id` int NOT NULL,
+                `object_id` int NOT NULL,
+                `comment_user_id` int NOT NULL DEFAULT '0',
+                `reporter_user_id` int NOT NULL DEFAULT '0',
+                `comment_text_snapshot` text CHARACTER SET cp1251 COLLATE cp1251_bin NOT NULL,
+                `status` varchar(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'open',
+                `created_at` datetime NOT NULL,
+                `resolved_at` datetime DEFAULT NULL,
+                `resolved_by_user_id` int NOT NULL DEFAULT '0',
+                PRIMARY KEY (`id`),
+                KEY `status_created` (`status`, `created_at`),
+                KEY `comment_reporter` (`comment_id`, `reporter_user_id`),
+                KEY `object_comment` (`object_id`, `comment_id`)
+            ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin"
+        );
+    }
+
+    $ready = true;
+
+    return true;
+}
+
+function user_wall_reports_href($status = 'open')
+{
+    $params = array();
+    $status = trim((string) $status);
+
+    if ($status !== '' && $status !== 'open') {
+        $params['status'] = $status;
+    }
+
+    return 'wall_reports.php'.($params ? '?'.http_build_query($params) : '');
+}
+
 function user_wall_fetch_rows($objectId)
 {
     global $db;
@@ -316,7 +378,7 @@ function user_wall_render_node($node, $objectId, $level = 0)
     $canDelete = (!empty($USER['id']) && !empty($PRIV['comments_delete']));
     $canReport = (!empty($USER['id']) && (int) $USER['id'] !== $commentUserId);
 
-    echo '<article class="wall-comment'.($children ? ' wall-comment-has-children' : '').'" data-comment-id="'.$commentId.'" data-wall-level="'.$level.'">';
+    echo '<article class="wall-comment'.($children ? ' wall-comment-has-children' : '').'" id="wall-comment-'.$commentId.'" data-comment-id="'.$commentId.'" data-wall-level="'.$level.'">';
     echo '<a class="wall-comment-avatar" href="'.$commentProfileHref.'">';
     echo '<img src="'.$commentAvatarPath.'" alt="'.$commentUserNameSafe.'" width="28" height="28">';
     echo '</a>';
@@ -345,7 +407,7 @@ function user_wall_render_node($node, $objectId, $level = 0)
     echo '</div>';
 
     if ($canReport) {
-        echo '<button class="wall-comment-report" type="button" title="Пожаловаться" aria-label="Пожаловаться">';
+        echo '<button class="wall-comment-report" type="button" title="Пожаловаться" aria-label="Пожаловаться" data-wall-report="1" data-comment-id="'.$commentId.'">';
         echo '<span class="wall-comment-report-icon">&#9888;</span>';
         echo '<span class="wall-comment-report-label">Пожаловаться</span>';
         echo '</button>';

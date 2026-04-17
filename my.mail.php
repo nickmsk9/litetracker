@@ -301,7 +301,7 @@ if ($act === 'conversation') {
 			err('Ошибка', 'Вы не ввели текст сообщения', 1);
 		}
 
-		$db->query("INSERT INTO mail (name, text, date, id_user_in, id_user_out) VALUES ('".$db->safesql($subject)."', '".$db->safesql($text)."', NOW(), ".$targetUserId.", ".$currentUserId.")");
+		$db->query("INSERT INTO mail (name, text, date, id_user_in, id_user_out, delete_in, delete_out) VALUES ('".$db->safesql($subject)."', '".$db->safesql($text)."', NOW(), ".$targetUserId.", ".$currentUserId.", 0, 0)");
 		$db->query("UPDATE users SET num_messages = (num_messages + 1) WHERE id = ".$targetUserId);
 		$memcache->delete('user_'.$targetUserId, 0);
 
