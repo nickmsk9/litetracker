@@ -5,585 +5,718 @@ LiteTracker Source
 ===================================================================
 by jenaDI
 -------------------------------------------------------------------
-Назначение: Загрузка торрента (шаг 1)
+Назначение: Загрузка торрента
 ===================================================================
 */
 
-//Подключаем главный системный файл
 require 'system/init.php';
 require 'system/functions/functions.benc.php';
 
-$act = isset($_GET['act']) ? (string)$_GET['act'] : '';
+$GLOBALS['LITETRACKER_HIDE_TOP_BLOCKS'] = true;
+$GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS'] = true;
+$GLOBALS['LITETRACKER_HIDE_STANDARD_SIDEBAR'] = true;
 
-//Проверка авторизации
+function lt_upload_categories_list()
+{
+	return categories_array();
+}
+
+function lt_upload_category_info($catid)
+{
+	global $db;
+
+	$catid = (int) $catid;
+	if ($catid <= 0) {
+		return array();
+	}
+
+	return (array) $db->super_query("SELECT * FROM categories WHERE id = ".$catid." LIMIT 1");
+}
+
+function lt_upload_category_name($categories, $catid)
+{
+	$catid = (int) $catid;
+
+	foreach ((array) $categories as $category) {
+		if ((int) ($category['id'] ?? 0) !== $catid) {
+			continue;
+		}
+
+		return trim((string) ($category['name'] ?? ''));
+	}
+
+	return '';
+}
+
+function lt_upload_default_category_id($categories)
+{
+	foreach ((array) $categories as $category) {
+		$name = trim((string) ($category['name'] ?? ''));
+		if (lt_torrent_description_template_key($name) === 'movies') {
+			return (int) ($category['id'] ?? 0);
+		}
+	}
+
+	return (int) ($categories[0]['id'] ?? 0);
+}
+
+function lt_upload_next_torrent_id()
+{
+	global $db;
+
+	$row = $db->super_query("SHOW TABLE STATUS LIKE 'torrents'");
+
+	return (!empty($row['Auto_increment']) ? (int) $row['Auto_increment'] : 0);
+}
+
+function lt_upload_ensure_directory($path)
+{
+	if (is_dir($path)) {
+		return true;
+	}
+
+	return @mkdir($path, 0777, true);
+}
+
+function lt_upload_image_extension($filename)
+{
+	$ext = strtolower((string) pathinfo((string) $filename, PATHINFO_EXTENSION));
+	$allowed = array('jpg', 'jpeg', 'png', 'gif');
+
+	return (in_array($ext, $allowed, true) ? $ext : '');
+}
+
+function lt_upload_validate_image($file, $label)
+{
+	global $config, $language;
+
+	$name = (string) ($file['name'] ?? '');
+	$tmp = (string) ($file['tmp_name'] ?? '');
+	$size = (int) ($file['size'] ?? 0);
+
+	if ($name === '' || $tmp === '' || !is_uploaded_file($tmp)) {
+		err($language['default_1'], $label.' не был загружен.', 1);
+	}
+
+	$extension = lt_upload_image_extension($name);
+	if ($extension === '') {
+		err($language['default_1'], $label.' должен быть в формате JPG, PNG или GIF.', 1);
+	}
+
+	if ($size <= 0 || $size > $config['max_size_image']) {
+		err($language['default_1'], $label.' превышает допустимый размер '.mksize($config['max_size_image']).'.', 1);
+	}
+
+	$imageInfo = @getimagesize($tmp);
+	if (!$imageInfo || empty($imageInfo[2]) || !in_array((int) $imageInfo[2], array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG), true)) {
+		err($language['default_1'], $label.' не похож на изображение.', 1);
+	}
+
+	return ($extension === 'jpeg' ? 'jpg' : $extension);
+}
+
+function lt_upload_move_uploaded_image($file, $directory, $targetName, $label)
+{
+	global $language;
+
+	if (!lt_upload_ensure_directory($directory)) {
+		err($language['default_1'], 'Не удалось подготовить каталог для загрузки файлов.', 1);
+	}
+
+	if (!@move_uploaded_file((string) $file['tmp_name'], $directory.$targetName)) {
+		err($language['default_1'], 'Не удалось сохранить '.$label.'.', 1);
+	}
+
+	return $targetName;
+}
+
+function lt_upload_retarget_asset($directory, $oldName, $newName)
+{
+	if ($oldName === '' || $oldName === $newName) {
+		return $oldName;
+	}
+
+	$oldPath = $directory.$oldName;
+	$newPath = $directory.$newName;
+
+	if (!is_file($oldPath)) {
+		return $oldName;
+	}
+
+	if (@rename($oldPath, $newPath)) {
+		return $newName;
+	}
+
+	return $oldName;
+}
+
+function lt_upload_collect_screenshots($nextId)
+{
+	$screenshots = array();
+	$files = ($_FILES['screenshot'] ?? array());
+	$names = (isset($files['name']) && is_array($files['name']) ? $files['name'] : array());
+	$tmpNames = (isset($files['tmp_name']) && is_array($files['tmp_name']) ? $files['tmp_name'] : array());
+	$sizes = (isset($files['size']) && is_array($files['size']) ? $files['size'] : array());
+
+	foreach ($names as $index => $name) {
+		$name = trim((string) $name);
+		if ($name === '') {
+			continue;
+		}
+
+		$screenshots[] = array(
+			'name' => $name,
+			'tmp_name' => (string) ($tmpNames[$index] ?? ''),
+			'size' => (int) ($sizes[$index] ?? 0),
+		);
+	}
+
+	if (!$screenshots) {
+		err('Ошибка', 'Загрузите хотя бы один скринлист.', 1);
+	}
+
+	if (count($screenshots) > 4) {
+		err('Ошибка', 'Можно загрузить не больше 4 изображений в скринлист.', 1);
+	}
+
+	$result = array();
+	foreach ($screenshots as $index => $screenshot) {
+		$extension = lt_upload_validate_image($screenshot, 'Скринлист');
+		$filename = $nextId.'_'.$index.'.'.$extension;
+		$result[] = lt_upload_move_uploaded_image($screenshot, 'public/downloads/screens/', $filename, 'скринлист');
+	}
+
+	return $result;
+}
+
+function lt_upload_collect_tags($value)
+{
+	return lt_torrent_tags_to_string($value);
+}
+
+function lt_upload_save_tags($catid, $tags)
+{
+	global $db;
+
+	$tagList = lt_torrent_tags_from_string($tags);
+	if (!$tagList) {
+		return;
+	}
+
+	$existing = array();
+	$res = $db->query("SELECT name FROM tags WHERE category = ".(int) $catid);
+	while ($row = $db->get_row($res)) {
+		$key = (function_exists('mb_strtolower') ? mb_strtolower(trim((string) $row['name']), 'UTF-8') : strtolower(trim((string) $row['name'])));
+		$existing[$key] = trim((string) $row['name']);
+	}
+
+	foreach ($tagList as $tag) {
+		$key = (function_exists('mb_strtolower') ? mb_strtolower($tag, 'UTF-8') : strtolower($tag));
+		if (isset($existing[$key])) {
+			$db->query("UPDATE tags SET howmuch = (howmuch + 1) WHERE category = ".(int) $catid." AND name = '".$db->safesql($existing[$key])."'");
+			continue;
+		}
+
+		$db->query("INSERT INTO tags (category, name, howmuch) VALUES (".(int) $catid.", '".$db->safesql($tag)."', 1)");
+		$existing[$key] = $tag;
+	}
+}
+
+function lt_upload_parse_torrent()
+{
+	global $db, $language;
+
+	$file = (isset($_FILES['file']) && is_array($_FILES['file']) ? $_FILES['file'] : array());
+	$name = trim((string) ($file['name'] ?? ''));
+	$tmpname = (string) ($file['tmp_name'] ?? '');
+
+	if ($name === '') {
+		err($language['default_1'], $language['upload_19'], 1);
+	}
+
+	if (!validfilename($name)) {
+		err($language['default_1'], $language['upload_20'], 1);
+	}
+
+	if (!preg_match('/^(.+)\.torrent$/si', $name)) {
+		err($language['default_1'], $language['upload_21'], 1);
+	}
+
+	if (!is_uploaded_file($tmpname)) {
+		err($language['default_1'], $language['upload_22'], 1);
+	}
+
+	if (!filesize($tmpname)) {
+		err($language['default_1'], $language['upload_23'], 1);
+	}
+
+	$dict = bdec_file($tmpname, (1024 * 1024));
+	unset($dict['value']['nodes']);
+	unset($dict['value']['azureus_properties']);
+	unset($dict['value']['comment']);
+	unset($dict['value']['created by']);
+	unset($dict['value']['publisher']);
+	unset($dict['value']['publisher.windows-1251']);
+	unset($dict['value']['publisher-url']);
+	unset($dict['value']['publisher-url.windows-1251']);
+
+	$anarray = get_announce_urls($dict);
+	$anarray = (is_array($anarray) ? array_values(array_unique($anarray)) : array());
+
+	$dict = bdec(benc($dict));
+	list($info) = dict_check($dict, "info");
+	list($dname, $plen, $pieces) = dict_check($info, "name(string):piece length(integer):pieces(string)");
+
+	if (strlen($pieces) % 20 != 0) {
+		err('Ошибка', 'Некорректный список кусков в torrent-файле.', 1);
+	}
+
+	$filelist = array();
+	$totallen = dict_get($info, "length", "integer");
+	if (isset($totallen)) {
+		$filelist[] = array($dname, $totallen);
+		$type = 'single';
+	} else {
+		$flist = dict_get($info, "files", "list");
+		if (!isset($flist) || !count($flist)) {
+			err('Ошибка', 'В torrent-файле не найден список файлов.', 1);
+		}
+
+		$totallen = 0;
+		foreach ($flist as $fn) {
+			list($ll, $ff) = dict_check($fn, "length(integer):path(list)");
+			$totallen += $ll;
+			$ffa = array();
+			foreach ($ff as $ffe) {
+				if ($ffe['type'] != 'string') {
+					err('Ошибка', 'Ошибка в структуре torrent-файла.', 1);
+				}
+				$ffa[] = $ffe['value'];
+			}
+			if (!$ffa) {
+				err('Ошибка', 'Ошибка в путях файлов torrent-раздачи.', 1);
+			}
+			$filename = implode('/', $ffa);
+			if ($filename === 'Thumbs.db') {
+				err($language['default_1'], $language['upload_44'], 1);
+			}
+			$filelist[] = array($filename, $ll);
+		}
+		$type = 'multi';
+	}
+
+	$infohash = sha1($info['string']);
+	$exists = $db->super_query("SELECT id FROM torrents WHERE infohash = '".$db->safesql($infohash)."' LIMIT 1");
+	if (!empty($exists['id'])) {
+		err($language['default_1'], 'Данный релиз уже есть', 1);
+	}
+
+	return array(
+		'file' => $file,
+		'filename' => $name,
+		'tmp_name' => $tmpname,
+		'infohash' => $infohash,
+		'filelist' => $filelist,
+		'total_length' => (int) $totallen,
+		'type' => $type,
+		'trackers' => $anarray,
+	);
+}
+
 is_login();
 
-if(!$PRIV['upload']) {
-	err($language['default_1'] , $language['upload_41'] , 1);
+if (!$PRIV['upload']) {
+	err($language['default_1'], $language['upload_41'], 1);
 }
 
+$metadataSchema = lt_torrent_metadata_schema();
+$categories = lt_upload_categories_list();
+$defaultCategoryId = lt_upload_default_category_id($categories);
+$defaultCategoryName = lt_upload_category_name($categories, $defaultCategoryId);
 
-//Проверка категории
-if($act === 'next' || $act === 'take') {
-	//Категория
-	$catid = (int)$_REQUEST['catid'];
-	$db->query("SELECT * FROM categories WHERE id=".$catid);
-	if($db->num_rows() == 0) {
-		err($language['default_1'] , $language['upload_3'] , 1 );
-	}
-
-	$arr = $db->get_row();
-	$template = $arr['template'];
+if (!$categories) {
+	head('Загрузить торрент');
+	msg('Ошибка', 'На трекере нет категорий для загрузки.', 'error');
+	foot();
+	die();
 }
 
-/////////////////////////////////////////////////////////////////////
-//Вывод категорий
-/////////////////////////////////////////////////////////////////////
-if($act === '') {
-	//Получаем список категорий
-	if (false === ($cache_result = $memcache->get('upload_categories')))
-	{
-		$categories_who = array();
-		$cats = $db->query("SELECT * FROM categories") or sqlerr(__FILE__, __LINE__);
-		while($arr = $db->get_row() )
-			$categories_who[] = $arr;
+$defaults = array(
+	'name' => '',
+	'catid' => $defaultCategoryId,
+	'content_type' => 'movie',
+	'tags' => '',
+	'descr' => lt_torrent_default_description($defaultCategoryName, array(
+		'Тип' => lt_torrent_metadata_option_label('type', 'movie'),
+	)),
+);
 
-		$memcache->set('upload_categories', $categories_who , 0, (24*60*60));
-		$cache_result = $categories_who;
+foreach ($metadataSchema as $group => $definition) {
+	$defaults[$group] = array();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+	$form = $defaults;
+	$form['name'] = trim((string) ($_POST['name'] ?? ''));
+	$form['catid'] = (int) ($_POST['catid'] ?? 0);
+	$form['content_type'] = trim((string) ($_POST['content_type'] ?? ''));
+	$form['tags'] = trim((string) ($_POST['tags'] ?? ''));
+	$form['descr'] = trim((string) ($_POST['descr'] ?? ''));
+
+	foreach ($metadataSchema as $group => $definition) {
+		if ($group === 'type') {
+			$form[$group] = ($form['content_type'] !== '' ? array($form['content_type']) : array());
+			continue;
+		}
+
+		$form[$group] = (isset($_POST[$group]) && is_array($_POST[$group]) ? $_POST[$group] : array());
 	}
 
-
-	//Заголовок
-	head($language['upload_1'] , true);
-	begin_frame($language['upload_1']);
-	if($cache_result) {
-		$c = 0;
-		print "<table border=0 width=400 cellpadding=10 align=center ";
-		echo "<tbody>";
-		$kolonok = 6;
-
-
-		foreach ($cache_result AS $cat) {
-
-			//Сортируем колонки. Число колонок содержится в переменной $kolonok
-				print(($c && $c % $kolonok == 0) ? "</td><tr>" : "");
-				echo "<td align=center class=row1><center><a href=\"upload.php?catid=".$cat['id']."&act=next\"><img src='public/images/categories/".$cat['image']."' border=0/><br><small>".$cat['name']."</small></a></center></td>";
-				$c++;
-		}
-
-		echo "</tbody></table>";
-	} else {
-		msg($language['default_1'] , $language['upload_2']);
-	}
-	end_frame();
-	//Подвал
-	foot(true);
-	die();
-} elseif($act === 'next') {
-/////////////////////////////////////////////////////////////////////
-//Вывод формы
-/////////////////////////////////////////////////////////////////////
-	//Заголовок
-	head('Загрузка' , true);
-
-	msg('Все поля которые выделены чертой , обязательны к заполнению' , 'Релиз будет активный если у него есть торрент-файл, и обложка!');
-	begin_frame('Загрузка');
-	?>
-
-
-	<!--ТЕГИ-->
-	<script type="text/javascript" src="public/js/tagto.js"> </script>
-	<script type="text/javascript">
-
-		$(document).ready(function(){
-			$("#from").tagTo("#tags");
-		});
-
-
-	</script>
-
-
-	<form enctype="multipart/form-data" action="upload.php?act=take" method="post" name="upload">
-	<input type="hidden" name="catid" value="<?=$catid;?>" />
-	<!--Файлы-->
-	<table width="95%"  cellspacing="7" cellpadding="0" border="0"  align="center">
-	<tbody>
-
-
-	<tr>
-		<td class="ta_r">
-		 <span class="grey"><b><?=$language['upload_4'];?>:</b></span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="file" name="file" style="margin: 0px;" size="50%" class="inputText"><br>
-		</td><td>
-	   </td></tr>
-
-	<tr>
-		<td class="ta_r">
-		 <span class="grey"><b><?=$language['upload_5'];?>:</b></span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="file" name="image" style="margin: 0px;" size="50%" class="inputText">
-		 <br><small><?=sprintf($language['upload_6'] , mksize($config['max_size_image']));?></small>
-		</td><td>
-	   </td></tr>
-
-
-	<tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" ><b><?=$language['upload_7'];?>:</b></span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="file" name="screenshot[]" size="50%"> <br>
-			<input type="file" name="screenshot[]" size="50%"> <br>
-			<input type="file" name="screenshot[]" size="50%"> <br>
-			<input type="file" name="screenshot[]" size="50%"> <br>
-		</td><td>
-	   </td></tr>
-
-
-
-
-	<!--Название -->
-
-	<tr>
-		<td class="ta_r">
-		 <span class="grey"><b><?=$language['upload_9'];?>:</b></span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="text" style="margin: 0px;" size="50%"  name="name" class="inputText">
-
-		</td><td>
-	   </td></tr>
-
-
-	<!--Описание-->
-
-	<tr>
-		<td colspan="2"><?=textbb('descr', isset($_POST['descr']) && $_POST['descr'] !== '' ? (string)$_POST['descr'] : upload_text_category($template), '95%', '300');?></td>
-	</tr>
-
-	<tr>
-		<td class="ta_r">
-		 <span class="grey"><?=$language['upload_12'];?>:</span>
-		</td>
-		<td style="padding: 0px;">
-		<input type="text" name="tags" id="tags" size="70">
-		<?
-		///////////////////////////////////////////////////////////
-		//Теги
-		///////////////////////////////////////////////////////////
-
-		$tags = taggenrelist($catid);
-		$tags_echo = '';
-		$tags_echo .= '<div id="from">';
-		if (!$tags) {
-			$tags_echo .=  '<small>'.$language['upload_13'].'</small>';
-		}
-		else {
-			foreach ($tags as $row)
-				$tags_echo .= "<a href='#'>" . htmlspecialchars($row["name"]) . "</a>\n";
-		}
-		$tags_echo .= "</div>\n";
-
-		msg_ajax($tags_echo , (!$tags ? 'ajaxerror' : 'ajaxsuccess'));
-		?>
-		</td><td>
-	   </td></tr>
-
-
-	<tr>
-		<td class="ta_r">
-		 <span class="grey"><?=$language['upload_14'];?>:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="checkbox" name="multi" value="1"/>&nbsp<?=$language['upload_15'];?>
-		</td><td>
-	   </td></tr>
-
-	  <tr>
-		  <td class="ta_r">
-		 <span class="grey"><?=$language['upload_16'];?>:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="text" name="video_vkontakte" size="70"/>
-			<br> <small><br><?=$language['upload_17'];?></small>
-		</td><td>
-	   </td></tr>
-
-	 <?
-	 if($PRIV['edit_news']) { ?>
-	   <tr>
-		  <td class="ta_r">
-		 <span class="grey"><?=$language['upload_39'];?>:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="checkbox" value="1" name="news">&nbsp<?=$language['upload_40'];?>
-
-		</td><td>
-	   </td></tr>
-
-	 <? } ?>
-
-	</tbody>
-	</table>
-
-	<!--Кнопка-->
-	<table width="70%" cellpadding="3" align="center">
-	<tr>
-		<td width="15%"></td>
-		<td><input type="submit" value="<?=$language['upload_18'];?>"> </td>
-	</tr>
-	</table>
-	</form>
-	<?
-	end_frame();
-	//Подвал
-	foot(true);
-	die();
-
-} elseif ($act === 'take') {
-/////////////////////////////////////////////////////////////////////
-//Обработка
-/////////////////////////////////////////////////////////////////////
-
-	/*
-	===================================
-	Торрент
-	===================================
-	*/
-
-	//Файл
-	$f = isset($_FILES['file']) && is_array($_FILES['file']) ? $_FILES['file'] : array('name' => '', 'tmp_name' => '', 'type' => '', 'size' => 0, 'error' => 0);
-
-	//Если есть торрент проверяем его
-	if(!($_FILES['file']['name'] == ""))  {
-		//Имя файла
-		$fname = trim($f["name"]);
-		if (empty($fname) ) {
-			err($language['default_1'] , $language['upload_19'] , 1);
-		}
-
-		//Проверяем имя торрент-файла
-		if (!validfilename($fname) ) {
-			err($language['default_1'] , $language['upload_20'] , 1);
-		}
-
-		//Проверяем формат
-		if (!preg_match('/^(.+)\.torrent$/si', $fname, $matches) ) {
-			err($language['default_1'] , $language['upload_21'] , 1);
-		}
-
-
-		//Проверяем, загрузиться ли файл через HTTP POST
-		$tmpname = $f["tmp_name"];
-		if (!is_uploaded_file($tmpname)) {
-			err($language['default_1'] , $language['upload_22'] , 1 );
-		}
-
-		//Проверяем размер файла
-		if (!filesize($tmpname) ) {
-			err($language['default_1'] , $language['upload_23'] , 1);
-		}
-
-		//Получаем содержимое файла
-		$dict = bdec_file($tmpname, (1024 * 1024) );
-
-
-		//Удяляем не нужное
-		unset($dict['value']['nodes']); // remove cached peers (Bitcomet & Azareus)
-		unset($dict['value']['azureus_properties']); // remove azureus properties
-		unset($dict['value']['comment']);
-		unset($dict['value']['created by']);
-		unset($dict['value']['publisher']);
-		unset($dict['value']['publisher.windows-1251']);
-		unset($dict['value']['publisher-url']);
-		unset($dict['value']['publisher-url.windows-1251']);
-
-		$multi = (isset($_POST['multi']) && (string)$_POST['multi'] === '1') ? 1 : 0;
-
-
-		if (!$multi) {
-			unset($dict['value']['announce-list']);
-			unset($dict['value']['announce']);
-
-		} else $anarray = get_announce_urls($dict);
-
-		if($multi && !$anarray) {
-			err($language['default_1'] , $language['upload_24'] , 1);
-		}
-
-		//Декодируем строку
-		$dict = bdec(benc($dict) );
-		list($info) = dict_check($dict, "info");
-
-		list($dname, $plen, $pieces) = dict_check($info, "name(string):piece length(integer):pieces(string)");
-
-
-		if (strlen($pieces) % 20 != 0) {
-			err("Invalid pieces");
-		}
-
-		$filelist = array();
-		$totallen = dict_get($info, "length", "integer");
-		if (isset($totallen)) {
-			$filelist[] = array($dname, $totallen);
-			$type = 'single';
-		} else {
-			$flist = dict_get($info, "files", "list");
-			if (!isset($flist))
-				err("missing both length and files");
-			if (!count($flist))
-				err("no files");
-			$totallen = 0;
-			foreach ($flist as $fn) {
-				list($ll, $ff) = dict_check($fn, "length(integer):path(list)");
-				$totallen += $ll;
-				$ffa = array();
-				foreach ($ff as $ffe) {
-					if ($ffe["type"] != "string")
-					err("filename error");
-					$ffa[] = $ffe["value"];
-				}
-				if (!count($ffa))
-				err("filename error");
-				$ffe = implode("/", $ffa);
-				$filelist[] = array($ffe, $ll);
-
-				if ($ffe == 'Thumbs.db'){
-					err($language['default_1'], $language['upload_44'] , 1);
-				}
-			}
-			$type = 'multi';
-
-		}
-
-
-		//Инфохеш
-		$infohash = sha1($info["string"]);
-
+	$categoryInfo = lt_upload_category_info($form['catid']);
+	if (!$categoryInfo) {
+		err($language['default_1'], $language['upload_3'], 1);
 	}
 
+	$torrent = lt_upload_parse_torrent();
 
-	/*
-	===================================
-	Содержимое(описание)
-	===================================
-	*/
-	//Имя
-	$name = isset($_POST['name']) ? trim((string)$_POST['name']) : '';
-	if(empty($name) ) {
-		err($language['default_1']  , $language['upload_25'] , 1);
+	if ($form['name'] === '') {
+		err($language['default_1'], $language['upload_25'], 1);
 	}
 
-	//Описание
-	$descr = isset($_POST['descr']) ? (string)$_POST['descr'] : '';
-
-	if(empty($descr) ) {
-		err($language['default_1']  , $language['upload_26'] , 1);
+	if ($form['descr'] === '') {
+		err($language['default_1'], $language['upload_26'], 1);
 	}
 
+	$contentType = lt_torrent_metadata_normalize_values('type', $form['type']);
+	if (!$contentType) {
+		err('Ошибка', 'Выберите тип раздачи.', 1);
+	}
+	$contentType = $contentType[0];
 
-
-	/*
-	===================================
-	Обложка
-	===================================
-	*/
-
-
-	$allowed_types = array(
-		"image/gif" => "gif",
-		"image/pjpeg" => "jpg",
-		"image/jpeg" => "jpg",
-		"image/jpg" => "jpg",
-		"image/png" => "png"
+	$metadataValues = array(
+		'subtitles' => lt_torrent_metadata_csv('subtitles', $form['subtitles']),
+		'language' => lt_torrent_metadata_csv('language', $form['language']),
+		'genre' => lt_torrent_metadata_csv('genre', $form['genre']),
+		'info' => lt_torrent_metadata_csv('info', $form['info']),
+		'country' => lt_torrent_metadata_csv('country', $form['country']),
 	);
 
-	if (isset($_FILES['image']['name']) && $_FILES['image']['name'] !== '') {
-
-			//Проверяем тип обложки
-			if (!array_key_exists($_FILES['image']['type'], $allowed_types) ) {
-				err($language['default_1'] , $language['upload_27'] , 1);
-			}
-
-			if (!preg_match('/^(.+)\.(jpg|jpeg|png|gif)$/si', $_FILES['image']['name']) ) {
-				err($language['default_1'] , $language['upload_28'] , 1);
-			}
-			// Is within allowed filesize?
-			if ($_FILES['image']['size'] > $config['max_size_image']) {
-				err($language['default_1']  , sprintf($language['upload_29'] , mksize($config['max_size_image'])) , 1);
-			}
-			// Where to upload?
-			// Update for your own server. Make sure the folder has chmod write permissions. Remember this director
-			$uploaddir = "public/downloads/images/";
-
-			// What is the temporary file name?
-			$ifile = $_FILES['image']['tmp_name'];
-
-			// Calculate what the next torrent id will be
-			$row = $db->super_query("SHOW TABLE STATUS LIKE 'torrents'");
-			$next_id = $row['Auto_increment'];
-
-			// By what filename should the tracker associate the image with?
-			$ifilename = $next_id .  substr($_FILES['image']['name'], strlen($_FILES['image']['name'])-4, 4);
-
-			// Upload the file
-			$copy = copy($ifile, $uploaddir.$ifilename);
-
-			if (!$copy) {
-				err($language['default_1'] , $language['upload_30'] , 1);
-			}
-
-			$image = $ifilename;
-
+	$nextId = lt_upload_next_torrent_id();
+	if ($nextId <= 0) {
+		err('Ошибка', 'Не удалось подготовить загрузку торрента.', 1);
 	}
 
+	$coverExtension = lt_upload_validate_image((array) ($_FILES['image'] ?? array()), 'Обложка');
+	$coverName = lt_upload_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $nextId.'.'.$coverExtension, 'обложку');
+	$screenshots = lt_upload_collect_screenshots($nextId);
+	$tags = lt_upload_collect_tags($form['tags']);
 
-	/*
-	===================================
-	Скриншоты
-	===================================
-	*/
-	if (!isset($next_id)) {
-		$row = $db->super_query("SHOW TABLE STATUS LIKE 'torrents'");
-		$next_id = isset($row['Auto_increment']) ? (int)$row['Auto_increment'] : 0;
-	}
-	$screenshot = array();
-	for ($x=0; $x < 4; $x++) {
+	$screenshots[0] = ($screenshots[0] ?? '');
+	$screenshots[1] = ($screenshots[1] ?? '');
+	$screenshots[2] = ($screenshots[2] ?? '');
+	$screenshots[3] = ($screenshots[3] ?? '');
 
-		if (isset($_FILES['screenshot']['name'][$x]) && $_FILES['screenshot']['name'][$x] !== '') {
-			$y = $x + 1;
-
-			// Is valid filetype?
-			if (!array_key_exists($_FILES['screenshot']['type'][$x], $allowed_types)) {
-				err($language['default_1'] , sprintf($language['upload_32'] , $y) , 1);
-			}
-			if (!preg_match('/^(.+)\.(jpg|jpeg|png|gif)$/si', $_FILES['screenshot']['name'][$x])) {
-				err($language['default_1'] , sprintf($language['upload_33'] , $y) , 1);
-
-			}
-			// Is within allowed filesize?
-			if ($_FILES['screenshot']['size'][$x] > $config['max_size_image']) {
-				err($language['default_1'] , sprintf($language['upload_34'] , $y) , 1);
-
-			}
-			// Where to upload?
-			// Update for your own server. Make sure the folder has chmod write permissions. Remember this director
-			$uploaddir_screen = "public/downloads/screens/";
-
-			// What is the temporary file name?
-			$ifile = $_FILES['screenshot']['tmp_name'][$x];
-
-
-			// By what filename should the tracker associate the image with?
-			$ifilename_screen = $next_id . $x . substr($_FILES['screenshot']['name'][$x], strlen($_FILES['screenshot']['name'][$x])-4, 4);
-
-			// Upload the file
-			$copy_screen = copy($ifile, $uploaddir_screen.$ifilename_screen);
-
-			if (!$copy_screen) {
-					err($language['default_1'] , sprintf($language['upload_35'] , $y) , 1);
-			}
-			$screenshot[] = $ifilename_screen;
+	$trackers = array();
+	$trackers[] = 'localhost';
+	foreach ($torrent['trackers'] as $trackerUrl) {
+		if ($trackerUrl === '' || $trackerUrl === 'localhost') {
+			continue;
 		}
+		$trackers[] = $trackerUrl;
+	}
+	$trackers = array_values(array_unique($trackers));
 
+	$insert = $db->query("INSERT INTO torrents
+		(name, filename, num_files, type, size, descr, infohash, tags, id_category, id_user, added, image, multi, downloaded, completed, last_action, screen_1, screen_2, screen_3, screen_4, video_vkontakte, news, content_type, subtitles, languages, genres, meta_info, countries)
+		VALUES
+		('".$db->safesql($form['name'])."', '".$db->safesql($torrent['filename'])."', ".count($torrent['filelist']).", '".$db->safesql($torrent['type'])."', '".$torrent['total_length']."', '".$db->safesql($form['descr'])."', '".$db->safesql($torrent['infohash'])."', '".$db->safesql($tags)."', ".(int) $form['catid'].", ".(int) $USER['id'].", NOW(), '".$db->safesql($coverName)."', '0', 0, 0, NOW(), '".$db->safesql($screenshots[0])."', '".$db->safesql($screenshots[1])."', '".$db->safesql($screenshots[2])."', '".$db->safesql($screenshots[3])."', '', 0, '".$db->safesql($contentType)."', '".$db->safesql($metadataValues['subtitles'])."', '".$db->safesql($metadataValues['language'])."', '".$db->safesql($metadataValues['genre'])."', '".$db->safesql($metadataValues['info'])."', '".$db->safesql($metadataValues['country'])."')", 0);
+
+	if (!$insert) {
+		@unlink('public/downloads/images/'.$coverName);
+		foreach ($screenshots as $screen) {
+			if ($screen !== '') {
+				@unlink('public/downloads/screens/'.$screen);
+			}
+		}
+		err($language['default_1'], $language['upload_37'], 1);
 	}
 
-	//Теги
-	$tags = isset($_POST['tags']) ? trim((string)$_POST['tags']) : '';
-	// $tags = str_replace($replace, ",", $_POST["tags"], MB_CASE_TITLE, $config['mysql']['charset'])));
+	$id = (int) $db->insert_id();
 
+	if ($id !== $nextId) {
+		$coverExtension = (string) pathinfo($coverName, PATHINFO_EXTENSION);
+		$coverName = lt_upload_retarget_asset('public/downloads/images/', $coverName, $id.($coverExtension !== '' ? '.'.$coverExtension : ''));
 
-	//Видео Вконтакте
-	$video_vkontakte = isset($_POST['video_vkontakte']) ? trim((string)$_POST['video_vkontakte']) : '';
-	if(!preg_match("#http\:\\/\\/vkontakte\.ru\\/video_ext\.php\?oid=(\d+)|-(\d+)\&id=(\d+)\&hash=(.*?)\&hd=1#i" , $video_vkontakte) && !empty($video_vkontakte) ) {
-		err($language['default_1'] , $language['upload_36'] , 1);
+		foreach ($screenshots as $index => $screenName) {
+			if ($screenName === '') {
+				continue;
+			}
+
+			$screenExtension = (string) pathinfo($screenName, PATHINFO_EXTENSION);
+			$screenshots[$index] = lt_upload_retarget_asset('public/downloads/screens/', $screenName, $id.'_'.$index.($screenExtension !== '' ? '.'.$screenExtension : ''));
+		}
 	}
 
-	//Новинка месяца
-	if($PRIV['edit_news']) {
-		$news = (isset($_POST['news']) && (string)$_POST['news'] === '1') ? '1' : '0';
-	} else {
-		$news = '0';
+	$screenshots[0] = ($screenshots[0] ?? '');
+	$screenshots[1] = ($screenshots[1] ?? '');
+	$screenshots[2] = ($screenshots[2] ?? '');
+	$screenshots[3] = ($screenshots[3] ?? '');
+
+	$db->query("UPDATE torrents SET image = '".$db->safesql($coverName)."', screen_1 = '".$db->safesql($screenshots[0])."', screen_2 = '".$db->safesql($screenshots[1])."', screen_3 = '".$db->safesql($screenshots[2])."', screen_4 = '".$db->safesql($screenshots[3])."' WHERE id = ".$id);
+
+	$db->query("DELETE FROM files WHERE id_torrent = ".$id);
+	foreach ($torrent['filelist'] as $fileRow) {
+		$db->query("INSERT INTO files (id_torrent, filename, size) VALUES (".$id.", '".$db->safesql($fileRow[0])."', '".(int) $fileRow[1]."')");
 	}
 
-	/*
-	===================================
-	Добавление в базу
-	===================================
-	*/
-
-	$fname = isset($fname) ? $fname : '';
-	$type = isset($type) ? $type : '';
-	$totallen = isset($totallen) ? $totallen : 0;
-	$infohash = isset($infohash) ? $infohash : '';
-	$image = isset($image) ? $image : '';
-	$multi = isset($multi) ? $multi : 0;
-	$filelist = isset($filelist) && is_array($filelist) ? $filelist : array();
-	$anarray = isset($anarray) && is_array($anarray) ? $anarray : array();
-	$screenshot[0] = isset($screenshot[0]) ? $screenshot[0] : '';
-	$screenshot[1] = isset($screenshot[1]) ? $screenshot[1] : '';
-	$screenshot[2] = isset($screenshot[2]) ? $screenshot[2] : '';
-	$screenshot[3] = isset($screenshot[3]) ? $screenshot[3] : '';
-
-	$add = $db->query("INSERT INTO torrents  (name , filename , num_files , type ,  size , descr , infohash , tags , id_category , id_user , added , image , multi  , screen_1 , screen_2 , screen_3 , screen_4 , video_vkontakte , news) VALUES ('".$db->safesql($name)."' , '".$db->safesql($fname)."' ,  ".count($filelist).", '".$type."' ,  '".$totallen."' ,  '".$db->safesql($descr)."' , '".$db->safesql($infohash)."' , '".$db->safesql($tags)."' ,  '".$catid."' , '".$USER['id']."' ,  NOW() ,  '".$db->safesql($image)."' , '".$multi."' , '".$db->safesql($screenshot['0'])."' ,   '".$db->safesql($screenshot['1'])."' ,  '".$db->safesql($screenshot['2'])."' ,  '".$db->safesql($screenshot['3'])."' , '".$db->safesql($video_vkontakte)."' , '".$news."')" , 0);
-	if(!$add) {
-		err($language['default_1'] , $language['upload_37'] , 1);
+	foreach ($trackers as $trackerUrl) {
+		$db->query("INSERT INTO trackers (torrent, tracker, state) VALUES (".$id.", '".$db->safesql($trackerUrl)."', '')");
 	}
 
-	//ID торрента
-	$id = $db->insert_id();
+	lt_upload_save_tags($form['catid'], $tags);
 
-	//Создаем информацию о торренте
-	$db->query("DELETE FROM files WHERE id_torrent=".$id); //Удаляем старые данные
-	foreach ($filelist as $file) {
-		$db->query("INSERT INTO files (id_torrent, filename, size) VALUES (".$id.", '".$db->safesql($file[0])."', '".$file[1]."')");
+	if (!lt_upload_ensure_directory('public/downloads/torrents/')) {
+		err('Ошибка', 'Не удалось подготовить каталог для torrent-файлов.', 1);
 	}
 
-
-	//Добавляем локальные трекеры
-	$db->query("INSERT INTO trackers (torrent,tracker) VALUES ('".$id."','localhost')");
-
-	//Добавляем мультитрекеры
-	if (!empty($anarray)) {
-			foreach ($anarray as $anurl) $db->query("INSERT INTO trackers (torrent,tracker) VALUES ('".$id."','".$db->safesql($anurl)."')");
+	if (!@move_uploaded_file($torrent['tmp_name'], 'public/downloads/torrents/'.$id.'.torrent')) {
+		err('Ошибка', 'Релиз добавлен, но torrent-файл не удалось сохранить на сервер.', 1);
 	}
 
-	//Добавляем теги
-	$ret = array();
-	$res = $db->query("SELECT name FROM tags WHERE category = ".$catid);
-	while ($row = $db->get_row() ) {
-		$ret[] = $row["name"];
-	}
-
-	$union = array_intersect($ret, explode(",", $tags));
-	$ununion = array_diff(explode(",", $tags), $ret);
-
-	foreach ($union as $tag) {
-		$db->query("UPDATE tags SET howmuch=howmuch+1 WHERE name LIKE '".$db->safesql($tag)."'");
-	}
-
-	foreach ($ununion as $tag) {
-		$db->query("INSERT INTO tags (category, name, howmuch) VALUES ('".$catid."', '".$db->safesql($tag)."', 1)");
-	}
-
-	//Добавляем дополнительные поля
-	/*if(sizeof($insert_fields) ) {
-		$db->query("UPDATE torrents SET ".implode("," , $insert_fields)." WHERE id=".$id);
-	}*/
-
-	//Загружаем торрент	- файл
-	move_uploaded_file($tmpname, 'public/downloads/torrents/'.$id.'.torrent');
-
-
-	//Удаление старого кеша
 	$memcache->delete('upload_categories');
 	$memcache->delete('news_releases');
+	$memcache->delete('tags');
+	$memcache->delete('taggenrelist_'.$form['catid']);
 
-
-	header("Location:/details.php?id=".$id);
+	header('Location:/details.php?id='.$id);
 	die();
 }
+
+$form = $defaults;
+$descriptionTemplates = lt_torrent_description_templates();
+$categoryTemplateMap = array();
+
+foreach ($categories as $category) {
+	$categoryTemplateMap[(int) $category['id']] = lt_torrent_description_template_key((string) ($category['name'] ?? ''));
+}
+
+head('Загрузить торрент');
+?>
+<div class="upload-page">
+	<section class="upload-shell">
+		<div class="upload-header">
+			<h1 class="upload-title">Загрузить торрент</h1>
+			<div class="upload-actions">
+				<a class="upload-top-link upload-top-link-green" href="faq.php">Правила оформления раздач</a>
+				<div class="upload-top-danger">
+					<a class="upload-top-link upload-top-link-red" href="copyright.php">Список запрещенных раздач</a>
+					<span class="upload-top-note">запрещено к загрузке на трекере</span>
+				</div>
+			</div>
+		</div>
+
+		<form class="upload-form" action="upload.php" method="post" enctype="multipart/form-data">
+			<div class="upload-grid">
+				<div class="upload-grid-main">
+					<div class="upload-field">
+						<label class="upload-label" for="upload_name">Название</label>
+						<input id="upload_name" class="upload-input" type="text" name="name" value="<?=htmlspecialchars($form['name'], ENT_QUOTES, 'UTF-8');?>" required>
+					</div>
+
+					<div class="upload-field">
+						<label class="upload-label" for="upload_category">Категория</label>
+						<select id="upload_category" class="upload-select" name="catid" required>
+							<?php foreach ($categories as $category) { ?>
+							<option value="<?=(int) $category['id'];?>" data-template-key="<?=htmlspecialchars((string) ($categoryTemplateMap[(int) $category['id']] ?? 'movies'), ENT_QUOTES, 'UTF-8');?>"<?=((int) $form['catid'] === (int) $category['id'] ? ' selected' : '');?>><?=htmlspecialchars((string) $category['name'], ENT_QUOTES, 'UTF-8');?></option>
+							<?php } ?>
+						</select>
+					</div>
+
+					<?php foreach ($metadataSchema as $group => $definition) { ?>
+					<fieldset class="upload-section upload-section-<?=$group;?>">
+						<legend class="upload-section-title"><?=$definition['label'];?></legend>
+						<div class="upload-option-grid upload-option-grid-cols-<?=max(2, (int) ($definition['columns'] ?? 4));?>">
+							<?php foreach ($definition['options'] as $value => $label) { ?>
+							<label class="upload-option">
+								<?php if ($definition['input'] === 'radio') { ?>
+								<input type="radio" name="content_type" value="<?=htmlspecialchars($value, ENT_QUOTES, 'UTF-8');?>"<?=($form['content_type'] === $value ? ' checked' : '');?>>
+								<?php } else { ?>
+								<input type="checkbox" name="<?=$group;?>[]" value="<?=htmlspecialchars($value, ENT_QUOTES, 'UTF-8');?>"<?=(in_array($value, $form[$group], true) ? ' checked' : '');?>>
+								<?php } ?>
+								<span><?=htmlspecialchars($label, ENT_QUOTES, 'UTF-8');?></span>
+							</label>
+							<?php } ?>
+						</div>
+					</fieldset>
+					<?php } ?>
+				</div>
+
+				<div class="upload-grid-side">
+					<div class="upload-field">
+						<label class="upload-label" for="upload_file">Торрент файл</label>
+						<input id="upload_file" class="upload-input upload-file-input" type="file" name="file" accept=".torrent" required>
+					</div>
+
+					<div class="upload-field">
+						<label class="upload-label" for="upload_cover">Обложка</label>
+						<input id="upload_cover" class="upload-input upload-file-input" type="file" name="image" accept=".jpg,.jpeg,.png,.gif" required>
+					</div>
+
+					<div class="upload-field">
+						<label class="upload-label" for="upload_screens">Скринлист</label>
+						<input id="upload_screens" class="upload-input upload-file-input" type="file" name="screenshot[]" accept=".jpg,.jpeg,.png,.gif" multiple required>
+						<div class="upload-hint">до 4 изображений</div>
+					</div>
+
+					<div class="upload-field">
+						<label class="upload-label" for="upload_tags">Тэги</label>
+						<input id="upload_tags" class="upload-input" type="text" name="tags" value="<?=htmlspecialchars($form['tags'], ENT_QUOTES, 'UTF-8');?>" placeholder="через запятую">
+					</div>
+
+					<div class="upload-field upload-field-description">
+						<label class="upload-label" for="upload_descr">Описание</label>
+						<textarea id="upload_descr" class="upload-textarea" name="descr" required><?=htmlspecialchars($form['descr'], ENT_QUOTES, 'UTF-8');?></textarea>
+					</div>
+				</div>
+			</div>
+
+			<div class="upload-footer">
+				<button class="upload-submit" type="submit">Загрузить</button>
+			</div>
+		</form>
+	</section>
+</div>
+<script>
+(function () {
+	var form = document.querySelector('.upload-form');
+	var categorySelect = document.getElementById('upload_category');
+	var descriptionField = document.getElementById('upload_descr');
+	var templates = <?=json_encode($descriptionTemplates, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
+	var defaultTemplateKey = 'movies';
+
+	if (!form || !categorySelect || !descriptionField) {
+		return;
+	}
+
+	function selectedCategoryTemplateKey() {
+		var option = categorySelect.options[categorySelect.selectedIndex];
+		return option && option.getAttribute('data-template-key') ? option.getAttribute('data-template-key') : defaultTemplateKey;
+	}
+
+	function selectedTexts(selector) {
+		var nodes = form.querySelectorAll(selector);
+		var result = [];
+
+		Array.prototype.forEach.call(nodes, function (node) {
+			var label = node.parentNode ? node.parentNode.querySelector('span') : null;
+			var text = label ? String(label.textContent || '').trim() : '';
+			if (text !== '') {
+				result.push(text);
+			}
+		});
+
+		return result;
+	}
+
+	function selectedRadioText(name) {
+		var input = form.querySelector('input[name="' + name + '"]:checked');
+		if (!input || !input.parentNode) {
+			return '';
+		}
+
+		var label = input.parentNode.querySelector('span');
+		return label ? String(label.textContent || '').trim() : '';
+	}
+
+	function parseDescription(text) {
+		var result = {};
+		var currentLabel = '';
+
+		String(text || '').split(/\r?\n/).forEach(function (line) {
+			var fieldMatch = line.match(/^\[b\]([^:\[]+):\[\/b\]\s*(.*)$/i);
+			var sectionMatch = line.match(/^\[u\].+\[\/u\]$/i);
+
+			if (sectionMatch) {
+				currentLabel = '';
+				return;
+			}
+
+			if (fieldMatch) {
+				currentLabel = String(fieldMatch[1] || '').trim();
+				result[currentLabel] = String(fieldMatch[2] || '').trim();
+				return;
+			}
+
+			if (currentLabel === '') {
+				return;
+			}
+
+			result[currentLabel] += (result[currentLabel] !== '' ? '\n' : '') + line;
+		});
+
+		return result;
+	}
+
+	function buildDescription() {
+		var templateKey = selectedCategoryTemplateKey();
+		var template = templates[templateKey] || templates[defaultTemplateKey] || { items: [] };
+		var currentValues = parseDescription(descriptionField.value);
+		var autoValues = {
+			type: selectedRadioText('content_type'),
+			genre: selectedTexts('input[name="genre[]"]:checked'),
+			language: selectedTexts('input[name="language[]"]:checked'),
+			subtitles: selectedTexts('input[name="subtitles[]"]:checked'),
+			country: selectedTexts('input[name="country[]"]:checked')
+		};
+		var lines = [];
+
+		(template.items || []).forEach(function (item) {
+			var itemType = String(item.type || 'field');
+			var label = String(item.label || '').trim();
+			var value = '';
+			var autoValue = '';
+
+			if (!label) {
+				return;
+			}
+
+			if (itemType === 'section') {
+				if (lines.length > 0 && lines[lines.length - 1] !== '') {
+					lines.push('');
+				}
+				lines.push('[u]' + label + '[/u]');
+				return;
+			}
+
+			if (item.auto && typeof autoValues[item.auto] !== 'undefined') {
+				autoValue = Array.isArray(autoValues[item.auto]) ? autoValues[item.auto].join(', ') : String(autoValues[item.auto] || '').trim();
+			}
+
+			value = autoValue !== '' ? autoValue : String(currentValues[label] || '').trim();
+			if (value.indexOf('\n') !== -1) {
+				lines.push('[b]' + label + ':[/b]' + (value !== '' ? '\n' + value : ''));
+				return;
+			}
+
+			lines.push('[b]' + label + ':[/b]' + (value !== '' ? ' ' + value : ''));
+		});
+
+		return lines.join('\n');
+	}
+
+	function syncDescription() {
+		descriptionField.value = buildDescription();
+	}
+
+	categorySelect.addEventListener('change', syncDescription);
+
+	Array.prototype.forEach.call(form.querySelectorAll('input[name="content_type"], input[name="genre[]"], input[name="language[]"], input[name="subtitles[]"], input[name="country[]"]'), function (input) {
+		input.addEventListener('change', syncDescription);
+	});
+
+	syncDescription();
+})();
+</script>
+<?php
+foot();
 ?>

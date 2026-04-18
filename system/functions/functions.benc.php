@@ -325,13 +325,22 @@ function bdec_dict($s) {
  * @return array|boolean Array of urls on success, false on fail
  */
 function get_announce_urls($dict){
-	if ($dict['value']['announce'] && !$dict['value']['announce-list']) {$anarray[0] = $dict['value']['announce']['value']; return $anarray; }
+	$announce = (isset($dict['value']['announce']) ? $dict['value']['announce'] : null);
+	$announceList = (isset($dict['value']['announce-list']) ? $dict['value']['announce-list'] : null);
+	$anarray = array();
 
-	if ($dict['value']['announce-list']) {
+	if (!empty($announce['value']) && empty($announceList)) {
+		$anarray[] = $announce['value'];
+		return $anarray;
+	}
 
-		if (!$dict['value']['announce-list']['value']) return false;
+	if (!empty($announceList)) {
+		if (empty($announceList['value'])) return false;
 		$retrackers = get_retrackers(true);
-		foreach ($dict['value']['announce-list']['value'] as $urls) {
+		foreach ($announceList['value'] as $urls) {
+			if (empty($urls['value'][0]['value'])) {
+				continue;
+			}
 			if (!in_array($urls['value'][0]['value'],$retrackers))
 			$anarray[] = $urls['value'][0]['value'];
 		}
@@ -339,6 +348,8 @@ function get_announce_urls($dict){
 		return $anarray;
 
 	}
+
+	return false;
 }
 
 /**

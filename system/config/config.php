@@ -39,17 +39,17 @@ $config  = array(
 
 //Чат
 'chat_limit' => 5, //Интервал отправки чата
-'chat_limit_text' => 550, //Лимит текста 
+'chat_limit_text' => 550, //Лимит текста
 'chat_load_in_server' => 60, //Максимальная нагрузка сервера , при которой будет работать чат (искл:VIP, Администрация)
 
 
 //Модули поиска
 'search_forum' => 0 , //Включить форумно-видовой вывод
-'search_video' => 0 , //Включить модуль "Видео" в поиске  
-'search_image' => 0 , //Включить модуль "Картинки" в поиске 
+'search_video' => 0 , //Включить модуль "Видео" в поиске
+'search_image' => 0 , //Включить модуль "Картинки" в поиске
 'search_video_lenght' => 0 , //Количество символов , при котором будут выводится видео
 'search_image_lenght' => 0 , //Количество символов , при котором будут выводится видео
-					  
+
 
 
 //Новинка
@@ -112,14 +112,14 @@ $config  = array(
 			'timeout' => 60,
 		),
 
-'crontab' => 0 , //Использовать планировщик заданий cronNNLite 
+'crontab' => 0 , //Использовать планировщик заданий cronNNLite
 					//При использовании данной функции требуется программа cronNNLite или добавить задание в etc/crontab
 					//[Внимание! При включение данной фукнции, все части трекера (к примеру : обновление, автоочистка) отключаются]
 					//0,15,30,45   *   *   *   *   root   /usr/bin/wget -O /dev/null -q http://site.com/autoclean.php > /dev/null 2>&1
 					//0/10   *   *   *   *   root   /usr/bin/wget -O /dev/null -q http://site.com/update.peers.php > /dev/null 2>&1
 
-					
-					
+
+
 'sql_log_file' => 'logs/mysql_log_'.date("M_D_Y").'.log' , //Файл с логами ошибок mySQL
 
 'blocks_use' => 1 , //Использовать блоки ?
@@ -127,10 +127,10 @@ $config  = array(
 
 
 //Jткладка sql - запросов
-define('DEGUB_SQL' , 0);
+define('DEGUB_SQL' , 1);
 
 //Настройка cookies
-define ("COOKIE_SALT", '[default]'); 
+define ("COOKIE_SALT", '[default]');
 define ("COOKIE_ID", 'id_user'); //Название ID
 define ("COOKIE_PASSWORD", 'id_password'); //Название PASSWORD
 ?>

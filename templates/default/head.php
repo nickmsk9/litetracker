@@ -138,4 +138,6 @@ if (!empty($USER['theme_dark'])) {
 				} */
 				?>
 
-				<?php show_blocks('c'); ?>
+				<?php if (empty($GLOBALS['LITETRACKER_HIDE_TOP_BLOCKS'])) { ?>
+					<?php show_blocks('c'); ?>
+				<?php } ?>

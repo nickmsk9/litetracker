@@ -234,6 +234,10 @@ $conversationSubtitle = 'Все личные сообщения сгруппир
 $messages = array();
 $blockedByParticipant = false;
 $blockedByCurrent = false;
+$conversationLimit = 20;
+$showAllConversationMessages = !empty($_GET['all']);
+$conversationHasOlderMessages = false;
+$conversationOlderHref = '';
 
 if ($act === 'conversation') {
 	if ($systemConversation) {
@@ -321,7 +325,26 @@ if ($act === 'conversation') {
 		}
 	}
 
-	$sql = $db->query("SELECT m.*, u.name AS sender_name, u.class AS sender_class, u.avatar AS sender_avatar FROM mail AS m LEFT JOIN users AS u ON u.id = m.id_user_out WHERE ".mail_conversation_where($currentUserId, $targetUserId, $systemConversation, 'm')." ORDER BY m.date ASC, m.id ASC");
+	$conversationWhere = mail_conversation_where($currentUserId, $targetUserId, $systemConversation, 'm');
+	$totalMessagesRow = $db->super_query("SELECT COUNT(*) AS c FROM mail AS m WHERE ".$conversationWhere);
+	$totalMessagesCount = (int) ($totalMessagesRow['c'] ?? 0);
+
+	if (!$showAllConversationMessages && $totalMessagesCount > $conversationLimit) {
+		$conversationHasOlderMessages = true;
+		$conversationOlderHref = mail_build_href('conversation', $targetUserId, $systemConversation, array('all' => 1));
+		$sql = $db->query("SELECT * FROM (
+			SELECT m.*, u.name AS sender_name, u.class AS sender_class, u.avatar AS sender_avatar
+			FROM mail AS m
+			LEFT JOIN users AS u ON u.id = m.id_user_out
+			WHERE ".$conversationWhere."
+			ORDER BY m.date DESC, m.id DESC
+			LIMIT ".$conversationLimit."
+		) AS conversation_slice
+		ORDER BY date ASC, id ASC");
+	} else {
+		$sql = $db->query("SELECT m.*, u.name AS sender_name, u.class AS sender_class, u.avatar AS sender_avatar FROM mail AS m LEFT JOIN users AS u ON u.id = m.id_user_out WHERE ".$conversationWhere." ORDER BY m.date ASC, m.id ASC");
+	}
+
 	while($row = $db->get_row($sql)) {
 		$messages[] = $row;
 	}
@@ -380,143 +403,97 @@ while($conversation = $db->get_row($conversationsSql)) {
 }
 ?>
 
-<div class="mail-page">
-	<div class="mail-shell">
-		<aside class="mail-sidebar">
-			<a class="mail-sidebar-link<?=($act === 'list' ? ' mail-sidebar-link-active' : '');?>" href="<?=mail_build_href('list');?>">Диалоги</a>
-			<?php if ($act === 'conversation') { ?>
-			<a class="mail-sidebar-link mail-sidebar-link-active" href="<?=mail_build_href('conversation', $targetUserId, $systemConversation);?>">Текущий диалог</a>
-			<?php } ?>
-		</aside>
+<div class="mail-page<?=($act === 'conversation' ? ' mail-page-dialog-open' : '');?>">
+	<div class="mail-thread-list">
+		<?php if (!$conversations) { ?>
+		<div class="mail-empty-state">У вас пока нет сообщений.</div>
+		<?php } ?>
 
-		<section class="mail-panel">
-			<?php if ($act === 'conversation') { ?>
-			<div class="mail-panel-header">
-				<div class="mail-panel-heading">
-					<div class="mail-panel-title"><?=$conversationTitle;?></div>
-					<div class="mail-panel-subtitle"><?=$conversationSubtitle;?></div>
+		<?php foreach($conversations as $conversation) { ?>
+		<?php
+		$partner = $conversation['partner'];
+		$partnerName = (!empty($partner['name']) ? $partner['name'] : 'System');
+		$openHref = mail_build_href('conversation', $conversation['partner_id'], $conversation['system']);
+		$countLabel = $conversation['total_messages'].' '.mail_plural($conversation['total_messages'], 'сообщение', 'сообщения', 'сообщений');
+		$isActiveConversation = ($act === 'conversation' && (int) $conversation['partner_id'] === (int) $targetUserId && (bool) $conversation['system'] === (bool) $systemConversation);
+		?>
+		<article class="mail-thread-row<?=($isActiveConversation ? ' mail-thread-row-active' : '');?>">
+			<a class="mail-thread-avatar" href="<?=$openHref;?>">
+				<img src="<?=mail_avatar_path($partner);?>" alt="<?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?>" width="40" height="40">
+			</a>
+
+			<div class="mail-thread-main">
+				<div class="mail-thread-name"><?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?></div>
+				<div class="mail-thread-status"><?=$conversation['subtitle'];?></div>
+			</div>
+
+			<div class="mail-thread-side">
+				<div class="mail-thread-count"><?=$countLabel;?></div>
+				<a class="mail-button" href="<?=$openHref;?>"><?=($conversation['system'] ? 'Открыть' : 'Написать');?></a>
+			</div>
+		</article>
+		<?php } ?>
+	</div>
+
+	<?php if ($act === 'conversation') { ?>
+	<div class="mail-overlay">
+		<a class="mail-overlay-close" href="<?=mail_build_href('list');?>">&times;</a>
+
+		<div class="mail-modal" role="dialog" aria-modal="true" aria-labelledby="mail-modal-title">
+			<div class="mail-modal-header">
+				<div class="mail-modal-avatar">
+					<img src="<?=mail_avatar_path($participant);?>" alt="<?=htmlspecialchars($conversationTitle, ENT_QUOTES, 'UTF-8');?>" width="40" height="40">
 				</div>
-				<div class="mail-panel-actions">
-					<a class="mail-button mail-button-secondary" href="<?=mail_build_href('list');?>">Назад к диалогам</a>
-					<?php if (!$systemConversation) { ?>
-					<a class="mail-button" href="<?=profile_href((int) $participant['id']);?>">Профиль</a>
-					<?php } ?>
+				<div class="mail-modal-heading">
+					<div class="mail-modal-title" id="mail-modal-title"><?=htmlspecialchars($conversationTitle, ENT_QUOTES, 'UTF-8');?></div>
+					<div class="mail-modal-subtitle"><?=$conversationSubtitle;?></div>
 				</div>
 			</div>
 
-			<div class="mail-conversation">
-				<div class="mail-conversation-stream">
+			<div class="mail-modal-body">
+				<div class="mail-modal-stream">
+					<?php if ($conversationHasOlderMessages && $conversationOlderHref !== '') { ?>
+					<a class="mail-modal-history-link" href="<?=$conversationOlderHref;?>">Показать более старые сообщения</a>
+					<?php } ?>
+
 					<?php if (!$messages) { ?>
-					<div class="mail-empty-state">Сообщений пока нет. Можно начать диалог прямо сейчас.</div>
+					<div class="mail-empty-state mail-empty-state-compact">Сообщений пока нет. Можно начать диалог прямо сейчас.</div>
 					<?php } ?>
 
 					<?php foreach($messages as $row) { ?>
 					<?php
 					$isOutgoing = ((int) $row['id_user_out'] === $currentUserId);
-					$messageAvatarUser = ($isOutgoing ? $USER : array(
-						'avatar' => $row['sender_avatar'],
-						'name' => ($row['sender_name'] ?? 'System'),
-					));
-					$messageAuthor = ($isOutgoing ? 'Вы' : (!empty($row['sender_name']) ? $row['sender_name'] : 'System'));
-					$messageDeleteHref = mail_build_href('del', $targetUserId, $systemConversation, array('id' => $row['id']));
+					$messageAuthor = ($isOutgoing ? (!empty($USER['name']) ? $USER['name'] : 'Вы') : (!empty($row['sender_name']) ? $row['sender_name'] : 'System'));
 					?>
-					<article class="mail-message<?=($isOutgoing ? ' mail-message-outgoing' : '');?><?=(!$isOutgoing && !(int) $row['reading'] ? ' mail-message-unread' : '');?>">
-						<div class="mail-message-avatar">
-							<img src="<?=mail_avatar_path($messageAvatarUser);?>" alt="<?=htmlspecialchars($messageAuthor, ENT_QUOTES, 'UTF-8');?>" width="44" height="44">
+					<div class="mail-modal-message<?=($isOutgoing ? ' mail-modal-message-outgoing' : '');?>">
+						<div class="mail-modal-message-meta">
+							<span class="mail-modal-message-author"><?=htmlspecialchars($messageAuthor, ENT_QUOTES, 'UTF-8');?></span>
+							<span class="mail-modal-message-date"><?=convent_date($row['date']);?></span>
 						</div>
-						<div class="mail-message-body">
-							<div class="mail-message-meta">
-								<span class="mail-message-author"><?=htmlspecialchars($messageAuthor, ENT_QUOTES, 'UTF-8');?></span>
-								<span class="mail-message-date"><?=convent_date($row['date']);?></span>
-							</div>
-							<?php if (trim((string) $row['name']) !== '') { ?>
-							<div class="mail-message-subject"><?=htmlspecialchars((string) $row['name'], ENT_QUOTES, 'UTF-8');?></div>
-							<?php } ?>
-							<div class="mail-message-text"><?=format_comment($row['text']);?></div>
-							<div class="mail-message-actions">
-								<a href="<?=$messageDeleteHref;?>">Удалить</a>
-							</div>
-						</div>
-					</article>
+						<div class="mail-modal-message-text"><?=format_comment($row['text']);?></div>
+					</div>
 					<?php } ?>
 				</div>
 
 				<?php if (!$systemConversation) { ?>
 				<?php if ($blockedByParticipant) { ?>
-				<div class="mail-empty-state">Пользователь добавил вас в ЧС. Отправка новых сообщений недоступна.</div>
+				<div class="mail-empty-state mail-empty-state-compact">Пользователь добавил вас в ЧС. Отправка новых сообщений недоступна.</div>
 				<?php } elseif ($blockedByCurrent) { ?>
-				<div class="mail-empty-state">Пользователь находится в вашем ЧС. Уберите его из списка, чтобы написать сообщение.</div>
+				<div class="mail-empty-state mail-empty-state-compact">Пользователь находится в вашем ЧС. Уберите его из списка, чтобы написать сообщение.</div>
 				<?php } else { ?>
-				<form class="mail-reply-form" action="<?=mail_build_href('conversation', $targetUserId);?>" method="post">
+				<form class="mail-modal-form" action="<?=mail_build_href('conversation', $targetUserId, false, array('all' => ($showAllConversationMessages ? 1 : null)));?>" method="post">
 					<input type="hidden" name="name" value="Сообщение">
-					<label class="mail-reply-label" for="mail_reply_text">Новое сообщение</label>
-					<textarea class="mail-reply-textarea" id="mail_reply_text" name="text"><?=htmlspecialchars((string) ($_POST['text'] ?? ''), ENT_QUOTES, 'UTF-8');?></textarea>
-					<div class="mail-reply-actions">
+					<textarea class="mail-modal-textarea" id="mail_reply_text" name="text"><?=htmlspecialchars((string) ($_POST['text'] ?? ''), ENT_QUOTES, 'UTF-8');?></textarea>
+					<div class="mail-modal-actions">
 						<button class="mail-button" type="submit">Отправить</button>
 					</div>
 				</form>
 				<?php } ?>
 				<?php } ?>
 			</div>
-			<?php } else { ?>
-			<div class="mail-panel-header">
-				<div class="mail-panel-heading">
-					<div class="mail-panel-title">Сообщения</div>
-					<div class="mail-panel-subtitle">Здесь собраны все диалоги по пользователям, а не отдельные письма вперемешку.</div>
-				</div>
-			</div>
-
-			<div class="mail-thread-list">
-				<?php if (!$conversations) { ?>
-				<div class="mail-empty-state">У вас пока нет сообщений.</div>
-				<?php } ?>
-
-				<?php foreach($conversations as $conversation) { ?>
-				<?php
-				$partner = $conversation['partner'];
-				$lastMessage = $conversation['last_message'];
-				$partnerName = (!empty($partner['name']) ? $partner['name'] : 'System');
-				$openHref = mail_build_href('conversation', $conversation['partner_id'], $conversation['system']);
-				$preview = ($lastMessage ? mail_preview_text($lastMessage['text']) : '');
-				$countLabel = $conversation['total_messages'].' '.mail_plural($conversation['total_messages'], 'сообщение', 'сообщения', 'сообщений');
-				?>
-				<article class="mail-thread-card<?=($conversation['unread_messages'] > 0 ? ' mail-thread-card-unread' : '');?>">
-					<a class="mail-thread-avatar" href="<?=$openHref;?>">
-						<img src="<?=mail_avatar_path($partner);?>" alt="<?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?>" width="56" height="56">
-					</a>
-
-					<div class="mail-thread-body">
-						<div class="mail-thread-topline">
-							<div class="mail-thread-title"><?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?></div>
-							<?php if ($lastMessage) { ?>
-							<div class="mail-thread-date"><?=convent_date($lastMessage['date']);?></div>
-							<?php } ?>
-						</div>
-
-						<div class="mail-thread-subtitle"><?=$conversation['subtitle'];?></div>
-
-						<?php if ($lastMessage && trim((string) $lastMessage['name']) !== '') { ?>
-						<div class="mail-thread-subject"><?=htmlspecialchars((string) $lastMessage['name'], ENT_QUOTES, 'UTF-8');?></div>
-						<?php } ?>
-
-						<?php if ($preview !== '') { ?>
-						<div class="mail-thread-preview"><?=htmlspecialchars($preview, ENT_QUOTES, 'UTF-8');?></div>
-						<?php } ?>
-					</div>
-
-					<div class="mail-thread-side">
-						<div class="mail-thread-count"><?=$countLabel;?></div>
-						<?php if ($conversation['unread_messages'] > 0) { ?>
-						<div class="mail-thread-badge"><?=$conversation['unread_messages'];?> новых</div>
-						<?php } ?>
-						<a class="mail-button" href="<?=$openHref;?>"><?=($conversation['system'] ? 'Открыть' : 'Написать');?></a>
-					</div>
-				</article>
-				<?php } ?>
-			</div>
-			<?php } ?>
-		</section>
+		</div>
 	</div>
+	<?php } ?>
 </div>
 
 <?php
