@@ -12,6 +12,240 @@ by jenaDI
 //Подключаем главный системный файл
 require 'system/init.php';
 
+$GLOBALS['LITETRACKER_HIDE_TOP_BLOCKS'] = true;
+$GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS'] = true;
+$GLOBALS['LITETRACKER_HIDE_STANDARD_SIDEBAR'] = true;
+
+function lt_details_lower($value)
+{
+	$value = trim((string) $value);
+
+	if ($value === '') {
+		return '';
+	}
+
+	return (function_exists('mb_strtolower') ? mb_strtolower($value, 'UTF-8') : strtolower($value));
+}
+
+function lt_details_label_key($label)
+{
+	$label = strip_tags((string) $label);
+	$label = str_replace(':', '', $label);
+	$label = preg_replace('/\s+/u', ' ', trim($label));
+
+	return lt_details_lower($label);
+}
+
+function lt_details_info_heading($categoryName)
+{
+	$name = lt_details_lower($categoryName);
+	if ($name === '') {
+		return 'Информация о релизе';
+	}
+
+	$map = array(
+		'аниме' => 'Информация об аниме',
+		'фильмы' => 'Информация о фильме',
+		'телешоу' => 'Информация о телешоу',
+		'музыка' => 'Информация о релизе',
+		'игры' => 'Информация об игре',
+		'программы' => 'Информация о программе',
+	);
+
+	return (!empty($map[$name]) ? $map[$name] : 'Информация о релизе');
+}
+
+function lt_details_format_date_label($date)
+{
+	$timestamp = strtotime((string) $date);
+	if (!$timestamp) {
+		return trim((string) convent_date((string) $date));
+	}
+
+	static $months = array(
+		1 => 'января',
+		2 => 'февраля',
+		3 => 'марта',
+		4 => 'апреля',
+		5 => 'мая',
+		6 => 'июня',
+		7 => 'июля',
+		8 => 'августа',
+		9 => 'сентября',
+		10 => 'октября',
+		11 => 'ноября',
+		12 => 'декабря',
+	);
+
+	return date('j', $timestamp).' '.$months[(int) date('n', $timestamp)].' в '.date('H:i', $timestamp);
+}
+
+function lt_details_render_text_html($text)
+{
+	$html = trim((string) format_comment((string) $text));
+	$html = preg_replace('~^(?:<br\s*/?>\s*)+|(?:\s*<br\s*/?>)+$~i', '', $html);
+
+	return $html;
+}
+
+function lt_details_collect_screens($torrent)
+{
+	$result = array();
+
+	for ($index = 1; $index <= 4; $index++) {
+		$name = trim((string) ($torrent['screen_'.$index] ?? ''));
+		if ($name === '') {
+			continue;
+		}
+
+		if (is_file('public/downloads/screens/'.$name)) {
+			$path = 'public/downloads/screens/'.$name;
+		} else {
+			$path = $name;
+		}
+
+		$result[] = array(
+			'id' => $index,
+			'path' => $path,
+			'title' => 'Скриншот №'.$index,
+		);
+	}
+
+	return $result;
+}
+
+function lt_details_parse_description($text)
+{
+	$text = (string) $text;
+	$lines = preg_split('/\r\n|\r|\n/', $text);
+	$sections = array(
+		array(
+			'label' => '',
+			'items' => array(),
+		),
+	);
+	$intro = array();
+	$currentSection = 0;
+	$currentItem = -1;
+
+	foreach ($lines as $line) {
+		$line = trim((string) $line);
+		if ($line === '') {
+			if ($currentItem >= 0) {
+				$currentValue = $sections[$currentSection]['items'][$currentItem]['value'];
+				if ($currentValue !== '' && substr($currentValue, -1) !== "\n") {
+					$sections[$currentSection]['items'][$currentItem]['value'] .= "\n";
+				}
+			}
+			continue;
+		}
+
+		if (preg_match('/^\[u\](.+?)\[\/u\]$/iu', $line, $match)) {
+			$sections[] = array(
+				'label' => trim((string) $match[1]),
+				'items' => array(),
+			);
+			$currentSection = count($sections) - 1;
+			$currentItem = -1;
+			continue;
+		}
+
+		if (preg_match('/^\[b\](.+?)\[\/b\]\s*(.*)$/iu', $line, $match)) {
+			$label = trim((string) $match[1]);
+			if (substr($label, -1) === ':') {
+				$label = rtrim(substr($label, 0, -1));
+			}
+
+			$sections[$currentSection]['items'][] = array(
+				'label' => $label,
+				'value' => trim((string) $match[2]),
+			);
+			$currentItem = count($sections[$currentSection]['items']) - 1;
+			continue;
+		}
+
+		if ($currentItem >= 0) {
+			$currentValue = $sections[$currentSection]['items'][$currentItem]['value'];
+			$sections[$currentSection]['items'][$currentItem]['value'] = trim($currentValue."\n".$line);
+			continue;
+		}
+
+		$intro[] = $line;
+	}
+
+	return array(
+		'intro' => $intro,
+		'sections' => $sections,
+	);
+}
+
+function lt_details_has_item($sections, $labelKeys)
+{
+	$labelKeys = (array) $labelKeys;
+
+	foreach ((array) $sections as $section) {
+		foreach ((array) ($section['items'] ?? array()) as $item) {
+			if (in_array(lt_details_label_key($item['label'] ?? ''), $labelKeys, true)) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+function lt_details_extract_item(&$sections, $labelKeys)
+{
+	$labelKeys = (array) $labelKeys;
+
+	foreach ($sections as $sectionIndex => $section) {
+		foreach ((array) ($section['items'] ?? array()) as $itemIndex => $item) {
+			if (!in_array(lt_details_label_key($item['label'] ?? ''), $labelKeys, true)) {
+				continue;
+			}
+
+			$value = trim((string) ($item['value'] ?? ''));
+			unset($sections[$sectionIndex]['items'][$itemIndex]);
+			$sections[$sectionIndex]['items'] = array_values($sections[$sectionIndex]['items']);
+
+			return $value;
+		}
+	}
+
+	return '';
+}
+
+function lt_details_append_item(&$sections, $sectionLabel, $label, $value)
+{
+	$value = trim((string) $value);
+	if ($value === '') {
+		return;
+	}
+
+	$sectionLabel = trim((string) $sectionLabel);
+	$sectionIndex = null;
+
+	foreach ($sections as $index => $section) {
+		if (trim((string) ($section['label'] ?? '')) === $sectionLabel) {
+			$sectionIndex = $index;
+			break;
+		}
+	}
+
+	if ($sectionIndex === null) {
+		$sections[] = array(
+			'label' => $sectionLabel,
+			'items' => array(),
+		);
+		$sectionIndex = count($sections) - 1;
+	}
+
+	$sections[$sectionIndex]['items'][] = array(
+		'label' => trim((string) $label),
+		'value' => $value,
+	);
+}
+
 
 if(!$PRIV['details_view']) {
 	err($language['default_1'] , $language['details_29'] , 1);
@@ -165,7 +399,8 @@ $id = $arr['id'];
 //Обложка
 $image = ($arr['image'] ? 'public/downloads/images/'.$arr['image'] : 'public/images/default_avatar.gif');
 //Имя релиза
-$name = htmlspecialchars($arr['name']);
+$torrent_name_plain = trim((string) $arr['name']);
+$name = htmlspecialchars($torrent_name_plain, ENT_QUOTES, 'UTF-8');
 
 //Хеш релиза
 $infohash = $arr['infohash'];
@@ -186,13 +421,22 @@ if($arr['banned']) {
 $category = categories_array($arr['id_category']);
 
 //Имя категории
-$cat_name = htmlspecialchars($category['name']);
+$cat_name_plain = trim((string) ($category['name'] ?? ''));
+$cat_name = htmlspecialchars($cat_name_plain, ENT_QUOTES, 'UTF-8');
 
 //ID Категории
 $cat_id = $category['id'];
 
 //Картинка Категории
 $cat_image = $category['image'];
+
+if (!empty($arr['image']) && is_file('public/downloads/images/'.$arr['image'])) {
+	$image = 'public/downloads/images/'.$arr['image'];
+} elseif (!empty($cat_image) && is_file('public/images/categories/'.$cat_image)) {
+	$image = 'public/images/categories/'.$cat_image;
+} else {
+	$image = 'public/images/default_avatar.gif';
+}
 
 
 //Теги
@@ -245,15 +489,8 @@ $peers = number_format($seeders + $leechers);
 //Мульти
 $multi  = $arr['multi'];
 
-
-//Мульти
-if(!empty($arr['video_vkontakte']) ) {
-	
-	$video_vkontakte  = '<iframe src="'.htmlspecialchars($arr['video_vkontakte']).'" width="100%" height="360" frameborder="0"></iframe>';
-}
-
-
 //Добавить/Удалить закладку
+$count_b = array('count' => 0);
 if($USER) {
 	$count_b = $db->super_query("SELECT COUNT(*) AS count FROM books WHERE id_torrent=".$id." AND id_user=".$USER['id']."");
 	if(!$count_b['count']) {
@@ -263,14 +500,157 @@ if($USER) {
 	}
 }
 
+
+//Мульти
+if(!empty($arr['video_vkontakte']) ) {
+	
+	$video_vkontakte  = '<iframe src="'.htmlspecialchars($arr['video_vkontakte']).'" width="100%" height="360" frameborder="0"></iframe>';
+}
+
+$screens = lt_details_collect_screens($arr);
+$category_badge = lt_details_lower($cat_name_plain);
+$details_created_label = lt_details_format_date_label($arr['added']);
+$details_updated_label = lt_details_format_date_label($arr['last_action']);
+$details_comment_count = 0;
+
+if (lt_table_exists('comments_torrents')) {
+	$commentCountRow = $db->super_query("SELECT COUNT(*) AS cnt FROM comments_torrents WHERE id_torrents = ".(int) $id);
+	$details_comment_count = (int) ($commentCountRow['cnt'] ?? 0);
+}
+
+$details_file_rows = array();
+if ((int) ($arr['num_files'] ?? 0) > 1) {
+	$fileSql = $db->query("SELECT filename, size FROM files WHERE id_torrent = ".(int) $id." ORDER BY id");
+	while ($fileRow = $db->get_row($fileSql)) {
+		$details_file_rows[] = array(
+			'name' => (string) ($fileRow['filename'] ?? ''),
+			'size' => mksize((float) ($fileRow['size'] ?? 0)),
+		);
+	}
+}
+
+$details_views_count = 0;
+foreach (array('views', 'num_views', 'view') as $viewsColumn) {
+	if (isset($arr[$viewsColumn])) {
+		$details_views_count = (int) $arr[$viewsColumn];
+		break;
+	}
+}
+if ($details_views_count <= 0) {
+	$details_views_count = (int) $arr['downloaded'];
+}
+
+$details_rating_up = (int) ($arr['rating_up'] ?? 0);
+$details_rating_down = (int) ($arr['rating_down'] ?? 0);
+$details_rating_votes = max(0, $details_rating_up + $details_rating_down);
+if ($details_rating_votes > 0) {
+	$details_rating_score = round(($details_rating_up / max(1, $details_rating_votes)) * 5, 1);
+} else {
+	$details_activity = max(0, (int) $arr['completed']) + max(0, (int) $arr['seeders']) + max(0, (int) $arr['leechers']);
+	$details_rating_votes = max(0, (int) $arr['completed']);
+	if ($details_rating_votes <= 0 && $details_activity > 0) {
+		$details_rating_votes = $details_activity;
+	}
+	$details_rating_score = ($details_activity > 0 ? min(5, 3.8 + min(1.2, $details_activity / 25)) : 0);
+}
+
+$details_status_badges = array();
+if ($arr['banned']) {
+	$details_status_badges[] = array('label' => 'Заблокирован', 'class' => 'details-badge-danger');
+}
+if ($arr['multi']) {
+	$details_status_badges[] = array('label' => 'Мульти-трекер', 'class' => '');
+}
+if ($arr['local_seeders']) {
+	$details_status_badges[] = array('label' => 'Локальные сиды', 'class' => 'details-badge-success');
+}
+
+$details_parsed = lt_details_parse_description((string) $arr['descr']);
+$details_sections = array_values((array) ($details_parsed['sections'] ?? array()));
+$details_description_text = lt_details_extract_item($details_sections, array('описание', 'описание релиза', 'содержание', 'сюжет'));
+$details_update_reason = lt_details_extract_item($details_sections, array('причина'));
+
+if ($details_description_text === '' && !empty($details_parsed['intro'])) {
+	$details_description_text = implode("\n", $details_parsed['intro']);
+}
+
+$details_main_autofill = array(
+	array('keys' => array('страна'), 'label' => 'Страна', 'value' => lt_torrent_metadata_format('country', $arr['countries'] ?? '')),
+	array('keys' => array('тип'), 'label' => 'Тип', 'value' => lt_torrent_metadata_format('type', $arr['content_type'] ?? '')),
+	array('keys' => array('жанр'), 'label' => 'Жанр', 'value' => lt_torrent_metadata_format('genre', $arr['genres'] ?? '')),
+);
+
+foreach ($details_main_autofill as $item) {
+	if ($item['value'] !== '' && !lt_details_has_item($details_sections, $item['keys'])) {
+		lt_details_append_item($details_sections, '', $item['label'], $item['value']);
+	}
+}
+
+$details_extra_autofill = array(
+	array('keys' => array('субтитры'), 'label' => 'Субтитры', 'value' => lt_torrent_metadata_format('subtitles', $arr['subtitles'] ?? '')),
+	array('keys' => array('язык', 'аудио'), 'label' => 'Язык', 'value' => lt_torrent_metadata_format('language', $arr['languages'] ?? '')),
+	array('keys' => array('инфо'), 'label' => 'Инфо', 'value' => lt_torrent_metadata_format('info', $arr['meta_info'] ?? '')),
+);
+
+foreach ($details_extra_autofill as $item) {
+	if ($item['value'] !== '' && !lt_details_has_item($details_sections, $item['keys'])) {
+		lt_details_append_item($details_sections, 'Дополнительно', $item['label'], $item['value']);
+	}
+}
+
+$details_main_items = array();
+$details_extra_sections = array();
+foreach ($details_sections as $section) {
+	$items = array_values(array_filter((array) ($section['items'] ?? array()), function ($item) {
+		return trim((string) ($item['value'] ?? '')) !== '';
+	}));
+	if (!$items) {
+		continue;
+	}
+
+	$sectionLabel = trim((string) ($section['label'] ?? ''));
+	if ($sectionLabel === '' && !$details_main_items) {
+		$details_main_items = $items;
+		continue;
+	}
+
+	if ($sectionLabel === '') {
+		$details_main_items = array_merge($details_main_items, $items);
+		continue;
+	}
+
+	$details_extra_sections[] = array(
+		'label' => $sectionLabel,
+		'items' => $items,
+	);
+}
+
+$details_description_html = ($details_description_text !== '' ? lt_details_render_text_html($details_description_text) : '');
+$details_has_structured_content = (!empty($details_main_items) || !empty($details_extra_sections));
+$details_can_edit = ($PRIV['edit_release'] || (!empty($USER['id']) && $USER['id'] == $id_user));
+$details_download_href = ($infohash && $PRIV['download_torrent'] ? 'download.php?id='.$id : '');
+$details_magnet_href = ($infohash && $PRIV['download_magnet'] ? 'download.php?id='.$id.'&magnet=1' : '');
+$details_edit_href = ($details_can_edit ? 'edit.php?id='.$id : '');
+$details_bookmark_href = '';
+$details_bookmark_label = $language['details_25'];
+
+if (!empty($USER['id'])) {
+	$details_bookmark_href = 'my.book.php?id='.$id.'&act='.($count_b['count'] ? 'delete' : 'add');
+	$details_bookmark_label = ($count_b['count'] ? $language['details_26'] : $language['details_25']);
+} else {
+	$details_bookmark_href = 'login.php?referer='.rawurlencode('my.book.php?id='.$id.'&act=add');
+}
+
+$details_has_update = (!empty($arr['last_action']) && $arr['last_action'] !== '0000-00-00 00:00:00' && $arr['last_action'] !== $arr['added']);
+
 //Заголовок
-head($name);
+head($torrent_name_plain);
 
 //Выводим статусы
 comment_status();
 
 //Редактирование
-if($_GET['edit'] == '1') {
+if(!empty($_GET['edit']) && $_GET['edit'] == '1') {
 	msg($language['details_24']);
 }
 

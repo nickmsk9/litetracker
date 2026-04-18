@@ -29,6 +29,32 @@ if ($type == 'users') {
         </div>
     </article>
     <?php
+} elseif ($type == 'torrents') {
+    ?>
+    <article class="torrent-comment">
+        <a class="torrent-comment-avatar" href="<?=profile_href($user_id);?>"><?=$avatar;?></a>
+        <div class="torrent-comment-body">
+            <div class="torrent-comment-meta">
+                <a class="torrent-comment-author" href="<?=profile_href($user_id);?>"><?=htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8');?></a>
+                <span class="torrent-comment-date"><?=($append_edit ? htmlspecialchars($append_edit, ENT_QUOTES, 'UTF-8') : htmlspecialchars($date, ENT_QUOTES, 'UTF-8'));?></span>
+            </div>
+            <div class="torrent-comment-text"><?=$text;?></div>
+            <div class="torrent-comment-actions">
+                <?php if (!empty($USER)) { ?>
+                    <button class="torrent-comment-button" type="button" onclick="return replyWallComment('<?=htmlspecialchars(addslashes($user_name), ENT_QUOTES, 'UTF-8');?>');">Ответить</button>
+                <?php } ?>
+
+                <?php if (!empty($USER['id']) && ($USER['id'] == $user_id || !empty($PRIV['comments_edit']))) { ?>
+                    <a class="torrent-comment-button" href="comments.take.php?type=<?=urlencode($type);?>&amp;object_id=<?=(int)$object_id;?>&amp;id_comment=<?=(int)$id;?>&amp;act=edit&amp;file=<?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?>"><?=$language['comments_4'];?></a>
+                <?php } ?>
+
+                <?php if (!empty($USER['id']) && ($USER['id'] == $user_id || !empty($PRIV['comments_delete']))) { ?>
+                    <a class="torrent-comment-button" href="comments.take.php?type=<?=urlencode($type);?>&amp;object_id=<?=(int)$object_id;?>&amp;id_comment=<?=(int)$id;?>&amp;act=delete&amp;file=<?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?>"><?=$language['comments_5'];?></a>
+                <?php } ?>
+            </div>
+        </div>
+    </article>
+    <?php
 } else {
     begin_frame();
     ?>

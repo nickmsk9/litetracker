@@ -54,6 +54,28 @@ function addComment($type = '', $object_id = '', $file = '')
         return;
     }
 
+    if ($type === 'torrents') {
+        $avatar = 'public/images/default_avatar.gif';
+        if (!empty($USER['avatar']) && is_file('public/avatars/small/' . $USER['avatar'])) {
+            $avatar = 'public/avatars/small/' . $USER['avatar'];
+        }
+
+        echo '<form class="torrent-comment-form" name="addComment" method="post" action="comments.take.php">';
+        echo '<div class="torrent-comment-form-row">';
+        echo '<div class="torrent-comment-form-avatar"><img src="' . $avatar . '" alt="' . htmlspecialchars((string) ($USER['name'] ?? ''), ENT_QUOTES, 'UTF-8') . '" width="40" height="40"></div>';
+        echo '<div class="torrent-comment-form-body">';
+        echo '<textarea class="torrent-comment-form-textarea" id="wall-comment-text" name="text">' . htmlspecialchars($postedText, ENT_QUOTES, 'UTF-8') . '</textarea>';
+        echo '<div class="torrent-comment-form-controls"><input class="torrent-comment-form-submit" value="Отправить" type="submit"></div>';
+        echo '</div>';
+        echo '</div>';
+        echo '<input type="hidden" name="object_id" value="' . $object_id . '">';
+        echo '<input type="hidden" name="type" value="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '">';
+        echo '<input type="hidden" name="file" value="' . htmlspecialchars($file, ENT_QUOTES, 'UTF-8') . '">';
+        echo '<input type="hidden" name="act" value="add">';
+        echo '</form>';
+        return;
+    }
+
     echo '<form name="addComment" method="post" action="comments.take.php">';
     textbb('text', $postedText, '95%', '300px');
     echo '<br><input value="' . htmlspecialchars((string) ($language['comments_1'] ?? 'Отправить'), ENT_QUOTES, 'UTF-8') . '" type="submit">';
@@ -94,6 +116,8 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
     if (!$db->num_rows($sql)) {
         if ($type === 'users') {
             echo '<div class="wall-comment-empty">На стене пока нет комментариев.</div>';
+        } elseif ($type === 'torrents') {
+            echo '<div class="torrent-comment-empty">Комментариев пока нет.</div>';
         } else {
             msg($language['comments_2'] ?? 'Комментариев пока нет.', '', 'error');
         }
@@ -104,6 +128,8 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
 
         if ($type === 'users') {
             echo '<div class="wall-comments-list">';
+        } elseif ($type === 'torrents') {
+            echo '<div class="torrent-comments-list">';
         }
 
         while ($arr = $db->get_row($sql)) {
@@ -124,6 +150,12 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
                     $avatarPath = 'public/avatars/small/' . $user['avatar'];
                 }
                 $avatar = '<img src="' . $avatarPath . '" border="0" width="28" height="28" alt="' . htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8') . '">';
+            } elseif ($type === 'torrents') {
+                $avatarPath = 'public/images/default_avatar.gif';
+                if (!empty($user['avatar']) && is_file('public/avatars/small/' . $user['avatar'])) {
+                    $avatarPath = 'public/avatars/small/' . $user['avatar'];
+                }
+                $avatar = '<img src="' . $avatarPath . '" border="0" width="40" height="40" alt="' . htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8') . '">';
             } else {
                 if (!empty($user['avatar']) && is_file('public/avatars/' . $user['avatar'])) {
                     $avatar = '<center><img src="public/avatars/' . htmlspecialchars($user['avatar'], ENT_QUOTES, 'UTF-8') . '" border="0" width="50"></center>';
@@ -153,6 +185,8 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
         }
 
         if ($type === 'users') {
+            echo '</div>';
+        } elseif ($type === 'torrents') {
             echo '</div>';
         }
 
