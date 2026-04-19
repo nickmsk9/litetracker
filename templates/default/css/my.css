@@ -2896,6 +2896,86 @@ table.tt .data {
   margin-top: 12px;
 }
 
+.login-page {
+  width: 100%;
+}
+
+.login-card {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.login-title {
+  margin: 0;
+  padding: 20px 20px 14px;
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-fields {
+  width: 280px;
+  padding: 0 20px 18px;
+}
+
+.login-field + .login-field {
+  margin-top: 18px;
+}
+
+.login-label {
+  display: block;
+  margin-bottom: 7px;
+  color: #22252b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.login-field input {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.login-captcha-row {
+  margin-top: 20px;
+}
+
+.login-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.login-footer button {
+  min-height: 40px;
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.login-footer-separator {
+  color: #a3adb8;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: lowercase;
+}
+
+.login-forgot-link {
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .torrent-comment-form {
   margin-top: 18px;
 }

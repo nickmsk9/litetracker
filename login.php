@@ -277,77 +277,46 @@ $referer = htmlspecialchars((string) ($_GET['referer'] ?? ''));
 if(empty($referer))
  $referer = "index.php";
 
+$loginValue = htmlspecialchars((string) ($_POST['login'] ?? ''), ENT_QUOTES, 'UTF-8');
+
 //Заголовок
 head($language['login_1'] , true);
-begin_frame($language['login_1']);
-msg($language['default_7'], $language['login_2']);
 
 ?>
 
+<div class="login-page">
+	<section class="login-card">
+		<h1 class="login-title">Вход на сайт</h1>
+		<form action="login.php" class="login-form" id="loginPage" method="post">
+			<div class="login-fields">
+				<div class="login-field">
+					<label class="login-label" for="login-name"><?=$language['login_3'];?></label>
+					<input id="login-name" type="text" name="login" value="<?=$loginValue;?>" autocomplete="username">
+				</div>
+				<div class="login-field">
+					<label class="login-label" for="login-password"><?=$language['login_4'];?></label>
+					<input id="login-password" type="password" name="password" value="" autocomplete="current-password">
+				</div>
 
-<form  action="login.php"  id="loginPage" method="post">
-<table width="80%" cellspacing="7" cellpadding="0" border="0" align="center">
-   <tbody><tr>
-    <td class="ta_r">
-     <span class="grey"><?=$language['login_3'];?>:</span>
-    </td>
-    <td style="padding: 0px;">
-     <input type="text" style="margin: 0px;" size="25"  name="login" class="inputText" value="">
-    </td><td>
-   </td></tr>
-   <tr>
-    <td class="ta_r">
-     <span class="grey"><?=$language['login_4'];?>:</span>
-    </td>
-    <td style="padding: 0px;">
-     <input type="password" style="margin: 0px;" size="25"  name="password" class="inputText" value="">
-    </td>
-   </tr>
+				<?php if($config['reCaptcha'] && $config['reCaptcha_login']) { ?>
+				<div class="login-captcha-row">
+					<?=recaptcha_get_html($config['reCaptcha_publickey']);?>
+				</div>
+				<?php } ?>
+			</div>
 
-	<? if($config['reCaptcha'] && $config['reCaptcha_login']) { ?>
-   <tr>
-    <td class="ta_r">
-     <span class="grey"><?=$language['captcha_1'];?>:</span>
-    </td>
-    <td style="padding: 0px;">
-		<?=recaptcha_get_html($config['reCaptcha_publickey']);?>
-
-    </td>
-   </tr>
-   <? } ?>
-
-   <tr>
-    <td>
-     &nbsp;
-    </td>
-    <td>
-<div style="height: 20px; margin: 5px 0px;">
-	<input type="submit" value="<?=$language['login_5'];?>">
-	<input type="button" value="<?=$language['signup_3'];?>" onClick="window.location.href='signup.php'">
+			<div class="login-footer">
+				<button type="submit"><?=$language['login_5'];?></button>
+				<span class="login-footer-separator">или</span>
+				<a class="login-forgot-link" href="login.php?op=forgot"><?=$language['login_6'];?></a>
+			</div>
+			<input type="hidden" value="<?=$referer;?>" name="referer">
+		</form>
+	</section>
 </div>
-
-    </td>
-   </tr>
-
-
-
-
-   <tr>
-    <td>
-     &nbsp;
-    </td>
-    <td class="forgotPass">
-     <a href="login.php?op=forgot"><?=$language['login_6'];?></a>
-    </td>
-   </tr>
-
-  </tbody></table>
-  <input type="hidden" value="<?=$referer;?>" name="referer">
-  </form>
 
 
 <?
-end_frame();
 //Подвал
 foot(true);
 ?>
