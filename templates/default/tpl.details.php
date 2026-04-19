@@ -27,6 +27,18 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 					<a class="details-download-button details-download-button-magnet" href="<?=htmlspecialchars($details_magnet_href, ENT_QUOTES, 'UTF-8');?>" aria-label="<?=$language['details_3'];?>">m</a>
 					<?php } ?>
 				</div>
+				<?php } elseif ($details_guest_login_href !== '' || $details_guest_register_href !== '') { ?>
+				<div class="details-guest-box">
+					<div class="details-guest-copy"><?=htmlspecialchars($details_guest_notice, ENT_QUOTES, 'UTF-8');?></div>
+					<div class="details-guest-actions">
+						<?php if ($details_guest_register_href !== '') { ?>
+						<a class="details-download-button" href="<?=htmlspecialchars($details_guest_register_href, ENT_QUOTES, 'UTF-8');?>">Зарегистрироваться</a>
+						<?php } ?>
+						<?php if ($details_guest_login_href !== '') { ?>
+						<a class="details-bookmark-button details-guest-login-button" href="<?=htmlspecialchars($details_guest_login_href, ENT_QUOTES, 'UTF-8');?>">Войти</a>
+						<?php } ?>
+					</div>
+				</div>
 				<?php } ?>
 
 				<?php if ($details_bookmark_href !== '') { ?>
@@ -236,6 +248,9 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 					<h2 class="details-comments-title">Комментарии к торренту</h2>
 				</header>
 				<div class="details-comments-body">
+					<?php if (empty($USER['id'])) { ?>
+					<div class="details-comments-guest-note">Комментарии доступны для чтения. Чтобы написать свой комментарий, войдите или зарегистрируйтесь.</div>
+					<?php } ?>
 					<?php listComment('torrents' , $id , 'details.php?'); ?>
 				</div>
 			</section>

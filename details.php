@@ -243,7 +243,7 @@ function lt_details_append_item(&$sections, $sectionLabel, $label, $value)
 }
 
 
-if(!$PRIV['details_view']) {
+if(!empty($USER) && !$PRIV['details_view']) {
 	err($language['default_1'] , $language['details_29'] , 1);
 }
 
@@ -629,12 +629,16 @@ $details_magnet_href = ($infohash && $PRIV['download_magnet'] ? 'download.php?id
 $details_edit_href = ($details_can_edit ? 'edit.php?id='.$id : '');
 $details_bookmark_href = '';
 $details_bookmark_label = $language['details_25'];
+$details_guest_register_href = '';
+$details_guest_login_href = '';
+$details_guest_notice = 'Чтобы скачать этот торрент, вам необходимо зарегистрироваться или войти на сайт.';
 
 if (!empty($USER['id'])) {
 	$details_bookmark_href = 'my.book.php?id='.$id.'&act='.($count_b['count'] ? 'delete' : 'add');
 	$details_bookmark_label = ($count_b['count'] ? $language['details_26'] : $language['details_25']);
 } else {
-	$details_bookmark_href = 'login.php?referer='.rawurlencode('my.book.php?id='.$id.'&act=add');
+	$details_guest_register_href = (!empty($config['registeronline']) ? 'signup.php?referer='.rawurlencode('details.php?id='.$id) : '');
+	$details_guest_login_href = 'login.php?referer='.rawurlencode('details.php?id='.$id);
 }
 
 $details_has_update = (!empty($arr['last_action']) && $arr['last_action'] !== '0000-00-00 00:00:00' && $arr['last_action'] !== $arr['added']);
