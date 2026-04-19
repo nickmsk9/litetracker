@@ -122,7 +122,7 @@ if($_POST) {
 	$class = $db->super_query("SELECT id FROM priv WHERE ".($countUsers['c'] > 0 ? 'SIGNUP=1' : 'EDIT_PRIV=1')." LIMIT 1");
 	$classId = (int) ($class['id'] ?? 0);
 
-	$db->query("INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, sex, birthday_date, website, icq, last_chat, num_messages, num_friends, confirm) VALUES ('".$db->safesql($name)."', '', '".$db->safesql($email)."', '".$passwordHash."', '".$passwordCode."', '".ip2long_db(getip())."', '".$classId."', NOW(), NOW(), '', '0', '0', '0', '1', '".$db->safesql($birthdayDate)."', '', '', '0', '0', '0', '1')");
+	$db->query("INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, voice, sex, birthday_date, website, icq, last_chat, num_messages, num_friends, confirm) VALUES ('".$db->safesql($name)."', '', '".$db->safesql($email)."', '".$passwordHash."', '".$passwordCode."', '".ip2long_db(getip())."', '".$classId."', NOW(), NOW(), '', '0', '0', '0', '300', '1', '".$db->safesql($birthdayDate)."', '', '', '0', '0', '0', '1')");
 
 	$id = (int) $db->insert_id();
 

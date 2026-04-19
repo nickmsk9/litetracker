@@ -139,6 +139,45 @@ function profile_get_bonus_options()
 	);
 }
 
+function profile_calculate_bonus_exchange($selectedOption, $currentBonus, $bonusOptions)
+{
+	$currentBonus = max(0, (float) $currentBonus);
+
+	if (empty($selectedOption) || !is_array($selectedOption)) {
+		return array('cost' => 0, 'bytes' => 0);
+	}
+
+	if ($selectedOption['cost'] !== null && $selectedOption['bytes'] !== null) {
+		return array(
+			'cost' => (float) $selectedOption['cost'],
+			'bytes' => (int) $selectedOption['bytes'],
+		);
+	}
+
+	$bestRate = 0;
+	foreach ((array) $bonusOptions as $option) {
+		$optionCost = (float) ($option['cost'] ?? 0);
+		$optionBytes = (int) ($option['bytes'] ?? 0);
+		if ($optionCost <= 0 || $optionBytes <= 0) {
+			continue;
+		}
+
+		$rate = $optionBytes / $optionCost;
+		if ($rate > $bestRate) {
+			$bestRate = $rate;
+		}
+	}
+
+	if ($bestRate <= 0 || $currentBonus <= 0) {
+		return array('cost' => 0, 'bytes' => 0);
+	}
+
+	return array(
+		'cost' => $currentBonus,
+		'bytes' => (int) floor($currentBonus * $bestRate),
+	);
+}
+
 $profileView = profile_normalize_view($_GET['view'] ?? 'profile');
 $profilePublicId = trim((string) ($_GET['uid'] ?? ''));
 $id = 0;
@@ -219,8 +258,9 @@ if ($profileView === 'bonus' && $canViewBonus && $_SERVER['REQUEST_METHOD'] === 
 		);
 	} else {
 		$currentBonus = (float) ($arr['voice'] ?? 0);
-		$cost = ($selectedOption['cost'] !== null ? (float) $selectedOption['cost'] : $currentBonus);
-		$bytes = ($selectedOption['bytes'] !== null ? (int) $selectedOption['bytes'] : (int) round(($currentBonus / 75) * 1073741824));
+		$exchange = profile_calculate_bonus_exchange($selectedOption, $currentBonus, $bonusOptions);
+		$cost = (float) $exchange['cost'];
+		$bytes = (int) $exchange['bytes'];
 
 		if ($cost <= 0 || $bytes <= 0) {
 			$profileFlashMessage = array(

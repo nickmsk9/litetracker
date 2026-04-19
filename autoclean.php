@@ -53,12 +53,15 @@ while (list($id) = $db->get_array($peerssql) ) {
 ///////////////////////////////////////////////////////////////////
 //Начисление бонусов
 ///////////////////////////////////////////////////////////////////
-//Ищем все торренты , которые раздает пользователь
-$voice = $db->query("SELECT  userid FROM peers WHERE seeder  = '1'");
-$voice_per_cleanup = number_format($config['voice_price']*($CRON['autoclean_interval']/3600) , 2);
-while($seeder = $db->get_row($voice) ) {
-
-	$db->query("UPDATE users SET voice = (voice + ".$voice_per_cleanup.") WHERE id = ".$seeder['userid']);
+// Начисляем бонусы за активное присутствие на сайте за последний интервал очистки
+$voice_per_cleanup = round((float) $config['voice_price'] * ((int) $CRON['autoclean_interval'] / 3600), 2);
+if ($voice_per_cleanup > 0) {
+	$active_from = $db->safesql(get_date_time(time() - (int) $CRON['autoclean_interval']));
+	$active_users = $db->query("SELECT DISTINCT user_id FROM sessions WHERE user_id > 0 AND last_access >= '".$active_from."'");
+	while ($active_user = $db->get_row($active_users)) {
+		$db->query("UPDATE users SET voice = (voice + ".$voice_per_cleanup.") WHERE id = ".(int) $active_user['user_id']);
+		$memcached->delete('user_'.(int) $active_user['user_id']);
+	}
 }
 
 
