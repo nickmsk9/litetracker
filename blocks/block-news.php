@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Последние новости
 ===================================================================
@@ -17,14 +17,14 @@ if (false === ($news_array = $memcache->get('news')))
 		$news_cache = array();
 
 		while ($cache_data = $db->get_row($query) )
-			$news_cache[] = $cache_data;	
-		
-		
+			$news_cache[] = $cache_data;
+
+
 		$memcache->set('news', $news_cache , 0, 15* 60);
 		$news_array = $news_cache;
 	}
-	
-if($news_array)  {	
+
+if($news_array)  {
 	require 'templates/'.$config['template'].'/blocks/block.news.php';
 }
 ?>

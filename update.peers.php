@@ -4,7 +4,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Обновление пиров для торрента
 ===================================================================
@@ -27,9 +27,9 @@ $id = (int) $_GET['id'];
 //Если один релиз , то обновляем одну запись
 if ($id) {
 
-	$anarray = $db->query("SELECT torrents.infohash, trackers.tracker 
-							FROM trackers 
-							LEFT JOIN torrents ON torrents.id=trackers.torrent 
+	$anarray = $db->query("SELECT torrents.infohash, trackers.tracker
+							FROM trackers
+							LEFT JOIN torrents ON torrents.id=trackers.torrent
 							WHERE trackers.torrent=".$id." AND trackers.tracker<>'localhost'");
 
 	while (list($infohash,$url) = mysql_fetch_array($anarray)) {
@@ -65,7 +65,7 @@ if ($CRON['multi_remote']) {
 			$peers = get_remote_peers($url, $hash);
 			$db->query("UPDATE LOW_PRIORITY trackers SET seeders=".(int)$peers['seeders'].", leechers=".(int)$peers['leechers'].", lastchecked=".time().", state='".mysql_real_escape_string($peers['state'])."' WHERE torrent=$id AND tracker='$url'");
 		}
-		
+
 	} else $db->query("UPDATE cron SET cron_value=0 WHERE cron_name='remote_lastchecked'");
 
 	$db->query("UPDATE cron SET cron_value=0 WHERE cron_name='in_remotecheck'");

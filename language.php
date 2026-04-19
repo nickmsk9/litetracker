@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Смена языка
 ===================================================================
@@ -26,7 +26,7 @@ if($config['cookies_mode']) {
 	// хак от wennet'a
 	$domain = $_SERVER['HTTP_HOST'];
 	if ( strtolower( substr($domain, 0, 4) ) == 'www.' )
-		$domain = substr($domain, 4);	// Fix the domain to accept domains with and without 'www.'. 
+		$domain = substr($domain, 4);	// Fix the domain to accept domains with and without 'www.'.
 	if ( substr($domain, 0, 1) != '.' )
 		$domain = '.'.$domain;	// Add the dot prefix to ensure compatibility with subdomains
 }

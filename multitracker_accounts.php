@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Отлов мультитрекерных аккаунтов (by webnet)
 ===================================================================
@@ -29,7 +29,7 @@ while ($row = mysql_fetch_assoc($res) ) {
         (
             "id" => $row["userid"],
             "name" => $row["name"],
-            "ips" => explode(",",$row["ips"]), 
+            "ips" => explode(",",$row["ips"]),
             "torrents" => explode(",",$row["torrents"]),
         );
         $count++;
@@ -37,7 +37,7 @@ while ($row = mysql_fetch_assoc($res) ) {
 }
 $res = $db->query("SELECT id, name FROM torrents");
 while ($row = mysql_fetch_assoc($res)) $torrents[$row["id"]] = $row["name"];
- 
+
 begin_frame('Мультитрекерные аккаунты');
 msg('Найдено '.$count.' мультитрекерных аккаунтов');
 
@@ -49,24 +49,24 @@ if($count) {
 	<td><b>Торренты</b></td>
 	</tr>
 	";
-	foreach ($array as $v) 
+	foreach ($array as $v)
 	{
 		print "<tr><td>".($v['id'] == 0 ? ' Гость' : "<a href=\"".profile_href($v["id"])."\">".$v["name"]."</a>")."</td><td>";
-	 
+
 		foreach ($v["ips"] as $ip)
 			print "<a href=/ip.util.php?ip=".$ip.">".$ip."</a><br />";
-	 
+
 		print "</td><td>";
-	 
+
 		foreach ($v["torrents"] as $t)
 			print "<a target=_blank href=/details.php?id=".$t."&dllist=1#seeders>".$torrents[$t]."</a><br />";
-	 
+
 		print "</td></tr>";
 	}
 	print "</table>";
 }
 end_frame();
- 
+
 
 
 //Подвал

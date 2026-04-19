@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Анонсер для связи клиента и трекера
 ===================================================================
@@ -21,30 +21,30 @@ foreach (array('port','downloaded','uploaded','left') as $x) {
 	$GLOBALS[$x] = isset($_GET[$x]) ? (int) $_GET[$x] : 0;
 }
 
-//Экранируем info_hash и peer_id	
+//Экранируем info_hash и peer_id
 if (get_magic_quotes_gpc() ) {
     $info_hash = stripslashes($info_hash);
     $peer_id = stripslashes($peer_id);
-}	
+}
 
 //Проверяем на существование параметров
 foreach (array('info_hash','peer_id','port','downloaded','uploaded','left') as $x)
 	if (!isset($GLOBALS[$x])) err(sprintf($language['announce_1'] , $x));
-	
-//Проверяем на валидность info_hash и peer_id	
+
+//Проверяем на валидность info_hash и peer_id
 foreach (array('info_hash','peer_id') as $x) {
 	if (strlen($GLOBALS[$x]) != 20)
 		err(sprintf($language['announce_2'] , $x , strlen($GLOBALS[$x]) , urlencode($GLOBALS[$x])));
-}		
+}
 
 
-//Проверяем passkey 
+//Проверяем passkey
 //Если его не существует , то считает качающего как гостя
 $passkey = (string) ($_GET['passkey'] ?? '');
 if($passkey) {
 	$GUEST = 0;
 	if (strlen($passkey) != 32) {
-		err(sprintf($language['announce_3'] , strlen($passkey) ,$passkey));	
+		err(sprintf($language['announce_3'] , strlen($passkey) ,$passkey));
 	}
 } else {
 	$GUEST = 1;
@@ -61,9 +61,9 @@ $ip_ban = ip2long_db($ip); //IP адрес
 
 //Бан по IP - адресу
 if (false === ($ban_resource = $memcache->get('ip_bans_'.$ip_ban))) {
-	$db->query("SELECT * FROM bans WHERE '".$ip_ban."'  >= first AND '".$ip_ban."' <= last");			
+	$db->query("SELECT * FROM bans WHERE '".$ip_ban."'  >= first AND '".$ip_ban."' <= last");
 	$ban_resource = $db->get_row();
-	$memcache->set('ip_bans_'.$ip_ban, $ban_resource  , 0, 1000);		
+	$memcache->set('ip_bans_'.$ip_ban, $ban_resource  , 0, 1000);
 }
 
 if($ban_resource) {
@@ -88,10 +88,10 @@ $agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 //Проверяем порт на валидность
 if (!$port || $port > 0xffff) {
 	err($language['announce_4']);
-}	
+}
 if (!isset($event) ) {
 	$event = '';
-}	
+}
 
 //Если пользователь уже скаал торррент
 //Помечаем его как раздающий
@@ -131,15 +131,15 @@ if(false === ($torrent = $memcache->get('infohash_'.$info_hash)) )
 	$torrent = mysql_fetch_assoc($torrent_sql);
 	$memcache->set('infohash_'.$info_hash , $torrent , 0 , 400);
 }
-	
+
 if (!$torrent) {
 	err($language['announce_7']);
-}	
+}
 
 //Определяем ID торрента
 $torrentid = $torrent["id"];
 
-//Поля , которые будут использоваться в запросах 
+//Поля , которые будут использоваться в запросах
 $fields = "seeder, peer_id, ip, port, uploaded, downloaded, userid";
 
 //Количество пиров
@@ -151,7 +151,7 @@ if ($numpeers > $rsize) {
 	$limit = "ORDER BY RAND() LIMIT ".$rsize."";
 }
 
-//Запрос к пирам 
+//Запрос к пирам
 $peers_sql = mysql_query("SELECT ".$fields." FROM peers WHERE torrent = ".$torrentid." ".$limit."") or err('System:valid peers 1');
 
 
@@ -205,45 +205,45 @@ if (isset($self) && ($self['prevts'] > ($self['nowts'] - $announce_wait )) ) {
 ///////////////////////////////////////////////////////////////////////
 if(!$GUEST) {
 	if (!isset($self) ) {
-		
+
 		$valid = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM peers WHERE torrent=".$torrentid." AND passkey=" .sqlesc($passkey) ) ) or err('System:valid peers 2');
 		if ($valid[0] >= 1 && $seeder == '0') {
 			// err($valid[0]);
 			mysql_query("DELETE FROM peers WHERE torrent=".$torrentid."  AND passkey=" .sqlesc($passkey) );
 			mysql_query("UPDATE trackers SET leechers=(leechers-".$valid[0].") WHERE torrent=".$torrentid." AND tracker='localhost'");
 			err($language['announce_9']);
-		}	
+		}
 		if ($valid[0] >= 3 && $seeder == '1') {
 			mysql_query("DELETE FROM peers WHERE torrent=".$torrentid."  AND passkey=" .sqlesc($passkey) );
 			mysql_query("UPDATE trackers SET seeders=(seeders-".$valid[0].") WHERE torrent=".$torrentid." AND tracker='localhost'");
 			err($language['announce_9']);
 		}
-		
+
 		$rz = mysql_query("SELECT id, uploaded, downloaded, class FROM users WHERE passkey=".sqlesc($passkey) ) or err('System:valid users 1');
 		if (mysql_num_rows($rz) == 0) {
 			err(sprintf($language['announce_10'] , $config['sitename']));
-		}	
-		
+		}
+
 		$az = mysql_fetch_assoc($rz);
 		$PRIV = get_priv_info($az['class']);
-		
+
 		$userid = $az["id"];
-		
-		
+
+
 		if ($PRIV['bad_rating'] && $seeder == '0') {
 			if(get_ratio($az['uploaded'] , $az['downloaded']) < $config['bad_rating']) {
 				err(sprintf($language['announce_11'] , ($config['bad_rating'] - 1) ));
 			}
 		}
 	} else {
-		
+
 		$upthis = max(0, $uploaded - $self['uploaded']);
 		$downthis = max(0, $downloaded - $self['downloaded']);
-		
+
 		if ($upthis > 0 || $downthis > 0) {
 			mysql_query('UPDATE users SET uploaded = uploaded + '.$upthis.', downloaded = downloaded + '.$downthis.' WHERE id='.$userid) or err('System:valid users 2');
 		}
-		
+
 
 	}
 }
@@ -255,12 +255,12 @@ if(!$GUEST) {
 $dt =sqlesc(date('Y-m-d H:i:s', time()));
 $updateset = array();
 $snatch_updateset = array();
-if ($event == 'stopped') 
+if ($event == 'stopped')
 {
-	if (isset($self)) 
+	if (isset($self))
 	{
 		mysql_query('DELETE FROM peers WHERE '.$selfwhere) or err('System:valid peers 3');
-		if (mysql_affected_rows()) 
+		if (mysql_affected_rows())
 		{
 			if ($self['seeder'])
 				$trupdateset[] = 'seeders = IF(seeders > 0, seeders - 1, 0)';
@@ -268,28 +268,28 @@ if ($event == 'stopped')
 				$trupdateset[] = 'leechers = IF(leechers > 0, leechers - 1, 0)';
 		}
 	}
-} 
-else 
+}
+else
 {
-	if ($event == 'completed') 
+	if ($event == 'completed')
 	{
 		$snatch_updateset[] = "finished = 1";
 		$snatch_updateset[] = "completedat = $dt";
 		$updateset[] = 'completed = completed + 1';
 	}
-	
-	
+
+
 	if (isset($self))
 	{
 		$downloaded2 = max(0, $downloaded - $self['downloaded']);
 		$uploaded2 = max(0, $uploaded - $self['uploaded']);
-		if ($downloaded2 > 0 || $uploaded2 > 0) 
+		if ($downloaded2 > 0 || $uploaded2 > 0)
 		{
 			$snatch_updateset[] = "uploaded = uploaded + $uploaded2";
 			$snatch_updateset[] = "downloaded = downloaded + $downloaded2";
-			
+
 		}
-		
+
 		$prev_action = $self['last_action'];
 		mysql_query("UPDATE peers SET uploaded = ".$uploaded.", downloaded = ".$downloaded.", uploadoffset = ".$uploaded2.", downloadoffset = ".$downloaded2.", to_go = ".$left.", last_action = NOW(),  seeder = '".$seeder."'"
 			. ($seeder == "1" && $self["seeder"] != $seeder ? ", finishedat = ".time()." " : "") . " WHERE ".$selfwhere."") or err('System:valid peers 4');
@@ -299,48 +299,48 @@ else
 			{
 				$trupdateset[] = 'seeders = seeders + 1';
 				$trupdateset[] = 'leechers = IF(leechers > 0, leechers - 1, 0)';
-			} 
+			}
 			else
 			{
 				$trupdateset[] = 'leechers = leechers + 1';
 				$trupdateset[] = 'seeders = IF(seeders > 0, seeders - 1, 0)';
 			}
 		}
-		
-	} 
-	else 
+
+	}
+	else
 	{
-		
+
 		if (portblacklisted($port))
 			err('Port '.$port.' is blacklisted.');
-		else 
+		else
 		{
 			$sockres = @fsockopen($ip, $port, $errno, $errstr, 5);
-			
+
 			if (!$sockres)
 			{
 				$connectable = '0';
 			}
-			else 
+			else
 			{
 				$connectable = '1';
 				fclose($sockres);
 			}
 		}
-		
-/*	
+
+/*
 		if(!$GUEST) {
 			$res = mysql_query('SELECT finished, completedat FROM snatched WHERE torrent = '.$torrentid.' AND userid = '.$userid) or err('(snatched)Ошибка при выборке');
 			$SN = mysql_fetch_assoc($res);
-			
-			
+
+
 			if (!$SN)
 				mysql_query("INSERT INTO snatched (torrent, userid, startdat) VALUES (".$torrentid.", ".$userid.", ".$dt.")") or err('(snatched)Ошибка при добавлении записи');
 		}
 */
-		
+
 		$ret = mysql_query("INSERT INTO peers (connectable, torrent, peer_id, ip, port, uploaded, downloaded, to_go, started, last_action, seeder, userid, agent, uploadoffset, downloadoffset, passkey) VALUES ('$connectable', $torrentid, " . sqlesc($peer_id) . ", " . sqlesc($ip) . ", $port, $uploaded, $downloaded, $left, NOW() , NOW() , '$seeder', '$userid', " . sqlesc($agent) . ", $uploaded, $downloaded, " . sqlesc($passkey) . ")")  or err('(peers)Произошла ошибка при добавлении записи');
-		if ($ret) 
+		if ($ret)
 		{
 			if ($seeder == '1')
 			{
@@ -349,13 +349,13 @@ else
 			else
 			{
 				$trupdateset[] = 'leechers = leechers + 1';
-			}	
+			}
 		}
 	}
-	
+
 }
 
-if ($seeder == '1') 
+if ($seeder == '1')
 {
 	$updateset[] = 'last_action = '.$dt;
 }
@@ -371,4 +371,4 @@ if (count($snatch_updateset))
 
 
 benc_resp_raw($resp);
-?> 
+?>

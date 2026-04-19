@@ -3,13 +3,13 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Функции для торрент файла
 ===================================================================
 */
 
-	
+
 /**
  * Converts String to Hex
  * @param string $string String to be converted
@@ -71,7 +71,7 @@ function get_retrackers($all = false, $table = 'retrackers') {
 	if ($all) return $return;
 
 	foreach ($rtarray as $retracker) {
-		
+
 		if (!empty($retracker['mask'])) {
 			$RTCHECK = new IPAddressSubnetSniffer(array($retracker['mask']));
 

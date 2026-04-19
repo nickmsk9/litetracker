@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Статистика трекера
 ===================================================================
@@ -26,19 +26,19 @@ if (($stats = $memcache->get('stats')))
 	//Мультитрекерные личеры/сидеры
 	$r_leechers = $stats["r_leechers"] ?? 0;
 	$r_seeders = $stats["r_seeders"] ?? 0;
-	
+
 	//Скачали
 	$completed = $stats['completed'] ?? 0;
 	// $completed_guest = $stats['completed_guest'];
-	
+
 	//Общий размер раздач
 	$size = $stats['size'] ?? mksize(0);
 	//Всего зарегистрировано
 	$registered = $stats['registered'] ?? 0;
-	
+
 	//За сегодня
 	$registered_day = $stats['registered_day'] ?? 0;
-	
+
 	//Не подтвержренных
 	$unverified = $stats['unverified'] ?? 0;
 	//Предупрежденных
@@ -52,57 +52,57 @@ if (($stats = $memcache->get('stats')))
 }
 else
 {
-		   
+
 	//Торренты
 	$torrents = $db->super_query("SELECT COUNT(*) AS count FROM torrents");
 	$torrents = number_format($torrents['count']);
-	
-	
+
+
 	//Сидеров/Личеров
 	$peers1 = $db->super_query("SELECT SUM(seeders) AS seeders , SUM(leechers) AS leechers FROM trackers");
-	
+
 
 		$seeders = number_format((float) ($peers1['seeders'] ?? 0));
-	
-	
+
+
 	//Гости - сидеры
 	$seeders_guest = $db->super_query("SELECT  COUNT(*) AS count FROM peers WHERE userid = '0' AND seeder = '1'");
 	$seeders_guest = $seeders_guest['count'];
-	
+
 		$leechers = number_format((float) ($peers1['leechers'] ?? 0));
-	
-	
+
+
 	//Подключения
 	$peers = $db->super_query("SELECT COUNT(userid) AS c FROM peers");
 	$peers = $peers['c'];
-	
+
 	//Размер
 		$size = $db->super_query("SELECT SUM(size) AS count FROM torrents");
 		$size = mksize((float) ($size['count'] ?? 0));
-	
+
 	//Пользователи
 	$registered = $db->super_query("SELECT COUNT(*) AS count FROM users");
 	$registered = number_format($registered['count']);
-	
+
 	//За сегодня
 	$registered_day = $db->super_query("SELECT COUNT(*) AS count FROM users WHERE ADDDATE(added, INTERVAL 1 DAY) > NOW()");
 	$registered_day = number_format($registered_day['count']);
-	
+
 	//Скачали
 	// $completed = $db->super_query("SELECT COUNT(*) AS c FROM peers WHERE finishedat <> '0'");
 	// $completed = number_format($completed['c']);
 		$completed = $db->super_query("SELECT SUM(completed) AS c FROM torrents ");
 		$completed = number_format((float) ($completed['c'] ?? 0));
-	
-	
+
+
 	//Скачали гостей
 	// $completed_guest = $db->super_query("SELECT COUNT(*) AS c FROM peers WHERE finishedat <> '0' AND userid = 0");
 	// $completed_guest = number_format($completed_guest['c']);
-	
-	
+
+
 	//Заносим все в массив
 	$stats = array(
-		"torrents" => $torrents , 
+		"torrents" => $torrents ,
 		"seeders" => $seeders ,
 		"seeders_guest" => $seeders_guest ,
 		"leechers" => $leechers ,
@@ -112,10 +112,10 @@ else
 		"size" => $size ,
 		"registered" => $registered ,
 		"registered_day" => $registered_day ,
-	);	
-		
+	);
+
 	$memcache->set('stats', $stats , 0, 15*60);
-}		
+}
 
 
 

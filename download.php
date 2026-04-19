@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Скачивание торрента
 ===================================================================
@@ -34,7 +34,7 @@ if($arr['banned'] && !$PRIV['details_banned_view']) {
 
 if(!$arr['infohash']) {
 	err($language['default_1'] ,'У данного релиза нет торрент-файла' , 1);
-}	
+}
 
 //Проверяем рейтинг (fix 0.3.0)
 if($USER['bad_rating'] && $PRIV['bad_rating'] && $USER['id'] != $arr['id_user']) {
@@ -58,15 +58,15 @@ if($config['reCaptcha'] && $config['reCaptcha_download']) {
 		if (!$resp->is_valid) {
 			// What happens when the CAPTCHA was entered incorrectly
 			err($language['default_1'] , $language['captcha_2'] , 1);
-		}	
+		}
 	}
-	
+
 	//Вывод формы
 	if(!isset($resp)) {
 		head($language['download_9'] );
 		begin_frame($language['download_9']);
 		msg($language['default_7'] , sprintf($language['download_10'] , $id));
-		
+
 		echo '<form method="post">';
 		echo '<table cellpadding="3">';
 		echo '<tr><td>';
@@ -81,7 +81,7 @@ if($config['reCaptcha'] && $config['reCaptcha_download']) {
 		foot();
 		die();
 	}
-	
+
 }
 
 
@@ -102,7 +102,7 @@ $announce_urls_list = array() ;
 //Добавляем наш трекер
 //Если качает гость , без passkey'я
 /*
-if($USER) 
+if($USER)
 	$announce_urls_list[] = $config['announce_url'].":2710/".$USER['passkey']."/announce";
 else
 	$announce_urls_list[] = $config['announce_url'].":2710/3d4529daa34f87b958f65cf680c9e879/announce";
@@ -111,7 +111,7 @@ else
 $announce_urls_list = array() ;
 //Добавляем наш трекер
 //Если качает гость , без passkey'я
-if($USER) 
+if($USER)
 	$announce_urls_list[] = $config['announce_url']."?passkey=".$USER['passkey'];
 else
 	$announce_urls_list[] = $config['announce_url'];
@@ -134,11 +134,11 @@ $db->query('UPDATE torrents SET downloaded = (downloaded + 1) WHERE id="'.$db->s
 
 //Magnet
 if($magnet) {
-	
+
 	if(!$PRIV['download_magnet']) {
 		err($language['default_1'] , $language['download_7'] , 1);
 	}
-	
+
 	$link = make_magnet($arr['infohash'],$arr['name'],$announce_urls_list);
 	head('Скачать торрент');
 	begin_frame('Скачать торрент');
@@ -152,10 +152,10 @@ if($magnet) {
 	echo '</tr>';
 	echo '</table>';
 	end_frame();
-	
+
 	foot();
 	die();
-	
+
 }
 
 

@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Класс для работы с mysql
 ===================================================================
@@ -21,7 +21,7 @@ class db
 	var $mysql_extend = "MySQL";
 	var $MySQL_time_taken = 0;
 	var $query_id = false;
-	
+
 	function connect($db_user, $db_pass, $db_name, $db_location = 'localhost', $show_error=1)
 	{
 		if(!$this->db_id = @mysql_connect($db_location, $db_user, $db_pass)) {
@@ -30,7 +30,7 @@ class db
 			} else {
 				return false;
 			}
-		} 
+		}
 
 		if(!@mysql_select_db($db_name, $this->db_id)) {
 			if($show_error == 1) {
@@ -53,13 +53,13 @@ class db
 
 		return true;
 	}
-	
+
 	function query($query, $show_error=true)
 	{
 		$time_before = $this->get_real_time();
 
 		if(!$this->connected) $this->connect(DBUSER, DBPASS, DBNAME, DBHOST);
-		
+
 		if(!($this->query_id = mysql_query($query, $this->db_id) )) {
 
 			$this->mysql_error = mysql_error();
@@ -69,11 +69,11 @@ class db
 				$this->display_error($this->mysql_error, $this->mysql_error_num, $query);
 			}
 		}
-			
+
 		$this->MySQL_time_taken += $this->get_real_time() - $time_before;
-		
+
 		if(DEGUB_SQL) {
-			$this->query_list[] = array( 'time'  => ($this->get_real_time() - $time_before), 
+			$this->query_list[] = array( 'time'  => ($this->get_real_time() - $time_before),
 									'query' => $query,
 									'num'   => (count($this->query_list) + 1));
 		}
@@ -81,7 +81,7 @@ class db
 
 		return $this->query_id;
 	}
-	
+
 	function get_row($query_id = '')
 	{
 		if ($query_id == '') $query_id = $this->query_id;
@@ -97,8 +97,8 @@ class db
 
 		return @mysql_fetch_array($query_id);
 	}
-	
-	
+
+
 	function super_query($query, $multi = false)
 	{
 
@@ -106,23 +106,23 @@ class db
 
 			$this->query($query);
 			$data = $this->get_row();
-			$this->free();			
+			$this->free();
 			return $data;
 
 		} else {
 			$this->query($query);
-			
+
 			$rows = array();
 			while($row = $this->get_row()) {
 				$rows[] = $row;
 			}
 
-			$this->free();			
+			$this->free();
 
 			return $rows;
 		}
 	}
-	
+
 	function num_rows($query_id = '')
 	{
 
@@ -130,7 +130,7 @@ class db
 
 		return mysql_num_rows($query_id);
 	}
-	
+
 	function insert_id()
 	{
 		return mysql_insert_id($this->db_id);
@@ -145,7 +145,7 @@ class db
 		{
             $fields[] = $field;
 		}
-		
+
 		return $fields;
    	}
 
@@ -172,7 +172,7 @@ class db
 	{
 		list($seconds, $microSeconds) = explode(' ', microtime());
 		return ((float)$seconds + (float)$microSeconds);
-	}	
+	}
 
 	function display_error($error, $error_num, $query = '')
 	{
@@ -183,9 +183,9 @@ class db
 			$query = preg_replace("/([0-9a-f]){32}/", "********************************", $query); // Hides all hashes
 			$query_str = "$query";
 		}
-		
-		/* 
-		 * Пишем в логи 
+
+		/*
+		 * Пишем в логи
 		*/
 		$_error_string  = "\n===================================================";
 		$_error_string .= "\n Date: ". date( 'r' );
@@ -201,8 +201,8 @@ class db
 			@fwrite( $FH, $_error_string );
 			@fclose( $FH );
 		}
-	
-	
+
+
 		/*
 		 *	Выводим
 		*/
@@ -213,38 +213,38 @@ class db
 		<title>MySQL Fatal Error</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<style type="text/css">
-		
+
 		body {
 			font-family: Verdana, Arial, Helvetica, sans-serif;
 			font-size: 10px;
 			font-style: normal;
 			color: #000000;
 		}
-	
+
 		</style>
 		</head>
 		<body>
-			<font size="4">MySQL Error!</font> 
+			<font size="4">MySQL Error!</font>
 			<br />------------------------<br />
 			<br />
-			
-			
-				<u>The Error returned was:</u> 
+
+
+				<u>The Error returned was:</u>
 				<br />
 					<strong>'.$error.'</strong>
 
 				<br /><br />
-				</strong><u>Error Number:</u> 
+				</strong><u>Error Number:</u>
 				<br />
 					<strong>'.$error_num.'</strong>
 				<br />
 					<br />
-				
+
 				<textarea name="" rows="10" cols="52" wrap="virtual">'.$query_str.'</textarea><br />
-			
+
 		</body>
 		</html>';
-		
+
 		exit();
 	}
 

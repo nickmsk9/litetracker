@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: FAQ - система
 ===================================================================
@@ -20,42 +20,42 @@ $type = (string) ($_GET['type'] ?? '');
 ////////////////////////////////////////////////////////
 //Вывод темы
 ////////////////////////////////////////////////////////
-if($act == 'view') { 
+if($act == 'view') {
 	$sql = $db->query("SELECT * FROM faq WHERE id=".$id);
 	if(!$db->num_rows($sql)) {
 		err('Ошибка' , 'Данной темы не найдено' , 1);
 	}
 	$arr = $db->get_row($sql);
-	
 
-	
+
+
 	head(htmlspecialchars($arr['subject']));
 	//Выводим статусы
 	comment_status();
-	
+
 	begin_frame(htmlspecialchars($arr['subject']).($PRIV['faq_moderate'] ? '<div style="float:right"><a href="faq.php?act=topic&type=edit&id='.$id.'">[Редактировать]</a> <a href="faq.php?act=topic&type=delete&id='.$id.'">[Удалить]</a></div>' : ''));
 	echo format_comment($arr['text']);
-	
-	
+
+
 	//Информация о пользователе
 	$user = get_user_info($arr['id_user']);
-	
+
 	//Информация о том , кто редактировал
-	if($arr['last_edit'] != '0000-00-00 00:00:00') { 
+	if($arr['last_edit'] != '0000-00-00 00:00:00') {
 		$user1 = get_user_info($arr['last_edit_user']);
 	}
-	
+
 	echo '<hr><small>Добавил <a href="'.profile_href($user['id']).'">'.get_user_color($user['class'] , $user['name']).'</a> , '.convent_date($arr['added']).' </small> '.($arr['last_edit'] != '0000-00-00 00:00:00' ? '<br> <small> И редактировал <a href="'.profile_href($user1['id']).'">'.get_user_color($user1['class'] , $user1['name']).'</a> , '.convent_date($arr['last_edit']).'</small>' : '')
 	.($PRIV['faq_moderate'] ? '<div style="float:right"><small><a href="faq.php?act=topic&type=edit&id='.$id.'">[Редактировать]</a> <a href="faq.php?act=del&id='.$id.'">[Удалить]</a></small></div>' : '');
 	end_frame();
-	
-	
+
+
 	//Комментарии
 	begin_frame($language['details_18']);
 	listComment('faq' , $id , 'faq.php?act=view&');
 	end_frame();
-	
-	
+
+
 	foot();
 	die();
 }
@@ -63,24 +63,24 @@ if($act == 'view') {
 ////////////////////////////////////////////////////////
 //Удаление тем
 ////////////////////////////////////////////////////////
-if($act == 'del') { 
+if($act == 'del') {
 	//Проверяем права
 	if(!$PRIV['faq_moderate']) {
 		err('Ошибка' , 'Вам запрещено пользоваться данной функцией' , 1);
 	}
-	
+
 	$sql = $db->query("SELECT * FROM faq WHERE id=".$id);
 	if(!$db->num_rows($sql)) {
 		err('Ошибка' , 'Данной темы не найдено' , 1);
 	}
-	
+
 	//Удаляем тему
 	$db->query("DELETE FROM faq WHERE id=".$id);
-	
+
 	//Переадресация
 	header('Location:faq.php');
 	die();
-	
+
 }
 ////////////////////////////////////////////////////////
 //Добавление тем
@@ -90,12 +90,12 @@ if($act == 'topic') {
 	if(!$PRIV['faq_moderate']) {
 		err('Ошибка' , 'Вам запрещено пользоваться данной функцией' , 1);
 	}
-	
+
 	$type_arr = array('add' , 'edit');
 	if(!in_array($type , $type_arr) ) {
 		err('Ошибка' , 'Данного типа не найдено');
 	}
-	
+
 	//ID для редактирования
 	if($type == 'edit') {
 		$sql = $db->query("SELECT * FROM faq WHERE id=".$id);
@@ -104,7 +104,7 @@ if($act == 'topic') {
 		}
 		$arr = $db->get_row($sql);
 	}
-	
+
 	$arr = isset($arr) && is_array($arr) ? $arr : array('subject' => '', 'text' => '');
 
 	//Обработка данных
@@ -116,42 +116,42 @@ if($act == 'topic') {
 			err('Ошибка' , 'Вы не ввели название темы' , 1);
 		}
 		$array[] = 'subject="'.$db->safesql($subject).'"';
-		
+
 		//Текст темы
 		$text = trim($_POST['text']);
 		if(empty($text) ) {
 			err('Ошибка' , 'Вы не ввели название темы' , 1);
 		}
 		$array[] = 'text="'.$db->safesql($text).'"';
-		
+
 		//Пишем в базу
 		if($type == 'edit') {
 			$array[] = 'last_edit=NOW()';
 			$array[] = 'last_edit_user='.$USER['id'];
-			
+
 			//Обновляем
 			$db->query("UPDATE faq SET ".implode(',' , $array)." WHERE id=".$id);
-		} else { 
+		} else {
 			$array[] = 'added=NOW()';
 			$array[] = 'id_user='.$USER['id'];
-			
+
 			//Добавляем
 			$db->query("INSERT INTO faq SET ".implode(',' , $array) );
 			$id = $db->insert_id();
 		}
-		
-		
+
+
 		//Переадресация
 		header("Location:faq.php?act=view&id=".$id);
 		die();
 	}
-	
+
 	//Вывод формы
 	$title = ($type == 'add' ? 'Добавление темы' : 'Редактирование темы');
 	head($title);
 	begin_frame($title);
 	?>
-		
+
 		<form action="faq.php?act=topic&type=<?=$type;?>&id=<?=$id;?>" method="post">
 		<table>
 			<tr><td width="10%"><b>Название:</b></td><td><input type="text" name="subject" size="80%" value="<?=htmlspecialchars($arr['subject']);?>"></td></tr>
@@ -159,7 +159,7 @@ if($act == 'topic') {
 			<tr><td colspan="2"><input type="submit" value="Выполнить"></td></tr>
 		</table>
 		</form>
-		
+
 	<?
 	end_frame();
 	foot();
@@ -184,12 +184,12 @@ if(!$db->num_rows($sql) ) {
 	echo '<link href="public/css/torrenttable.css" rel="StyleSheet" type="text/css">
 	<table align="center" width="70%" class="tt">
 	<tr>
-	
+
 	<td><b>Название</b></td>
 	<td><b>Дата</b></td>
 	<td><b>Кем создана</b></td>
 	</tr>';
-	
+
 	while($arr = $db->get_row($sql) ) {
 		//Информация о пользователе
 		$user = get_user_info($arr['id_user']);

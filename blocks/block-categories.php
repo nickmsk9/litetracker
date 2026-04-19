@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Глобальный блок категорий
 ===================================================================
@@ -13,7 +13,7 @@ $cache_result = categories_array();
 $categories = '';
 foreach ($cache_result AS $cat) {
 	$categories .=  '<a class="proleft" href="'.$rewrite->encode('browse.php?id_category='.$cat['id']).'">'.htmlspecialchars($cat['name']).'</a>';
-}	
+}
 
 require 'templates/'.$config['template'].'/blocks/block.categories.php';
 ?>

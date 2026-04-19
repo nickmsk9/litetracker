@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Действия с отмеченными релизами
 ===================================================================
@@ -30,7 +30,7 @@ if(!count($array) || !is_array($array)) {
 $ids = array();
 foreach($array AS $id) {
 	$ids[] = (int)$id;
-}	
+}
 
 
 
@@ -38,12 +38,12 @@ foreach($array AS $id) {
 //Блокировка/Разблокировка релизов
 //////////////////////////////////////////////////////////////////////////////
 if($_POST['act'] == 'banned') {
-	
+
 	$i = 0; //Счетчик
 	$banned = array();
 	$banned['banned'] = 0;
 	$banned['unbanned'] = 0;
-	
+
 	foreach($ids AS $id) {
 		//Проверяем существование релиза
 		$db->query("SELECT * FROM torrents WHERE id=".$id);
@@ -52,7 +52,7 @@ if($_POST['act'] == 'banned') {
 		}
 		//Получаем данные
 		$arr = $db->get_row();
-		
+
 		//Блокируем/Разблокируем
 		if($arr['banned']) {
 			$db->query("UPDATE torrents SET banned=0 WHERE id=".$id);
@@ -61,10 +61,10 @@ if($_POST['act'] == 'banned') {
 			$db->query("UPDATE torrents SET banned=1 WHERE id=".$id);
 			$banned['banned']++;
 		}
-		
+
 		$i++;
 	}
-	
+
 	head('Блокировка релизов');
 	begin_frame('Блокировка релизов');
 	msg( $i.' операций было выполнено . Из них '.$banned['unbanned'].' разблокировано и '.$banned['banned'].' забанено ' , '<a href="javascript:window.location.href=\'index.php?search=\'">Вернуться к списку</a>');
@@ -83,7 +83,7 @@ if($_POST['act'] == 'location') {
 	if(!$db->get_row() ) {
 		err($language['default_1'] , 'Данной категории не сущесвует' , 1);
 	}
-	
+
 	$i = 0; //Счетчик
 	foreach($ids AS $id) {
 		//Проверяем существование релиза
@@ -93,18 +93,18 @@ if($_POST['act'] == 'location') {
 		}
 		//Получаем данные
 		$arr = $db->get_row();
-		
+
 		//Учитываем перемещение только в другую категорию
 		if($arr['id_category'] == $id_category) {
 			continue;
 		}
-		
+
 		//Перемещаем релиз
 		$db->query("UPDATE torrents SET id_category=".$id_category." WHERE id=".$id);
-		
+
 		$i++;
 	}
-	
+
 	head('Перемещение релизов');
 	begin_frame('Перемещение релизов');
 	msg( $i.' из '.count($ids).' были успешно перемещены' , '<a href="javascript:window.location.href=\'index.php?search=\'">Вернуться к списку</a>');
@@ -127,32 +127,32 @@ if($_POST['act'] == 'delete') {
 		}
 		//Получаем данные
 		$arr = $db->get_row();
-		
+
 		//Удаляем торрент - файл
 		unlink('downloads/'.$id.'.torrent');
-		
-		//Удаляем картинку 
+
+		//Удаляем картинку
 		if($arr['image']) {
 				unlink('downloads/images/'.$arr['image']);
 		}
-		
-		//Удаляем скринщоты 
+
+		//Удаляем скринщоты
 		$k = 4;
 		for($z = 0 ; $z >= $k ; $z++) {
 			if($arr['screen_'.$z]) {
 				unlink('downloads/images/'.$arr['screen_'.$z]);
 			}
 		}
-		
+
 		//Удаление из базы всех данных
 		$db->query("DELETE FROM torrents WHERE id=".$id);
 		$db->query("DELETE FROM trackers WHERE torrent=".$id);
 		$db->query("DELETE FROM peers WHERE torrent=".$id);
 		$db->query("DELETE FROM snatched WHERE torrent=".$id);
-		
+
 		$i++;
 	}
-	
+
 	head('Удаление релизов');
 	begin_frame('Удаление релизов');
 	msg( $i.' из '.count($ids).' были успешно удалены' , '<a href="javascript:window.location.href=\'index.php?search=\'">Вернуться к списку</a>');

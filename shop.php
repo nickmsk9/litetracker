@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Магазин трекера
 ===================================================================
@@ -39,7 +39,7 @@ if($_GET['act'] == 'edit') {
 	if(!$PRIV['EDIT_PRIV']) {
 		err($language['default_1'] , 'Вам запрещено добавлять/регактировать услуги' , 1);
 	}
-	
+
 	//Данные для редактирования
 	if($_GET['id']) {
 		$id = (int)$_GET['id'];
@@ -49,12 +49,12 @@ if($_GET['act'] == 'edit') {
 		}
 		$arr = $db->get_row();
 	}
-	
+
 	//Обработка
 	if($_POST)  {
 		$update = array();
-		
-		//Название 
+
+		//Название
 		$name = trim($_POST['name']);
 		if(empty($name) ) {
 			err($language['default_1'] , 'Введите название товара' , 1);
@@ -62,9 +62,9 @@ if($_GET['act'] == 'edit') {
 		if($arr['name'] != $name) {
 			$update[] = 'name="'.$db->safesql($name).'"';
 		}
-		
-		
-		//Цена 
+
+
+		//Цена
 		$voice = $_POST['voice'];
 		if(!is_numeric($voice) || $voice <= 0) {
 			err($language['default_1'] , 'Не верный формат цены' , 1);
@@ -72,21 +72,21 @@ if($_GET['act'] == 'edit') {
 		if($arr['voice'] != $voice) {
 			$update[] = 'voice="'.$voice.'"';
 		}
-		
+
 		//Файл обработки
 		$file = trim($_POST['file']);
 		if($file == '.' || $file == '..' || empty($file) )  {
 			err($language['default_1'] , 'Не выбран файл обработчика' , 1);
 		}
-		
+
 		if(!file_exists('modules/shop/'.$file) ) {
 			err($language['default_1'] ,  'Файла обработчика не существует' , 1);
 		}
-		
+
 		if($arr['file'] != $file) {
 			$update[] = 'file="'.$file.'"';
 		}
-		
+
 		//Картинка
 		$allowed_types = array(
 			"image/gif" => "gif",
@@ -98,11 +98,11 @@ if($_GET['act'] == 'edit') {
 		);
 
 		if (!($_FILES["image"]['name'] == "")) {
-			
-			
+
+
 			//Лимит размера
 			$limit_size = 500 * 8 * 1024;
-			
+
 			// Is valid filetype?
 			if (!array_key_exists($_FILES['image']['type'], $allowed_types) ) {
 				err($language['default_1'], $language['cats_9'] , 1);
@@ -123,13 +123,13 @@ if($_GET['act'] == 'edit') {
 
 			// What is the temporary file name?
 			$ifile = $_FILES['image']['tmp_name'];
-			
+
 			// Calculate what the next torrent id will be
 			if(!$_GET['id']) {
 				$row = $db->super_query("SHOW TABLE STATUS LIKE 'shop'");
 				$id = $row['Auto_increment'];
-			} 
-			
+			}
+
 			// By what filename should the tracker associate the image with?
 			$ifilename = $id .  substr($_FILES['image']['name'], strlen($_FILES['image']['name'])-4, 4);
 
@@ -140,30 +140,30 @@ if($_GET['act'] == 'edit') {
 			if (!$copy) {
 				err($language['default_1'] , $language['cats_12'], 1);
 			}
-			
+
 			$update[] = "image='".$db->safesql($ifilename)."'";
 		}
-		
-		//Добавляем/Обновляем 
+
+		//Добавляем/Обновляем
 		if($_GET['id'] && count($update) ) {
-			
+
 			$db->query("UPDATE shop SET ".implode(',' , $update)." WHERE id=".$id);
 		} elseif(count($update) ) {
 			$db->query("INSERT INTO shop SET ".implode(',' , $update)."");
 		}
-		
+
 		//Перенаправление
 		header('Location:shop.php?status=2');
 		die();
-		
+
 	}
-	
+
 	$name = ($_GET['id'] ? 'Редактирование товара' : 'Добавление товара');
 	head($name);
 	begin_frame($name);
 	?>
 	<form action="shop.php?id=<?=$id;?>&act=edit" method="POST" enctype="multipart/form-data" >
-	
+
 	<!--Файлы-->
 	<table width="80%"  cellspacing="7" cellpadding="0" border="0"  align="center">
 	<tbody>
@@ -177,17 +177,17 @@ if($_GET['act'] == 'edit') {
 		 <input type="text" name="name" style="margin: 0px;" size="25" class="inputText" value="<?=htmlspecialchars($arr['name']);?>">
 		</td><td>
 	   </td></tr>
-	   
+
 	<tr>
 		<td class="ta_r">
 		 <span class="grey">Цена:</span>
 		</td>
 		<td style="padding: 0px;">
 		 <input type="text" name="voice" style="margin: 0px;" size="10" class="inputText" value="<?=$arr['voice'];?>"> рублей
-		<br><small>Формат: 1.00</small>	
+		<br><small>Формат: 1.00</small>
 		</td><td>
-	   </td></tr>  
-	  
+	   </td></tr>
+
 		<tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Картинка:</span>
@@ -212,7 +212,7 @@ if($_GET['act'] == 'edit') {
 				   while (($file = readdir($dh)) !== false) {
 					    if($file != '.' && $file != '..') {
 							echo '<option '.($arr['file'] == $file ? 'selected' : '').' value="'.$file.'">'.$file.'</option>';
-						}	
+						}
 				   }
 				   closedir($dh);
 			   }
@@ -221,7 +221,7 @@ if($_GET['act'] == 'edit') {
 			</select>
 		</td><td>
 	   </td></tr>
-	   
+
 	   	<tr>
 		<td class="ta_r">
 		 <span class="grey"></span>
@@ -230,16 +230,16 @@ if($_GET['act'] == 'edit') {
 		 <input type="submit" value="<?=($_GET['id'] ? 'Редактировать' : 'Добавить');?>">
 		</td><td>
 	   </td></tr>
-	   
-	   
-		
-	  
+
+
+
+
 	</tbody>
 	</table>
 
 
 	</form>
-	
+
 
 	<?
 	end_frame();
@@ -254,28 +254,28 @@ if($_GET['act'] == 'voicing' && $_GET['id']) {
 
 	//Номер товара
 	$id = (int)$_GET['id'];
-	
+
 	//Запрос в базу данных
 	$db->query("SELECT * FROM shop WHERE id=".$id);
 	if(!$db->num_rows() ) {
 		err($language['default_1'] , 'Данного товара не существует' , 1);
 	}
 	$arr = $db->get_row();
-	
+
 	//Проверяем , есть ли у пользователя столько денег
 	if($arr['voice'] > $USER['voice']) {
 		err($language['default_1'] ,  'У вас недостаточно средств' , 1);
 	}
-	
+
 	//Проверяем , существует ли файл - обработчик
 	if(!file_exists('modules/shop/'.$arr['file']) ) {
 		err($language['default_1'] ,  'Данный товар времмено закрыт' , 1);
 	}
-	
+
 	//Выполняем действие
 	require 'modules/shop/'.$arr['file'];
-	
-	
+
+
 	//Снимаем деньги
 	$db->query("UPDATE users SET voice=(voice - ".$arr['voice'].") WHERE id=".$USER['id']."");
 	$memcache->delete('user_'.$USER['id']);
@@ -310,36 +310,36 @@ begin_frame('Магазин на трекере');
 
 if($PRIV['EDIT_PRIV']) {
 	echo '<input type="button" value="Добавить товар" onClick="window.location.href=\'shop.php?act=edit\'"><br><br>';
-}	
+}
 
 
 echo '<table width="100%" align="center">';
 while($arr = $db->get_row($sql) ) {
 	echo '<tr>';
-	
+
 	echo '<td width="1">';
 	if($arr['image']) {
 		echo '<img src="public/images/shop/'.$arr['image'].'" width="auto">';
 	}
-	echo '</td>';	
-		
-	echo '<td>';	
+	echo '</td>';
+
+	echo '<td>';
 	echo htmlspecialchars($arr['name']);
-	echo '</td>';	
-	
-	echo '<td>';	
+	echo '</td>';
+
+	echo '<td>';
 	echo '<b>Цена: '.$arr['voice'].' рублей</b>';
-	echo '</td>';	
-	
-	echo '<td>';	
+	echo '</td>';
+
+	echo '<td>';
 	echo '<input type="button" value="Купить" onClick="window.location.href=\'shop.php?act=voicing&id='.$arr['id'].'\'">';
 	if($PRIV['EDIT_PRIV']) {
 		echo '&nbsp<input type="button" value="Редактировать" onClick="window.location.href=\'shop.php?act=edit&id='.$arr['id'].'\'">';
 		echo '&nbsp<input type="button" value="Удалить" onClick="window.location.href=\'shop.php?act=delete&id='.$arr['id'].'\'">';
-	}	
-	echo '</td>';	
-	
-	echo '</tr>';	
+	}
+	echo '</td>';
+
+	echo '</tr>';
 }
 echo '</table>';
 end_frame();

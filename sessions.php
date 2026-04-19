@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Сессии
 ===================================================================
@@ -43,7 +43,7 @@ $count = $count['c'];
 list($pagertop, $pagerbottom, $limit) = pager('40' , $count, "sessions.php?");
 
 //Выводим все записи
-$sql  = $db->query("SELECT  s.* , u.name , u.class 
+$sql  = $db->query("SELECT  s.* , u.name , u.class
 				FROM sessions AS s
 				LEFT JOIN users AS u ON u.id = s.user_id
 				ORDER BY s.last_access DESC
@@ -59,7 +59,7 @@ if($db->num_rows($sql)) {
 	<?
 	while($arr = $db->get_row($sql) ) {
 		echo '<tr>';
-		
+
 		echo '<td>';
 		if($arr['user_id'] == '-1') {
 			echo 'Гость';
@@ -67,19 +67,19 @@ if($db->num_rows($sql)) {
 			echo '<a href="'.profile_href($arr['user_id']).'">'.get_user_color($arr['class'] , $arr['name']).'</a>';
 		}
 		echo '</td>';
-		
+
 		echo '<td>'.convent_date($arr['last_access']).'</td>';
 		echo '<td><a href="ip.util.php?ip='.long2ip($arr['ip']).'">'.long2ip($arr['ip']).'</a></td>';
 		echo '<td>'.htmlspecialchars($arr['user_agent']).'</td>';
 		echo '<td>'.htmlspecialchars($arr['php_self']).'</td>';
-		
-		
+
+
 		echo '</tr>';
 	}
 	?>
 	</table>
 	<?
-	
+
 	echo $pagertop;
 } else
 	msg('Ошибка' , 'Сессий не найдено');

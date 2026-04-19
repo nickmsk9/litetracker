@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Редактирование категорий
 ===================================================================
@@ -26,10 +26,10 @@ if(!$PRIV['cats']) {
 //Перемещение релизов
 ///////////////////////////////////////////////////////////////////////
 if($_GET['act'] == 'location') {
-	
+
 	//Обработка
 	if($_POST) {
-		
+
 		//Из категории
 		$location_1 = (int)$_POST['location_1'];
 		if(!$location_1) {
@@ -40,31 +40,31 @@ if($_GET['act'] == 'location') {
 		if(!$location_2) {
 			err($language['default_1'] ,  $language['cats_2'] , 1);
 		}
-		
+
 		//Выполняем перемещение, если категории не равны
 		if($location_1 != $location_2) {
 			$db->query("UPDATE torrents SET id_category=".$location_2." WHERE id_category=".$location_1);
 		}
-	
+
 		header("Location:categories.php?status=4");
 		die();
 	}
-	
-	
+
+
 	//Обший вид
 	head($language['cats_35']);
 	begin_frame($language['cats_35']);
-	
+
 	//Создаем массив с категориями
 	$db->query("SELECT * FROM categories");
 	$row = array();
-	while($get_row = $db->get_row() ) 
+	while($get_row = $db->get_row() )
 		$row[] = $get_row;
-	
-	
-	
+
+
+
 	echo msg($language['cats_3']);
-	
+
 	echo '<form action="categories.php?&act=location" method="POST">';
 	echo '<select name="location_1">';
 	echo '<option value="0">('.$language['cats_4'].')</option>';
@@ -72,7 +72,7 @@ if($_GET['act'] == 'location') {
 		echo '<option value="'.$arr['id'].'">'.htmlspecialchars($arr['name']).'</option>';
 	}
 	echo '</select>';
-	
+
 	echo '<select name="location_2">';
 	echo '<option value="0">('.$language['cats_5'].')</option>';
 	foreach($row AS $arr) {
@@ -102,13 +102,13 @@ if($_GET['act'] == 'edit' && $_GET['id']) {
 		err($language['default_1'] , $language['cats_7'] , 1);
 	}
 	$arr = $db->get_row();
-	
-	
+
+
 	//Обработка
 	if($_POST) {
 
 		$update = array();
-		
+
 		//Название
 		$name = $_POST['name'];
 		if(empty($name) ) {
@@ -117,8 +117,8 @@ if($_GET['act'] == 'edit' && $_GET['id']) {
 		if($arr['name'] != $name) {
 			$update[] = "name='".$db->safesql($name)."'";
 		}
-		
-		
+
+
 		//Картинка
 		$allowed_types = array(
 			"image/gif" => "gif",
@@ -131,11 +131,11 @@ if($_GET['act'] == 'edit' && $_GET['id']) {
 
 
 		if (!($_FILES["image"]['name'] == "")) {
-			
-			
+
+
 			//Лимит размера
 			$limit_size = 500 * 8 * 1024;
-			
+
 			// Is valid filetype?
 			if (!array_key_exists($_FILES['image']['type'], $allowed_types) ) {
 				err($language['default_1'], $language['cats_9'] , 1);
@@ -156,11 +156,11 @@ if($_GET['act'] == 'edit' && $_GET['id']) {
 
 			// What is the temporary file name?
 			$ifile = $_FILES['image']['tmp_name'];
-			
+
 			// Calculate what the next torrent id will be
 			// $row = $db->super_query("SHOW TABLE STATUS LIKE 'categories'");
 			// $next_id = $row['Auto_increment'];
-			
+
 			// By what filename should the tracker associate the image with?
 			$ifilename = $id .  substr($_FILES['image']['name'], strlen($_FILES['image']['name'])-4, 4);
 
@@ -171,35 +171,35 @@ if($_GET['act'] == 'edit' && $_GET['id']) {
 			if (!$copy) {
 				err($language['default_1'] , $language['cats_12'], 1);
 			}
-			
+
 			$update[] = "image='".$db->safesql($ifilename)."'";
-		
+
 		}
-		
-		
+
+
 		//Шаблон
 		$template = (int)$_POST['template'];
 		if($arr['template'] != $template) {
 			$update[] = "template='".$template."'";
 		}
-	
+
 		//Обновляем категорию
 		if($update) {
 			$db->query("UPDATE categories SET ".implode(',' , $update)." WHERE id=".$id);
 			$memcache->delete('upload_categories');
-		}	
+		}
 		header("Location:categories.php?status=3");
 		die();
 	}
-	
-	
+
+
 	//Обший вид
 	head($language['cats_13']);
 	begin_frame($language['cats_13']);
-	
+
 	?>
 	<form enctype="multipart/form-data" action="categories.php?act=edit&id=<?=$id;?>" method="post">
-	
+
 	<!--Файлы-->
 	<table width="80%"  cellspacing="7" cellpadding="0" border="0"  align="center">
 	<tbody>
@@ -238,7 +238,7 @@ if($_GET['act'] == 'edit' && $_GET['id']) {
 			</select>
 		</td><td>
 	   </td></tr>
-	   
+
 	   	<tr>
 		<td class="ta_r">
 		 <span class="grey"></span>
@@ -247,10 +247,10 @@ if($_GET['act'] == 'edit' && $_GET['id']) {
 		 <input type="submit" value="<?=$language['cats_24'];?>">
 		</td><td>
 	   </td></tr>
-	   
-	   
-		
-	  
+
+
+
+
 	</tbody>
 	</table>
 
@@ -274,45 +274,45 @@ if($_GET['act'] == 'del' && $_GET['id']) {
 	if(!$db->num_rows()) {
 		err($language['default_1'], $language['cats_7'] , 1);
 	}
-	
-	
+
+
 	//Удаление категории
 	if($_POST) {
 		//Перемещение торрентов
 		$location = (int)$_POST['location'];
-		
+
 		//Перемещаем торренты
 		if($location > 0) {
 			$db->query("SELECT *  FROM categories WHERE id=".$location."");
 			if(!$db->num_rows() ) {
 				err($language['default_1'] , $language['cats_25'] , 1);
 			}
-			
+
 			//Получаем весь список торрентов
 			$db->query("UPDATE torrents SET id_category='".$location."' WHERE id_category=".$id);
 		} else {
-			//Удаление всех релизов + удаление всех комментарий 
-			$db->query("DELETE FROM torrents 
-						WHERE id_category=".$id." 
+			//Удаление всех релизов + удаление всех комментарий
+			$db->query("DELETE FROM torrents
+						WHERE id_category=".$id."
 						");
 		}
-		
+
 		$db->query("DELETE FROM categories WHERE id=".$id."");
 		//Удаление картинки
 		//...
 		header("Location:categories.php?status=2");
 		die();
 	}
-	
+
 	//Выводим предупреждение
 	head($language['cats_26']);
 	begin_frame($language['cats_26']);
 	echo $language['cats_27'].'<br> ';
-	
+
 	echo '<form action="categories.php?id='.$id.'&act=del" method="POST">';
 	echo '<select name="location">';
 	echo '<option value="0">'.$language['cats_28'].'</option>';
-	
+
 	$db->query("SELECT * FROM categories");
 	while($arr = $db->get_row() ) {
 		echo '<option value="'.$arr['id'].'">'.sprintf($language['cats_29'] , htmlspecialchars($arr['name'])).'</option>';
@@ -321,8 +321,8 @@ if($_GET['act'] == 'del' && $_GET['id']) {
 	echo '<input type="submit" value="'.$language['cats_30'].'">&nbsp';
 	echo '<input type="button" value="'.$language['default_5'].'" onClick="history.go(-1);">';
 	echo '</form>';
-	
-	
+
+
 	end_frame();
 	foot();
 	die();
@@ -341,8 +341,8 @@ if($_GET['act'] == 'add') {
 		if(empty($name) ) {
 			err($language['default_1'] , $language['default_31'] , 1);
 		}
-		
-		
+
+
 		//Картинка
 		$allowed_types = array(
 			"image/gif" => "gif",
@@ -355,11 +355,11 @@ if($_GET['act'] == 'add') {
 
 
 		if (!($_FILES["image"]['name'] == "")) {
-			
-			
+
+
 			//Лимит размера
 			$limit_size = 500 * 8;
-			
+
 			// Is valid filetype?
 			if (!array_key_exists($_FILES['image']['type'], $allowed_types) ) {
 				err($language['default_1'] , $language['cats_9'], 1);
@@ -380,11 +380,11 @@ if($_GET['act'] == 'add') {
 
 			// What is the temporary file name?
 			$ifile = $_FILES['image']['tmp_name'];
-			
+
 			// Calculate what the next torrent id will be
 			$row = $db->super_query("SHOW TABLE STATUS LIKE 'categories'");
 			$next_id = $row['Auto_increment'];
-			
+
 			// By what filename should the tracker associate the image with?
 			$ifilename = $next_id .  substr($_FILES['image']['name'], strlen($_FILES['image']['name'])-4, 4);
 
@@ -395,16 +395,16 @@ if($_GET['act'] == 'add') {
 			if (!$copy) {
 				err($language['default_1'] , $language['cats_12'] , 1);
 			}
-		
+
 		} else {
-			err($language['default_1'] , $language['cats_32'] , 1);	
+			err($language['default_1'] , $language['cats_32'] , 1);
 		}
-		
-		
+
+
 		//Шаблон
 		$template = (int)$_POST['template'];
-		
-	
+
+
 		//Добавляем категорию
 		$db->query("INSERT INTO categories(name  , image , template , date) VALUES ('".$db->safesql($name)."' , '".$db->safesql($ifilename)."' , '".$db->safesql($template)."'   , NOW() ) ");
 		$memcache->delete('upload_categories');
@@ -412,10 +412,10 @@ if($_GET['act'] == 'add') {
 	}
 	head($language['cats_33']);
 	begin_frame($language['cats_33']);
-	
+
 	?>
 	<form enctype="multipart/form-data" action="categories.php?act=add" method="post">
-	
+
 	<!--Файлы-->
 	<table width="80%"  cellspacing="7" cellpadding="0" border="0"  align="center">
 	<tbody>
@@ -453,7 +453,7 @@ if($_GET['act'] == 'add') {
 			</select>
 		</td><td>
 	   </td></tr>
-	   
+
 	   	<tr>
 		<td class="ta_r">
 		 <span class="grey"></span>
@@ -462,10 +462,10 @@ if($_GET['act'] == 'add') {
 		 <input type="submit" value="<?=$language['cats_33'];?>">
 		</td><td>
 	   </td></tr>
-	   
-	   
-		
-	  
+
+
+
+
 	</tbody>
 	</table>
 
@@ -511,19 +511,19 @@ echo '<input type="button" value="'.$language['cats_35'].'" onClick="window.loca
 echo '<table width="100%" cellpadding="3" class="tt">';
 while($arr = $db->get_row($sql) ) {
 		echo '<tr>';
-		
+
 		echo '<td width="1%" align="center">';
 		echo '<A href="index.php?id_category='.$arr['id'].'"><img src="public/images/categories/'.$arr['image'].'" border="0" width="25px"></a>';
 		echo '</td>';
-		
+
 		echo '<td width="50%">';
 		echo '<A href="index.php?id_category='.$arr['id'].'">'.htmlspecialchars($arr['name']).'</a> <div style="float:right"><small>'.sprintf($language['cats_42'] ,convent_date($arr['date']) ).'</small></div>';
 		echo '</td>';
-		
+
 		echo '<td width="15%">';
 		echo sprintf($language['cats_43'] ,$arr['count'] );
 		echo '</td>';
-		
+
 		echo '<td align="center">';
 		echo '<input type="button" value="'.$language['cats_44'].'" onCLick="window.location.href=\'categories.php?act=edit&id='.$arr['id'].'\'">&nbsp';
 		echo '<input type="button" value="'.$language['cats_45'].'" onCLick="window.location.href=\'categories.php?act=del&id='.$arr['id'].'\'">';

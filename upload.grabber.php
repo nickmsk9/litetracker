@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Граббер описания
 ===================================================================
@@ -30,7 +30,7 @@ $name = (string)$_REQUEST['name'];
 if($name == '') {
 	die();
 }
-		
+
 //Ссылка на сайт
 $link = 'http://www.kinopoisk.ru';
 
@@ -50,17 +50,17 @@ $opts = array(
 		'method'=>"GET",
 		'header'=>"Accept-language: ru\r\n" .
               "Cookie: ".$cookie."\r\n"  ,
-		'User-Agent' => 'Mozilla/5.0 (Windows; U; Windows NT 5.1; ru; rv:1.9.0.4) Gecko/2008102920 AdCentriaIM/1.7 Firefox/3.0.4'	  
+		'User-Agent' => 'Mozilla/5.0 (Windows; U; Windows NT 5.1; ru; rv:1.9.0.4) Gecko/2008102920 AdCentriaIM/1.7 Firefox/3.0.4'
 		),
-		
+
 );
 
-$headers = stream_context_create($opts);	
+$headers = stream_context_create($opts);
 
 ///////////////////////////////////////////////////////////////////////
 //1 шаг
 //---------------------------------------------------------------------
-//Ищем и определяем id 
+//Ищем и определяем id
 ///////////////////////////////////////////////////////////////////////
 
 //Открываем соединение
@@ -68,8 +68,8 @@ $getContent = file_get_contents($link_search.urlencode($name), false ,  $headers
 
 if(!$getContent)
 	die('Ошибка соединения');
-//Определяем id 
-preg_match('/\\/level\\/1\\/film\\/(\d+)/i', $getContent, $descriptionID); 
+//Определяем id
+preg_match('/\\/level\\/1\\/film\\/(\d+)/i', $getContent, $descriptionID);
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -89,7 +89,7 @@ if(!$getContentDescr) {
 
 
 // Извлекаем описание
-preg_match('#<span class=\"_reachbanner_\">(.*?)</span>#si', $getContentDescr, $description); 
+preg_match('#<span class=\"_reachbanner_\">(.*?)</span>#si', $getContentDescr, $description);
 
 
 ?>

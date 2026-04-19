@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Главная файл
 ===================================================================
@@ -67,10 +67,10 @@ require __DIR__ . '/classes/class.ipcheck.php';
 
 //Функционал комментирования
 require __DIR__ . '/functions/functions.comments.php';
-		
-//reCaptcha 
+
+//reCaptcha
 require __DIR__ . '/functions/functions.recaptchalib.php';
-		
+
 //Подключаем класс db
 require __DIR__ . '/classes/class.db.php';
 
@@ -92,7 +92,7 @@ require __DIR__ . '/classes/class.rewrite.php';
 */
 
 
-//Сжатие 
+//Сжатие
 gzip();
 
 
@@ -100,7 +100,7 @@ gzip();
 $db = new db;
 $db->connect($mysql['user'] , $mysql['password'] , $mysql['db'] ,  $mysql['host']);
 
-//Запускаем мод ЧПУ 
+//Запускаем мод ЧПУ
 $rewrite = new rewrite;
 
 //Запускаем memcached/filecache
@@ -109,26 +109,26 @@ $memcache = lt_create_cache_driver();
 
 //Cron system
 if (false === ($CRON = $memcache->get('CRON'))) {
-	$sql = $db->query("SELECT * FROM cron");	
+	$sql = $db->query("SELECT * FROM cron");
 	$CRON = array();
 	while($cron  = $db->get_row($sql)) {
 		$CRON[$cron['cron_name']] = $cron['cron_value'];
 	}
-	$memcache->set('CRON', $CRON  , 0, 15*60);		
+	$memcache->set('CRON', $CRON  , 0, 15*60);
 }
 
 
 //Подключаем языковую систему
 if(!empty($_COOKIE['language'])) {
 	$language = $_COOKIE['language'];
-} else {	
+} else {
 	$language = $config['lang'];
-}	
+}
 
 
 if(!is_language($language) ) {
 	die('Language system error. Please clear cookie');
-}	
+}
 
 require $_SERVER['DOCUMENT_ROOT'].'/languages/'.$language.'/site.php';
 
@@ -146,21 +146,21 @@ if(!$PRIV['ip_util']) {
 
 	//Бан по IP - адресу
 	if (false === ($ban_resource = $memcache->get('ip_bans_'.$ip))) {
-		$sql = $db->query("SELECT * FROM bans WHERE '".$ip."'  >= first AND '".$ip."' <= last");			
+		$sql = $db->query("SELECT * FROM bans WHERE '".$ip."'  >= first AND '".$ip."' <= last");
 		$ban_resource = $db->get_row($sql);
-		$memcache->set('ip_bans_'.$ip, $ban_resource  , 0, 1000);		
+		$memcache->set('ip_bans_'.$ip, $ban_resource  , 0, 1000);
 	}
-	
+
 	if($ban_resource) {
 		die('Please note, your IP ('.getip().') has been banned '.convent_date($ban_resource['date']).'');
 	}
-}	
+}
 
 
 
 //Определяем passkey для пользователя
 if($USER && strlen($USER['passkey']) != 32) {
-	$USER['passkey'] = md5($USER['name'].get_date_time().$USER['password']);	
+	$USER['passkey'] = md5($USER['name'].get_date_time().$USER['password']);
 	$sql = $db->query('UPDATE users SET passkey="'.$USER['passkey'].'" WHERE id="'.$USER['id'].'"');
 	$db->free($sql);
 	$memcache->delete('user_'.$USER['id']);
@@ -172,22 +172,22 @@ if($USER) {
 	$certain_time = get_certain_time($USER['added']);
 
 	if( get_ratio($USER['uploaded'] , $USER['downloaded']  ) < $config['bad_rating'] && $PRIV['bad_rating']) {
-		
+
 		if(!$USER['bad_rating']) {
 			$sql = $db->query("UPDATE users SET bad_rating='1' WHERE id=".$USER['id']);
 			$db->free($sql);
-			$memcache->delete('user_'.$USER['id']);			
+			$memcache->delete('user_'.$USER['id']);
 		}
-		
+
 		//Баним , если прошло время
 		if($certain_time['days'] >= $config['days_rating'] ) {
 			$sql = $db->query("UPDATE users SET banned='1' WHERE id=".$USER['id']);
 			$db->free($sql);
-			$memcache->delete('user_'.$USER['id']);	
+			$memcache->delete('user_'.$USER['id']);
 		}
 
 	}
-		
+
 
 	//Если рейтинг изменился в лучшую сторону , удаляем пользователя из списка плохих пользователей
 	if($USER['bad_rating'] && get_ratio($USER['uploaded'] , $USER['downloaded'] ) >= $config['bad_rating']  && $PRIV['bad_rating'] ) {

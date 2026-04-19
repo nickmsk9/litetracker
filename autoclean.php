@@ -4,7 +4,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Autoclean system
 ===================================================================
@@ -55,9 +55,9 @@ while (list($id) = $db->get_array($peerssql) ) {
 ///////////////////////////////////////////////////////////////////
 //Ищем все торренты , которые раздает пользователь
 $voice = $db->query("SELECT  userid FROM peers WHERE seeder  = '1'");
-$voice_per_cleanup = number_format($config['voice_price']*($CRON['autoclean_interval']/3600) , 2); 				
+$voice_per_cleanup = number_format($config['voice_price']*($CRON['autoclean_interval']/3600) , 2);
 while($seeder = $db->get_row($voice) ) {
-		
+
 	$db->query("UPDATE users SET voice = (voice + ".$voice_per_cleanup.") WHERE id = ".$seeder['userid']);
 }
 
@@ -70,7 +70,7 @@ $date = $db->safesql(get_date_time(gmtime() - $secs));
 $sql = $db->query("SELECT * FROM forgot  WHERE date < '".$date."'");
 while($arr = $db->get_row($sql) ) {
 	$db->query("DELETE FROM forgot WHERE id = ".$arr['id']);
-	
+
 }
 
 //Обновляем cron-запись

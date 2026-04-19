@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Редактирование релиза
 ===================================================================
@@ -41,8 +41,8 @@ if($_GET['act'] == 'delete_image') {
 	if($arr['image']) {
 		$db->query("UPDATE torrents SET image='' WHERE id=".$id);
 		@unlink('public/downloads/images/'.$arr['image']);
-    }	
-	
+    }
+
 	header('Location:details.php?id='.$id.'&edit=1');
 	die();
 }
@@ -58,8 +58,8 @@ if($_GET['act'] == 'delete_screen') {
 	if($arr['screen_'.$screen]) {
 		$db->query("UPDATE torrents SET screen_".$screen."='' WHERE id=".$id);
 		@unlink('public/downloads/screens/'.$arr['screen_'.$screen]);
-    }	
-	
+    }
+
 	header('Location:details.php?id='.$id.'&edit=1');
 	die();
 }
@@ -89,17 +89,17 @@ if($_GET['act'] == 'take') {
 	//Имя файла
 	$fname = trim($f["name"]);
 	if (!empty($fname)) {
-		//Проверяем имя торрент-файла	
+		//Проверяем имя торрент-файла
 		if (!validfilename($fname) ) {
-			err($language['default_1'] , $language['upload_20'] , 1); 
+			err($language['default_1'] , $language['upload_20'] , 1);
 		}
-			
+
 		//Проверяем формат
 		if (!preg_match('/^(.+)\.torrent$/si', $fname, $matches) ) {
-			err($language['default_1'] , $language['upload_21'] , 1); 
-		}	
+			err($language['default_1'] , $language['upload_21'] , 1);
+		}
 
-			
+
 		//Проверяем, загрузиться ли файл через HTTP POST
 		$tmpname = $f["tmp_name"];
 		if (!is_uploaded_file($tmpname)) {
@@ -125,7 +125,7 @@ if($_GET['act'] == 'take') {
 		unset($dict['value']['publisher-url']);
 		unset($dict['value']['publisher-url.windows-1251']);
 
-		
+
 
 
 		if (!$multi) {
@@ -174,19 +174,19 @@ if($_GET['act'] == 'take') {
 				err("filename error");
 				$ffe = implode("/", $ffa);
 				$filelist[] = array($ffe, $ll);
-				
+
 				if ($ffe == 'Thumbs.db'){
 					err($language['default_1'], $language['upload_44'] , 1);
 				}
-			
+
 			}
 			$type = 'multi';
 		}
-		
+
 
 		//Инфохеш
 		$infohash = sha1($info["string"]);
-		
+
 		//Обновление
 		$update[] = 'infohash="'.$db->safesql($infohash).'"';
 		$update[] = 'filename = "'.$db->safesql($fname).'"';
@@ -194,9 +194,9 @@ if($_GET['act'] == 'take') {
 		$update[] = 'multi = "'.$multi.'"';
 		$update[] = 'num_files = "'.count($filelist).'"';
 		$update[] = 'type = "'.$type.'"';
-		
-		
-		
+
+
+
 	}
 
 	/*
@@ -219,7 +219,7 @@ if($_GET['act'] == 'take') {
 	Описание
 	===================================
 	*/
-	//Имя 
+	//Имя
 	$name = trim($_POST['name']);
 	if($arr['name'] != $name) {
 		if(empty($name) ) {
@@ -228,12 +228,12 @@ if($_GET['act'] == 'take') {
 		$update[] = 'name="'.$db->safesql($name).'"';
 	}
 
-	//Описание 
+	//Описание
 	$descr = $_POST['descr'];
-	
+
 	// die(print_r($_REQUEST));
-	
-	
+
+
 	if($arr['descr'] != $descr) {
 		if(empty($descr) ) {
 			err($language['default_1']  , $language['upload_26'] , 1);
@@ -261,12 +261,12 @@ if($_GET['act'] == 'take') {
 
 
 	if (!($_FILES['image']['name'][$x] == "")) {
-		
+
 			//Проверяем тип обложки
 			if (!array_key_exists($_FILES['image']['type'], $allowed_types) ) {
 				err($language['default_1'] , $language['upload_27'] , 1);
 			}
-			
+
 			if (!preg_match('/^(.+)\.(jpg|jpeg|png|gif)$/si', $_FILES['image']['name']) ) {
 				err($language['default_1'] , $language['upload_28'] , 1);
 			}
@@ -293,12 +293,12 @@ if($_GET['act'] == 'take') {
 			if (!$copy) {
 				err($language['default_1'] , $language['upload_30'] , 1);
 			}
-		
+
 			$image = $ifilename;
-			
+
 			$update[] = 'image="'.$db->safesql($image).'"';
 
-	} 
+	}
 
 
 	/*
@@ -349,7 +349,7 @@ if($_GET['act'] == 'take') {
 
 	}
 
-	//Теги 
+	//Теги
 	$tags = trim($_POST['tags']);
 	if($arr['tags'] != $tags) {
 		$update[] = 'tags="'.$db->safesql($tags).'"';
@@ -400,7 +400,7 @@ if($_GET['act'] == 'take') {
 	}
 
 	//Создаем информацию о торренте
-	if(!empty($fname) ) {	
+	if(!empty($fname) ) {
 		$db->query("DELETE FROM files WHERE id_torrent=".$id); //Удаляем старые данные
 		foreach ($filelist as $file) {
 			$db->query("INSERT INTO files (id_torrent, filename, size) VALUES (".$id.", '".$db->safesql($file[0])."', '".$file[1]."')");
@@ -412,7 +412,7 @@ if($_GET['act'] == 'take') {
 		move_uploaded_file($tmpname, 'public/downloads/torrents/'.$id.'.torrent');
 	}
 
-	
+
 
 
 	//Удаляем старые данные шаблона
@@ -420,16 +420,16 @@ if($_GET['act'] == 'take') {
 		foreach($descr_array AS  $this_val => $this_name)  {
 			$delete[] = $this_val.'=""';
 		}
-		
+
 		$db->query("UPDATE torrents SET ".implode(',' , $delete)." WHERE id=".$id);
 	}
 
 
 	//Добавляем локальные трекеры
 	if(!empty($fname) ) {
-		//Сначала удаляем старые 
+		//Сначала удаляем старые
 		$db->query("DELETE FROM trackers WHERE torrent=".$id);
-		
+
 		//Добавляем новые
 		$db->query("INSERT INTO trackers (torrent,tracker) VALUES ('".$id."','localhost')");
 
@@ -492,7 +492,7 @@ if($_GET['act'] == 'delete') {
 	echo '<input type="button" value="'.$language['upload_38'].'" onClick="window.location.href=\'edit.php?act=delete&id='.$id.'&take=1\'"> ';
 	echo '<input type="button" value="'.$language['default_5'].'" onClick="history.go(-1)">';
 	foot();
-	die();	
+	die();
 }
 
 
@@ -516,7 +516,7 @@ begin_frame($language['edit_3']);
 <script type="text/javascript">
 	$(document).ready(function(){
 		$("#from").tagTo("#tags");
-	});	
+	});
 </script>
 
 
@@ -543,7 +543,7 @@ begin_frame($language['edit_3']);
      <span class="grey"><?=$language['upload_5'];?>:</span>
     </td>
     <td style="padding: 0px;">
-	 <input type="file" name="image" style="margin: 0px;" size="25" class="inputText"> <?=($arr['image'] ? '<a href="edit.php?id='.$id.'&act=delete_image"><small>Удалить</small></a>' : '');?> 
+	 <input type="file" name="image" style="margin: 0px;" size="25" class="inputText"> <?=($arr['image'] ? '<a href="edit.php?id='.$id.'&act=delete_image"><small>Удалить</small></a>' : '');?>
 	 <br><small><?=sprintf($language['upload_6'] , mksize($config['max_size_image']));?></small>
     </td><td>
    </td></tr>
@@ -560,7 +560,7 @@ begin_frame($language['edit_3']);
 		<input type="file" name="screenshot[]" size="25"> <?=($arr['screen_4'] ? '<a href="edit.php?id='.$id.'&act=delete_screen&screen=4"><small>Удалить</small></a>' : '');?> <br>
     </td><td>
    </td></tr>
-  
+
 <?
 $cache_result = categories_array();
 foreach ($cache_result AS $cat) {
@@ -585,7 +585,7 @@ foreach ($cache_result AS $cat) {
     </td>
     <td style="padding: 0px;">
      <input type="text" style="margin: 0px;" size="50%"  name="name" class="inputText" value="<?=htmlspecialchars($arr['name']);?>">
-	
+
     </td><td>
    </td></tr>
 
@@ -600,26 +600,26 @@ foreach ($cache_result AS $cat) {
      <span class="grey"><?=$language['upload_12'];?>:</span>
     </td>
     <td style="padding: 0px;">
-    <input type="text" name="tags" id="tags" size="70" value="<?=htmlspecialchars($arr['tags']);?>"> 
+    <input type="text" name="tags" id="tags" size="70" value="<?=htmlspecialchars($arr['tags']);?>">
 	<?
 	///////////////////////////////////////////////////////////
 	//Теги
 	///////////////////////////////////////////////////////////
-	
+
 	$tags = taggenrelist($arr['id_category']);
-	
+
 	$tags_echo .= '<div id="from">';
 	if (!$tags) {
-		$tags_echo .=  '<small>'.$language['upload_13'].'</small>';	
-	}	
+		$tags_echo .=  '<small>'.$language['upload_13'].'</small>';
+	}
 	else {
 		foreach ($tags as $row)
 			$tags_echo .= "<a href='#'>" . htmlspecialchars($row["name"]) . "</a>\n";
 	}
-	$tags_echo .= "</div>\n";	
-	
+	$tags_echo .= "</div>\n";
+
 	msg_ajax($tags_echo , (!$tags ? 'ajaxerror' : 'ajaxsuccess'));
-	?>	
+	?>
     </td><td>
    </td></tr>
 
@@ -632,8 +632,8 @@ foreach ($cache_result AS $cat) {
 		<input type="checkbox" name="multi" value="1" <?=($arr['multi'] ? 'checked' : '');?>/>&nbsp<?=$language['upload_15'];?>
     </td><td>
    </td></tr>
-   
-  <tr> 
+
+  <tr>
       <td class="ta_r">
      <span class="grey"><?=$language['upload_16'];?>:</span>
     </td>
@@ -641,37 +641,37 @@ foreach ($cache_result AS $cat) {
 		<input type="text" name="video_vkontakte" value="<?=htmlspecialchars($arr['video_vkontakte']);?>" size="70"/>
 		<br> <small><br><?=$language['upload_17'];?></small>
     </td><td>
-   </td></tr> 
-   
-  
+   </td></tr>
+
+
  <?
  if($PRIV['edit_news']) { ?>
-   <tr> 
+   <tr>
       <td class="ta_r">
      <span class="grey"><?=$language['upload_39'];?>:</span>
     </td>
     <td style="padding: 0px;">
 		<input type="checkbox" value="1" name="news"  <?=($arr['news'] ? 'checked' : '');?>/>&nbsp<?=$language['upload_40'];?>
-		
+
     </td><td>
-   </td></tr> 
- 
- <? } ?> 
- 
-   
+   </td></tr>
+
+ <? } ?>
+
+
  <?
  if($PRIV['edit_banned'] && $arr['id_user'] != $USER['id']) { ?>
-   <tr> 
+   <tr>
       <td class="ta_r">
      <span class="grey"><?=$language['upload_42'];?>:</span>
     </td>
     <td style="padding: 0px;">
 		<input type="checkbox" value="1" name="banned"  <?=($arr['banned'] ? 'checked' : '');?>/>&nbsp<?=$language['upload_43'];?>
-		
+
     </td><td>
-   </td></tr> 
- 
- <? } ?> 
+   </td></tr>
+
+ <? } ?>
 
 
 <tr>

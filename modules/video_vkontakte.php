@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Видео ВКонтакте
 ===================================================================
@@ -15,11 +15,11 @@ if (false === ($video_cache = $memcache->get('video_vkontakte')))
 	$video_cache = array();
 
 	while ($cache_data = $db->get_row() )
-		$video_cache[] = $cache_data;	
-	
+		$video_cache[] = $cache_data;
+
 	//Ставим кеш на 24 часа
 	$memcache->set('video_vkontakte', $video_cache , 0, 24*60*60);
-	
+
 }
 
 if($video_cache) {

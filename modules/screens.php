@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Скриншоты(для главной и для деталей)
 ===================================================================
@@ -25,7 +25,7 @@ for(;$i <= 4 ;$i++ ) {
 	}else {
 		$file = htmlspeialchars($arr['screen_'.$i]);
 	}
-	  $screens[] =  ' <li class="gallery"> <a rel="lightbox-tour" href="'.$file.'" title="Скриншот №'.$i.'"><img src="'.$file.'" alt="" width="200" height="150" /></a></li>';  
+	  $screens[] =  ' <li class="gallery"> <a rel="lightbox-tour" href="'.$file.'" title="Скриншот №'.$i.'"><img src="'.$file.'" alt="" width="200" height="150" /></a></li>';
 	}
 }
 
@@ -37,7 +37,7 @@ if(count($screens) ) {
 	end_frame();
 	echo '
 	<script type="text/javascript">
-	
+
 		$("#gallery_'.$id.' a").lightbox();
 		$.Lightbox.construct({
 			"speed": 500,
@@ -72,7 +72,7 @@ if(count($screens) ) {
 				}
 			}
 		});
-	
+
 	</script>';
 }
 ?>

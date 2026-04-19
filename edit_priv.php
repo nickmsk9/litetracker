@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Редактирование классами
 ===================================================================
@@ -28,7 +28,7 @@ if(!$PRIV['EDIT_PRIV']) {
 if($_GET['act'] == 'location') {
 	//Обработка
 	if($_POST) {
-		
+
 		//Из категории
 		$location_1 = (int)$_POST['location_1'];
 		if(!$location_1) {
@@ -39,31 +39,31 @@ if($_GET['act'] == 'location') {
 		if(!$location_2) {
 			err($language['default_1'] ,   'Выберете куда будут перемещаться пользователи' , 1);
 		}
-		
+
 		//Выполняем перемещение, если категории не равны
 		if($location_1 != $location_2) {
 			$db->query("UPDATE users SET class=".$location_2." WHERE class=".$location_1);
 		}
-				
+
 		header("Location:edit_priv.php?status=3");
 		die();
 	}
-	
-	
+
+
 	//Обший вид
 	head('Перемещение пользователей');
 	begin_frame('Перемещение пользователей');
-	
+
 	//Создаем массив с категориями
 	$db->query("SELECT * FROM priv");
 	$row = array();
-	while($get_row = $db->get_row() ) 
+	while($get_row = $db->get_row() )
 		$row[] = $get_row;
-	
-	
-	
+
+
+
 	echo msg('Вы можете переместить пользователей из одной категории в другую');
-	
+
 	echo '<form action="edit_priv.php?&act=location" method="POST">';
 	echo '<select name="location_1">';
 	echo '<option value="0">(Из класса)</option>';
@@ -71,7 +71,7 @@ if($_GET['act'] == 'location') {
 		echo '<option value="'.$arr['id'].'">'.htmlspecialchars($arr['NAME']).'</option>';
 	}
 	echo '</select>';
-	
+
 	echo '<select name="location_2">';
 	echo '<option value="0">(В класс)</option>';
 	foreach($row AS $arr) {
@@ -96,45 +96,45 @@ if($_GET['act'] == 'delete' && $_GET['id']) {
 	if(!$db->num_rows()) {
 		err($language['default_1'] , 'Данного класса не существует или данный класс нельзя удалить' , 1);
 	}
-	
+
 	if($_POST) {
 		$location = (int)$_POST['location'];
-		
+
 		//Перемещаем торренты
 		if($location > 0) {
 			$db->query("SELECT *  FROM users WHERE class=".$location."");
 			if(!$db->num_rows() ) {
 				err($language['default_1'] , 'Данного класса , куда будем перемещать пользователей не существует' , 1);
 			}
-			
+
 			//Получаем весь список торрентов
 			$db->query("UPDATE users SET class='".$location."' WHERE class=".$id);
-			
+
 		} else {
-			//Удаление всех релизов + удаление всех комментарий 
-			$db->query("DELETE FROM users 
+			//Удаление всех релизов + удаление всех комментарий
+			$db->query("DELETE FROM users
 						WHERE class=".$id);
 		}
-		
+
 		//Удаляем класс
 		$db->query("DELETE FROM priv WHERE id=".$id);
-		
+
 		//Удаляем cache
 		$memcache->delete('priv_'.$id , 0);
-		
+
 		header("Location:edit_priv.php?status=2");
 		die();
 	}
-	
+
 	//Выводим предупреждение
 	head('Удаление класса');
 	begin_frame('Удаление класса');
 	echo 'Вы действительно хотите удалить класс?'.'<br> ';
-	
+
 	echo '<form action="edit_priv.php?id='.$id.'&act=delete" method="POST">';
 	echo '<select name="location">';
 	echo '<option value="0">Удалить класс и всех пользователей</option>';
-	
+
 	$db->query("SELECT * FROM priv");
 	while($arr = $db->get_row() ) {
 		echo '<option value="'.$arr['id'].'">Перенести в класс '.htmlspecialchars($arr['NAME']).'</option>';
@@ -143,8 +143,8 @@ if($_GET['act'] == 'delete' && $_GET['id']) {
 	echo '<input type="submit" value="'.$language['cats_30'].'">&nbsp';
 	echo '<input type="button" value="'.$language['default_5'].'" onClick="history.go(-1);">';
 	echo '</form>';
-	
-	
+
+
 	end_frame();
 	foot();
 	die();
@@ -161,72 +161,72 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		if(!$arr ) {
 			err($language['default_1']  , $language['edit_priv_3'] , 1);
 		}
-		
+
 	}
 	//Обработка
 	if($_POST) {
-	
+
 		//Массив с правами
 		$array = array('faq_moderate'  , 'edit_banned' ,'edit_news' , 'user_add' , 'bad_rating' , 'news_add' ,'upload', 'cats', 'chat_delete', 'chat_view', 'chat_clear',  'comments_edit', 'comments_delete', 'details_banned_view', 'details_view', 'download_torrent', 'download_magnet', 'edit_release', 'messages', 'multitracker_accounts', 'setting_user', 'ip_util', 'profile_view', 'search_query', 'sessions_view', 'sessions_clear', 'users_view' , 'block_moderators' ,  'block_administrators');
 		$update = array();
-		
+
 		//Обрабатываем данные
-		
+
 		//Название
 		$NAME = trim($_POST['NAME']);
 		if(empty($NAME) ) {
-			err($language['default_1']  , 'Введите название класса' , 1);		
+			err($language['default_1']  , 'Введите название класса' , 1);
 		}
-		
+
 		if($arr['NAME'] != $NAME)  {
 			$update[] = 'NAME="'.$db->safesql($NAME).'"';
 		}
-		
-		
+
+
 		//Цвет класса
 		$COLOR = trim($_POST['COLOR']);
 		if(!empty($COLOR) && strlen($COLOR) != 6) {
-			err($language['default_1']  , 'Цвет класса может состоять из 6 символов' , 1);	
+			err($language['default_1']  , 'Цвет класса может состоять из 6 символов' , 1);
 		}
-		
+
 		if($arr['COLOR'] != $COLOR)  {
 			$update[] = 'COLOR="'.$db->safesql($COLOR).'"';
 		}
-		
+
 		//Класс по умолчанию
 		$SIGNUP = (int)$_POST['SIGNUP'];
 		if($arr['SIGNUP'] != $SIGNUP) {
 			$update[] = 'SIGNUP="'.$db->safesql($SIGNUP).'"';
 		}
-		
-		//Перебираем в цикле 
+
+		//Перебираем в цикле
 		foreach($array AS $row) {
 			$_POST[$row] = (int)$_POST[$row];
-			if($_POST[$row] != $arr[$row]) {	
+			if($_POST[$row] != $arr[$row]) {
 					$update[] = $row.'='.$_POST[$row];
 			}
 		}
-		
-		//Время создания 
+
+		//Время создания
 		if($_GET['act'] == 'add') {
 			$update[] = 'DATE = NOW()';
 		}
-		
+
 		//Добавляем / Обновляем данные
 		if($_GET['act'] == 'add' && count($update) ) {
 			$db->query("INSERT INTO priv SET ".implode(',' , $update));
 		} elseif($_GET['act'] == 'edit' && count($update) )  {
-			$db->query("UPDATE priv SET ".implode(',' , $update)." WHERE id=".$id);	
+			$db->query("UPDATE priv SET ".implode(',' , $update)." WHERE id=".$id);
 		}
-		
+
 		//Удаляем cache
 		$memcache->delete('priv_'.$id , 0);
-		
+
 		//Перенаправление
 		header('Location:edit_priv.php?status=1');
 		die();
 	}
-	
+
 	$title = ($_GET['act'] == 'add' ? 'Добавление класса' : 'Редактирование класса');
 	head($title);
 	begin_frame($title);
@@ -234,15 +234,15 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 	<form action="edit_priv.php?act=<?=($_GET['act'] == 'add' ? 'add' : 'edit');?>&id=<?=$id;?>" method="post">
 	<table width="80%"  cellspacing="7" cellpadding="0" border="0"  align="center">
 	<tbody>
-	
+
 	 <tr>
 		<td class="ta_r" valign="top" colspan="2">
 		 <span class="grey" ><b>Общее</b></span>
 		</td>
-		</tr> 
-	   
-	   
-	   
+		</tr>
+
+
+
 	<tr>
 		<td class="ta_r">
 		 <span class="grey">Название класса:</span>
@@ -252,8 +252,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		</td><td>
 	   </td>
 	 </tr>
-	 
-	 
+
+
 		<tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Цвет класса:</span>
@@ -263,7 +263,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<br><small>К примеру: 000000 . Коды вы можете найти <A href="http://35rus.ru/htmlcolor.php" target="_blank">здесь</a></small>
 		</td><td>
 	   </td></tr>
-	   
+
 	   <tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Класс по умолчанию:</span>
@@ -273,14 +273,14 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>При регистрации , все пользователи будут добавляться в данный класс . Такой класс может быть только один</small>
 		</td><td>
 	   </td></tr>
-	   
-	
+
+
 	<tr>
 		<td class="ta_r" valign="top" colspan="2">
 		 <span class="grey" ><b>Релизы</b></span>
 		</td>
-	</tr> 
-	   
+	</tr>
+
 	   	<tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Загружать релизы:</span>
@@ -290,8 +290,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>Возможность загружать релизы</small>
 		</td><td>
 	   </td></tr>
-	   
-	      
+
+
 		<tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Просмотр релизов:</span>
@@ -300,8 +300,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="details_view" value="1" <?=($arr['details_view'] ? 'checked' : '');?> \>
 			<small>Возможность просматривать релизы</small>
 		</td><td>
-	   </td></tr>	 
-	   
+	   </td></tr>
+
 	   	<tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Видеть забанненые релизы:</span>
@@ -311,8 +311,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>Возможность видеть забанненые релизы</small>
 		</td><td>
 	   </td></tr>
-	   
-	   
+
+
 		<tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Редактировать релизы:</span>
@@ -331,9 +331,9 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="edit_news" value="1" <?=($arr['edit_news'] ? 'checked' : '');?> \>
 			<small>Возможность делать релизы новинкой</small>
 		</td><td>
-	   </td></tr>	   
-	   
-	   
+	   </td></tr>
+
+
 	   	<tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Банить релизы:</span>
@@ -342,7 +342,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="edit_banned" value="1" <?=($arr['edit_banned'] ? 'checked' : '');?> \>
 			<small>Возможность банить релизы, закрывать к ним доступ</small>
 		</td><td>
-	   </td></tr>	
+	   </td></tr>
 
 	<tr>
 		<td class="ta_r" valign="top">
@@ -354,15 +354,15 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		</td><td>
 	  </td></tr>
 
-	  
-	
-	  
-	  
+
+
+
+
 	 	<tr>
 		<td class="ta_r" valign="top" colspan="2">
 		 <span class="grey" ><b>Чат</b></span>
 		</td>
-	</tr> 
+	</tr>
 	<tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Удалять сообщения в чате:</span>
@@ -382,8 +382,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>Возможность видеть и писать в чате</small>
 		</td><td>
 	   </td></tr>
-	   
-	   
+
+
 		<tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Очистка чата:</span>
@@ -392,7 +392,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="chat_clear" value="1" <?=($arr['chat_clear'] ? 'checked' : '');?> \>
 			<small>Возможность выполнять очистку чата</small>
 		</td><td>
-	   </td></tr>	
+	   </td></tr>
 
 
 		<!--
@@ -406,16 +406,16 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		</td><td>
 	   </td></tr>	-->
 
-	   
-	   
+
+
 		<tr>
 		<td class="ta_r" valign="top" colspan="2">
 		 <span class="grey" ><b>Комментарии</b></span>
 		</td>
-		</tr> 
-	   
-	   
-	   
+		</tr>
+
+
+
 		<tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Редактировать комментарии:</span>
@@ -424,7 +424,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="comments_edit" value="1" <?=($arr['comments_edit'] ? 'checked' : '');?> \>
 			<small>Возможность редактировать чужые комментарии</small>
 		</td><td>
-	   </td></tr>	
+	   </td></tr>
 
 		<tr>
 		<td class="ta_r" valign="top">
@@ -434,17 +434,17 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="comments_delete" value="1" <?=($arr['comments_delete'] ? 'checked' : '');?> \>
 			<small>Возможность удалять чужые комментарии</small>
 		</td><td>
-	   </td></tr>	 
+	   </td></tr>
 
-		
-	 
+
+
 		<tr>
 		<td class="ta_r" valign="top" colspan="2">
 		 <span class="grey" ><b>Скачевание</b></span>
 		</td>
-		</tr> 
-	   
-	   
+		</tr>
+
+
 
 		<tr>
 		<td class="ta_r" valign="top">
@@ -463,17 +463,17 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="download_magnet" value="1" <?=($arr['download_magnet'] ? 'checked' : '');?> \>
 			<small>Возможность скачивать релизы через magnet</small>
 		</td><td>
-	   </td></tr>	  
-   
-	    
+	   </td></tr>
+
+
 		<tr>
 		<td class="ta_r" valign="top" colspan="2">
 		 <span class="grey" ><b>Утилиты</b></span>
 		</td>
-		</tr> 
-	   
-	   
-	   
+		</tr>
+
+
+
 		<tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Массовая рассылка:</span>
@@ -482,7 +482,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="messages" value="1" <?=($arr['messages'] ? 'checked' : '');?> \>
 			<small>Возможность организовывать массовую рассылку</small>
 		</td><td>
-	   </td></tr>	
+	   </td></tr>
 
 		<tr>
 		<td class="ta_r" valign="top">
@@ -492,7 +492,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="multitracker_accounts" value="1" <?=($arr['multitracker_accounts'] ? 'checked' : '');?> \>
 			<small>Возможность просматривать мультрекерные аккаунты</small>
 		</td><td>
-	   </td></tr>	  
+	   </td></tr>
 
 			<tr>
 		<td class="ta_r" valign="top">
@@ -502,8 +502,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="setting_user" value="1" <?=($arr['setting_user'] ? 'checked' : '');?> \>
 			<small>Возможность редактировать чужые аккаунты</small>
 		</td><td>
-	   </td></tr>	
-	  
+	   </td></tr>
+
 		<tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >IP - утилиты:</span>
@@ -513,8 +513,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>Возможность пользоваться IP-утилитами</small>
 		</td><td>
 	   </td></tr>
-	   
-	   
+
+
 	      <tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Мониторинг поиска:</span>
@@ -524,7 +524,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>Возможность пользоваться мониторингом поиска</small>
 		</td><td>
 	   </td></tr>
-	   
+
 	    <tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Просмотр сессий:</span>
@@ -534,8 +534,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>Возможность просматривать сессии пользователей</small>
 		</td><td>
 	   </td></tr>
-	   
-	   
+
+
 	   <tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Очистка сессий:</span>
@@ -545,8 +545,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>Возможность очищать сессии пользователей</small>
 		</td><td>
 	   </td></tr>
-	   
-	   
+
+
 	     	   <tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Управление новостями:</span>
@@ -555,8 +555,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="news_add" value="1" <?=($arr['news_add'] ? 'checked' : '');?> \>
 			<small>Возможность добавлять, удалять , редактировать новости</small>
 		</td><td>
-	   </td></tr> 
-	   
+	   </td></tr>
+
 	   <tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Добавление пользователя:</span>
@@ -565,8 +565,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="user_add" value="1" <?=($arr['user_add'] ? 'checked' : '');?> \>
 			<small>Позможность добавить нового пользователя</small>
 		</td><td>
-	   </td></tr> 
-	   
+	   </td></tr>
+
 	   <tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Управление FAQ:</span>
@@ -575,16 +575,16 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="faq_moderate" value="1" <?=($arr['faq_moderate'] ? 'checked' : '');?> \>
 			<small>Возможность создавать , удалять , редактировать темы FAQ</small>
 		</td><td>
-	   </td></tr> 
-	   
-	   
+	   </td></tr>
+
+
 		<tr>
 		<td class="ta_r" valign="top" colspan="2">
 		 <span class="grey" ><b>Профиль</b></span>
 		</td>
-		</tr> 
-	   
-	   
+		</tr>
+
+
 	   <tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Просмотр профилей:</span>
@@ -594,8 +594,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>Возможность просматривать профили пользователей</small>
 		</td><td>
 	   </td></tr>
-	  
-	   
+
+
 	   <tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Просмотр участников:</span>
@@ -605,9 +605,9 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>Возможность просматривать участников</small>
 		</td><td>
 	   </td></tr>
-	   
-	
-	   
+
+
+
 	      <tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Плохой рейтинг:</span>
@@ -616,17 +616,17 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="bad_rating" value="1" <?=($arr['bad_rating'] ? 'checked' : '');?> \>
 			<small>Банить аккаунт, если у пользователя плохой рейтинг</small>
 		</td><td>
-	   </td></tr> 
-	   
-		
-	   
-	   
+	   </td></tr>
+
+
+
+
 	   <tr>
 		<td class="ta_r" valign="top" colspan="2">
 		 <span class="grey" ><b>Блоки</b></span>
 		</td>
-		</tr> 
-	   
+		</tr>
+
 	   <tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Модераторские блоки:</span>
@@ -635,8 +635,8 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<input type="checkbox" name="block_moderators" value="1" <?=($arr['block_moderators'] ? 'checked' : '');?> \>
 			<small>Видит модераторские блоки</small>
 		</td><td>
-	   </td></tr> 
-	   
+	   </td></tr>
+
 	   <tr>
 		<td class="ta_r" valign="top">
 		 <span class="grey" >Административные блоки:</span>
@@ -646,7 +646,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>Видит административные блоки</small>
 		</td><td>
 	   </td></tr>
-	 
+
 	   	<tr>
 		<td class="ta_r">
 		 <span class="grey"></span>
@@ -655,10 +655,10 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		 <input type="submit" value="<?=($_GET['act'] == 'add' ? 'Добавить' : 'Редактировать');?>">
 		</td><td>
 	   </td></tr>
-	   
-	   
-		
-	  
+
+
+
+
 	</tbody>
 	</table>
 	</form>
@@ -675,9 +675,9 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 
 
 $sql = $db->query("SELECT p.*  , COUNT(u.class) AS count
-				FROM priv  AS p 
+				FROM priv  AS p
 				LEFT JOIN users AS u ON u.class = p.id
-				WHERE p.id > 0 
+				WHERE p.id > 0
 				GROUP BY p.id DESC
 				ORDER BY p.id DESC");
 if(!$db->num_rows($sql)) {
@@ -702,19 +702,19 @@ echo '<input type="button" value="Права для гостей" onClick="windo
 echo '<table width="100%" cellpadding="3" class="tt">';
 while($arr = $db->get_row($sql) ) {
 		echo '<tr>';
-		
+
 		echo '<td width="1%" align="center">';
 		echo '<A href="users.php?class='.$arr['id'].'"><img src="public/images/users__arrow.png" border="0" title="Перейти к списку пользователей"></a>';
 		echo '</td>';
-		
+
 		echo '<td width="50%">';
 		echo '<A href="edit_priv.php?id='.$arr['id'].'&act=edit">'.htmlspecialchars($arr['NAME']).'</a> <div style="float:right"><small>Создана '.convent_date($arr['DATE']).'</small></div>';
 		echo '</td>';
-		
+
 		echo '<td width="15%">';
 		echo $arr['count'].' пользователей';
 		echo '</td>';
-		
+
 		echo '<td align="center">';
 		echo '<input type="button" value="Редактировать" onCLick="window.location.href=\'edit_priv.php?id='.$arr['id'].'&act=edit\'">&nbsp';
 		echo '<input type="button" value="Удалить" onCLick="window.location.href=\'edit_priv.php?id='.$arr['id'].'&act=delete\'">';

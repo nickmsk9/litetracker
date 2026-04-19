@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Мониторинг поиска
 ===================================================================
@@ -28,16 +28,16 @@ if($_GET['send'] && $_GET['id']) {
 		err('Ошибка' , 'Данная заявка не найдена' , 1);
 	}
 	$arr = $db->get_row();
-	
+
 	$name = 'Вы искали '.$arr['text'].'';
 	$text = convent_date($arr['last_date']).' вы искали : [b]'.$arr['text'].'[/b]
-			
+
 			Ваша ссылка: [url=browse.php?search='.urlencode($arr['text']).']'.$_SERVER['HTTP_HOST'].'/browse.php?search='.urlencode($arr['text']).'[/url]';
 	send_msg($name , $text , $arr['id_user'] , 0);
-	
+
 	//Оповещенная заявка
 	$db->query("UPDATE search_query SET sended='1' WHERE id=".$id);
-	
+
 	header("Location:search_query.php?status=1");
 	die();
 }
@@ -48,14 +48,14 @@ if($_GET['clean'] && $PRIV['EDIT_PRIV']) {
 	//Удаляем все записи
 	$db->query("DELETE FROM search_query");
 }
-	
-//Задаем выборку и параметры для GET запроса	
+
+//Задаем выборку и параметры для GET запроса
 $to_where = array();
 $to_param = array();
 if($_GET['dead']) {
 	$to_where[] = 's.num_torrents = 0';
 	$to_param[] = 'dead=1';
-}	
+}
 
 if(count($to_where) ) {
 	$where = 'WHERE '.implode(' AND ' , $to_where);
@@ -64,7 +64,7 @@ if(count($to_param)) {
 	$param = implode('&' , $to_param).'&';
 }
 
-//Вывод результата	
+//Вывод результата
 head('Мониторинг поиска' , true);
 
 if(empty($_GET['status']) ) {
@@ -104,7 +104,7 @@ if($db->num_rows()) {
 	<?
 	while($arr = $db->get_row() ) {
 		echo '<tr>';
-		
+
 		echo '<td><a href="'.profile_href($arr['id_user']).'">'.get_user_color($arr['class'] , $arr['name']).'</a></td>';
 		echo '<td><a href="browse.php?search='.htmlspecialchars($arr['text']).'">'.htmlspecialchars($arr['text']).'</a></td>';
 		echo '<td>'.convent_date($arr['last_date']).'</td>';
@@ -112,13 +112,13 @@ if($db->num_rows()) {
 		echo '<td>'.($arr['num_torrents'] > 0 ? '<font color="green"><b>'.$arr['num_torrents'].'</b></font>' : '<font color="red"><b>'.$arr['num_torrents'].'</b></font>').'</td>';
 		echo '<td>'.($arr['sended'] == 1 ? 'Да': 'Нет').'</td>';
 		echo '<td><input type="button" value="Оповестить" onCLick="window.location.href=\'search_query.php?send=1&id='.$arr['id'].'\'"></td>';
-		
+
 		echo '</tr>';
 	}
 	?>
 	</table>
 	<?
-	
+
 	echo $pagertop;
 } else
 	msg('Ошибка' , 'Мониторинг поиска пуст');

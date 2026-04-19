@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////
-//GrabberInfo 
-//Powered by jenaDI
+//GrabberInfo
+//Powered by Nick
 ////////////////////////////////////////////////////
 
 //Start Grabber
@@ -8,16 +8,16 @@ function startGrabberInfo()
 {
 	//Определяем название
 	var name  = $("input[name$='name']").val();
-	
+
 	//Определяем описание
 	var descr  = $("#descr").val();
 	if(name == '' && descr != '')
 	{
 		return false;
 	}
-	
-	
-	
+
+
+
 	//ajax request
 	$.ajax({
 		url: 'upload.grabber.php',  //url  take file
@@ -26,7 +26,7 @@ function startGrabberInfo()
 		data: {'name' : name}, //Данные
 		cache:false,
 		beforeSend: function(){
-				$("#loadGrabber").html("<img src=\"images/load.gif\" alt=\"Загрузка\">"); //Загрузка 
+				$("#loadGrabber").html("<img src=\"images/load.gif\" alt=\"Загрузка\">"); //Загрузка
 		},
 		error: function(){
 				$("#loadGrabber").empty(); //Убираем загрузку
@@ -35,11 +35,11 @@ function startGrabberInfo()
 		success: function(data) {
 				$("#loadGrabber").empty(); //Убираем загрузку
 				$("#resultGrabber").show('slow');
-				$("#resultGrabber").html(data); //Выводим результат	
-					
-		}, 
+				$("#resultGrabber").html(data); //Выводим результат
+
+		},
 	});
-	
+
 }
 
 //Checked Start
@@ -47,38 +47,38 @@ function checkStart(type)
 {
 	//Определяем название
 	var name  = $("input[name$='name']").val();
-	
+
 	//Определяем описание
 	var descr  = $("#descr").val();
-	
+
 	//Проверяем имя и описание
 	if(name == '' && descr != '')
 	{
 		return false;
 	}
-	
-	//Выводим предложение 
+
+	//Выводим предложение
 	if(type == null)
 	{
 		$("#resultGrabber").html('Найти описание <input type="button" value="Да" onClick="checkStart(\'yes\');"> <input type="button" value="Нет" onClick="checkStart(\'no\');">');
 		$("#resultGrabber").show('slow');
 		return;
-	}	
-	
-	//Да 
+	}
+
+	//Да
 	if(type == 'yes')
 	{
 		$("#resultGrabber").hide('slow');
 		$("#resultGrabber").empty();
 		startGrabberInfo();
 		return;
-	}	
-	
-	//Нет 
+	}
+
+	//Нет
 	if(type == 'no')
 	{
 		$("#resultGrabber").hide('slow');
 		$("#resultGrabber").empty();
 		return;
-	}	
+	}
 }

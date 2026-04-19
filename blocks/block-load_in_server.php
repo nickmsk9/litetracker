@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Нагрузка на сервер
 ===================================================================
@@ -16,13 +16,13 @@ if (false === ($load_in_server = $memcache->get('load_in_server_v2') ) ) {
 			$connected = $db->num_rows($sql);
 
 			$avgload = get_server_load();
-				
+
 			if (strtolower(substr(PHP_OS, 0, 3)) != 'win') {
 				$percent = $avgload * 4;
 			}else {
 				$percent = $avgload;
-			}	
-				
+			}
+
 			$state = ($percent <= 50 ? 'green' : ($percent <= 70 ? 'yellow' : 'red'));
 			$percent_label = max(0, min(100, round($percent)));
 			$load_in_server = '<div class="load-widget">'

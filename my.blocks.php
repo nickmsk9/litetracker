@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Мои сообщения
 ===================================================================
@@ -15,7 +15,7 @@ require 'system/init.php';
 //Проверяем пользователя
 is_login();
 
-if(!$config['blocks_use']) { 
+if(!$config['blocks_use']) {
 	err('Ошибка'  , 'На нашем сайте не используются блоки');
 }
 
@@ -30,7 +30,7 @@ if($_POST) {
 	//хак от wennet'a
 	$domain = $_SERVER['HTTP_HOST'];
 	if ( strtolower( substr($domain, 0, 4) ) == 'www.' )
-		$domain = substr($domain, 4);	// Fix the domain to accept domains with and without 'www.'. 
+		$domain = substr($domain, 4);	// Fix the domain to accept domains with and without 'www.'.
 	if ( substr($domain, 0, 1) != '.' )
 		$domain = '.'.$domain;	// Add the dot prefix to ensure compatibility with subdomains
 
@@ -39,13 +39,13 @@ if($_POST) {
 		// die($value);
 		// $value = ($value == 0 ? 0 : 1);
 		//Перезаписываем cookies
-		setcookie('block_'.$id, $value, 0x7fffffff, "/" , $domain); 
+		setcookie('block_'.$id, $value, 0x7fffffff, "/" , $domain);
 		$_COOKIE['block_'.$id] = $value;
 	}
-	
+
 	header('Location:my.blocks.php');
 	die();
-}	
+}
 
 
 
@@ -62,7 +62,7 @@ $sql = $db->query("SELECT * FROM orbital_blocks WHERE active = '1' ORDER BY posi
 
 if(!$db->num_rows($sql)) {
 	msg('Извините' , 'Но блоков на трекере не найдено');
-}	else { 
+}	else {
 	?>
 	<form action="my.blocks.php" method="post">
 	<table width="50%">
@@ -75,8 +75,8 @@ if(!$db->num_rows($sql)) {
 	while($arr = $db->get_row($sql)  ) {
 		if($arr['type'] == 'guests' or ($arr['type'] == 'moderators' && $PRIV['block_moderators']) or ($arr['type'] == 'administrators' && $PRIV['block_administrators']) ) {
 			continue;
-		}	
-		
+		}
+
 		?>
 		<tr>
 			<td width="1%">
@@ -92,19 +92,19 @@ if(!$db->num_rows($sql)) {
 					case 'l':
 						echo 'Слева';
 					break;
-					
+
 					case 'r':
 						echo 'Справа';
 					break;
-					
+
 					case 'c':
 						echo 'По центру вверху';
 					break;
-					
+
 					case 'd':
 						echo 'По центру снизу';
 					break;
-					
+
 					default:
 						echo 'Неизвестно';
 					break;

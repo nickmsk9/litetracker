@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Главная файл
 ===================================================================
@@ -60,7 +60,7 @@ require __DIR__ . '/classes/class.phpmailer.php';
 */
 
 
-//Сжатие 
+//Сжатие
 gzip();
 
 
@@ -84,12 +84,12 @@ $memcache = lt_create_cache_driver();
 
 //Cron system
 if (false === ($CRON = $memcache->get('CRON'))) {
-	$sql = $db->query("SELECT * FROM cron");	
+	$sql = $db->query("SELECT * FROM cron");
 	$CRON = array();
 	while($cron  = $db->get_row($sql)) {
 		$CRON[$cron['cron_name']] = $cron['cron_value'];
 	}
-	$memcache->set('CRON', $CRON  , 0, 15*60);		
+	$memcache->set('CRON', $CRON  , 0, 15*60);
 }
 
 

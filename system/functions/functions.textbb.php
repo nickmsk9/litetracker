@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Редактор
 ===================================================================
@@ -21,16 +21,16 @@ function textbb($name, $text = '' , $width='95%' , $height = '300px') {
 	<link rel="stylesheet" type="text/css" href="public/markitup/skins/simple/style.css" />
 	<!--  markItUp! toolbar skin -->
 	<link rel="stylesheet" type="text/css" href="public/markitup/sets/bbcode/style.css" />
-	
+
 	<script type="text/javascript">
 	<!--
 	$(document).ready(function()	{
 		// Add markItUp! to your textarea in one line
 		// $('textarea').markItUp( { Settings }, { OptionalExtraSettings } );
 		$('#<?=$name;?>').markItUp(mySettings);
-		
+
 		// You can add content from anywhere in your page
-		// $.markItUp( { Settings } );	
+		// $.markItUp( { Settings } );
 		$('.add').click(function() {
 			$.markItUp( { 	openWith:'<opening tag>',
 							closeWith:'<\/closing tag>',
@@ -39,7 +39,7 @@ function textbb($name, $text = '' , $width='95%' , $height = '300px') {
 					);
 			return false;
 		});
-		
+
 		// And you can add/remove markItUp! whenever you want
 		// $(textarea).markItUpRemove();
 		$('.toggle').click(function() {
@@ -55,7 +55,7 @@ function textbb($name, $text = '' , $width='95%' , $height = '300px') {
 	});
 	-->
 	</script>
-	
+
 	<textarea id="<?=$name;?>" name="<?=$name;?>"  style="width:<?=$width?>;height:<?=$height;?>" ><?=$text;?></textarea>
 	<?php
 }

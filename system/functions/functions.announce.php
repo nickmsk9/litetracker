@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Функционал для анонсера
 ===================================================================
@@ -17,7 +17,7 @@ function get_priv_info($class) {
 		// return false;
 	// }
 	$class = (int)$class;
-	
+
 	//Определяем права пользовател
 	if (false === ($row = $memcache->get('priv_'.$class)))
 	{
@@ -40,7 +40,7 @@ function mksize($bytes)
         return number_format($bytes / 1099511627776, 2) . " TB";
 }
 
-	
+
 /**
  * Checks that user client was not banned. Dies on false
  * @param string $peer_id Peer_id of client
@@ -151,7 +151,7 @@ function emu_getallheaders() {
 }
 
 
-	
+
 function validip($ip) {
 	if (!empty($ip) && $ip == long2ip(ip2long($ip)))
 	{
@@ -175,7 +175,7 @@ function validip($ip) {
 		return true;
 	}
 	else return false;
-}	
+}
 
 function getip() {
 	if (isset($_SERVER)) {
@@ -261,7 +261,7 @@ function sqlesc($value) {
 
 //Определяем ратио
 function get_ratio($uploaded , $downloaded) {
-	
+
 	if($downloaded > 0) {
 		$ratio =  ($uploaded / ($downloaded / 10) / 1);
 		$ratio = number_format($ratio);

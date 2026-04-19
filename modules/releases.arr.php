@@ -3,7 +3,7 @@
 ===================================================================
 LiteTracker Source
 ===================================================================
-by jenaDI
+by Nick
 -------------------------------------------------------------------
 Назначение: Общий вид релизов
 ===================================================================
@@ -27,7 +27,7 @@ $name[] = htmlspecialchars($arr['name']);
 //Год
 if($arr['year'] != 0) {
 	$name[] = htmlspecialchars($arr['year']);
-}	
+}
 //Язык
 if($arr['language'] != '') {
 	$name[] = htmlspecialchars($arr['language']);
@@ -101,12 +101,12 @@ $user_class = $user['class'];
 /////////////////////////////////////////////////////////
 //Раздают
 $seeders = number_format($arr['seeders']);
-//Качают 
+//Качают
 $leechers = number_format($arr['leechers']);
-//Пиры 
+//Пиры
 $peers = number_format($seeders + $leechers);
 
-//Новинка 
+//Новинка
 $news =  ($arr['new_release'] ? 1 : 0);
 
 $banned = ($arr['banned'] ? 1 : 0);
