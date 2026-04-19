@@ -99,26 +99,17 @@ if(!$magnet) {
 
 //Получаем ссылку
 $announce_urls_list = array() ;
-//Добавляем наш трекер
-//Если качает гость , без passkey'я
-/*
+$announceBaseUrl = trim((string) ($config['announce_url'] ?? 'https://localhost:443/announce.php'));
+$localRetrackerUrl = trim((string) ($config['local_retracker_url'] ?? $announceBaseUrl));
+
 if($USER)
-	$announce_urls_list[] = $config['announce_url'].":2710/".$USER['passkey']."/announce";
+	$announce_urls_list[] = $announceBaseUrl.(strpos($announceBaseUrl, '?') === false ? '?' : '&')."passkey=".$USER['passkey'];
 else
-	$announce_urls_list[] = $config['announce_url'].":2710/3d4529daa34f87b958f65cf680c9e879/announce";
-*/
-//Получаем ссылку
-$announce_urls_list = array() ;
-//Добавляем наш трекер
-//Если качает гость , без passkey'я
-if($USER)
-	$announce_urls_list[] = $config['announce_url']."?passkey=".$USER['passkey'];
-else
-	$announce_urls_list[] = $config['announce_url'];
+	$announce_urls_list[] = $announceBaseUrl;
 
 $useLocalRetracker = (!$USER || !isset($USER['download_local_retracker']) || !empty($USER['download_local_retracker']));
-if ($useLocalRetracker) {
-	$announce_urls_list[] = "http://retracker.local/announce";
+if ($useLocalRetracker && $localRetrackerUrl !== '' && !in_array($localRetrackerUrl, $announce_urls_list)) {
+	$announce_urls_list[] = $localRetrackerUrl;
 }
 
 $announce_sql = $db->query("SELECT tracker FROM trackers WHERE torrent='".$id."' AND tracker<>'localhost'");

@@ -32,7 +32,8 @@ $config  = array(
 'project_help_button_href' => '' ,
 
 'registeronline' => 1, //Регистрация открыта
-'announce_url' => (((int) ($_SERVER['SERVER_PORT'] ?? 80) === 443) ? 'https://' : 'http://').htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'localhost', ENT_QUOTES, 'UTF-8').'/announce.php' , //Адрес URL. Не менять , если не знаешь что это такое
+'announce_url' => 'https://localhost:443/announce.php' , //Основной announce URL для новых скачиваемых torrent-файлов
+'local_retracker_url' => 'https://localhost:443/announce.php' , //Локальный retracker для torrent-файлов; при необходимости можно изменить в конфиге
 'announce_interval' => 30*60 ,
 
 'max_size_image' => 5*1024*1024, //Макс размер загружаемой картинки
