@@ -69,14 +69,22 @@ if ($act === 'add') {
     $text_sql = $db->safesql($text);
     $user_id = (int) $USER['id'];
 
-    $insert_sql = "INSERT INTO `{$table_name}` (`id_user`, `{$object_name}`, `date`, `text`)
-                   VALUES ({$user_id}, {$object_id}, NOW(), '{$text_sql}')";
+        $insert_sql = "INSERT INTO `{$table_name}` (`id_user`, `{$object_name}`, `date`, `text`, `id_user_edit`, `date_edit`)
+                   VALUES ({$user_id}, {$object_id}, NOW(), '{$text_sql}', {$user_id}, NOW())";
 
     comment_debug_log('INSERT SQL: ' . $insert_sql);
-    $db->query($insert_sql, 0);
 
-    if (method_exists($db, 'insert_id')) {
-        comment_debug_log('INSERT ID: ' . (int) $db->insert_id());
+    $insert_ok = false;
+    try {
+        $db->query($insert_sql, 0);
+        $insert_ok = true;
+    } catch (Throwable $e) {
+        comment_debug_log('INSERT ERROR: ' . $e->getMessage());
+    }
+
+    if (!$insert_ok) {
+        comment_debug_log('INSERT FAILED');
+        err($language['default_1'], 'Не удалось добавить комментарий. Проверьте comments_debug.log', 1);
     }
 
     if ($type === 'users' && $USER['id'] != $object_id) {

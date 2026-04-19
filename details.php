@@ -1,10 +1,6 @@
 <?php
 /*
 ===================================================================
-LiteTracker Source
-===================================================================
-by jenaDI
--------------------------------------------------------------------
 Назначение: Просмотр релиза
 ===================================================================
 */
@@ -257,19 +253,19 @@ $id = (int)$_GET['id'];
 
 
 //Запрос к таблице torrents
-$db->query("SELECT t.* , SUM(tr.seeders) AS seeders , SUM(tr.leechers) AS leechers , t.multi, 
+$db->query("SELECT t.* , SUM(tr.seeders) AS seeders , SUM(tr.leechers) AS leechers , t.multi,
 			IF((SELECT SUM(seeders) FROM trackers WHERE torrent = t.id AND tracker='localhost' GROUP BY tracker) > 0 , true , false) AS local_seeders
-			FROM torrents AS t			
-			LEFT JOIN trackers AS tr ON  tr.torrent = t.id				
+			FROM torrents AS t
+			LEFT JOIN trackers AS tr ON  tr.torrent = t.id
 			WHERE t.id = '".$id."'
-			GROUP BY t.id 
-			");	
-			
-			
-if(!$db->num_rows() ) {	
+			GROUP BY t.id
+			");
+
+
+if(!$db->num_rows() ) {
 	err($language['default_1'] , $language['details_19'] , 1);
-}		
-	
+}
+
 $arr = $db->get_row();
 
 if($arr['banned'] && !$PRIV['details_banned_view']) {
@@ -281,16 +277,16 @@ if($arr['banned'] && !$PRIV['details_banned_view']) {
 //Информация о файлах
 /////////////////////////////////////////////////////////
 if(isset($_GET['files'])) {
-	
+
 	$sql  = $db->query("SELECT * FROM files WHERE id_torrent  = ".$id." ORDER BY id");
-	if(!$db->num_rows($sql)) { 
+	if(!$db->num_rows($sql)) {
 		err("Ошибка" , "Извините , но наша система не нашла файлов" , 1);
 	}
-	
+
 	head('Информация о файлах' , true);
 	msg('Здесь показаны все файлы  , которые были найдены в торренте' , '<a href="javascript:history.go(-1);">Вернуться к деталям</a>');
 	begin_frame('Информация о файлах');
-	
+
 	//Перебираем в цикле
 	echo '<table width="50%" align="center">';
 	echo '<tr>
@@ -303,7 +299,7 @@ if(isset($_GET['files'])) {
 		</tr>';
 	}
 	echo '</table>';
-	
+
 	end_frame();
 	foot();
 	die();
@@ -317,7 +313,7 @@ if(isset($_GET['peers']) ) {
 	if(!$db->num_rows($sql) ) {
 		err($language['default_1']  , 'Никаких соединений не обнаружено' , 1);
 	}
-	
+
 	head('Информация о соединениях');
 	begin_frame('Информация о соединениях');
 	msg('Здесь показаны все соединение , которые контролирует наш трекер' , '<a href="javascript:history.go(-1);">Вернуться к деталям</a>');
@@ -333,10 +329,10 @@ if(isset($_GET['peers']) ) {
 	<td><b>Клиент</b></td>
 	<td><b>Статус</b></td>
 	</tr>';
-	
+
 	while($row = $db->get_row($sql) ) {
 		$user = get_user_info($row['userid']);
-	
+
 		echo '<tr>';
 		if($PRIV['ip_util']) {
 			echo '<td><a href="ip.util.php?ip='.$row['ip'].'">'.$row['ip'].'</a></td>';
@@ -351,7 +347,7 @@ if(isset($_GET['peers']) ) {
 		echo '<td>'.($row['seeder'] ? '<img src="public/images/up.png">Раздающий' : '<img src="public/images/down.png">Качающий').'</td>';
 		echo '</tr>';
 	}
-	
+
 	echo '</table>';
 	end_frame();
 	foot();
@@ -367,13 +363,13 @@ if(isset($_GET['trackers']) && $arr['multi']) {
 	if(!$db->num_rows($sql) ) {
 		err($language['error_1']  , 'Трекеров не найдено' , 1);
 	}
-	
+
 	head('Информация о трекерах');
 	begin_frame('Информация о трекерах');
 	msg('Данные могут не соответствовать настоящим' , '<a href="javascript:history.go(-1);">Вернуться к деталям</a>');
 	echo '<table>';
 	echo '<tr><td><b>Трекер</b></td><td><b>Раздают</b></td><td><b>Качают</b></td><td><b>Дата обновление</b></td></tr>';
-	
+
 	while($row = $db->get_row($sql) ) {
 		echo '<tr>';
 		echo '<td>'.$row['tracker'].'</td>';
@@ -382,7 +378,7 @@ if(isset($_GET['trackers']) && $arr['multi']) {
 		echo '<td>'.convent_date(get_date_time($row['lastchecked'])).'</td>';
 		echo '</tr>';
 	}
-	
+
 	echo '</table>';
 	end_frame();
 	foot();
@@ -480,9 +476,9 @@ $user_class = $user['class'];
 /////////////////////////////////////////////////////////
 //Раздают
 $seeders = number_format($arr['seeders']);
-//Качают 
+//Качают
 $leechers = number_format($arr['leechers']);
-//Пиры 
+//Пиры
 $peers = number_format($seeders + $leechers);
 
 
@@ -503,7 +499,7 @@ if($USER) {
 
 //Мульти
 if(!empty($arr['video_vkontakte']) ) {
-	
+
 	$video_vkontakte  = '<iframe src="'.htmlspecialchars($arr['video_vkontakte']).'" width="100%" height="360" frameborder="0"></iframe>';
 }
 
@@ -655,7 +651,7 @@ if(!empty($_GET['edit']) && $_GET['edit'] == '1') {
 }
 
 //Подключаем шаблон
-require 'templates/'.$config['template'].'/tpl.details.php';	
+require 'templates/'.$config['template'].'/tpl.details.php';
 
 //Подвал
 stdfoot();
