@@ -15,6 +15,8 @@ if (!$PRIV['profile_view']) {
 	err($language['default_1'], $language['profile_20'], 1);
 }
 
+$profileBonusColumn = (lt_column_exists('users', 'bonus') ? 'bonus' : 'voice');
+
 function profile_normalize_view($view)
 {
 	$view = trim((string) $view);
@@ -257,7 +259,7 @@ if ($profileView === 'bonus' && $canViewBonus && $_SERVER['REQUEST_METHOD'] === 
 			'text' => 'Выберите вариант обмена.',
 		);
 	} else {
-		$currentBonus = (float) ($arr['voice'] ?? 0);
+		$currentBonus = (float) ($arr['bonus'] ?? $arr['voice'] ?? 0);
 		$exchange = profile_calculate_bonus_exchange($selectedOption, $currentBonus, $bonusOptions);
 		$cost = (float) $exchange['cost'];
 		$bytes = (int) $exchange['bytes'];
@@ -273,7 +275,7 @@ if ($profileView === 'bonus' && $canViewBonus && $_SERVER['REQUEST_METHOD'] === 
 				'text' => 'У вас недостаточно бонусов для этого обмена.',
 			);
 		} else {
-			$db->query("UPDATE users SET uploaded = (uploaded + {$bytes}), voice = (voice - {$cost}) WHERE id = {$id}");
+			$db->query("UPDATE users SET uploaded = (uploaded + {$bytes}), {$profileBonusColumn} = GREATEST({$profileBonusColumn} - {$cost}, 0) WHERE id = {$id}");
 			$memcached->delete('user_'.$id, 0);
 			header('Location: '.profile_href($id, 'bonus', array('status' => 'bonus_exchanged')));
 			die();
@@ -352,7 +354,7 @@ $peerStats = $db->super_query(
 );
 
 $profileStats = array(
-	'voice' => (float) ($arr['voice'] ?? 0),
+	'bonus' => (float) ($arr['bonus'] ?? $arr['voice'] ?? 0),
 	'seeders' => (int) ($peerStats['seeders'] ?? 0),
 	'leechers' => (int) ($peerStats['leechers'] ?? 0),
 	'downloaded' => mksize((int) ($arr['downloaded'] ?? 0)),

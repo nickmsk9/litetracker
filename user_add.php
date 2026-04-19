@@ -11,6 +11,8 @@ by Nick
 
 require 'system/init.php';
 
+$userAddBonusColumn = (lt_column_exists('users', 'bonus') ? 'bonus' : 'voice');
+
 if(!$PRIV['user_add']) {
 	err($language['default_1'], $language['user_add_1'], 1);
 }
@@ -53,7 +55,7 @@ if($_POST) {
 		err($language['default_1'], $language['signup_20'], 1);
 	}
 
-	$db->query("INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, voice, website, icq, last_chat, num_messages, num_friends) VALUES ('".$db->safesql($name)."', '', '', '".$passwordHash."', '".$passwordCode."', '".ip2long_db(getip())."', '".$class."', NOW(), NOW(), '', '0', '0', '0', '300', '', '', '0', '0', '0')");
+	$db->query("INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$userAddBonusColumn.", website, icq, last_chat, num_messages, num_friends) VALUES ('".$db->safesql($name)."', '', '', '".$passwordHash."', '".$passwordCode."', '".ip2long_db(getip())."', '".$class."', NOW(), NOW(), '', '0', '0', '0', '300', '', '', '0', '0', '0')");
 	header("Location:user_add.php?status=1");
 	die();
 }

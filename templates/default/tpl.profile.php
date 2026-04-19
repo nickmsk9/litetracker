@@ -132,7 +132,7 @@ if (!defined('LITETRACKER')) {
 
 					<div class="profile-bonus-footer">
 						<button class="profile-card-button" type="submit">Обменять</button>
-						<div class="profile-bonus-available">Доступно для обмена: <strong><?=template_format_number($profileStats['voice']);?> бонусов</strong></div>
+						<div class="profile-bonus-available">Доступно для обмена: <strong><?=template_format_number($profileStats['bonus']);?> бонусов</strong></div>
 					</div>
 
 					<input type="hidden" name="act" value="exchange_bonus">
@@ -155,7 +155,7 @@ if (!defined('LITETRACKER')) {
 
 			<section class="profile-sidebar-card">
 				<h2 class="profile-sidebar-stats-title">Статистика</h2>
-				<div class="profile-sidebar-stat-bonus">Бонус: <strong><?=template_format_number($profileStats['voice']);?></strong></div>
+				<div class="profile-sidebar-stat-bonus">Бонус: <strong><?=template_format_number($profileStats['bonus']);?></strong></div>
 
 				<div class="profile-sidebar-stat-peers">
 					<span class="profile-sidebar-stat-peer"><img src="public/images/up.png" alt="" width="10" height="10"> <?=$profileStats['seeders'];?></span>
