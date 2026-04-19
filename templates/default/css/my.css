@@ -2745,6 +2745,157 @@ table.tt .data {
   line-height: 1.5;
 }
 
+.signup-page {
+  width: 100%;
+}
+
+.signup-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 18px;
+  align-items: start;
+}
+
+.signup-card {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.signup-form-card {
+  overflow: hidden;
+}
+
+.signup-title {
+  margin: 0;
+  padding: 18px 20px 10px;
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+.signup-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.signup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 250px));
+  gap: 18px 20px;
+  padding: 8px 20px 0;
+}
+
+.signup-field {
+  min-width: 0;
+}
+
+.signup-label {
+  display: block;
+  margin-bottom: 7px;
+  color: #22252b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.signup-input-wrap input,
+.signup-birthday-row select {
+  min-height: 40px;
+  border-radius: 5px;
+  box-shadow: none;
+}
+
+.signup-input-wrap input {
+  width: 100%;
+}
+
+.signup-input-wrap-login {
+  position: relative;
+}
+
+.signup-input-wrap-login input {
+  padding-right: 12px;
+}
+
+.signup-birthday-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 0.9fr);
+  gap: 0;
+}
+
+.signup-birthday-row select {
+  border-radius: 0;
+}
+
+.signup-birthday-row select:first-child {
+  border-radius: 5px 0 0 5px;
+}
+
+.signup-birthday-row select:last-child {
+  border-radius: 0 5px 5px 0;
+}
+
+.signup-birthday-row select + select {
+  margin-left: -1px;
+}
+
+.signup-captcha-row {
+  padding: 20px 20px 0;
+}
+
+.signup-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 18px 20px 20px;
+  color: #202329;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.signup-consent input {
+  flex: 0 0 auto;
+  margin-top: 3px;
+}
+
+.signup-consent span {
+  display: block;
+}
+
+.signup-submit-row {
+  padding: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.signup-submit-row button {
+  min-height: 39px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.signup-info-card {
+  padding: 18px 20px;
+}
+
+.signup-info-title {
+  margin: 0 0 18px;
+  font-size: 21px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.signup-info-copy {
+  color: #202329;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.signup-info-copy-last {
+  margin-top: 12px;
+}
+
 .torrent-comment-form {
   margin-top: 18px;
 }
