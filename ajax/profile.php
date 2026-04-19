@@ -145,13 +145,10 @@ if ($action === 'wall_delete') {
 		profile_ajax_response(false, 'У вас недостаточно прав для удаления.');
 	}
 
-	if (user_wall_supports_threads()) {
-		$parentId = (int) ($comment['parent_id'] ?? 0);
-		$db->query("UPDATE comments_users SET parent_id = {$parentId} WHERE id_users = {$objectId} AND parent_id = {$commentId}");
-	}
-
-	$db->query("DELETE FROM comments_users WHERE id = {$commentId} AND id_users = {$objectId}");
-	profile_ajax_wall_payload($objectId, 'Комментарий удален.');
+	$deletedByAdmin = (!empty($PRIV['comments_delete']) && (int) $USER['id'] !== (int) ($comment['id_user'] ?? 0));
+	$deletedText = $db->safesql(lt_comment_deleted_placeholder($deletedByAdmin));
+	$db->query("UPDATE comments_users SET text = '{$deletedText}', id_user_edit = ".(int) $USER['id'].", date_edit = NOW() WHERE id = {$commentId} AND id_users = {$objectId}");
+	profile_ajax_wall_payload($objectId, 'Комментарий удалён.');
 }
 
 if ($action === 'wall_report') {

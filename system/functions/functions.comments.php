@@ -87,6 +87,40 @@ function addComment($type = '', $object_id = '', $file = '')
     echo '<br>';
 }
 
+function lt_comment_deleted_placeholder($deletedByAdmin = true)
+{
+    return ($deletedByAdmin ? 'Комментарий удалён администрацией сайта' : 'Комментарий удалён пользователем сайта');
+}
+
+function lt_comment_deleted_meta($text)
+{
+    $text = trim((string) $text);
+    $adminPlaceholder = lt_comment_deleted_placeholder(true);
+    $userPlaceholder = lt_comment_deleted_placeholder(false);
+
+    if ($text === $adminPlaceholder) {
+        return array(
+            'is_deleted' => true,
+            'message' => $adminPlaceholder,
+            'is_admin' => true,
+        );
+    }
+
+    if ($text === $userPlaceholder) {
+        return array(
+            'is_deleted' => true,
+            'message' => $userPlaceholder,
+            'is_admin' => false,
+        );
+    }
+
+    return array(
+        'is_deleted' => false,
+        'message' => '',
+        'is_admin' => false,
+    );
+}
+
 
 // Список комментариев
 function listComment($type = '', $object_id = '', $file = '', $desc = 0)
@@ -116,21 +150,15 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
     if (!$db->num_rows($sql)) {
         if ($type === 'users') {
             echo '<div class="wall-comment-empty">На стене пока нет комментариев.</div>';
-        } elseif ($type === 'torrents') {
-            echo '<div class="torrent-comment-empty">Комментариев пока нет.</div>';
         } else {
-            msg($language['comments_2'] ?? 'Комментариев пока нет.', '', 'error');
+            echo '<div class="torrent-comment-empty">Комментариев пока нет.</div>';
         }
     } else {
         if ($showPager) {
             echo $pagertop;
         }
 
-        if ($type === 'users') {
-            echo '<div class="wall-comments-list">';
-        } elseif ($type === 'torrents') {
-            echo '<div class="torrent-comments-list">';
-        }
+        echo '<div class="comment-stream'.($type === 'users' ? ' wall-comments-list' : ' torrent-comments-list').'">';
 
         while ($arr = $db->get_row($sql)) {
             $id = isset($arr['comment_id']) ? (int) $arr['comment_id'] : 0;
@@ -144,25 +172,13 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
             $user_name = (string) ($user['name'] ?? 'Unknown');
             $user_class = isset($user['class']) ? $user['class'] : 0;
 
-            if ($type === 'users') {
-                $avatarPath = 'public/images/default_avatar.gif';
-                if (!empty($user['avatar']) && is_file('public/avatars/small/' . $user['avatar'])) {
-                    $avatarPath = 'public/avatars/small/' . $user['avatar'];
-                }
-                $avatar = '<img src="' . $avatarPath . '" border="0" width="28" height="28" alt="' . htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8') . '">';
-            } elseif ($type === 'torrents') {
-                $avatarPath = 'public/images/default_avatar.gif';
-                if (!empty($user['avatar']) && is_file('public/avatars/small/' . $user['avatar'])) {
-                    $avatarPath = 'public/avatars/small/' . $user['avatar'];
-                }
-                $avatar = '<img src="' . $avatarPath . '" border="0" width="40" height="40" alt="' . htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8') . '">';
-            } else {
-                if (!empty($user['avatar']) && is_file('public/avatars/' . $user['avatar'])) {
-                    $avatar = '<center><img src="public/avatars/' . htmlspecialchars($user['avatar'], ENT_QUOTES, 'UTF-8') . '" border="0" width="50"></center>';
-                } else {
-                    $avatar = '<center><img src="public/images/default_avatar.gif" border="0" width="50"></center>';
-                }
+            $avatarPath = 'public/images/default_avatar.gif';
+            if (!empty($user['avatar']) && is_file('public/avatars/small/' . $user['avatar'])) {
+                $avatarPath = 'public/avatars/small/' . $user['avatar'];
+            } elseif (!empty($user['avatar']) && is_file('public/avatars/' . $user['avatar'])) {
+                $avatarPath = 'public/avatars/' . $user['avatar'];
             }
+            $avatar = '<img src="' . $avatarPath . '" border="0" width="40" height="40" alt="' . htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8') . '">';
 
             $date = !empty($arr['date']) ? convent_date($arr['date']) : '';
             $append_edit = (!empty($arr['date_edit']) && $arr['date_edit'] !== '0000-00-00 00:00:00')
@@ -184,11 +200,7 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
             }
         }
 
-        if ($type === 'users') {
-            echo '</div>';
-        } elseif ($type === 'torrents') {
-            echo '</div>';
-        }
+        echo '</div>';
 
         if ($showPager) {
             echo $pagerbottom;
@@ -405,47 +417,57 @@ function user_wall_render_node($node, $objectId, $level = 0)
     $commentEditedLabel = (!empty($node['date_edit']) && $node['date_edit'] !== '0000-00-00 00:00:00')
         ? (($language['comments_3'] ?? 'Изменено:') . ' ' . convent_date($node['date_edit']))
         : '';
-    $commentText = cleanhtml((string) ($node['text'] ?? ''));
     $commentTextRaw = (string) ($node['text'] ?? '');
+    $commentDeletedMeta = lt_comment_deleted_meta($commentTextRaw);
+    $commentDeleted = !empty($commentDeletedMeta['is_deleted']);
+    $commentText = ($commentDeleted
+        ? '<span class="comment-entry-deleted-label">'.htmlspecialchars($commentDeletedMeta['message'], ENT_QUOTES, 'UTF-8').'</span>'
+        : cleanhtml($commentTextRaw));
     $children = (!empty($node['children']) && is_array($node['children']) ? $node['children'] : array());
-    $canEdit = (!empty($USER['id']) && !empty($PRIV['comments_edit']));
-    $canDelete = (!empty($USER['id']) && !empty($PRIV['comments_delete']));
-    $canReport = (!empty($USER['id']) && (int) $USER['id'] !== $commentUserId);
+    $canEdit = (!empty($USER['id']) && !empty($PRIV['comments_edit']) && !$commentDeleted);
+    $canDelete = (!empty($USER['id']) && !empty($PRIV['comments_delete']) && !$commentDeleted);
+    $canReport = (!empty($USER['id']) && (int) $USER['id'] !== $commentUserId && !$commentDeleted);
+    $hasSideActions = ($canEdit || $canDelete || $canReport);
 
-    echo '<article class="wall-comment'.($children ? ' wall-comment-has-children' : '').'" id="wall-comment-'.$commentId.'" data-comment-id="'.$commentId.'" data-wall-level="'.$level.'">';
-    echo '<a class="wall-comment-avatar" href="'.$commentProfileHref.'">';
+    echo '<article class="wall-comment comment-entry'.($children ? ' wall-comment-has-children' : '').($commentDeleted ? ' comment-entry-deleted' : '').'" id="wall-comment-'.$commentId.'" data-comment-id="'.$commentId.'" data-wall-level="'.$level.'">';
+    echo '<a class="wall-comment-avatar comment-entry-avatar" href="'.$commentProfileHref.'">';
     echo '<img src="'.$commentAvatarPath.'" alt="'.$commentUserNameSafe.'" width="28" height="28">';
     echo '</a>';
-    echo '<div class="wall-comment-body">';
-    echo '<div class="wall-comment-meta">';
+    echo '<div class="wall-comment-body comment-entry-body'.($hasSideActions ? ' comment-entry-body-has-side-actions' : '').'">';
+    echo '<div class="wall-comment-meta comment-entry-meta">';
     echo '<a class="wall-comment-author" href="'.$commentProfileHref.'">'.$commentUserColored.'</a>';
     echo '<span class="wall-comment-date">'.htmlspecialchars(($commentEditedLabel !== '' ? $commentEditedLabel : $commentDate), ENT_QUOTES, 'UTF-8').'</span>';
     echo '</div>';
-    echo '<div class="wall-comment-text">'.$commentText.'</div>';
+    if ($hasSideActions) {
+        echo '<div class="comment-side-actions">';
+
+        if ($canEdit) {
+            echo '<button class="comment-side-button comment-side-button-edit wall-comment-button" type="button" data-wall-edit="1" data-comment-id="'.$commentId.'">'.htmlspecialchars((string) ($language['comments_4'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8').'</button>';
+        }
+
+        if ($canDelete) {
+            echo '<button class="comment-side-button comment-side-button-delete wall-comment-button" type="button" data-wall-delete="1" data-comment-id="'.$commentId.'">'.htmlspecialchars((string) ($language['comments_5'] ?? 'Удалить'), ENT_QUOTES, 'UTF-8').'</button>';
+        }
+
+        if ($canReport) {
+            echo '<button class="comment-side-button comment-side-button-report wall-comment-report" type="button" title="Пожаловаться" aria-label="Пожаловаться" data-wall-report="1" data-comment-id="'.$commentId.'">';
+            echo '<span class="wall-comment-report-icon">&#9888;</span>';
+            echo '<span class="wall-comment-report-label">Пожаловаться</span>';
+            echo '</button>';
+        }
+
+        echo '</div>';
+    }
+    echo '<div class="wall-comment-text comment-entry-text'.($commentDeleted ? ' comment-entry-text-deleted' : '').'">'.$commentText.'</div>';
     echo '<textarea class="wall-comment-source" hidden>'.htmlspecialchars($commentTextRaw, ENT_QUOTES, 'UTF-8').'</textarea>';
     echo '<div class="wall-comment-editor-slot"></div>';
-    echo '<div class="wall-comment-actions">';
+    echo '<div class="wall-comment-actions comment-entry-actions">';
 
-    if (!empty($USER)) {
-        echo '<button class="wall-comment-button" type="button" data-wall-reply="1" data-comment-id="'.$commentId.'" data-author-name="'.$commentUserNameSafe.'">Ответить</button>';
-    }
-
-    if ($canEdit) {
-        echo '<button class="wall-comment-button" type="button" data-wall-edit="1" data-comment-id="'.$commentId.'">'.htmlspecialchars((string) ($language['comments_4'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8').'</button>';
-    }
-
-    if ($canDelete) {
-        echo '<button class="wall-comment-button" type="button" data-wall-delete="1" data-comment-id="'.$commentId.'">'.htmlspecialchars((string) ($language['comments_5'] ?? 'Удалить'), ENT_QUOTES, 'UTF-8').'</button>';
+    if (!empty($USER) && !$commentDeleted) {
+        echo '<button class="wall-comment-button comment-reply-button" type="button" data-wall-reply="1" data-comment-id="'.$commentId.'" data-author-name="'.$commentUserNameSafe.'">Ответить</button>';
     }
 
     echo '</div>';
-
-    if ($canReport) {
-        echo '<button class="wall-comment-report" type="button" title="Пожаловаться" aria-label="Пожаловаться" data-wall-report="1" data-comment-id="'.$commentId.'">';
-        echo '<span class="wall-comment-report-icon">&#9888;</span>';
-        echo '<span class="wall-comment-report-label">Пожаловаться</span>';
-        echo '</button>';
-    }
 
     if ($children) {
         echo '<div class="wall-comment-children">';

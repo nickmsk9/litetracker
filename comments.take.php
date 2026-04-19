@@ -121,7 +121,15 @@ if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
         err($language['default_1'], $language['comments_10'], 1);
     }
 
-    $delete_sql = "DELETE FROM `{$table_name}` WHERE id = {$id_comment} AND `{$object_name}` = {$object_id}";
+    $deletedMeta = lt_comment_deleted_meta((string) ($arr['text'] ?? ''));
+    if (!empty($deletedMeta['is_deleted'])) {
+        header('Location:' . $file . 'id=' . $object_id . '&status=3');
+        die();
+    }
+
+    $deletedByAdmin = (!empty($PRIV['comments_delete']) && ((int) $USER['id'] !== (int) $arr['id_user'] || $type === 'users'));
+    $deletedText = $db->safesql(lt_comment_deleted_placeholder($deletedByAdmin));
+    $delete_sql = "UPDATE `{$table_name}` SET text = '{$deletedText}', id_user_edit = ".(int) $USER['id'].", date_edit = NOW() WHERE id = {$id_comment} AND `{$object_name}` = {$object_id}";
     comment_debug_log('DELETE SQL: ' . $delete_sql);
     $db->query($delete_sql, 0);
 
@@ -139,6 +147,10 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
     if (empty($arr['id'])) {
         comment_debug_log('EDIT: комментарий не найден: id=' . $id_comment);
         err($language['default_1'], $language['comments_8'], 1);
+    }
+
+    if (!empty(lt_comment_deleted_meta((string) ($arr['text'] ?? ''))['is_deleted'])) {
+        err($language['default_1'], 'Удалённый комментарий нельзя редактировать.', 1);
     }
 
     $canEditComment = (!empty($PRIV['comments_edit']) || ($type !== 'users' && (int) $USER['id'] === (int) $arr['id_user']));
