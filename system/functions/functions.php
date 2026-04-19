@@ -1350,30 +1350,6 @@ function encode_code($text) {
 }
 
 
-//Список категорий
-/*
-function get_categories() {
-	global $db , $memcache;
-	 //Получаем список категорий
-	if (false === ($cache_result = $memcache->get('upload_categories')))
-	{
-		$categories_who = array();
-		$cats = $db->query("SELECT c.* , COUNT(t.id)  AS count , SUM(t.size) AS size
-					FROM categories AS c
-					LEFT JOIN torrents AS t ON t.id_category = c.id
-					GROUP BY c.id");
-		while($arr = $db->get_row() )
-			$categories_who[] = $arr;
-
-		$memcache->set('upload_categories', $categories_who , 0, (24*60*60));
-		$cache_result = $categories_who;
-	}
-
-	return $cache_result;
-}
-*/
-
-
 //Получение списка категорий
 function categories_array($id = 0) {
 	global $memcached, $db;
@@ -1486,22 +1462,46 @@ function is_language($language = "") {
 
 //Информация о правах класса
 function get_priv_info($class) {
-	global $memcache , $db;
+	global $memcached , $db;
 
 	$class = (int)$class;
 
-	//Определяем права пользовател
-	if (false === ($row = $memcache->get('priv_'.$class)))
-	{
+	$cacheKey = 'priv_'.$class;
+	$row = false;
+
+	// Читаем из Memcached
+	if ($memcached instanceof Memcached) {
+		$row = $memcached->get($cacheKey);
+		if ($memcached->getResultCode() !== Memcached::RES_SUCCESS) {
+			$row = false;
+		}
+	}
+
+	// Если нет в кеше — берем из БД
+	if ($row === false) {
 		$row = $db->super_query("SELECT * FROM priv WHERE id=".$class);
-		$memcache->set('priv_'.$class , $row , 0, 1000);
+
+		if ($memcached instanceof Memcached) {
+			$memcached->set($cacheKey, $row, 1000);
+		}
 	}
 
 	if ($row) {
 		return $row;
 	}
 
-	if (false === ($row = $memcache->get('priv_guest_defaults'))) {
+	// Гость (fallback)
+	$guestKey = 'priv_guest_defaults';
+	$row = false;
+
+	if ($memcached instanceof Memcached) {
+		$row = $memcached->get($guestKey);
+		if ($memcached->getResultCode() !== Memcached::RES_SUCCESS) {
+			$row = false;
+		}
+	}
+
+	if ($row === false) {
 		$row = array();
 		$sql = $db->query("SHOW COLUMNS FROM priv");
 		while ($column = $db->get_row($sql)) {
@@ -1513,7 +1513,9 @@ function get_priv_info($class) {
 		$row['NAME'] = 'Гость';
 		$row['COLOR'] = '000000';
 
-		$memcache->set('priv_guest_defaults', $row, 0, 1000);
+		if ($memcached instanceof Memcached) {
+			$memcached->set($guestKey, $row, 1000);
+		}
 	}
 
 	return $row;

@@ -16,6 +16,11 @@ require 'system/functions/functions.benc.php';
 
 //Проверка авторизации
 is_login();
+$act = isset($_GET['act']) ? (string)$_GET['act'] : '';
+$screen = isset($_GET['screen']) ? (int)$_GET['screen'] : 0;
+$cats = '';
+$tags_echo = '';
+$delete = array();
 
 
 //Информация о торренте
@@ -37,7 +42,7 @@ if($arr['id_user'] != $USER['id'] && !$PRIV['edit_release']) {
 //////////////////////////////////////////////////////////////////////////
 //Удаление обложки
 //////////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'delete_image') {
+if($act == 'delete_image') {
 	if($arr['image']) {
 		$db->query("UPDATE torrents SET image='' WHERE id=".$id);
 		@unlink('public/downloads/images/'.$arr['image']);
@@ -50,9 +55,8 @@ if($_GET['act'] == 'delete_image') {
 //////////////////////////////////////////////////////////////////////////
 //Удаление скриншота
 //////////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'delete_screen') {
-	$screen = (int)$_GET['screen'];
-	if($screen > 4) {
+if($act == 'delete_screen') {
+	if($screen > 4 || $screen < 1) {
 		err($language['default_1'] , $language['default_6']);
 	}
 	if($arr['screen_'.$screen]) {
@@ -68,7 +72,7 @@ if($_GET['act'] == 'delete_screen') {
 //////////////////////////////////////////////////////////////////////////
 //Обработка редактирования
 //////////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'take') {
+if($act == 'take') {
 	$update = array();
 
 
@@ -156,10 +160,12 @@ if($_GET['act'] == 'take') {
 			$type = 'single';
 		} else {
 			$flist = dict_get($info, "files", "list");
-			if (!isset($flist))
+			if (!is_array($flist)) {
 				err("missing both length and files");
-			if (!count($flist))
+			}
+			if (count($flist) === 0) {
 				err("no files");
+			}
 			$totallen = 0;
 			foreach ($flist as $fn) {
 				list($ll, $ff) = dict_check($fn, "length(integer):path(list)");
@@ -260,7 +266,7 @@ if($_GET['act'] == 'take') {
 	);
 
 
-	if (!($_FILES['image']['name'][$x] == "")) {
+	if (!empty($_FILES['image']['name'])) {
 
 			//Проверяем тип обложки
 			if (!array_key_exists($_FILES['image']['type'], $allowed_types) ) {
@@ -446,16 +452,27 @@ if($_GET['act'] == 'take') {
 			$ret[] = $row["name"];
 		}
 
-		$union = array_intersect($ret, explode(",", $tags));
-		$ununion = array_diff(explode(",", $tags), $ret);
+		$tag_list = array_map('trim', explode(",", $tags));
+$tag_list = array_filter($tag_list, 'strlen');
 
-		foreach ($union as $tag) {
-			$db->query("UPDATE tags SET howmuch=howmuch+1 WHERE name LIKE '".$db->safesql($tag)."'");
-		}
+$union = array_intersect($ret, $tag_list);
+$ununion = array_diff($tag_list, $ret);
 
-		foreach ($ununion as $tag) {
-			$db->query("INSERT INTO tags (category, name, howmuch) VALUES ('".$catid."', '".$db->safesql($tag)."', 1)");
-		}
+foreach ($union as $tag) {
+	$tag = trim($tag);
+	if ($tag === '') {
+		continue;
+	}
+	$db->query("UPDATE tags SET howmuch=howmuch+1 WHERE name LIKE '".$db->safesql($tag)."'");
+}
+
+foreach ($ununion as $tag) {
+	$tag = trim($tag);
+	if ($tag === '') {
+		continue;
+	}
+	$db->query("INSERT INTO tags (category, name, howmuch) VALUES ('".$category."', '".$db->safesql($tag)."', 1)");
+}
 	}
 
 
@@ -470,9 +487,9 @@ if($_GET['act'] == 'take') {
 //////////////////////////////////////////////////////////////////////////
 //Удаление релиза
 //////////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'delete') {
+if($act == 'delete') {
 	// err('Приносим свои извинения' , 'Удаление релизов пока выключено !');
-	if($_GET['take'] == 1) {
+	if(isset($_GET['take']) && (int)$_GET['take'] === 1) {
 		$db->query("DELETE FROM torrents WHERE id=".$id);
 		$db->query("DELETE FROM trackers WHERE torrent=".$id);
 		$db->query("DELETE FROM peers WHERE torrent=".$id);
@@ -564,7 +581,7 @@ begin_frame($language['edit_3']);
 <?
 $cache_result = categories_array();
 foreach ($cache_result AS $cat) {
-	$cats .= '<option value="'.$cat['id'].'" '.($arr['id_category'] == $cat['id'] ? 'selected' : '').' />'.htmlspecialchars($cat['name']).'</option>';
+	$cats .= '<option value="'.$cat['id'].'" '.($arr['id_category'] == $cat['id'] ? 'selected' : '').'>'.htmlspecialchars($cat['name']).'</option>';
 }
 ?>
 <tr>
@@ -584,8 +601,7 @@ foreach ($cache_result AS $cat) {
      <span class="grey"><?=$language['upload_9'];?>:</span>
     </td>
     <td style="padding: 0px;">
-     <input type="text" style="margin: 0px;" size="50%"  name="name" class="inputText" value="<?=htmlspecialchars($arr['name']);?>">
-
+<input type="text" style="margin: 0px; width: 100%; max-width: 520px;" name="name" class="inputText" value="<?=htmlspecialchars($arr['name']);?>">
     </td><td>
    </td></tr>
 
@@ -600,15 +616,15 @@ foreach ($cache_result AS $cat) {
      <span class="grey"><?=$language['upload_12'];?>:</span>
     </td>
     <td style="padding: 0px;">
-    <input type="text" name="tags" id="tags" size="70" value="<?=htmlspecialchars($arr['tags']);?>">
+<input type="text" name="tags" id="tags" style="width: 100%; max-width: 520px;" value="<?=htmlspecialchars($arr['tags']);?>">
 	<?
 	///////////////////////////////////////////////////////////
 	//Теги
 	///////////////////////////////////////////////////////////
 
-	$tags = taggenrelist($arr['id_category']);
+$tags = taggenrelist($arr['id_category']);
 
-	$tags_echo .= '<div id="from">';
+$tags_echo = '<div id="from">';
 	if (!$tags) {
 		$tags_echo .=  '<small>'.$language['upload_13'].'</small>';
 	}
@@ -638,8 +654,7 @@ foreach ($cache_result AS $cat) {
      <span class="grey"><?=$language['upload_16'];?>:</span>
     </td>
     <td style="padding: 0px;">
-		<input type="text" name="video_vkontakte" value="<?=htmlspecialchars($arr['video_vkontakte']);?>" size="70"/>
-		<br> <small><br><?=$language['upload_17'];?></small>
+<input type="text" name="video_vkontakte" value="<?=htmlspecialchars($arr['video_vkontakte']);?>" style="width: 100%; max-width: 520px;"/>		<br> <small><br><?=$language['upload_17'];?></small>
     </td><td>
    </td></tr>
 
