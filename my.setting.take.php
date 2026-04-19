@@ -156,13 +156,13 @@ if($act == 'ban_ip') {
 	$db->query("SELECT * FROM bans WHERE '".$ip."' >= first AND '".$ip."' <= last");
 	if(!$db->num_rows()) {
 		$db->query("INSERT INTO bans (first , last , id_user , date) VALUES ('".$ip."' , '".$ip."' , ".$USER['id']." , NOW())");
-		$memcache->delete('ip_bans_'.$ip, 0);
+		$memcached->delete('ip_bans_'.$ip, 0);
 		header('Location:my.setting.php?id='.$id.'&status=11');
 		die();
 	}
 
 	$db->query("DELETE FROM bans WHERE '".$ip."' >= first AND '".$ip."' <= last");
-	$memcache->delete('ip_bans_'.$ip, 0);
+	$memcached->delete('ip_bans_'.$ip, 0);
 	header('Location:my.setting.php?id='.$id.'&status=12');
 	die();
 }
@@ -170,13 +170,13 @@ if($act == 'ban_ip') {
 if($act == 'ban_account') {
 	if($arr['banned'] == 0) {
 		$db->query("UPDATE users SET banned='1' WHERE id=".$id);
-		$memcache->delete('user_'.$id, 0);
+		$memcached->delete('user_'.$id, 0);
 		header('Location:my.setting.php?id='.$id.'&status=9');
 		die();
 	}
 
 	$db->query("UPDATE users SET banned='0' WHERE id=".$id);
-	$memcache->delete('user_'.$id, 0);
+	$memcached->delete('user_'.$id, 0);
 	header('Location:my.setting.php?id='.$id.'&status=10');
 	die();
 }
@@ -185,7 +185,7 @@ if($act == 'foto_delete') {
 	@unlink('public/avatars/'.$arr['avatar']);
 	@unlink('public/avatars/small/'.$arr['avatar']);
 	$db->query("UPDATE users SET avatar='' WHERE id='".$id."'");
-	$memcache->delete('user_'.$id, 0);
+	$memcached->delete('user_'.$id, 0);
 	header('Location:my.setting.php?id='.$id.'&status=8');
 	die();
 }
@@ -214,7 +214,7 @@ if($act == 'password') {
 	$passwordHash = md5($passwordCode.$newPassword.$passwordCode);
 
 	$db->query("UPDATE users SET password='".$passwordHash."' , password_code='".$passwordCode."' WHERE id='".$id."'");
-	$memcache->delete('user_'.$id, 0);
+	$memcached->delete('user_'.$id, 0);
 
 	if ((int) $USER['id'] === (int) $id) {
 		logout_cookie();
@@ -323,7 +323,7 @@ if(count($update)) {
 	$db->query("UPDATE users SET ".implode(',', $update)." WHERE id='".$id."'");
 }
 
-$memcache->delete('user_'.$id, 0);
+$memcached->delete('user_'.$id, 0);
 header('Location:my.setting.php?id='.$id.'&status=1');
 die();
 ?>

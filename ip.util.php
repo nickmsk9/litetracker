@@ -290,12 +290,12 @@ if($_GET['act'] == 'banned_account' && $_GET['id']) {
 	//Баним аккаунт
 	if($arr['banned'] == 0) {
 		$db->query("UPDATE users SET banned='1' WHERE id=".$id);
-			$memcache->delete('user_'.$id);
+			$memcached->delete('user_'.$id);
 			err('Успешно' , 'Аккаунт забанен' , 1 , 'success');
 	} else {
 	//Убираем бан
 		$db->query("UPDATE users SET banned='0' WHERE id=".$id);
-		$memcache->delete('user_'.$id);
+		$memcached->delete('user_'.$id);
 		err('Успешно' , 'Аккаунт разбанен' , 1 , 'success');
 	}
 

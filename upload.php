@@ -483,10 +483,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		err('Ошибка', 'Релиз добавлен, но torrent-файл не удалось сохранить на сервер.', 1);
 	}
 
-	$memcache->delete('upload_categories');
-	$memcache->delete('news_releases');
-	$memcache->delete('tags');
-	$memcache->delete('taggenrelist_'.$form['catid']);
+	$memcached->delete('upload_categories');
+	$memcached->delete('news_releases');
+	$memcached->delete('tags');
+	$memcached->delete('taggenrelist_'.$form['catid']);
 
 	header('Location:/details.php?id='.$id);
 	die();

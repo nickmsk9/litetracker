@@ -31,7 +31,7 @@ if($_GET['act'] == 'del') {
 	//Пользователь согласился , удаляем
 	if($_GET['take']) {
 		$db->query("DELETE FROM orbital_blocks WHERE bid=".$bid);
-		$memcache->delete('block_'.$arr['position'] , 0);
+		$memcached->delete('block_'.$arr['position'] , 0);
 		header('Location:blocks.php?position='.$arr['position'].'&status=2');
 		die();
 	}
@@ -136,9 +136,9 @@ if($_GET['act'] == 'add') {
 		}
 
 		//Удаляем кеш
-		$memcache->delete('block_'.$position , 0);
+		$memcached->delete('block_'.$position , 0);
 		if($bid) {
-			$memcache->delete('block_'.$arr['position'] , 0);
+			$memcached->delete('block_'.$arr['position'] , 0);
 		}
 		//Редирект
 		header('Location: blocks.php?status=1&position='.$position.'');

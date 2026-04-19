@@ -186,7 +186,7 @@ if($_GET['act'] == 'edit' && $_GET['id']) {
 		//Обновляем категорию
 		if($update) {
 			$db->query("UPDATE categories SET ".implode(',' , $update)." WHERE id=".$id);
-			$memcache->delete('upload_categories');
+			$memcached->delete('upload_categories');
 		}
 		header("Location:categories.php?status=3");
 		die();
@@ -407,7 +407,7 @@ if($_GET['act'] == 'add') {
 
 		//Добавляем категорию
 		$db->query("INSERT INTO categories(name  , image , template , date) VALUES ('".$db->safesql($name)."' , '".$db->safesql($ifilename)."' , '".$db->safesql($template)."'   , NOW() ) ");
-		$memcache->delete('upload_categories');
+		$memcached->delete('upload_categories');
 		header("Location:categories.php?status=1");
 	}
 	head($language['cats_33']);

@@ -78,9 +78,9 @@ function template_current_month_label()
 
 function template_get_sidebar_news()
 {
-	global $db, $memcache;
+	global $db, $memcached;
 
-	if (false === ($news = $memcache->get('sidebar_news_all'))) {
+	if (false === ($news = $memcached->get('sidebar_news_all'))) {
 		$news = array();
 		$query = $db->query("SELECT id, name, text, date FROM news ORDER BY date DESC");
 
@@ -88,7 +88,7 @@ function template_get_sidebar_news()
 			$news[] = $row;
 		}
 
-		$memcache->set('sidebar_news_all', $news, 0, 15 * 60);
+		$memcached->set('sidebar_news_all', $news, 0, 15 * 60);
 	}
 
 	return (is_array($news) ? $news : array());

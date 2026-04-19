@@ -8,13 +8,13 @@
 
 function get_tags()
 {
-	global $memcache, $db;
+	global $memcached, $db;
 
 	$arr = array();
 
 	$res = false;
-	if (isset($memcache) && is_object($memcache)) {
-		$res = $memcache->get('tags');
+	if (isset($memcached) && is_object($memcached)) {
+		$res = $memcached->get('tags');
 	}
 
 	if ($res === false || !is_array($res)) {
@@ -27,8 +27,8 @@ function get_tags()
 			}
 		}
 
-		if (isset($memcache) && is_object($memcache)) {
-			$memcache->set('tags', $tags_cache, 0, 24 * 60 * 60);
+		if (isset($memcached) && is_object($memcached)) {
+			$memcached->set('tags', $tags_cache, 0, 24 * 60 * 60);
 		}
 
 		$res = $tags_cache;

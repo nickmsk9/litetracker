@@ -15,11 +15,31 @@ function lt_create_cache_driver()
 		$host = trim((string) ($memcachedConfig['host'] ?? '127.0.0.1'));
 		$port = (int) ($memcachedConfig['port'] ?? 11211);
 
-		$memcache = new MemcachedCache();
-		if ($memcache->connect($host, $port, $memcachedConfig)) {
-			return $memcache;
+		$memcached = new MemcachedCache();
+		if ($memcached->connect($host, $port, $memcachedConfig)) {
+			return $memcached;
 		}
 	}
 
 	return new Filecache();
+}
+
+function lt_cache()
+{
+	static $cache = null;
+
+	if ($cache === null) {
+		$cache = lt_create_cache_driver();
+	}
+
+	return $cache;
+}
+
+function lt_cache_bind_globals()
+{
+	global $memcached;
+
+	$memcached = lt_cache();
+
+	return $memcached;
 }

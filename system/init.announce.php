@@ -63,7 +63,7 @@ $db->connect($mysql['user'] , $mysql['password'] , $mysql['db'] ,  $mysql['host'
 
 //Запускаем memcached/filecache
 require_once __DIR__ . '/bootstrap/cache.php';
-$memcache = lt_create_cache_driver();
+$memcached = lt_cache_bind_globals();
 
 
 //Подключаем язык

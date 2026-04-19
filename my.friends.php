@@ -68,7 +68,7 @@ if($_GET['act'] == 'check') {
 	if($USER['num_friends']) {
 		$db->query("UPDATE users SET num_friends = (num_friends - 1) WHERE id=".$USER['id']);
 	}
-	$memcache->delete('user_'.$USER['id']  ,  0);
+	$memcached->delete('user_'.$USER['id']  ,  0);
 
 
 	//Перенаправление
@@ -129,7 +129,7 @@ if($_GET['act'] == 'add') {
 	$db->query("UPDATE users SET num_friends = num_friends + 1 WHERE id=".$friendid);
 
 
-	$memcache->delete('user_'.$friendid , 0);
+	$memcached->delete('user_'.$friendid , 0);
 
 	header('Location: my.friends.php?status=1');
 	die();

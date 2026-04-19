@@ -34,13 +34,13 @@ function render_blocks($blockfile) {
  * Вывод блоков по позиции
 */
 function show_blocks($position) {
-	global $USER, $config, $memcache, $db , $PRIV;
+	global $USER, $config, $memcached, $db , $PRIV;
 
 	//Использовать блоки ?
 	if ($config['blocks_use']) {
 
 		//Запрос к базе
-		if (false === ($orbital_blocks = $memcache->get('block_'.$position)))
+		if (false === ($orbital_blocks = $memcached->get('block_'.$position)))
 		{
 			$orbital_blocks = array();
 			$blocks_res = $db->query("SELECT * FROM orbital_blocks
@@ -49,7 +49,7 @@ function show_blocks($position) {
 			while ($blocks_row = $db->get_row($blocks_res)) {
 				$orbital_blocks[] = $blocks_row;
 			}
-			$memcache->set('block_'.$position, $orbital_blocks  , 0, 30 * 60 );
+			$memcached->set('block_'.$position, $orbital_blocks  , 0, 30 * 60 );
 		}
 
 

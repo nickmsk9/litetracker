@@ -79,17 +79,17 @@ $db->connect($mysql['user'] , $mysql['password'] , $mysql['db'] ,  $mysql['host'
 
 //Запускаем memcached/filecache
 require_once __DIR__ . '/bootstrap/cache.php';
-$memcache = lt_create_cache_driver();
+$memcached = lt_cache_bind_globals();
 
 
 //Cron system
-if (false === ($CRON = $memcache->get('CRON'))) {
+if (false === ($CRON = $memcached->get('CRON'))) {
 	$sql = $db->query("SELECT * FROM cron");
 	$CRON = array();
 	while($cron  = $db->get_row($sql)) {
 		$CRON[$cron['cron_name']] = $cron['cron_value'];
 	}
-	$memcache->set('CRON', $CRON  , 0, 15*60);
+	$memcached->set('CRON', $CRON  , 0, 15*60);
 }
 
 

@@ -60,10 +60,10 @@ $ip = getip();
 $ip_ban = ip2long_db($ip); //IP адрес
 
 //Бан по IP - адресу
-if (false === ($ban_resource = $memcache->get('ip_bans_'.$ip_ban))) {
+if (false === ($ban_resource = $memcached->get('ip_bans_'.$ip_ban))) {
 	$db->query("SELECT * FROM bans WHERE '".$ip_ban."'  >= first AND '".$ip_ban."' <= last");
 	$ban_resource = $db->get_row();
-	$memcache->set('ip_bans_'.$ip_ban, $ban_resource  , 0, 1000);
+	$memcached->set('ip_bans_'.$ip_ban, $ban_resource  , 0, 1000);
 }
 
 if($ban_resource) {
@@ -125,11 +125,11 @@ if(!$GUEST) {
 //Определяем информацию у торрента
 $info_hash = bin2hex($info_hash);
 
-if(false === ($torrent = $memcache->get('infohash_'.$info_hash)) )
+if(false === ($torrent = $memcached->get('infohash_'.$info_hash)) )
 {
 	$torrent_sql = mysql_query('SELECT torrents.id, banned,  (trackers.seeders + trackers.leechers) AS numpeers, UNIX_TIMESTAMP(added) AS ts FROM torrents LEFT JOIN trackers ON torrents.id=trackers.torrent WHERE infohash = "'.$info_hash.'" AND tracker="localhost"') or err('System:valid infohash');
 	$torrent = mysql_fetch_assoc($torrent_sql);
-	$memcache->set('infohash_'.$info_hash , $torrent , 0 , 400);
+	$memcached->set('infohash_'.$info_hash , $torrent , 0 , 400);
 }
 
 if (!$torrent) {

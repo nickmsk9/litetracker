@@ -12,17 +12,17 @@ by Nick
 
 //Информация о правах класса
 function get_priv_info($class) {
-	global $memcache , $db;
+	global $memcached , $db;
 	// if(empty($class) ) {
 		// return false;
 	// }
 	$class = (int)$class;
 
 	//Определяем права пользовател
-	if (false === ($row = $memcache->get('priv_'.$class)))
+	if (false === ($row = $memcached->get('priv_'.$class)))
 	{
 		$row = $db->super_query("SELECT * FROM priv WHERE id=".$class);
-		$memcache->set('priv_'.$class , $row , 0, 300);
+		$memcached->set('priv_'.$class , $row , 0, 300);
 	}
 	return $row;
 }

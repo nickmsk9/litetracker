@@ -13,7 +13,7 @@ if (!defined('LITETRACKER')) {
 	die('Direct access denied.');
 }
 
-global $db, $config, $USER, $memcached, $memcache;
+global $db, $config, $USER, $memcached;
 
 if (!function_exists('lt_nr_array_get')) {
 	function lt_nr_array_get($array, $key, $default = '')
@@ -68,14 +68,11 @@ if (!function_exists('lt_nr_truncate_text')) {
 if (!function_exists('lt_nr_get_cache_engine')) {
 	function lt_nr_get_cache_engine()
 	{
-		global $memcached, $memcache;
-
-		if (isset($memcached) && is_object($memcached)) {
-			return $memcached;
-		}
-
-		if (isset($memcache) && is_object($memcache)) {
-			return $memcache;
+		if (function_exists('lt_cache')) {
+			$cache = lt_cache();
+			if (is_object($cache)) {
+				return $cache;
+			}
 		}
 
 		return null;

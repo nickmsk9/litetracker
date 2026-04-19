@@ -234,7 +234,7 @@ if ($profileView === 'bonus' && $canViewBonus && $_SERVER['REQUEST_METHOD'] === 
 			);
 		} else {
 			$db->query("UPDATE users SET uploaded = (uploaded + {$bytes}), voice = (voice - {$cost}) WHERE id = {$id}");
-			$memcache->delete('user_'.$id, 0);
+			$memcached->delete('user_'.$id, 0);
 			header('Location: '.profile_href($id, 'bonus', array('status' => 'bonus_exchanged')));
 			die();
 		}

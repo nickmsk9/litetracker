@@ -75,6 +75,6 @@ while($arr = $db->get_row($sql) ) {
 
 //Обновляем cron-запись
 $db->query("UPDATE cron SET cron_value=".time()." WHERE cron_name='autoclean_last'");
-$memcache->delete('CRON');
+$memcached->delete('CRON');
 die(base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="));
 ?>

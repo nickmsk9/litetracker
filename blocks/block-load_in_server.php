@@ -9,9 +9,9 @@ by Nick
 ===================================================================
 */
 
-global $memcache , $db , $language;
+global $memcached , $db , $language;
 
-if (false === ($load_in_server = $memcache->get('load_in_server_v2') ) ) {
+if (false === ($load_in_server = $memcached->get('load_in_server_v2') ) ) {
 			$sql = $db->query("SELECT  userid   FROM peers GROUP BY userid");
 			$connected = $db->num_rows($sql);
 
@@ -34,7 +34,7 @@ if (false === ($load_in_server = $memcache->get('load_in_server_v2') ) ) {
 			.'<div class="load-widget-meta">'.sprintf($language['load_in_server_2'] ,$connected).'</div>'
 			.'<div class="load-widget-action"><a href="browse.php?act=all" class="load-widget-button">Открыть каталог</a></div>'
 			.'</div>';
-			$memcache->set('load_in_server_v2', $load_in_server  , 0, (15 * 60));
+			$memcached->set('load_in_server_v2', $load_in_server  , 0, (15 * 60));
 	}
 
 

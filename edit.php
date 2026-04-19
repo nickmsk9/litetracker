@@ -477,7 +477,7 @@ foreach ($ununion as $tag) {
 
 
 	//Удаление memcached
-	$memcache->delete('tags');
+	$memcached->delete('tags');
 
 	//Переадресация
 	header("Location:details.php?id=".$id."&edit=1");

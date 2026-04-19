@@ -11,7 +11,7 @@ by jenaDI
 
 //Информация о пользователе
 function get_user_info($id) {
-	global $db , $memcache;
+	global $db , $memcached;
 
 	//Если нету id
 	if(!$id) {
@@ -19,12 +19,12 @@ function get_user_info($id) {
 	}
 
 	//Запрос к таблице users
-	if (false === ($row = $memcache->get('user_'.$id)))
+	if (false === ($row = $memcached->get('user_'.$id)))
 	{
 		$sql = $db->query("SELECT * FROM users WHERE id = ".$id);
 		$row  = $db->get_row($sql);
 		$db->free($sql);
-		$memcache->set('user_'.$id, $row  , 0, rand(1500 , 3000) );
+		$memcached->set('user_'.$id, $row  , 0, rand(1500 , 3000) );
 	}
 
 	return $row;
@@ -230,7 +230,7 @@ function gzip() {
 
 //Head голова сайта
 function head($title = '' , $light = false , $description = '' , $keywords = '' ) {
-	global $config , $language , $USER , $db , $memcache, $PRIV , $rewrite;
+	global $config , $language , $USER , $db , $memcached, $PRIV , $rewrite;
 
 	//Сайт открыт
 	if($config['siteonline'] == 0 ) {
@@ -313,7 +313,7 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 
 //Подвал сайта
 function foot($light = false) {
-	global $config , $language , $USER , $db , $memcache , $timer ,$PRIV , $rewrite , $CRON ;
+	global $config , $language , $USER , $db , $memcached , $timer ,$PRIV , $rewrite , $CRON ;
 
 	//Тема трекера
 	$tpl = $config['template'];
@@ -364,7 +364,7 @@ function stdfoot($light = false)
 
 //Определяем пользователя
 function user_check() {
-	global $config,$memcache , $db;
+	global $config,$memcached , $db;
 
 	//Удаляем USER
 	unset($GLOBALS["USER"]);
@@ -427,7 +427,7 @@ function user_check() {
 
 	//Если что-нибудь требует обновлению - обновляем :D
     if (sizeof($updateset)) {
-		// $memcache->delete('user_'.$uid);
+		// $memcached->delete('user_'.$uid);
         $sql = $db->query("UPDATE LOW_PRIORITY users SET ".implode(", ", $updateset)." WHERE id=" . $row["id"]);
 		// $db->free($sql);
 	}
@@ -446,7 +446,7 @@ function user_check() {
 //Определяем сессию
 function user_session()
 {
-	global $USER , $config , $memcache ,$db;
+	global $USER , $config , $memcached ,$db;
 
 	$update = array();
 
@@ -485,10 +485,10 @@ function user_session()
 
 	if (sizeof($update)) {
 
-		// if (false === ($memcache->get('user_session') ) ) {
+		// if (false === ($memcached->get('user_session') ) ) {
 			$sql = $db->query("INSERT INTO sessions (session_id, user_id, last_access, ip , user_agent, php_self) VALUES ('{$session_id}', '{$user_id}', '{$last_access}', '{$ip}' , '{$user_agent}', '{$php_self}') ON DUPLICATE KEY UPDATE ".implode(", ", $update));
 			// $db->free($sql);
-			$memcache->set('user_session', "1" , 0, 50);
+			$memcached->set('user_session', "1" , 0, 50);
 		// }
 	}
 
@@ -626,7 +626,7 @@ $set = array("a","A","b","B","c","C","d","D","e","E","f","F","g","G","h","H","i"
 
 //Добавление cookies
 function login_cookie($id, $password_hash,  $expires = 0x7fffffff) {
-	global $memcache , $config;
+	global $memcached , $config;
 
    $subnet = explode('.', getip());
 	$subnet[2] = $subnet[3] = 0;
@@ -650,14 +650,14 @@ function login_cookie($id, $password_hash,  $expires = 0x7fffffff) {
 
 
 	//Удаляем memcached файл
-	$memcache->delete('user_'.$id);
+	$memcached->delete('user_'.$id);
 
 }
 
 
 //Удаление cookies
 function logout_cookie() {
-	global  $memcache , $USER , $config;
+	global  $memcached , $USER , $config;
 	//хак от wennet'a
 	if($config['cookies_mode']) {
 		$domain = $_SERVER['HTTP_HOST'];
@@ -673,7 +673,7 @@ function logout_cookie() {
 	setcookie(COOKIE_PASSWORD, "", 0x7fffffff, "/" , $domain , false , true);
 	//Удаляем memcached файл
 	if($USER && isset($USER['id'])) {
-		$memcache->delete('user_'.$USER['id']);
+		$memcached->delete('user_'.$USER['id']);
 	}
 }
 
@@ -699,17 +699,17 @@ function err($subject = '' , $text = '' , $pref = 0 , $type = 'error') {
 
 //Вывод тегов для категории
 function taggenrelist($cat) {
-	global $memcache , $db;
+	global $memcached , $db;
 	$ret = array();
 
-	if (false === ($ret = $memcache->get("taggenrelist_".$cat)))
+	if (false === ($ret = $memcached->get("taggenrelist_".$cat)))
 	{
 		$cache = array();
 		$res = $db->query("SELECT id, name, howmuch FROM tags WHERE category=".$db->safesql($cat)." ORDER BY name ASC") or sqlerr(__FILE__ , __LINE__);
 		while ($row = $db->get_row() )
 			$cache[] = $row;
 
-		$memcache->set("taggenrelist_".$cat, $cache , 0, 500);
+		$memcached->set("taggenrelist_".$cat, $cache , 0, 500);
 		$ret = $cache;
 	}
 
@@ -1106,7 +1106,7 @@ function get_certain_time($time) {
 
 //Отправка локального сообщения
 function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {
-	global $memcache , $db;
+	global $memcached , $db;
 
 	if(!$user_in) {
 		return 0;
@@ -1121,7 +1121,7 @@ function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {
 	}
 	$db->query("INSERT INTO mail(name , text , id_user_in , id_user_out , date , delete_in , delete_out ) VALUES ('".$db->safesql($name)."' , '".$db->safesql($text)."' , ".$user_in." , ".$user_out." , NOW() , 0 , 0 )");
 	$db->query("UPDATE users SET num_messages=(num_messages+1) WHERE id=".$user_in);
-	$memcache->delete("user_".$user_in);
+	$memcached->delete("user_".$user_in);
 	return 1;
 }
 
@@ -1353,9 +1353,9 @@ function encode_code($text) {
 //Список категорий
 /*
 function get_categories() {
-	global $db , $memcache;
+	global $db , $memcached;
 	 //Получаем список категорий
-	if (false === ($cache_result = $memcache->get('upload_categories')))
+	if (false === ($cache_result = $memcached->get('upload_categories')))
 	{
 		$categories_who = array();
 		$cats = $db->query("SELECT c.* , COUNT(t.id)  AS count , SUM(t.size) AS size
@@ -1365,7 +1365,7 @@ function get_categories() {
 		while($arr = $db->get_row() )
 			$categories_who[] = $arr;
 
-		$memcache->set('upload_categories', $categories_who , 0, (24*60*60));
+		$memcached->set('upload_categories', $categories_who , 0, (24*60*60));
 		$cache_result = $categories_who;
 	}
 
@@ -1376,21 +1376,13 @@ function get_categories() {
 
 //Получение списка категорий
 function categories_array($id = 0) {
-	global $memcached, $db;
+	global $db;
+
+	$memcached = (function_exists('lt_cache') ? lt_cache() : null);
 
 	$id = (int) $id;
 	$cacheKey = 'categories_' . $id;
-	$categories_who = false;
-
-	// Пытаемся читать из кеша только если объект Memcached реально есть
-	if ($memcached instanceof Memcached) {
-		$categories_who = $memcached->get($cacheKey);
-
-		// если ключа нет, Memcached вернет false
-		if ($memcached->getResultCode() !== Memcached::RES_SUCCESS) {
-			$categories_who = false;
-		}
-	}
+	$categories_who = (is_object($memcached) ? $memcached->get($cacheKey) : false);
 
 	if ($categories_who === false) {
 		$sql = $db->query("
@@ -1414,9 +1406,8 @@ function categories_array($id = 0) {
 			}
 		}
 
-		// Пишем в кеш только если Memcached реально доступен
-		if ($memcached instanceof Memcached) {
-			$memcached->set($cacheKey, $categories_who, 1000);
+		if (is_object($memcached)) {
+			$memcached->set($cacheKey, $categories_who, 0, 1000);
 		}
 	}
 
@@ -1486,22 +1477,22 @@ function is_language($language = "") {
 
 //Информация о правах класса
 function get_priv_info($class) {
-	global $memcache , $db;
+	global $memcached , $db;
 
 	$class = (int)$class;
 
 	//Определяем права пользовател
-	if (false === ($row = $memcache->get('priv_'.$class)))
+	if (false === ($row = $memcached->get('priv_'.$class)))
 	{
 		$row = $db->super_query("SELECT * FROM priv WHERE id=".$class);
-		$memcache->set('priv_'.$class , $row , 0, 1000);
+		$memcached->set('priv_'.$class , $row , 0, 1000);
 	}
 
 	if ($row) {
 		return $row;
 	}
 
-	if (false === ($row = $memcache->get('priv_guest_defaults'))) {
+	if (false === ($row = $memcached->get('priv_guest_defaults'))) {
 		$row = array();
 		$sql = $db->query("SHOW COLUMNS FROM priv");
 		while ($column = $db->get_row($sql)) {
@@ -1513,7 +1504,7 @@ function get_priv_info($class) {
 		$row['NAME'] = 'Гость';
 		$row['COLOR'] = '000000';
 
-		$memcache->set('priv_guest_defaults', $row, 0, 1000);
+		$memcached->set('priv_guest_defaults', $row, 0, 1000);
 	}
 
 	return $row;
@@ -1521,16 +1512,16 @@ function get_priv_info($class) {
 
 //Получение списка классов
 function get_classes_list() {
-	global $memcache , $db;
+	global $memcached , $db;
 
 	//Определяем права пользовател
-	if (false === ($result = $memcache->get('priv_all'))) {
+	if (false === ($result = $memcached->get('priv_all'))) {
 		$db->query("SELECT * FROM priv WHERE id > 0 ");
 		$result = array();
 		while($row = $db->get_row() ) {
 			$result[] = $row;
 		}
-		$memcache->set('priv_all' , $result , 0, 300);
+		$memcached->set('priv_all' , $result , 0, 300);
 	}
 	return $result;
 }

@@ -105,16 +105,16 @@ $rewrite = new rewrite;
 
 //Запускаем memcached/filecache
 require_once __DIR__ . '/bootstrap/cache.php';
-$memcache = lt_create_cache_driver();
+$memcached = lt_cache_bind_globals();
 
 //Cron system
-if (false === ($CRON = $memcache->get('CRON'))) {
+if (false === ($CRON = $memcached->get('CRON'))) {
 	$sql = $db->query("SELECT * FROM cron");
 	$CRON = array();
 	while($cron  = $db->get_row($sql)) {
 		$CRON[$cron['cron_name']] = $cron['cron_value'];
 	}
-	$memcache->set('CRON', $CRON  , 0, 15*60);
+	$memcached->set('CRON', $CRON  , 0, 15*60);
 }
 
 
@@ -145,10 +145,10 @@ if(!$PRIV['ip_util']) {
 	$ip = ip2long_db(getip()); //IP адрес
 
 	//Бан по IP - адресу
-	if (false === ($ban_resource = $memcache->get('ip_bans_'.$ip))) {
+	if (false === ($ban_resource = $memcached->get('ip_bans_'.$ip))) {
 		$sql = $db->query("SELECT * FROM bans WHERE '".$ip."'  >= first AND '".$ip."' <= last");
 		$ban_resource = $db->get_row($sql);
-		$memcache->set('ip_bans_'.$ip, $ban_resource  , 0, 1000);
+		$memcached->set('ip_bans_'.$ip, $ban_resource  , 0, 1000);
 	}
 
 	if($ban_resource) {
@@ -163,7 +163,7 @@ if($USER && strlen($USER['passkey']) != 32) {
 	$USER['passkey'] = md5($USER['name'].get_date_time().$USER['password']);
 	$sql = $db->query('UPDATE users SET passkey="'.$USER['passkey'].'" WHERE id="'.$USER['id'].'"');
 	$db->free($sql);
-	$memcache->delete('user_'.$USER['id']);
+	$memcached->delete('user_'.$USER['id']);
 }
 
 
@@ -176,14 +176,14 @@ if($USER) {
 		if(!$USER['bad_rating']) {
 			$sql = $db->query("UPDATE users SET bad_rating='1' WHERE id=".$USER['id']);
 			$db->free($sql);
-			$memcache->delete('user_'.$USER['id']);
+			$memcached->delete('user_'.$USER['id']);
 		}
 
 		//Баним , если прошло время
 		if($certain_time['days'] >= $config['days_rating'] ) {
 			$sql = $db->query("UPDATE users SET banned='1' WHERE id=".$USER['id']);
 			$db->free($sql);
-			$memcache->delete('user_'.$USER['id']);
+			$memcached->delete('user_'.$USER['id']);
 		}
 
 	}
@@ -193,13 +193,13 @@ if($USER) {
 	if($USER['bad_rating'] && get_ratio($USER['uploaded'] , $USER['downloaded'] ) >= $config['bad_rating']  && $PRIV['bad_rating'] ) {
 		$sql = $db->query("UPDATE users SET bad_rating='0' WHERE id=".$USER['id']);
 		$db->free($sql);
-		$memcache->delete('user_'.$USER['id']);
+		$memcached->delete('user_'.$USER['id']);
 	}
 
 	//Если пользователь забанен , делаем выход
 	if($USER['banned']) {
 		logout_cookie();
-		$memcache->delete('user_'.$USER['id']);
+		$memcached->delete('user_'.$USER['id']);
 	}
 }
 ?>

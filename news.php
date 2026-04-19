@@ -69,8 +69,8 @@ if($act == 'edit' && $id) {
 		}
 
 		//Удаляем старый кеш
-		$memcache->delete('news');
-		$memcache->delete('sidebar_news_all');
+		$memcached->delete('news');
+		$memcached->delete('sidebar_news_all');
 		header("Location:news.php?id=".$id."");
 		die();
 	}
@@ -164,8 +164,8 @@ if($act == 'add') {
 
 
 		//Удаляем старый кеш
-		$memcache->delete('news');
-		$memcache->delete('sidebar_news_all');
+		$memcached->delete('news');
+		$memcached->delete('sidebar_news_all');
 		header("Location:news.php?id=".$id."");
 		die();
 	}
@@ -239,8 +239,8 @@ if($act == 'delete' && $id) {
 
 
 	//Удаляем старый кеш
-	$memcache->delete('news');
-	$memcache->delete('sidebar_news_all');
+	$memcached->delete('news');
+	$memcached->delete('sidebar_news_all');
 	header("Location:news.php?status=1");
 	die();
 }

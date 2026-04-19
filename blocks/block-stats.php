@@ -9,8 +9,8 @@ by Nick
 ===================================================================
 */
 
-global $db , $memcache , $config, $language;
-if (($stats = $memcache->get('stats')))
+global $db , $memcached , $config, $language;
+if (($stats = $memcached->get('stats')))
 {
 	//Всего торрентов
 	$torrents = $stats["torrents"] ?? 0;
@@ -114,7 +114,7 @@ else
 		"registered_day" => $registered_day ,
 	);
 
-	$memcache->set('stats', $stats , 0, 15*60);
+	$memcached->set('stats', $stats , 0, 15*60);
 }
 
 

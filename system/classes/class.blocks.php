@@ -26,7 +26,7 @@ class blocks {
 	 *	Вывод блока
 	*/
 	function display($type , $align = '')  {
-		global $config , $language , $USER , $db , $memcache , $timer ,$PRIV , $rewrite , $CRON  , $blocks;
+		global $config , $language , $USER , $db , $memcached , $timer ,$PRIV , $rewrite , $CRON  , $blocks;
 
 
 		//Проверяем , используются ли они

@@ -5,7 +5,7 @@
 ===================================================================
 */
 
-global $config , $language , $USER , $db , $memcache, $PRIV , $rewrite;
+global $config , $language , $USER , $db , $memcached, $PRIV , $rewrite;
 
 #----->Bots Array<-----#
 $bots = array(
@@ -19,7 +19,7 @@ $bots = array(
 ///////////////////////////////////////////////////////////////
 //Кто он-лайн
 ///////////////////////////////////////////////////////////////
-if (false === ($online = $memcache->get('online')))
+if (false === ($online = $memcached->get('online')))
 {
 	$online = array();
 	$online_who = array();
@@ -47,7 +47,7 @@ if (false === ($online = $memcache->get('online')))
 	$count = $db->num_rows();
 	$online['count'] = $count;
 
-	$memcache->set('online', $online , 0, (2 * 60 ));
+	$memcached->set('online', $online , 0, (2 * 60 ));
 }
 
 $numUsers = 0; //Сколько пользователей

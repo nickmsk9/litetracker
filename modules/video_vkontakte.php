@@ -9,7 +9,7 @@ by Nick
 ===================================================================
 */
 
-if (false === ($video_cache = $memcache->get('video_vkontakte')))
+if (false === ($video_cache = $memcached->get('video_vkontakte')))
 {
 	$query =  $db->query("SELECT * FROM torrents  WHERE video_vkontakte != '' ORDER BY RAND() LIMIT 1") or sqlerr(__FILE__, __LINE__);
 	$video_cache = array();
@@ -18,7 +18,7 @@ if (false === ($video_cache = $memcache->get('video_vkontakte')))
 		$video_cache[] = $cache_data;
 
 	//Ставим кеш на 24 часа
-	$memcache->set('video_vkontakte', $video_cache , 0, 24*60*60);
+	$memcached->set('video_vkontakte', $video_cache , 0, 24*60*60);
 
 }
 

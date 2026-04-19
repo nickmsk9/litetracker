@@ -91,7 +91,7 @@ $config  = array(
 
 //Настройка кеша
 'cache' => array(
-			'driver' => 'filecache', //filecache | memcached
+			'driver' => 'memcached', //filecache | memcached
 			'memcached' => array(
 				'host' => '127.0.0.1',
 				'port' => 11213,

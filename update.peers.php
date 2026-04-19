@@ -71,6 +71,6 @@ if ($CRON['multi_remote']) {
 	$db->query("UPDATE cron SET cron_value=0 WHERE cron_name='in_remotecheck'");
 }
 
-$memcache->delete('CRON');
+$memcached->delete('CRON');
 print "ok 2";
 ?>
