@@ -59,7 +59,7 @@ else
 
 
 	//Сидеров/Личеров
-	$peers1 = $db->super_query("SELECT SUM(seeders) AS seeders , SUM(leechers) AS leechers FROM trackers");
+	$peers1 = $db->super_query("SELECT SUM(seeders) AS seeders , SUM(leechers) AS leechers FROM trackers WHERE tracker='localhost'");
 
 
 		$seeders = number_format((float) ($peers1['seeders'] ?? 0));

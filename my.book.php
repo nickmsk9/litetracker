@@ -160,7 +160,7 @@ list($pagertop, $pagerbottom, $limit) = pager('10', $count, 'my.book.php?');
 
 // основной запрос
 $sql = $db->query("
-	SELECT t.* , SUM(tr.seeders) AS seeders , SUM(tr.leechers) AS leechers
+	SELECT t.* , COALESCE(SUM(CASE WHEN tr.tracker = 'localhost' THEN tr.seeders ELSE 0 END), 0) AS seeders , COALESCE(SUM(CASE WHEN tr.tracker = 'localhost' THEN tr.leechers ELSE 0 END), 0) AS leechers
 	FROM books b
 	LEFT JOIN torrents t ON b.id_torrent = t.id
 	LEFT JOIN trackers tr ON tr.torrent = t.id

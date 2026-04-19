@@ -253,7 +253,10 @@ $id = (int)$_GET['id'];
 
 
 //Запрос к таблице torrents
-$db->query("SELECT t.* , SUM(tr.seeders) AS seeders , SUM(tr.leechers) AS leechers , t.multi,
+$db->query("SELECT t.* ,
+			COALESCE(SUM(CASE WHEN tr.tracker='localhost' THEN tr.seeders ELSE 0 END), 0) AS seeders ,
+			COALESCE(SUM(CASE WHEN tr.tracker='localhost' THEN tr.leechers ELSE 0 END), 0) AS leechers ,
+			t.multi,
 			IF((SELECT SUM(seeders) FROM trackers WHERE torrent = t.id AND tracker='localhost' GROUP BY tracker) > 0 , true , false) AS local_seeders
 			FROM torrents AS t
 			LEFT JOIN trackers AS tr ON  tr.torrent = t.id
@@ -475,11 +478,13 @@ $user_class = $user['class'];
 //Пиры
 /////////////////////////////////////////////////////////
 //Раздают
-$seeders = number_format($arr['seeders']);
+$seeders_count = max(0, (int) ($arr['seeders'] ?? 0));
+$seeders = number_format($seeders_count);
 //Качают
-$leechers = number_format($arr['leechers']);
+$leechers_count = max(0, (int) ($arr['leechers'] ?? 0));
+$leechers = number_format($leechers_count);
 //Пиры
-$peers = number_format($seeders + $leechers);
+$peers = number_format($seeders_count + $leechers_count);
 
 
 //Мульти
@@ -542,12 +547,7 @@ $details_rating_votes = max(0, $details_rating_up + $details_rating_down);
 if ($details_rating_votes > 0) {
 	$details_rating_score = round(($details_rating_up / max(1, $details_rating_votes)) * 5, 1);
 } else {
-	$details_activity = max(0, (int) $arr['completed']) + max(0, (int) $arr['seeders']) + max(0, (int) $arr['leechers']);
-	$details_rating_votes = max(0, (int) $arr['completed']);
-	if ($details_rating_votes <= 0 && $details_activity > 0) {
-		$details_rating_votes = $details_activity;
-	}
-	$details_rating_score = ($details_activity > 0 ? min(5, 3.8 + min(1.2, $details_activity / 25)) : 0);
+	$details_rating_score = 0;
 }
 
 $details_status_badges = array();

@@ -100,11 +100,13 @@ $user_class = $user['class'];
 //Пиры
 /////////////////////////////////////////////////////////
 //Раздают
-$seeders = number_format($arr['seeders']);
+$seeders_count = max(0, (int) ($arr['seeders'] ?? 0));
+$seeders = number_format($seeders_count);
 //Качают
-$leechers = number_format($arr['leechers']);
+$leechers_count = max(0, (int) ($arr['leechers'] ?? 0));
+$leechers = number_format($leechers_count);
 //Пиры
-$peers = number_format($seeders + $leechers);
+$peers = number_format($seeders_count + $leechers_count);
 
 //Новинка
 $news =  ($arr['new_release'] ? 1 : 0);
