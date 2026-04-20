@@ -39,6 +39,9 @@ $bodyClasses = array();
 if (!empty($USER['theme_dark'])) {
 	$bodyClasses[] = 'theme-dark';
 }
+if (!empty($GLOBALS['LITETRACKER_SIGNUP_MODAL_FRAME'])) {
+	$bodyClasses[] = 'signup-modal-frame';
+}
 ?>
 <!doctype html>
 <html lang="ru">
@@ -48,6 +51,72 @@ if (!empty($USER['theme_dark'])) {
 <?=$header;?>
 <link href="templates/<?=$tpl;?>/css/buttons.css" rel="stylesheet" type="text/css">
 <link href="templates/<?=$tpl;?>/css/my.css" rel="stylesheet" type="text/css">
+<?php if (!$USER && !empty($config['registeronline'])) { ?>
+<style>
+.site-signup-overlay{
+	position:fixed;
+	inset:0;
+	z-index:10000;
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	padding:20px;
+}
+
+.site-signup-overlay[hidden]{
+	display:none;
+}
+
+.site-signup-overlay-backdrop{
+	position:absolute;
+	inset:0;
+	background:rgba(0, 0, 0, .56);
+}
+
+.site-signup-overlay-dialog{
+	position:relative;
+	width:min(100%, 760px);
+	height:min(100%, 600px);
+	background:#f4f5f7;
+	border-radius:4px;
+	overflow:hidden;
+	box-shadow:0 24px 60px rgba(0, 0, 0, .35);
+	z-index:1;
+}
+
+.site-signup-overlay-close{
+	position:fixed;
+	top:10px;
+	right:16px;
+	width:36px;
+	height:36px;
+	border:0;
+	border-radius:2px;
+	background:transparent;
+	color:#ffffff;
+	font-size:36px;
+	line-height:1;
+	cursor:pointer;
+	z-index:10001;
+}
+
+.site-signup-overlay-close:hover{
+	opacity:.85;
+}
+
+.site-signup-frame{
+	display:block;
+	width:100%;
+	height:100%;
+	border:0;
+	background:#f4f5f7;
+}
+
+body.site-signup-modal-open{
+	overflow:hidden;
+}
+</style>
+<?php } ?>
 </head>
 <body<?=($bodyClasses ? ' class="'.htmlspecialchars(implode(' ', $bodyClasses), ENT_QUOTES, 'UTF-8').'"' : '');?>>
 <div class="site-wrapper">
@@ -122,6 +191,98 @@ if (!empty($USER['theme_dark'])) {
 	</header>
 	</div>
 </div>
+
+<?php if (!$USER && !empty($config['registeronline'])) { ?>
+<div class="site-signup-overlay" id="site-signup-overlay" hidden>
+	<div class="site-signup-overlay-backdrop" data-signup-close="1"></div>
+	<div class="site-signup-overlay-dialog" role="dialog" aria-modal="true" aria-label="Регистрация">
+		<iframe class="site-signup-frame" id="site-signup-frame" title="Регистрация" src="about:blank"></iframe>
+	</div>
+	<button class="site-signup-overlay-close" type="button" aria-label="Закрыть" data-signup-close="1">&times;</button>
+</div>
+
+<script>
+(function(){
+	var overlay = document.getElementById('site-signup-overlay');
+	var frame = document.getElementById('site-signup-frame');
+
+	if (!overlay || !frame) {
+		return;
+	}
+
+	var body = document.body;
+
+	function buildModalHref(rawHref) {
+		var url;
+
+		try {
+			url = new URL(rawHref || 'signup.php', window.location.href);
+		} catch (e) {
+			url = new URL('signup.php', window.location.href);
+		}
+
+		if (!/signup\.php$/i.test(url.pathname)) {
+			url = new URL('signup.php', window.location.href);
+		}
+
+		url.searchParams.set('modal', '1');
+
+		if (!url.searchParams.get('referer')) {
+			var referer = window.location.pathname.replace(/^\//, '') + window.location.search;
+			url.searchParams.set('referer', referer);
+		}
+
+		return url.pathname + '?' + url.searchParams.toString();
+	}
+
+	function openSignupModal(href) {
+		frame.src = buildModalHref(href);
+		overlay.hidden = false;
+		body.classList.add('site-signup-modal-open');
+	}
+
+	function closeSignupModal() {
+		overlay.hidden = true;
+		body.classList.remove('site-signup-modal-open');
+		frame.src = 'about:blank';
+	}
+
+	document.addEventListener('click', function(event){
+		var closeTrigger = event.target.closest('[data-signup-close="1"]');
+		if (closeTrigger) {
+			event.preventDefault();
+			closeSignupModal();
+			return;
+		}
+
+		var link = event.target.closest('a[href]');
+		if (!link) {
+			return;
+		}
+
+		if (link.hasAttribute('data-signup-direct') || link.target === '_blank' || link.hasAttribute('download')) {
+			return;
+		}
+
+		var href = String(link.getAttribute('href') || '');
+		if (!/(^|\/)signup\.php(?:\?|$)/i.test(href)) {
+			return;
+		}
+
+		event.preventDefault();
+		openSignupModal(href);
+	});
+
+	document.addEventListener('keydown', function(event){
+		if (event.key === 'Escape' && !overlay.hidden) {
+			closeSignupModal();
+		}
+	});
+
+	window.ltCloseSignupModal = closeSignupModal;
+})();
+</script>
+<?php } ?>
 
 
 
