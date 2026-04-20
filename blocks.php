@@ -16,12 +16,166 @@ if(!$PRIV['EDIT_PRIV']) {
 	err('Ошибка' , 'У вас нет прав просматривать данную страницу');
 }
 
+$act = (isset($_GET['act']) ? trim((string) $_GET['act']) : '');
+$status = (isset($_GET['status']) ? trim((string) $_GET['status']) : '');
+
+function blocks_json_response($ok, $message = '', $extra = array())
+{
+	header('Content-Type: application/json; charset=UTF-8');
+
+	$payload = array(
+		'ok' => ($ok ? 1 : 0),
+		'message' => (string) $message,
+	);
+
+	if(!empty($extra) && is_array($extra)) {
+		foreach($extra AS $key => $value) {
+			$payload[$key] = $value;
+		}
+	}
+
+	echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+	die();
+}
+
+function block_position_name($position)
+{
+	switch($position) {
+		case 'l':
+			return 'Слева';
+
+		case 'c':
+			return 'По центру сверху';
+
+		case 'd':
+			return 'По центру снизу';
+
+		case 'r':
+			return 'Справа';
+
+		default:
+			return 'Неизвестно';
+	}
+}
+
+function block_type_name($type)
+{
+	switch($type) {
+		case 'all':
+			return 'Всем';
+
+		case 'guests':
+			return 'Гостям';
+
+		case 'users':
+			return 'Пользователям';
+
+		case 'moderators':
+			return 'Модераторам';
+
+		case 'administrators':
+			return 'Администраторам';
+
+		default:
+			return 'Неизвестно';
+	}
+}
+
+function block_reindex_position($position)
+{
+	global $db;
+
+	$allowed = array('l', 'r', 'c', 'd');
+	if(!in_array($position, $allowed)) {
+		return;
+	}
+
+	$sql = $db->query("SELECT bid, weight
+					  FROM orbital_blocks
+					  WHERE position='".$db->safesql($position)."'
+					  ORDER BY weight ASC, bid ASC");
+
+	$weight = 1;
+	while($row = $db->get_row($sql)) {
+		if((int) $row['weight'] !== $weight) {
+			$db->query("UPDATE orbital_blocks SET weight=".$weight." WHERE bid=".(int) $row['bid']);
+		}
+
+		$weight++;
+	}
+
+	$db->free($sql);
+}
+
+//////////////////////////////////////////////
+// AJAX-перемещение блока
+//////////////////////////////////////////////
+if($act == 'move') {
+	$bid = (isset($_POST['bid']) ? (int) $_POST['bid'] : (isset($_GET['bid']) ? (int) $_GET['bid'] : 0));
+	$direction = trim((string) (isset($_POST['direction']) ? $_POST['direction'] : (isset($_GET['direction']) ? $_GET['direction'] : '')));
+
+	if(!$bid) {
+		blocks_json_response(false, 'Не указан блок для перемещения.');
+	}
+
+	if($direction != 'up' && $direction != 'down') {
+		blocks_json_response(false, 'Неизвестное направление перемещения.');
+	}
+
+	$current = $db->super_query("SELECT bid, position, weight
+							 FROM orbital_blocks
+							 WHERE bid=".$bid." LIMIT 1");
+
+	if(empty($current['bid'])) {
+		blocks_json_response(false, 'Блок не найден.');
+	}
+
+	$position = $current['position'];
+	block_reindex_position($position);
+
+	$current = $db->super_query("SELECT bid, position, weight
+							 FROM orbital_blocks
+							 WHERE bid=".$bid." LIMIT 1");
+
+	$compare = ($direction == 'up' ? '<' : '>');
+	$order = ($direction == 'up' ? 'DESC' : 'ASC');
+
+	$swap = $db->super_query("SELECT bid, weight
+						  FROM orbital_blocks
+						  WHERE position='".$db->safesql($position)."'
+							AND weight ".$compare." ".(int) $current['weight']."
+						  ORDER BY weight ".$order.", bid ".$order."
+						  LIMIT 1");
+
+	if(empty($swap['bid'])) {
+		blocks_json_response(false, 'Блок уже находится на краю списка.');
+	}
+
+	$currentBid = (int) $current['bid'];
+	$currentWeight = (int) $current['weight'];
+	$swapBid = (int) $swap['bid'];
+	$swapWeight = (int) $swap['weight'];
+
+	$tempWeightRow = $db->super_query("SELECT MAX(weight) AS c
+									 FROM orbital_blocks
+									 WHERE position='".$db->safesql($position)."'");
+	$tempWeight = ((int) $tempWeightRow['c']) + 1000;
+
+	$db->query("UPDATE orbital_blocks SET weight=".$tempWeight." WHERE bid=".$currentBid);
+	$db->query("UPDATE orbital_blocks SET weight=".$currentWeight." WHERE bid=".$swapBid);
+	$db->query("UPDATE orbital_blocks SET weight=".$swapWeight." WHERE bid=".$currentBid);
+
+	block_reindex_position($position);
+	$memcached->delete('block_'.$position, 0);
+
+	blocks_json_response(true, 'Порядок блоков обновлен.');
+}
 
 //////////////////////////////////////////////
 //Удаление блока
 //////////////////////////////////////////////
-if($_GET['act'] == 'del') {
-	$bid = (int)$_GET['bid'];
+if($act == 'del') {
+	$bid = (int) $_GET['bid'];
 	$sql = $db->query("SELECT * FROM orbital_blocks WHERE bid=".$bid);
 	if(!$db->num_rows($sql) ) {
 		err('Ошибка' , 'Данный блок не найден' , 1);
@@ -29,8 +183,9 @@ if($_GET['act'] == 'del') {
 	$arr = $db->get_row();
 
 	//Пользователь согласился , удаляем
-	if($_GET['take']) {
+	if(isset($_GET['take']) && $_GET['take']) {
 		$db->query("DELETE FROM orbital_blocks WHERE bid=".$bid);
+		block_reindex_position($arr['position']);
 		$memcached->delete('block_'.$arr['position'] , 0);
 		header('Location:blocks.php?position='.$arr['position'].'&status=2');
 		die();
@@ -40,7 +195,7 @@ if($_GET['act'] == 'del') {
 	head('Удаление блока');
 	begin_frame('Удаление блока');
 	msg('Внимание!' , 'Вы удаляете блок , т.е он не будет больше отображаться на сайте , так и в списке блоков<br><b>Это так ?</b> &nbsp
-	<input type="button" value="Да , точно !" onCLick="window.location.href=\'blocks.php?act=del&bid='.$bid.'&take=1\'"> &nbsp
+	<input type="button" value="Да , точно !" onClick="window.location.href=\'blocks.php?act=del&bid='.$bid.'&take=1\'"> &nbsp
 	<input type="button" value="Нет , назад" onClick="history.go(-1);"> ');
 
 	end_frame();
@@ -48,30 +203,36 @@ if($_GET['act'] == 'del') {
 
 	die();
 }
-//////////////////////////////////////////////
-//Добавление блока
-//////////////////////////////////////////////
-if($_GET['act'] == 'add') {
 
-	//Редактирование
-	if($_GET['bid']) {
-		$bid = (int)$_GET['bid'];
+//////////////////////////////////////////////
+//Добавление / редактирование блока
+//////////////////////////////////////////////
+if($act == 'add') {
+	$bid = (isset($_GET['bid']) ? (int) $_GET['bid'] : 0);
+	$arr = array(
+		'title' => '',
+		'blockfile' => '',
+		'position' => '',
+		'active' => 1,
+		'type' => 'all',
+		'which' => 'all',
+	);
+
+	if($bid) {
 		$sql = $db->query("SELECT * FROM orbital_blocks WHERE bid=".$bid);
 		if(!$db->num_rows($sql) ) {
 			err('Ошибка' , 'Данный блок не найден' , 1);
 		}
 
-		//Массив с данными
 		$arr = $db->get_row();
 	}
 
 	if($_POST) {
-		$update= array();
+		$update = array();
+		$positions = array('l', 'r', 'c', 'd');
+		$types = array('all', 'guests', 'users', 'moderators', 'administrators');
 
-		//Название
-		$title = $_POST['title'];
-		$update[] = 'title="'.$db->safesql($title).'"';
-
+		$title = trim((string) $_POST['title']);
 		if(empty($title) ) {
 			err('Ошибка' , 'Вы не ввели название' , 1);
 		}
@@ -79,76 +240,65 @@ if($_GET['act'] == 'add') {
 		if(strlen($title) > 60 ) {
 			err('Ошибка' , 'Название превышает 60 символов' , 1);
 		}
+		$update[] = 'title="'.$db->safesql($title).'"';
 
-
-
-		//Файл
-		$blockfile = $_POST['blockfile'];
-		$update[] = 'blockfile="'.$db->safesql($blockfile).'"';
-
+		$blockfile = trim((string) $_POST['blockfile']);
 		if(!is_file('blocks/'.$blockfile) )  {
 			err('Ошибка' , 'Выберите файл из списка' , 1);
 		}
+		$update[] = 'blockfile="'.$db->safesql($blockfile).'"';
 
-		//Позиция
-		$position = $_POST['position'];
-		$update[] = 'position="'.$db->safesql($position).'"';
-		$array = array('l' ,'r' , 'c' , 'd');
-		if(!in_array($position , $array) ) {
+		$position = trim((string) $_POST['position']);
+		if(!in_array($position , $positions) ) {
 			err('Ошибка' , 'Данной позиции не существует' , 1);
 		}
+		$update[] = 'position="'.$db->safesql($position).'"';
 
-		//Активный
-		$active = ($_POST['active'] ? 1 : 0);
+		$active = ((int) $_POST['active'] == 1 ? 1 : 0);
 		$update[] = 'active="'.$active.'"';
 
-		//Тип
-		$type = $_POST['type'];
-		$update[] = 'type="'.$db->safesql($type).'"';
-		$array = array('all' ,'guests' , 'users' , 'moderators' , 'administrators');
-		if(!in_array($type , $array) ) {
+		$type = trim((string) $_POST['type']);
+		if(!in_array($type , $types) ) {
 			err('Ошибка' , 'Данного типа не существует' , 1);
 		}
+		$update[] = 'type="'.$db->safesql($type).'"';
 
-		//Зона видимости
-		$which  = $_POST['which'];
-		// die($which);
-		if(empty($which) ) {
+		$which = trim((string) $_POST['which']);
+		if($which === '') {
 			$which = 'all';
 		}
 		$update[] = 'which="'.$db->safesql($which).'"';
 
-		// die(implode(','  , $update));
-
-
-		//Пишем в базу
 		if(!$bid) {
-			$weight = $db->super_query("SELECT weight AS c FROM orbital_blocks WHERE position = '".$position."' ORDER BY weight DESC LIMIT 1");
-			if($weight['c']) {
-				$update[] = 'weight='.$weight['c'];
-			} else {
-				$update[] = 'weight=1';
-			}
-
+			$weight = $db->super_query("SELECT weight AS c FROM orbital_blocks WHERE position='".$db->safesql($position)."' ORDER BY weight DESC LIMIT 1");
+			$update[] = 'weight='.(((int) $weight['c']) + 1);
 			$db->query("INSERT INTO orbital_blocks SET ".implode(' , ' , $update));
 		} else {
+			$oldPosition = $arr['position'];
+			if($oldPosition != $position) {
+				$weight = $db->super_query("SELECT weight AS c FROM orbital_blocks WHERE position='".$db->safesql($position)."' ORDER BY weight DESC LIMIT 1");
+				$update[] = 'weight='.(((int) $weight['c']) + 1);
+			}
+
 			$db->query("UPDATE orbital_blocks SET ".implode(' , ' , $update)." WHERE bid=".$bid);
 		}
 
-		//Удаляем кеш
+		block_reindex_position($position);
 		$memcached->delete('block_'.$position , 0);
+
 		if($bid) {
+			if($arr['position'] != $position) {
+				block_reindex_position($arr['position']);
+			}
 			$memcached->delete('block_'.$arr['position'] , 0);
 		}
-		//Редирект
-		header('Location: blocks.php?status=1&position='.$position.'');
 
+		header('Location: blocks.php?status=1&position='.$position);
+		die();
 	}
-
 
 	$title = (!$bid ? 'Добавление блока' : 'Редактирование блока');
 	head($title);
-
 
 	begin_frame($title);
 	?>
@@ -166,8 +316,8 @@ if($_GET['act'] == 'add') {
 					<option value="0">(Выберите)</option>
 					<?
 						$open = opendir('blocks');
-						while ($file = readdir($open)) {
-							if ($file != "." && $file != ".." && $file != '.htaccess') {
+						while($file = readdir($open)) {
+							if($file != '.' && $file != '..' && $file != '.htaccess' && !is_dir('blocks/'.$file)) {
 								echo '<option value="'.$file.'" '.($arr['blockfile'] == $file ? 'selected' : '').'>'.$file.'</option>';
 							}
 						}
@@ -175,8 +325,6 @@ if($_GET['act'] == 'add') {
 					?>
 					</select>
 				</td>
-
-
 			</tr>
 
 			<tr>
@@ -186,7 +334,7 @@ if($_GET['act'] == 'add') {
 					<option value="">(Выберите)</option>
 					<option value="l" <?=($arr['position'] == 'l' ? 'selected' : '' );?>>Левый</option>
 					<option value="c" <?=($arr['position'] == 'c' ? 'selected' : '' );?>>Центральный (вверху)</option>
-					<option value="d" <?=($arr['position'] == 'd' ? 'selected' : '' );?>>Центральный (вниз)</option>
+					<option value="d" <?=($arr['position'] == 'd' ? 'selected' : '' );?>>Центральный (внизу)</option>
 					<option value="r" <?=($arr['position'] == 'r' ? 'selected' : '' );?>>Справа</option>
 					</select>
 				</td>
@@ -198,7 +346,6 @@ if($_GET['act'] == 'add') {
 					<select name="active">
 					<option value="1" <?=($arr['active'] == '1' ? 'selected' : '' );?>>Да</option>
 					<option value="0" <?=($arr['active'] == '0' ? 'selected' : '' );?>>Нет</option>
-
 					</select>
 				</td>
 			</tr>
@@ -207,7 +354,6 @@ if($_GET['act'] == 'add') {
 				<td width="10%"><b>Тип:</b></td>
 				<td>
 					<select name="type">
-					<option value="0">(Выберите)</option>
 					<option value="all" <?=($arr['type'] == 'all' ? 'selected' : '' );?>>Всем</option>
 					<option value="guests" <?=($arr['type'] == 'guests' ? 'selected' : '' );?>>Гостям</option>
 					<option value="users" <?=($arr['type'] == 'users' ? 'selected' : '' );?>>Пользователям</option>
@@ -218,13 +364,12 @@ if($_GET['act'] == 'add') {
 			</tr>
 
 			<tr>
-				<td width="10%"><b>Зона видимисти:</b></td>
+				<td width="10%"><b>Зона видимости:</b></td>
 				<td>
 					<input type="text" name="which" value="<?=(!$bid ? 'all' : htmlspecialchars($arr['which']) );?>"><br>
-					<small>Вводите имя файла ( без .php) , если хотите , чтобы он отображался там ( через запятую , к примеру , index,login,signup ). <b>all</b> - везде </small>
+					<small>Вводите имя файла (без .php), если хотите, чтобы блок отображался там (через запятую, например: index,login,signup). <b>all</b> - везде.</small>
 				</td>
 			</tr>
-
 
 			<tr>
 				<td width="10%"></td>
@@ -232,8 +377,6 @@ if($_GET['act'] == 'add') {
 					<input type="submit" value="Выполнить">
 				</td>
 			</tr>
-
-
 		</table>
 		</form>
 	<?
@@ -245,162 +388,209 @@ if($_GET['act'] == 'add') {
 //////////////////////////////////////////////
 //Вывод блоков
 //////////////////////////////////////////////
-//Определяем позицию
-$position = (string)$_GET['position'];
+$position = trim((string) (isset($_GET['position']) ? $_GET['position'] : ''));
+$positions = array('l', 'c', 'd', 'r');
+if(!in_array($position, $positions)) {
+	$position = '';
+}
 
-//Запрос к базе
-$sql = $db->query("SELECT *
-				   FROM orbital_blocks
-				   WHERE position='".$db->safesql($position)."'
+$sql = false;
+$blocks = array();
 
-				   ORDER BY weight ASC ");
+if($position != '') {
+	block_reindex_position($position);
+	$sql = $db->query("SELECT *
+					  FROM orbital_blocks
+					  WHERE position='".$db->safesql($position)."'
+					  ORDER BY weight ASC, bid ASC");
 
+	while($row = $db->get_row($sql)) {
+		$blocks[] = $row;
+	}
+}
 
 head('Управление блоками');
 
+switch($status) {
+	case '1':
+		msg('Успешно', 'Задание выполнено');
+	break;
 
-switch($_GET['status']) {
-		case '1' : msg('Успешно' , 'Задание выполнено'); break;
-		case '2' : msg('Успешно' , 'Блок удален'); break;
-	}
-
+	case '2':
+		msg('Успешно', 'Блок удален');
+	break;
+}
 
 begin_frame('Управление блоками');
 
-//Если блоки локально отключены
-if(!$config['blocks_use'])  {
-	msg('Внимание!' , 'Блочная система отключена локально ! Вы можете редактировать блоки , но никто их не увидит ! Включить блоки можно в system/config.php');
+if(!$config['blocks_use']) {
+	msg('Внимание!' , 'Блочная система отключена локально! Вы можете редактировать блоки, но никто их не увидит! Включить блоки можно в system/config.php.');
 }
-
-
-//Выводим блоки
 ?>
 
-<!--Позиция блоков-->
-<input type="button" value="Слева" onClick="window.location.href='blocks.php?position=l'">
-<input type="button" value="По центру сверху"  onClick="window.location.href='blocks.php?position=c'">
-<input type="button" value="По центру снизу"  onClick="window.location.href='blocks.php?position=d'">
-<input type="button" value="Справа"  onClick="window.location.href='blocks.php?position=r'">
-<div style="float:right">
-<input type="button" value="Добавить блок" onClick="window.location.href='blocks.php?act=add'">
-
+<div style="margin-bottom:12px;">
+	<b>Позиция:</b>
+	<a href="blocks.php?position=l" style="<?=($position == 'l' ? 'font-weight:bold;text-decoration:underline;' : '');?>">Слева</a> |
+	<a href="blocks.php?position=c" style="<?=($position == 'c' ? 'font-weight:bold;text-decoration:underline;' : '');?>">По центру сверху</a> |
+	<a href="blocks.php?position=d" style="<?=($position == 'd' ? 'font-weight:bold;text-decoration:underline;' : '');?>">По центру снизу</a> |
+	<a href="blocks.php?position=r" style="<?=($position == 'r' ? 'font-weight:bold;text-decoration:underline;' : '');?>">Справа</a>
+	<span style="float:right;"><a href="blocks.php?act=add"><b>+ Добавить блок</b></a></span>
 </div>
-<br><br>
+<div style="clear:both;"></div>
+
 <?
-if(!$db->num_rows($sql) ) {
-	if(empty($position) ) {
-		msg('Внимание'  , 'Выбирете позицию блока');
-	} else {
-		msg('Внимание' , 'Ниодного блока не найдено');
-	}
+if($position == '') {
+	msg('Внимание', 'Выберите позицию блока.');
+} elseif(empty($blocks)) {
+	msg('Внимание', 'Ни одного блока не найдено.');
 } else {
-
-?>
-
-
-	<form action="blocks.php?act" method="post">
-	<table width="100%">
-
-	<tr>
-	<td width="1%"><u>Номер</u></td>
-	<td width="15%"><u>Название</u></td>
-	<td width="5%"><u>Активность</u></td>
-	<td><u>Видимость</u></td>
-	<td><u>Где видим</u></td>
-	<td><u>Перемещение</u></td>
-	<td><u>Редактирование</u></td>
-
-	</tr>
-
-
-	<?
-	while($arr = $db->get_row($sql) ) {
-
-		?>
-			<tr>
-				<td>#<?=$arr['bid'];?>
-				<td><b><?=htmlspecialchars($arr['title']);?></b></td>
-
-
-				<td width="1">
-					<?=($arr['active'] ? '<img src="public/images/ok.gif" title="Активный">' : '<img src="public/images/error.gif" title="Неактивный">');?>
-				</td>
-
-
-
-
-				<td>
-					<?
-						switch($arr['type']) {
-							case 'all':
-								echo 'Всем';
-							break;
-
-							case 'guests':
-								echo 'Гостям';
-							break;
-
-							case 'users':
-								echo 'Пользователям';
-							break;
-
-							case 'moderators':
-								echo 'Модераторам';
-							break;
-
-							case 'administrators':
-								echo 'Администраторам';
-							break;
-
-							default:
-								echo 'Неизвестно';
-							break;
-						}
-					?>
-
-				</td>
-
-				<td>
-					<?
-						if($arr['which'] == 'all')  {
-							echo 'Везде';
-						} elseif($arr['which'] != 'all' && !empty($arr['which']) ) {
-							$which = explode(',' , $arr['which']);
-							$resource = array();
-							foreach($which AS $row) {
-								$resource[] =  '<a href="'.$row.'.php" target="_blank">'.$row.'.php</a>';
-							}
-
-							echo implode(',' , $resource);
-						} else {
-							echo 'Неизвестно';
-						}
-					?>
-				</td>
-
-				<td>
-					<?=($arr['weight'] != '1' ? '<img src="public/images/up.png" title="Поднять вверх">' : '');?>
-					<img src="public/images/down.png" title="Опустить вниз">
-				</td>
-
-				<td>
-					<a href="blocks.php?act=add&bid=<?=$arr['bid'];?>"><img src="public/images/clipboard__pencil.png" title="Редактировать блок"></a>
-					<a href="blocks.php?act=del&bid=<?=$arr['bid'];?>"><img src="public/images/broom.png" title="Удалить блок"></a>
-				</td>
-			</tr>
-
+	?>
+	<div id="block-move-status" style="display:block;min-height:16px;margin-bottom:8px;color:#008000;"></div>
+	<table width="100%" cellpadding="4" cellspacing="0">
+		<tr>
+			<td width="5%"><u>#</u></td>
+			<td width="27%"><u>Блок</u></td>
+			<td width="10%"><u>Активен</u></td>
+			<td width="14%"><u>Видимость</u></td>
+			<td width="20%"><u>Где виден</u></td>
+			<td width="12%"><u>Порядок</u></td>
+			<td width="12%"><u>Действия</u></td>
+		</tr>
 
 		<?
+		$total = count($blocks);
+		for($i = 0; $i < $total; $i++) {
+			$arr = $blocks[$i];
+			$isFirst = ($i == 0);
+			$isLast = ($i == ($total - 1));
+			?>
+			<tr class="js-block-row" data-bid="<?=$arr['bid'];?>">
+				<td>#<?=$arr['bid'];?></td>
+				<td>
+					<b><?=htmlspecialchars($arr['title']);?></b><br>
+					<small><?=htmlspecialchars($arr['blockfile']);?>, <?=block_position_name($arr['position']);?></small>
+				</td>
+				<td><?=($arr['active'] ? 'Да' : 'Нет');?></td>
+				<td><?=block_type_name($arr['type']);?></td>
+				<td>
+					<?
+					if($arr['which'] == 'all') {
+						echo 'Везде';
+					} elseif(!empty($arr['which'])) {
+						$which = explode(',', $arr['which']);
+						$resource = array();
 
-	}
+						foreach($which AS $row) {
+							$row = preg_replace('~[^a-z0-9_\-]~i', '', trim($row));
+							if($row == '') {
+								continue;
+							}
 
-	?>
+							$resource[] = '<a href="'.$row.'.php" target="_blank">'.$row.'.php</a>';
+						}
+
+						echo (!empty($resource) ? implode(', ', $resource) : 'Неизвестно');
+					} else {
+						echo 'Неизвестно';
+					}
+					?>
+				</td>
+				<td>
+					<a href="#" class="js-block-move js-move-up" data-direction="up" style="<?=($isFirst ? 'display:none;' : '');?>">Вверх</a>
+					|
+					<a href="#" class="js-block-move js-move-down" data-direction="down" style="<?=($isLast ? 'display:none;' : '');?>">Вниз</a>
+				</td>
+				<td>
+					<a href="blocks.php?act=add&bid=<?=$arr['bid'];?>">Редактировать</a>
+					|
+					<a href="blocks.php?act=del&bid=<?=$arr['bid'];?>">Удалить</a>
+				</td>
+			</tr>
+			<?
+		}
+		?>
 	</table>
-	</form>
 
+	<script type="text/javascript">
+	(function($){
+		if(!$) {
+			return;
+		}
 
-<?
+		function refreshMoveControls() {
+			var rows = $('.js-block-row');
+			rows.find('.js-move-up, .js-move-down').show();
+			rows.first().find('.js-move-up').hide();
+			rows.last().find('.js-move-down').hide();
+		}
+
+		function setMoveStatus(message, isError) {
+			$('#block-move-status')
+				.css('color', (isError ? '#AA0000' : '#008000'))
+				.html(message);
+		}
+
+		$('.js-block-move').click(function(){
+			var link = $(this);
+			if(link.data('busy')) {
+				return false;
+			}
+
+			var row = link.closest('.js-block-row');
+			if(!row.length) {
+				return false;
+			}
+
+			var direction = link.attr('data-direction');
+			link.data('busy', 1);
+			setMoveStatus('Сохраняем порядок...', false);
+
+			$.ajax({
+				type: 'POST',
+				url: 'blocks.php?act=move',
+				dataType: 'json',
+				data: {
+					bid: row.attr('data-bid'),
+					direction: direction
+				},
+				success: function(response){
+					if(!response || parseInt(response.ok, 10) !== 1) {
+						setMoveStatus((response && response.message ? response.message : 'Ошибка перемещения блока.'), true);
+						return;
+					}
+
+					if(direction == 'up') {
+						var prev = row.prev('.js-block-row');
+						if(prev.length) {
+							prev.before(row);
+						}
+					} else {
+						var next = row.next('.js-block-row');
+						if(next.length) {
+							next.after(row);
+						}
+					}
+
+					refreshMoveControls();
+					setMoveStatus((response.message ? response.message : 'Порядок обновлен.'), false);
+				},
+				error: function(){
+					setMoveStatus('Сервер временно недоступен. Попробуйте еще раз.', true);
+				},
+				complete: function(){
+					link.data('busy', 0);
+				}
+			});
+
+			return false;
+		});
+
+		refreshMoveControls();
+	})(window.jQuery);
+	</script>
+	<?
 }
+
 end_frame();
 foot();
 ?>
