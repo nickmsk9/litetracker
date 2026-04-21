@@ -61,7 +61,6 @@ if(!$config['registeronline'] || $USER) {
 }
 
 if ($isModalView) {
-	$GLOBALS['LITETRACKER_SIGNUP_MODAL_FRAME'] = true;
 	$GLOBALS['LITETRACKER_HIDE_TOP_BLOCKS'] = true;
 	$GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS'] = true;
 	$GLOBALS['LITETRACKER_HIDE_STANDARD_SIDEBAR'] = true;
@@ -177,91 +176,132 @@ if (!$isModalView) {
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="templates/<?=$config['template'];?>/css/my.css" rel="stylesheet" type="text/css">
 	<style>
-	body{
+	body.auth-modal-frame{
 		margin:0;
-		padding:0;
+		padding:12px !important;
+		overflow:hidden !important;
 		background:#f4f5f7;
 	}
 
-	.signup-page{
-		margin:0;
-		padding:20px;
+	html,body{
+		width:100% !important;
+		min-width:0 !important;
+		max-width:100% !important;
+		overflow-x:hidden !important;
 	}
 
-	.signup-layout{
-		display:block;
-		max-width:none;
-		margin:0;
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page{
+		padding:0 !important;
+		width:100% !important;
+		max-width:none !important;
+		margin:0 !important;
 	}
 
-	.signup-form-card{
-		max-width:760px;
-		margin:0 auto;
-		padding:0;
-		border:0;
-		border-radius:4px;
-		background:#f4f5f7;
-		box-shadow:none;
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-layout.auth-modal-layout{
+		display:block !important;
+		width:100% !important;
+		max-width:none !important;
+		margin:0 !important;
 	}
 
-	.signup-info-card{
-		display:none;
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-form-card.auth-modal-card{
+		display:block !important;
+		float:none !important;
+		position:relative;
+		left:auto !important;
+		right:auto !important;
+		transform:none !important;
+		width:100% !important;
+		max-width:none !important;
+		margin:0 !important;
+		padding:16px 14px 12px !important;
+		box-shadow:none !important;
 	}
 
-	.signup-modal-error{
-		margin:0 0 16px 0;
-		padding:10px 12px;
-		border:1px solid #e1b8b8;
-		border-radius:4px;
-		background:#fff1f1;
-		color:#8a2c2c;
-		font-size:13px;
-		line-height:1.45;
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-grid{
+		display:block !important;
+	}
+
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-field{
+		margin-bottom:12px;
+	}
+
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-birthday-row{
+		display:grid !important;
+		grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
+		gap:6px;
+	}
+
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-title.auth-modal-title{
+		font-size:54px;
+		margin-bottom:16px;
+	}
+
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-consent{
+		margin-top:10px;
+		line-height:1.35;
+	}
+
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-submit-row.auth-modal-footer{
+		display:flex;
+		align-items:center;
+		margin-top:14px;
+		padding-top:12px;
+	}
+
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-submit-row.auth-modal-footer button{
+		width:auto;
+		min-width:132px;
+	}
+
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-info-card,
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .auth-info-card{
+		display:none !important;
 	}
 	</style>
 	</head>
-	<body>
+	<body class="auth-modal-frame">
 	<?php
 }
 
 $signupFormAction = 'signup.php'.($isModalView ? '?modal=1' : '');
 ?>
 
-<div class="signup-page">
-	<div class="signup-layout">
-		<section class="signup-card signup-form-card">
-			<h1 class="signup-title">Регистрация</h1>
+<div class="auth-page signup-page<?=($isModalView ? ' auth-modal-page auth-modal-page-signup' : '');?>">
+	<div class="auth-layout signup-layout<?=($isModalView ? ' auth-modal-layout' : '');?>">
+		<section class="auth-card signup-card signup-form-card<?=($isModalView ? ' auth-modal-card' : '');?>">
+			<h1 class="auth-title signup-title<?=($isModalView ? ' auth-modal-title' : '');?>">Регистрация</h1>
 			<?php if ($signupBlockedMessage !== '') { ?>
-			<div class="signup-modal-error"><?=htmlspecialchars($signupBlockedMessage, ENT_QUOTES, 'UTF-8');?></div>
+			<div class="auth-alert signup-modal-error"><?=htmlspecialchars($signupBlockedMessage, ENT_QUOTES, 'UTF-8');?></div>
 			<?php } elseif ($signupModalError !== '') { ?>
-			<div class="signup-modal-error"><?=htmlspecialchars($signupModalError, ENT_QUOTES, 'UTF-8');?></div>
+			<div class="auth-alert signup-modal-error"><?=htmlspecialchars($signupModalError, ENT_QUOTES, 'UTF-8');?></div>
 			<?php } ?>
-			<form action="<?=$signupFormAction;?>" class="signup-form" id="signupPage" method="post">
-				<div class="signup-grid">
-					<div class="signup-field signup-field-login">
-						<label class="signup-label" for="signup-name">Логин</label>
+			<form action="<?=$signupFormAction;?>" class="auth-form signup-form" id="signupPage" method="post">
+				<div class="auth-grid signup-grid">
+					<div class="auth-field signup-field signup-field-login">
+						<label class="auth-label signup-label" for="signup-name">Логин</label>
 						<div class="signup-input-wrap signup-input-wrap-login">
 							<input id="signup-name" type="text" name="name" value="<?=htmlspecialchars($signupName, ENT_QUOTES, 'UTF-8');?>" autocomplete="username">
 						</div>
 					</div>
 
-					<div class="signup-field">
-						<label class="signup-label" for="signup-email">E-mail</label>
+					<div class="auth-field signup-field">
+						<label class="auth-label signup-label" for="signup-email">E-mail</label>
 						<div class="signup-input-wrap">
 							<input id="signup-email" type="email" name="email" value="<?=htmlspecialchars($signupEmail, ENT_QUOTES, 'UTF-8');?>" autocomplete="email">
 						</div>
 					</div>
 
-					<div class="signup-field">
-						<label class="signup-label" for="signup-password">Пароль</label>
+					<div class="auth-field signup-field">
+						<label class="auth-label signup-label" for="signup-password">Пароль</label>
 						<div class="signup-input-wrap">
 							<input id="signup-password" type="password" name="password" value="" autocomplete="new-password">
 						</div>
 					</div>
 
-					<div class="signup-field">
-						<label class="signup-label">Дата рождения</label>
-						<div class="signup-birthday-row">
+					<div class="auth-field signup-field">
+						<label class="auth-label signup-label">Дата рождения</label>
+						<div class="auth-birthday-row signup-birthday-row">
 							<select name="birthday_day">
 								<option value="">день</option>
 								<?php for ($day = 1; $day <= 31; $day++) { ?>
@@ -285,28 +325,28 @@ $signupFormAction = 'signup.php'.($isModalView ? '?modal=1' : '');
 				</div>
 
 				<?php if($config['reCaptcha'] && $config['reCaptcha_signup']) { ?>
-				<div class="signup-captcha-row">
+				<div class="auth-captcha-row signup-captcha-row">
 					<?=recaptcha_get_html($config['reCaptcha_publickey']);?>
 				</div>
 				<?php } ?>
 
-				<label class="signup-consent">
+				<label class="auth-consent signup-consent">
 					<input type="checkbox" name="accept_rules" value="1"<?=($signupAgreementAccepted ? ' checked' : '');?> >
 					<span>Я подтверждаю, что мне уже исполнилось 14 лет и я принимаю <a href="faq.php">Пользовательское соглашение</a></span>
 				</label>
 
-				<div class="signup-submit-row">
+				<div class="auth-submit-row signup-submit-row<?=($isModalView ? ' auth-modal-footer' : '');?>">
 					<button type="submit"><?=$language['signup_3'];?></button>
 				</div>
 			</form>
 		</section>
 
-		<aside class="signup-card signup-info-card">
-			<h2 class="signup-info-title">Зачем мне нужно регистрироваться?</h2>
-			<div class="signup-info-copy">
+		<aside class="auth-card auth-info-card signup-card signup-info-card">
+			<h2 class="auth-info-title signup-info-title">Зачем мне нужно регистрироваться?</h2>
+			<div class="auth-copy signup-info-copy">
 				Регистрация постоянного пользователя позволяет использовать весь доступный функционал сайта. Вы сможете общаться с единомышленниками на форуме, оставлять комментарии к раздачам, скачивать понравившиеся релизы и вносить изменения в личные данные профиля.
 			</div>
-			<div class="signup-info-copy signup-info-copy-last">
+			<div class="auth-copy signup-info-copy signup-info-copy-last">
 				Полный список действий доступен на <a href="faq.php">странице</a> часто задаваемых вопросов.
 			</div>
 		</aside>
@@ -315,6 +355,7 @@ $signupFormAction = 'signup.php'.($isModalView ? '?modal=1' : '');
 
 <?php
 if ($isModalView) {
+	echo '<script>(function(){if(window.parent===window){return;}var sendSize=function(){var d=document.documentElement;var b=document.body;var h=Math.max(d?d.scrollHeight:0,b?b.scrollHeight:0,d?d.offsetHeight:0,b?b.offsetHeight:0);window.parent.postMessage({type:"lt-auth-modal-size",height:h},window.location.origin);};window.addEventListener("load",sendSize);window.addEventListener("resize",sendSize);document.addEventListener("input",sendSize,true);document.addEventListener("change",sendSize,true);setTimeout(sendSize,0);})();</script>';
 	echo '</body></html>';
 } else {
 	foot(true);

@@ -39,9 +39,6 @@ $bodyClasses = array();
 if (!empty($USER['theme_dark'])) {
 	$bodyClasses[] = 'theme-dark';
 }
-if (!empty($GLOBALS['LITETRACKER_SIGNUP_MODAL_FRAME'])) {
-	$bodyClasses[] = 'signup-modal-frame';
-}
 ?>
 <!doctype html>
 <html lang="ru">
@@ -50,9 +47,9 @@ if (!empty($GLOBALS['LITETRACKER_SIGNUP_MODAL_FRAME'])) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <?=$header;?>
 <link href="templates/<?=$tpl;?>/css/my.css" rel="stylesheet" type="text/css">
-<?php if (!$USER && !empty($config['registeronline'])) { ?>
+<?php if (!$USER) { ?>
 <style>
-.site-signup-overlay{
+.site-auth-overlay{
 	position:fixed;
 	inset:0;
 	z-index:10000;
@@ -62,57 +59,69 @@ if (!empty($GLOBALS['LITETRACKER_SIGNUP_MODAL_FRAME'])) {
 	padding:20px;
 }
 
-.site-signup-overlay[hidden]{
+.site-auth-overlay[hidden]{
 	display:none;
 }
 
-.site-signup-overlay-backdrop{
+.site-auth-overlay-backdrop{
 	position:absolute;
 	inset:0;
-	background:rgba(0, 0, 0, .56);
+	background:rgba(0, 0, 0, .58);
 }
 
-.site-signup-overlay-dialog{
+.site-auth-overlay-dialog{
 	position:relative;
-	width:min(100%, 760px);
-	height:min(100%, 600px);
+	z-index:1;
+	width:min(100%, 520px);
+	max-height:calc(100vh - 40px);
+}
+
+.site-auth-overlay-dialog[data-auth-kind="signup"]{
+	width:min(100%, 620px);
+}
+
+.site-auth-overlay-dialog[data-auth-kind="forgot"]{
+	width:min(100%, 560px);
+}
+
+.site-auth-overlay-panel{
+	position:relative;
+	width:100%;
+	min-height:320px;
+	max-height:calc(100vh - 40px);
 	background:#f4f5f7;
 	border-radius:4px;
 	overflow:hidden;
 	box-shadow:0 24px 60px rgba(0, 0, 0, .35);
-	z-index:1;
 }
 
-.site-signup-overlay-close{
-	position:fixed;
-	top:10px;
-	right:16px;
-	width:36px;
-	height:36px;
-	border:0;
-	border-radius:2px;
-	background:transparent;
-	color:#ffffff;
-	font-size:36px;
-	line-height:1;
-	cursor:pointer;
-	z-index:10001;
-}
-
-.site-signup-overlay-close:hover{
-	opacity:.85;
-}
-
-.site-signup-frame{
+.site-auth-frame{
 	display:block;
 	width:100%;
-	height:100%;
+	height:420px;
+	min-height:320px;
+	max-height:calc(100vh - 40px);
 	border:0;
 	background:#f4f5f7;
 }
 
-body.site-signup-modal-open{
+body.site-auth-modal-open{
 	overflow:hidden;
+}
+
+@media (max-width: 820px){
+	.site-auth-overlay{
+		padding:12px;
+	}
+
+	.site-auth-overlay-dialog,
+	.site-auth-overlay-panel{
+		max-height:calc(100vh - 24px);
+	}
+
+	.site-auth-frame{
+		height:calc(100vh - 24px);
+	}
 }
 </style>
 <?php } ?>
@@ -191,37 +200,71 @@ body.site-signup-modal-open{
 	</div>
 </div>
 
-<?php if (!$USER && !empty($config['registeronline'])) { ?>
-<div class="site-signup-overlay" id="site-signup-overlay" hidden>
-	<div class="site-signup-overlay-backdrop" data-signup-close="1"></div>
-	<div class="site-signup-overlay-dialog" role="dialog" aria-modal="true" aria-label="Регистрация">
-		<iframe class="site-signup-frame" id="site-signup-frame" title="Регистрация" src="about:blank"></iframe>
+<?php if (!$USER) { ?>
+<div class="site-auth-overlay" id="site-auth-overlay" hidden>
+	<div class="site-auth-overlay-backdrop" data-auth-close="1"></div>
+	<div class="site-auth-overlay-dialog" id="site-auth-overlay-dialog" role="dialog" aria-modal="true" aria-label="Авторизация">
+		<div class="site-auth-overlay-panel">
+			<iframe class="site-auth-frame" id="site-auth-frame" title="Авторизация" src="about:blank" scrolling="no"></iframe>
+		</div>
 	</div>
-	<button class="site-signup-overlay-close" type="button" aria-label="Закрыть" data-signup-close="1">&times;</button>
 </div>
 
 <script>
 (function(){
-	var overlay = document.getElementById('site-signup-overlay');
-	var frame = document.getElementById('site-signup-frame');
+	var overlay = document.getElementById('site-auth-overlay');
+	var frame = document.getElementById('site-auth-frame');
+	var dialog = document.getElementById('site-auth-overlay-dialog');
+	var defaultFrameHeight = 420;
+	var defaultDialogWidth = 520;
 
-	if (!overlay || !frame) {
+	function maxFrameHeight() {
+		return Math.max(320, window.innerHeight - 40);
+	}
+
+	function setFrameHeight(height) {
+		var numericHeight = Number(height) || defaultFrameHeight;
+		var clampedHeight = Math.max(320, Math.min(maxFrameHeight(), Math.round(numericHeight)));
+		frame.style.height = clampedHeight + 'px';
+	}
+
+	function maxDialogWidth() {
+		return Math.max(320, window.innerWidth - 40);
+	}
+
+	function setDialogWidth(width) {
+		var numericWidth = Number(width) || defaultDialogWidth;
+		var clampedWidth = Math.max(320, Math.min(maxDialogWidth(), Math.round(numericWidth)));
+		dialog.style.width = clampedWidth + 'px';
+		dialog.style.maxWidth = '100%';
+	}
+
+	if (!overlay || !frame || !dialog) {
 		return;
 	}
 
 	var body = document.body;
+	var authHrefPattern = /(^|\/)(login|signup)\.php(?:\?|$)/i;
 
-	function buildModalHref(rawHref) {
+	function buildModalMeta(rawHref) {
 		var url;
+		var title = 'Авторизация';
+		var kind = 'login';
 
 		try {
-			url = new URL(rawHref || 'signup.php', window.location.href);
+			url = new URL(rawHref || 'login.php', window.location.href);
 		} catch (e) {
-			url = new URL('signup.php', window.location.href);
+			url = new URL('login.php', window.location.href);
 		}
 
-		if (!/signup\.php$/i.test(url.pathname)) {
-			url = new URL('signup.php', window.location.href);
+		if (/signup\.php$/i.test(url.pathname)) {
+			title = 'Регистрация';
+			kind = 'signup';
+		} else if (/login\.php$/i.test(url.pathname)) {
+			title = (url.searchParams.get('op') === 'forgot' ? 'Восстановление пароля' : 'Вход');
+			kind = (url.searchParams.get('op') === 'forgot' ? 'forgot' : 'login');
+		} else {
+			return null;
 		}
 
 		url.searchParams.set('modal', '1');
@@ -231,26 +274,69 @@ body.site-signup-modal-open{
 			url.searchParams.set('referer', referer);
 		}
 
-		return url.pathname + '?' + url.searchParams.toString();
+		return {
+			href: url.pathname + '?' + url.searchParams.toString(),
+			title: title,
+			kind: kind
+		};
 	}
 
-	function openSignupModal(href) {
-		frame.src = buildModalHref(href);
+	function openAuthModal(href) {
+		var meta = buildModalMeta(href);
+
+		if (!meta) {
+			return;
+		}
+
+		frame.src = meta.href;
+		setFrameHeight(defaultFrameHeight);
+		frame.title = meta.title;
+		dialog.setAttribute('aria-label', meta.title);
+		dialog.setAttribute('data-auth-kind', meta.kind);
+		if (meta.kind === 'signup') {
+			setDialogWidth(560);
+		} else if (meta.kind === 'forgot') {
+			setDialogWidth(460);
+		} else {
+			setDialogWidth(420);
+		}
 		overlay.hidden = false;
-		body.classList.add('site-signup-modal-open');
+		body.classList.add('site-auth-modal-open');
 	}
 
-	function closeSignupModal() {
+	function closeAuthModal() {
 		overlay.hidden = true;
-		body.classList.remove('site-signup-modal-open');
+		body.classList.remove('site-auth-modal-open');
 		frame.src = 'about:blank';
+		dialog.removeAttribute('data-auth-kind');
+		dialog.style.width = '';
+		dialog.style.maxWidth = '';
 	}
+
+	window.addEventListener('message', function(event){
+		if (event.origin !== window.location.origin || !event.data || event.data.type !== 'lt-auth-modal-size') {
+			return;
+		}
+
+		if (overlay.hidden) {
+			return;
+		}
+
+		setFrameHeight(event.data.height);
+	});
+
+	window.addEventListener('resize', function(){
+		if (!overlay.hidden) {
+			setFrameHeight(parseInt(frame.style.height, 10) || defaultFrameHeight);
+			setDialogWidth(parseInt(dialog.style.width, 10) || defaultDialogWidth);
+		}
+	});
 
 	document.addEventListener('click', function(event){
-		var closeTrigger = event.target.closest('[data-signup-close="1"]');
+		var closeTrigger = event.target.closest('[data-auth-close="1"]');
 		if (closeTrigger) {
 			event.preventDefault();
-			closeSignupModal();
+			closeAuthModal();
 			return;
 		}
 
@@ -259,26 +345,27 @@ body.site-signup-modal-open{
 			return;
 		}
 
-		if (link.hasAttribute('data-signup-direct') || link.target === '_blank' || link.hasAttribute('download')) {
+		if (link.hasAttribute('data-auth-direct') || link.target === '_blank' || link.hasAttribute('download')) {
 			return;
 		}
 
 		var href = String(link.getAttribute('href') || '');
-		if (!/(^|\/)signup\.php(?:\?|$)/i.test(href)) {
+		if (!authHrefPattern.test(href)) {
 			return;
 		}
 
 		event.preventDefault();
-		openSignupModal(href);
+		openAuthModal(href);
 	});
 
 	document.addEventListener('keydown', function(event){
 		if (event.key === 'Escape' && !overlay.hidden) {
-			closeSignupModal();
+			closeAuthModal();
 		}
 	});
 
-	window.ltCloseSignupModal = closeSignupModal;
+	window.ltCloseAuthModal = closeAuthModal;
+	window.ltCloseSignupModal = closeAuthModal;
 })();
 </script>
 <?php } ?>
