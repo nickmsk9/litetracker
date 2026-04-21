@@ -321,62 +321,39 @@ if($status == '1') {
 	msg($language['news_12']);
 }
 
-
-
-//Постраничная навигация
-$db->query("SELECT * FROM news" , 1);
-
-$count_news = $db->num_rows();
-list($pagertop, $pagerbottom, $limit) = pager('10', $count_news, 'news.php?');
-
-$db->query("SELECT n.* , u.name AS user_name , u.class AS user_class  , u.avatar
-				FROM news AS n
-				LEFT JOIN users AS u ON u.id = n.id_user
-				ORDER BY n.date DESC
-				".$limit."");
+$db->query("SELECT id, name, text, date FROM news ORDER BY date DESC");
 if(!$db->num_rows() ) {
 	msg($language['default_8'] , $language['news_13']);
 
 }else {
+	?>
+	<div class="news-archive-page">
+		<div class="news-archive-head">
+			<h1 class="news-archive-page-title">Новости</h1>
+			<?php if (!empty($PRIV['news_add'])) { ?>
+			<a class="news-archive-manage-link" href="news.php?act=add"><?=$language['news_9'];?></a>
+			<?php } ?>
+		</div>
 
-	echo $pagertop;
-	while($arr = $db->get_row() ) {
-
-		//Номер новости
-		$id = $arr['id'];
-
-
-		//Название новости
-		$name = htmlspecialchars($arr['name']);
-
-		//Текст новости
-		$text = cleanhtml($arr['text']);
-
-		//Дата добавления
-		$date = convent_date($arr['date']);
-
-		//Имя пользователя
-		$user_name = $arr['user_name'];
-
-		//Класс пользователя
-		$user_class = $arr['user_class'];
-
-		//Номер пользователя
-		$user_id = $arr['id_user'];
-
-		//Аватар пользователя
-		$avatar = ($arr['avatar'] ? '<img src="public/avatars/'.$arr['avatar'].'" width="50">' : '<img src="public/images/default_avatar.gif" width="50">');
-
-
-		//Дополнительные поля
-		$field = '<input type="button" value="'.$language['news_18'].'" onClick="window.location.href=\'news.php?id='.$id.'\'">';
-
-
-		//Подключаем шаблон
-		require 'templates/'.$config['template'].'/tpl.news.php';
-	}
-	echo $pagertop;
-
+		<div class="news-archive-list">
+			<?php while($arr = $db->get_row() ) { ?>
+			<?php
+			$title = htmlspecialchars((string) $arr['name'], ENT_QUOTES, 'UTF-8');
+			$excerpt = trim(preg_replace('~\s+~u', ' ', strip_tags(cleanhtml((string) $arr['text']))));
+			?>
+			<article class="news-archive-item">
+				<a class="news-archive-link" href="news.php?id=<?=(int) $arr['id'];?>">
+					<h2 class="news-archive-title"><?=$title;?></h2>
+					<div class="news-archive-date"><?=convent_date($arr['date']);?></div>
+					<?php if ($excerpt !== '') { ?>
+					<p class="news-archive-excerpt"><?=htmlspecialchars($excerpt, ENT_QUOTES, 'UTF-8');?></p>
+					<?php } ?>
+				</a>
+			</article>
+			<?php } ?>
+		</div>
+	</div>
+	<?php
 }
 
 //Подвал

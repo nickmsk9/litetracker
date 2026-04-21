@@ -71,11 +71,25 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 
 			<section class="details-panel details-meta-panel">
 				<div class="details-rating-row">
-					<div class="details-rating-stars" aria-label="Рейтинг <?=htmlspecialchars(number_format($details_rating_score, 1), ENT_QUOTES, 'UTF-8');?>">
-						<span class="details-rating-stars-base">★★★★★</span>
-						<span class="details-rating-stars-fill" style="width: <?=$detailsRatingPercent;?>%;">★★★★★</span>
+					<div class="details-rating-block">
+						<div class="details-rating-stars" aria-label="Рейтинг <?=htmlspecialchars(number_format($details_rating_score, 1), ENT_QUOTES, 'UTF-8');?>">
+							<span class="details-rating-stars-base">★★★★★</span>
+							<span class="details-rating-stars-fill" style="width: <?=$detailsRatingPercent;?>%;">★★★★★</span>
+							<?php if ($details_rating_can_vote) { ?>
+							<span class="details-rating-vote" aria-label="Оцените раздачу">
+							<?php for ($ratingIndex = 1; $ratingIndex <= 5; $ratingIndex++) { ?>
+							<a class="details-rating-vote-star" href="details.php?id=<?=(int) $id;?>&amp;rating=<?=$ratingIndex;?>" aria-label="Оценить на <?=$ratingIndex;?> из 5">★</a>
+							<?php } ?>
+							</span>
+							<?php } ?>
+						</div>
 					</div>
-					<div class="details-rating-count">(<?=number_format((int) $details_rating_votes);?> оценок)</div>
+					<div class="details-rating-meta">
+						<div class="details-rating-count">(<?=number_format((int) $details_rating_votes);?> оценок)</div>
+						<?php if ($details_rating_feedback !== '') { ?>
+						<div class="details-rating-note"><?=htmlspecialchars($details_rating_feedback, ENT_QUOTES, 'UTF-8');?></div>
+						<?php } ?>
+					</div>
 				</div>
 
 				<div class="details-meta-stats">

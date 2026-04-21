@@ -3,7 +3,7 @@ if (!defined('LITETRACKER')) {
 	die('Direct access denied.');
 }
 
-begin_frame('Последние новости');
+begin_frame('<a class="frame-title-link" href="news.php">Последние новости</a>');
 
 echo '<div class="sidebar-news-list">';
 

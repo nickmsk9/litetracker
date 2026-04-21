@@ -248,7 +248,6 @@ head('Торренты');
 				</div>
 
 				<?php if ($rows) { ?>
-				<div class="browse-pagination"><?=$pagertop;?></div>
 				<div class="browse-torrent-list" data-browse-list data-view="<?=$view;?>">
 					<?php foreach ($rows as $row) { ?>
 					<?php
@@ -396,11 +395,13 @@ head('Торренты');
 					</article>
 					<?php } ?>
 				</div>
-				<div class="browse-pagination"><?=$pagerbottom ?: $pagertop;?></div>
 				<?php } else { ?>
 				<div class="browse-empty-state">Торренты не найдены.</div>
 				<?php } ?>
 			</section>
+			<?php if ($rows) { ?>
+			<div class="browse-pagination"><?=$pagerbottom ?: $pagertop;?></div>
+			<?php } ?>
 		</div>
 
 		<aside class="browse-sidebar">

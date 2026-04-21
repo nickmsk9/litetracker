@@ -136,7 +136,7 @@ function render_standard_sidebar()
 		</section>
 
 		<section class="sidebar-panel sidebar-news-panel">
-			<h2 class="sidebar-panel-title">Новости</h2>
+			<h2 class="sidebar-panel-title"><a class="sidebar-panel-title-link" href="news.php">Новости</a></h2>
 			<?php if ($newsItems) { ?>
 			<div class="sidebar-news-list">
 				<?php foreach ($newsItems as $item) { ?>

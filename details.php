@@ -271,6 +271,37 @@ if(!$db->num_rows() ) {
 
 $arr = $db->get_row();
 
+$details_rating_cookie_name = 'lt_torrent_rating_'.(int) $id;
+$details_rating_can_vote = (!empty($USER['id']) && empty($_COOKIE[$details_rating_cookie_name]));
+
+if (isset($_GET['rating'])) {
+	$ratingValue = (int) $_GET['rating'];
+
+	if (!$USER) {
+		header('Location: login.php?referer='.rawurlencode('details.php?id='.(int) $id));
+		die();
+	}
+
+	if ($ratingValue < 1 || $ratingValue > 5) {
+		header('Location: details.php?id='.(int) $id);
+		die();
+	}
+
+	if (!empty($_COOKIE[$details_rating_cookie_name])) {
+		header('Location: details.php?id='.(int) $id);
+		die();
+	}
+
+	$ratingUpIncrement = $ratingValue;
+	$ratingDownIncrement = 5 - $ratingValue;
+	$db->query("UPDATE torrents SET rating_up = COALESCE(rating_up, 0) + ".(int) $ratingUpIncrement.", rating_down = COALESCE(rating_down, 0) + ".(int) $ratingDownIncrement." WHERE id = ".(int) $id." LIMIT 1");
+	setcookie($details_rating_cookie_name, (string) $ratingValue, time() + 31536000, '/');
+	$memcached->delete('torrent_'.(int) $id, 0);
+	$glue = (strpos((string) ($_SERVER['REQUEST_URI'] ?? ''), '?') !== false ? '&' : '?');
+	header('Location: details.php?id='.(int) $id.$glue.'rated=1');
+	die();
+}
+
 if($arr['banned'] && !$PRIV['details_banned_view']) {
 	err($language['default_1'] , $language['details_20'] , 1);
 }
@@ -548,6 +579,15 @@ if ($details_rating_votes > 0) {
 	$details_rating_score = round(($details_rating_up / max(1, $details_rating_votes)) * 5, 1);
 } else {
 	$details_rating_score = 0;
+}
+$details_rating_user_value = (int) ($_COOKIE[$details_rating_cookie_name] ?? 0);
+$details_rating_feedback = '';
+if (!empty($_GET['rated']) && $details_rating_user_value > 0) {
+	$details_rating_feedback = 'Спасибо, ваша оценка учтена.';
+} elseif (!empty($USER['id']) && $details_rating_user_value > 0) {
+	$details_rating_feedback = 'Вы уже оценили эту раздачу.';
+} elseif (!$USER) {
+	$details_rating_feedback = 'Чтобы оценить раздачу, войдите в аккаунт.';
 }
 
 $details_status_badges = array();

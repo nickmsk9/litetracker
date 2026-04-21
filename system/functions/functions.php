@@ -760,12 +760,8 @@ function sqlwildcardesc($x) {
 //Постраничная навигация
 function pager($rpp, $count, $href, $opts = array()) {
 	$opts = array_merge(array('lastpagedefault' => 0), $opts);
-	$pager = '';
-	$pager2 = '';
-	$pagerstr = '';
 	$pagertop = '';
 	$pagerbottom = '';
-	$bregs = '';
 	$pages = ceil($count / $rpp);
 
 	if (!$opts["lastpagedefault"])
@@ -787,19 +783,6 @@ function pager($rpp, $count, $href, $opts = array()) {
 
 
 	$mp = $pages - 1;
-	$as = "Назад";
-	if ($page >= 1) {
-		$pager .= "<td style=\"border:none\">";
-		$pager .= "<a  class=\"navigation\" href=\"{$href}page=" . ($page - 1) . "\" style=\"text-decoration: none;\">$as</a>";
-		$pager .= "</td>";
-	}
-
-	$as = "Далее";
-	if ($page < $mp && $mp >= 0) {
-		$pager2 .= "<td style=\"border:none\">";
-		$pager2 .= "<a class=\"navigation\" href=\"{$href}page=" . ($page + 1) . "\" style=\"text-decoration: none;\">$as</a>";
-		$pager2 .= "</td>$bregs";
-	}else	 $pager2 .= $bregs;
 
 	if ($count) {
 		$pagerarr = array();
@@ -811,7 +794,7 @@ function pager($rpp, $count, $href, $opts = array()) {
 		for ($i = 0; $i < $pages; $i++) {
 			if (($i >= $dotspace && $i <= $curdotend) || ($i >= $curdotstart && $i < $dotend)) {
 				if (!$dotted)
-				   $pagerarr[] = "<td style=\"border:none\" ><span class=\"navigation\">...</span></td>";
+				   $pagerarr[] = '<li><span class="page-item dots">...</span></li>';
 				$dotted = 1;
 				continue;
 			}
@@ -821,20 +804,40 @@ function pager($rpp, $count, $href, $opts = array()) {
 			if ($end > $count)
 				$end = $count;
 
-			 $text = $i+1;
+			$text = $i + 1;
+			$title = $start.'&nbsp;-&nbsp;'.$end;
 			if ($i != $page)
-				$pagerarr[] = "<td style=\"border:none\"><a class=\"navigation\" title=\"$start&nbsp;-&nbsp;$end\" href=\"{$href}page=$i\" style=\"text-decoration: none;\">$text</a></td>";
+				$pagerarr[] = '<li><a class="page-item page" title="'.$title.'" href="'.$href.'page='.$i.'">'.$text.'</a></li>';
 			else
-				$pagerarr[] = "<td style=\"border:none\"><span>$text</span></td>";
+				$pagerarr[] = '<li><span class="page-item page active">'.$text.'</span></li>';
 
 				  }
-		$pagerstr = join("", $pagerarr);
-		$pagertop = "<br><center><table class=\"navigation\"><tr>$pager $pagerstr $pager2</tr></table></center><br>\n";
+		$prev = '';
+		$next = '';
+
+		if ($page >= 1) {
+			$prev = '<a class="page-item prev" href="'.$href.'page='.($page - 1).'" aria-label="Предыдущая страница">&larr;</a>';
+		}
+
+		if ($page < $mp && $mp >= 0) {
+			$next = '<a class="page-item next" href="'.$href.'page='.($page + 1).'" aria-label="Следующая страница">&rarr;</a>';
+		}
+
+		$pagertop = '<nav class="paging" aria-label="Навигация по страницам">';
+		if ($prev !== '') {
+			$pagertop .= $prev;
+		}
+		$pagertop .= '<ul class="list-reset">'.join('', $pagerarr).'</ul>';
+		if ($next !== '') {
+			$pagertop .= $next;
+		}
+		$pagertop .= '</nav>';
+		$pagerbottom = $pagertop;
 
 	}
 	else {
-		$pagertop = $pager;
-		$pagerbottom = $pagertop;
+		$pagertop = '';
+		$pagerbottom = '';
 	}
 
 	$start = $page * $rpp;
