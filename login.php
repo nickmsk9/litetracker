@@ -12,6 +12,29 @@ by Nick
 //Подключаем главный системный файл
 require 'system/init.php';
 
+function login_normalize_referer($referer)
+{
+	$referer = trim((string) $referer);
+	if ($referer === '') {
+		return 'index.php';
+	}
+
+	$referer = ltrim($referer, '/');
+	if ($referer === '' || strpos($referer, "\0") !== false) {
+		return 'index.php';
+	}
+
+	if (preg_match('~^(?:https?:)?//~i', $referer)) {
+		return 'index.php';
+	}
+
+	if (preg_match('~^login\.php(?:[/?]|$)~i', $referer)) {
+		return 'index.php';
+	}
+
+	return $referer;
+}
+
 $op = (string) ($_GET['op'] ?? '');
 $step = isset($_GET['step']) ? (int) $_GET['step'] : 0;
 $ok = !empty($_GET['ok']);
@@ -209,7 +232,7 @@ if($op == 'forgot') {
 if($_POST) {
 	$login = trim($_POST['login']);	//E-mail адрес
 	$password = trim($_POST['password']); //Пароль
-	$referer = htmlspecialchars(trim($_POST['referer'])); //Реферер
+	$referer = login_normalize_referer($_POST['referer'] ?? ''); //Реферер
 
 	//Проверяем , введены ли данные
 	if(empty($login) || empty($password) ) {
@@ -273,9 +296,7 @@ if($_POST) {
 }
 
 //Определяем реферер
-$referer = htmlspecialchars((string) ($_GET['referer'] ?? ''));
-if(empty($referer))
- $referer = "index.php";
+$referer = login_normalize_referer($_GET['referer'] ?? '');
 
 $loginValue = htmlspecialchars((string) ($_POST['login'] ?? ''), ENT_QUOTES, 'UTF-8');
 

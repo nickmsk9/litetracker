@@ -75,7 +75,6 @@ $sql = $db->query("SELECT * FROM users
 
 //Заголовок
 head($language['users_1']);
-echo "<link href=\"css/ratio.css\" rel=\"StyleSheet\" type=\"text/css\">";
 
 begin_frame($language['users_2']);
 ?>

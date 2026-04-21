@@ -82,7 +82,7 @@ function template_get_sidebar_news()
 
 	if (false === ($news = $memcached->get('sidebar_news_all'))) {
 		$news = array();
-		$query = $db->query("SELECT id, name, text, date FROM news ORDER BY date DESC");
+		$query = $db->query("SELECT id, name, text, date FROM news ORDER BY date DESC LIMIT 8");
 
 		while ($row = $db->get_row($query)) {
 			$news[] = $row;

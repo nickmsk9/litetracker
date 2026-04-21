@@ -49,7 +49,6 @@ if (!empty($GLOBALS['LITETRACKER_SIGNUP_MODAL_FRAME'])) {
 <meta charset="<?=$language['charset'];?>">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <?=$header;?>
-<link href="templates/<?=$tpl;?>/css/buttons.css" rel="stylesheet" type="text/css">
 <link href="templates/<?=$tpl;?>/css/my.css" rel="stylesheet" type="text/css">
 <?php if (!$USER && !empty($config['registeronline'])) { ?>
 <style>

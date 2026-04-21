@@ -175,7 +175,6 @@ if (!$isModalView) {
 	<head>
 	<meta charset="<?=$language['charset'];?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link href="templates/<?=$config['template'];?>/css/buttons.css" rel="stylesheet" type="text/css">
 	<link href="templates/<?=$config['template'];?>/css/my.css" rel="stylesheet" type="text/css">
 	<style>
 	body{

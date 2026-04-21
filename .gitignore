@@ -4,4 +4,5 @@ Thumbs.db
 docker-data/
 logs/*.log
 system/cache/*.cache
+system/cache/locks/
 comments_debug.log

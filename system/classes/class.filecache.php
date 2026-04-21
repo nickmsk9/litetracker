@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -11,10 +11,10 @@ by Nick
 
 class Filecache {
 
-
 	var $dir = null;
 	var $type = null;
 	var $timeout = null;
+	var $memory = array();
 
 
 	//construct
@@ -24,58 +24,125 @@ class Filecache {
 		$this->dir = $config['filecache']['dir'];
 		$this->type = $config['filecache']['type'];
 		$this->timeout = $config['filecache']['timeout'];
+		$this->ensureDirectory();
 	}
 
+	function enabled() {
+		global $config;
+
+		return !empty($config['filecache']['use']);
+	}
+
+	function ensureDirectory() {
+		if (!is_dir($this->dir)) {
+			@mkdir($this->dir, 0777, true);
+		}
+
+		return is_dir($this->dir);
+	}
+
+	function getPath($file) {
+		$file = str_replace(array('\\', '/'), '_', (string) $file);
+		return $this->dir.$file.$this->type;
+	}
+
+	function getDefaultTtl() {
+		return max(1, (int) $this->timeout);
+	}
+
+	function getTtl($flagsOrExpiration = 0, $expiration = 0) {
+		$ttl = (int) ($expiration ?: $flagsOrExpiration);
+		if ($ttl <= 0) {
+			$ttl = $this->getDefaultTtl();
+		}
+
+		return $ttl;
+	}
 
 	//Получение списка
 	function get($file) {
-		global $config;
-
-		if(!$config['filecache']['use'] )  {
+		if (!$this->enabled() || !$this->ensureDirectory()) {
 			return false;
 		}
 
-		$shell = $this->dir.$file.$this->type;
-		$time = $this->timeout;
+		$shell = $this->getPath($file);
 
-		if(file_exists($shell) && is_readable($shell)  && filesize($shell) > 0 && (time() - $time < filemtime($shell))) {
-			return unserialize(file_get_contents($shell));
-		} else {
+		if (array_key_exists($shell, $this->memory)) {
+			return $this->memory[$shell];
+		}
+
+		if (!file_exists($shell) || !is_readable($shell) || filesize($shell) <= 0) {
 			return false;
 		}
+
+		$content = @file_get_contents($shell);
+		if ($content === false || $content === '') {
+			return false;
+		}
+
+		$payload = @unserialize($content);
+		if (is_array($payload) && array_key_exists('expires_at', $payload) && array_key_exists('value', $payload)) {
+			if ((int) $payload['expires_at'] < time()) {
+				$this->delete($file);
+				return false;
+			}
+
+			$this->memory[$shell] = $payload['value'];
+			return $payload['value'];
+		}
+
+		if ((time() - $this->getDefaultTtl()) < @filemtime($shell)) {
+			$this->memory[$shell] = $payload;
+			return $payload;
+		}
+
+		$this->delete($file);
+		return false;
 	}
 
 	//Запись
 	function set($file, $data, $flagsOrExpiration = 0, $expiration = 0) {
-		global $config;
-
-		if(!$config['filecache']['use'] )  {
+		if (!$this->enabled() || !$this->ensureDirectory()) {
 			return false;
 		}
 
-		$shell = $this->dir.$file.$this->type;
+		$shell = $this->getPath($file);
+		$payload = serialize(array(
+			'expires_at' => time() + $this->getTtl($flagsOrExpiration, $expiration),
+			'value' => $data,
+		));
 
-		if (file_exists($shell )) {
-			if (is_writable($shell )) {
-				file_put_contents($shell , serialize($data));
-			}
-		}
-		else {
-			$fh = fopen($shell,'w+');
-			fwrite($fh, serialize($data));
-			fclose($fh);
+		$fh = @fopen($shell, 'c');
+		if (!$fh) {
+			return false;
 		}
 
-		return true;
+		$result = false;
+		if (@flock($fh, LOCK_EX)) {
+			@ftruncate($fh, 0);
+			$result = (@fwrite($fh, $payload) !== false);
+			@fflush($fh);
+			@flock($fh, LOCK_UN);
+		}
+		@fclose($fh);
+
+		if ($result) {
+			$this->memory[$shell] = $data;
+		}
+
+		return $result;
 	}
 
 	//Удаление
 	function delete($file  , $time = 0) {
-		$shell = $this->dir.$file.$this->type;
-		if (file_exists($shell))
-			return unlink($shell);
-		else
-			return false;
+		$shell = $this->getPath($file);
+		unset($this->memory[$shell]);
+
+		if (file_exists($shell)) {
+			return @unlink($shell);
+		}
+
+		return false;
 	}
 
 

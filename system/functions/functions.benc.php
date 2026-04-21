@@ -425,7 +425,13 @@ function check_fail($result) {
  * @return array Result array ('tracker','seeders','leechers','state');
  */
 function get_remote_peers($url, $info_hash, $method = 'scrape') {
-	global $CRON;
+	global $CRON, $config;
+	$maxTimeout = max(1, (int) ($config['remote_tracker_timeout'] ?? 8));
+	$timeout = (int) ($CRON['multi_timeout'] ?? 0);
+	if ($timeout <= 0 || $timeout > $maxTimeout) {
+		$timeout = $maxTimeout;
+	}
+
 	if ($method == "announce") {
 		$get_params = array(
     			"info_hash" => pack("H*", $info_hash),
@@ -474,7 +480,7 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
 	array(
         'method' => 'GET',
     	'header' => 'User-Agent: uTorrent/1820',
-    	'timeout' => $CRON['multi_timeout']
+    	'timeout' => $timeout
 	//'Accept: text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2',
 	)
 	);

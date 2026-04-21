@@ -251,19 +251,6 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 	';
 	$header .= '<script type="text/javascript" src="public/js/main.js"></script>
 	';
-	$header .= '<script type="text/javascript" src="public/js/jquery.form.js"></script>
-	';
-
-
-	$header .= '<script src="public/js/jquery-ui-1.8.4.custom.min.js" type="text/javascript" charset="utf-8"></script>
-				';
-	$header .= '<style type="text/css" media="all">
-				@import url(public/css/ajax_msg.css);
-				</style>';
-
-	$header .= '<style type="text/css" media="all">
-				@import url(public/css/navigation.css);
-				</style>';
 	$header .=	'<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 	';
 	$header .=	'<title>'.$sitename.' » '.$title.'</title>
@@ -273,10 +260,6 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 	$header .=	'<meta name="keywords " content=" фильмы бесплатно , скачать игры бесплатно, скачать без регистрации,  сериалы , скачать сериалы бесплатно, еротика бесплатно , скачать фильмы , скачать игры , аниме торренты , скачать игры беслплатно , торрент трекер без регистрации , скачать бесплатно эротику , аниме, хентай , фильмы торренты , скачать хентай " />
 	';
 	$header .= '<meta name="robots" content="INDEX,FOLLOW" />
-	';
-	$header .= '<link rel="stylesheet" href="public/css/div.css" type="text/css" media="screen" charset="utf-8" />
-	';
-	$header .= '<link href="public/css/ratio.css" rel="StyleSheet" type="text/css" />
 	';
 
 	if($config['vkontakte_use']) {
@@ -481,15 +464,18 @@ function user_session()
 	$php_self = $_SERVER['PHP_SELF'] ?? '';
 	$update[] = 'php_self="'.$db->safesql($php_self).'"';
 
+	$throttleKey = 'session_touch_'.md5($session_id.'|'.$user_id);
+	$shouldWrite = true;
+	if (is_object($memcached) && false !== $memcached->get($throttleKey)) {
+		$shouldWrite = false;
+	}
 
-
-	if (sizeof($update)) {
-
-		// if (false === ($memcached->get('user_session') ) ) {
+	if (sizeof($update) && $shouldWrite) {
 			$sql = $db->query("INSERT INTO sessions (session_id, user_id, last_access, ip , user_agent, php_self) VALUES ('{$session_id}', '{$user_id}', '{$last_access}', '{$ip}' , '{$user_agent}', '{$php_self}') ON DUPLICATE KEY UPDATE ".implode(", ", $update));
 			// $db->free($sql);
-			$memcached->set('user_session', "1" , 0, 50);
-		// }
+			if (is_object($memcached)) {
+				$memcached->set($throttleKey, "1", 0, 60);
+			}
 	}
 
 	return;
@@ -669,8 +655,10 @@ function logout_cookie() {
 		$domain = '';
 	}
 
-	setcookie(COOKIE_ID, "", 0x7fffffff, "/" , $domain , false , true);
-	setcookie(COOKIE_PASSWORD, "", 0x7fffffff, "/" , $domain , false , true);
+	$expires = time() - 3600;
+	setcookie(COOKIE_ID, "", $expires, "/" , $domain , false , true);
+	setcookie(COOKIE_PASSWORD, "", $expires, "/" , $domain , false , true);
+	unset($_COOKIE[COOKIE_ID], $_COOKIE[COOKIE_PASSWORD]);
 	//Удаляем memcached файл
 	if($USER && isset($USER['id'])) {
 		$memcached->delete('user_'.$USER['id']);

@@ -7,6 +7,12 @@ services:
     restart: unless-stopped
     ports:
       - "8094:80"
+    environment:
+      LITETRACKER_CACHE_DRIVER: memcached
+      LITETRACKER_CACHE_HOST: memcached
+      LITETRACKER_CACHE_PORT: 11211
+      LITETRACKER_CRON_MODE: external
+      LITETRACKER_SQL_DEBUG: "0"
     volumes:
       - ./:/var/www/html
     depends_on:

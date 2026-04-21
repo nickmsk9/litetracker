@@ -9,6 +9,34 @@ by Nick
 ===================================================================
 */
 
+if (!function_exists('lt_env_value')) {
+	function lt_env_value($name, $default = null) {
+		$value = getenv($name);
+		return ($value === false || $value === '' ? $default : $value);
+	}
+}
+
+if (!function_exists('lt_env_bool')) {
+	function lt_env_bool($name, $default = 0) {
+		$value = getenv($name);
+		if ($value === false || $value === '') {
+			return (int) $default;
+		}
+
+		$value = strtolower(trim((string) $value));
+		return (int) in_array($value, array('1', 'true', 'yes', 'on'), true);
+	}
+}
+
+$ltRootDir = dirname(__DIR__, 2);
+$ltCacheDriver = trim((string) lt_env_value('LITETRACKER_CACHE_DRIVER', 'memcached'));
+$ltCacheHost = trim((string) lt_env_value('LITETRACKER_CACHE_HOST', '127.0.0.1'));
+$ltCachePort = (int) lt_env_value('LITETRACKER_CACHE_PORT', 11213);
+$ltCronMode = strtolower(trim((string) lt_env_value('LITETRACKER_CRON_MODE', 'browser')));
+$ltUseExternalCron = (int) in_array($ltCronMode, array('external', 'scheduler', 'cron'), true);
+$ltSqlDebug = lt_env_bool('LITETRACKER_SQL_DEBUG', 0);
+$ltRemoteTrackerTimeout = max(1, (int) lt_env_value('LITETRACKER_REMOTE_TIMEOUT', 8));
+
 $config  = array(
 'sitename' => 'LiteTracker Engine' , //Название сайта
 'gzip' => 1 , //Использовать gzip-сжатие
@@ -35,6 +63,7 @@ $config  = array(
 'announce_url' => 'https://localhost:443/announce.php' , //Основной announce URL для новых скачиваемых torrent-файлов
 'local_retracker_url' => 'https://localhost:443/announce.php' , //Локальный retracker для torrent-файлов; при необходимости можно изменить в конфиге
 'announce_interval' => 30*60 ,
+'remote_tracker_timeout' => $ltRemoteTrackerTimeout ,
 
 'max_size_image' => 5*1024*1024, //Макс размер загружаемой картинки
 
@@ -93,10 +122,10 @@ $config  = array(
 
 //Настройка кеша
 'cache' => array(
-			'driver' => 'memcached', //filecache | memcached
+			'driver' => $ltCacheDriver, //filecache | memcached
 			'memcached' => array(
-				'host' => '127.0.0.1',
-				'port' => 11213,
+				'host' => $ltCacheHost,
+				'port' => $ltCachePort,
 				'connect_timeout_ms' => 150,
 				'poll_timeout_ms' => 150,
 				'send_timeout_ms' => 150,
@@ -109,12 +138,12 @@ $config  = array(
 
 'filecache' => array(
 			'use' => 1,
-			'dir' => (!empty($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : dirname(__DIR__, 2)).'/system/cache/',
+			'dir' => $ltRootDir.'/system/cache/',
 			'type' => '.cache',
 			'timeout' => 60,
 		),
 
-'crontab' => 0 , //Использовать планировщик заданий cronNNLite
+'crontab' => $ltUseExternalCron , //Использовать планировщик заданий cronNNLite
 					//При использовании данной функции требуется программа cronNNLite или добавить задание в etc/crontab
 					//[Внимание! При включение данной фукнции, все части трекера (к примеру : обновление, автоочистка) отключаются]
 					//0,15,30,45   *   *   *   *   root   /usr/bin/wget -O /dev/null -q http://site.com/autoclean.php > /dev/null 2>&1
@@ -122,14 +151,14 @@ $config  = array(
 
 
 
-'sql_log_file' => 'logs/mysql_log_'.date("M_D_Y").'.log' , //Файл с логами ошибок mySQL
+'sql_log_file' => $ltRootDir.'/logs/mysql_log_'.date("M_d_Y").'.log' , //Файл с логами ошибок mySQL
 
 'blocks_use' => 1 , //Использовать блоки ?
 );
 
 
 //Jткладка sql - запросов
-define('DEGUB_SQL' , 1);
+define('DEGUB_SQL' , $ltSqlDebug);
 
 //Настройка cookies
 define ("COOKIE_SALT", '[default]');

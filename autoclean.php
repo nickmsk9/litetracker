@@ -17,12 +17,26 @@ require 'system/init.autoclean.php';
 //Функции для обновления
 require 'system/functions/functions.benc.php';
 
+@ignore_user_abort(true);
+@set_time_limit(0);
+
+function autoclean_response_gif()
+{
+	return base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==");
+}
+
+$autocleanLock = lt_lock_acquire('autoclean');
+if (!$autocleanLock) {
+	die(autoclean_response_gif());
+}
+
 $bonusColumn = (lt_column_exists('users', 'bonus') ? 'bonus' : 'voice');
 
 
 //Autoclean system
 if((time() - $CRON['autoclean_last']) < $CRON['autoclean_interval']) {
-	die(base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="));
+	lt_lock_release($autocleanLock);
+	die(autoclean_response_gif());
 }
 
 
@@ -82,5 +96,6 @@ while($arr = $db->get_row($sql) ) {
 //Обновляем cron-запись
 $db->query("UPDATE cron SET cron_value=".time()." WHERE cron_name='autoclean_last'");
 $memcached->delete('CRON');
-die(base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="));
+lt_lock_release($autocleanLock);
+die(autoclean_response_gif());
 ?>

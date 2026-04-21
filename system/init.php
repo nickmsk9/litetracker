@@ -11,7 +11,7 @@ by Nick
 
 require_once __DIR__ . '/bootstrap/php_compat.php';
 
-@session_start ();
+lt_session_bootstrap();
 @ob_start ();
 @ob_implicit_flush ( 0 );
 

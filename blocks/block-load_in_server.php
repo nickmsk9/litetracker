@@ -12,8 +12,8 @@ by Nick
 global $memcached , $db , $language;
 
 if (false === ($load_in_server = $memcached->get('load_in_server_v2') ) ) {
-			$sql = $db->query("SELECT  userid   FROM peers GROUP BY userid");
-			$connected = $db->num_rows($sql);
+			$row = $db->super_query("SELECT COUNT(DISTINCT userid) AS connected FROM peers WHERE userid > 0");
+			$connected = (int) ($row['connected'] ?? 0);
 
 			$avgload = get_server_load();
 

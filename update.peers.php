@@ -15,11 +15,23 @@ header("Content-Type: image/gif");
 //Устанавливаем полный путь
 define('DIRNAME' , str_replace('\\' , '/' , dirname( __FILE__ ) ) );
 
+function update_peers_response_gif()
+{
+	return base64_decode("R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==");
+}
+
+@ignore_user_abort(true);
+@set_time_limit(0);
+
 //Подключаем главный системный файл
-require DIRNAME.'/system/init.php';
+require DIRNAME.'/system/init.autoclean.php';
 //Функции для обновления
 require DIRNAME.'/system/functions/functions.benc.php';
 
+$updatePeersLock = lt_lock_acquire('update.peers');
+if (!$updatePeersLock) {
+	die(update_peers_response_gif());
+}
 
 //Порядковый номер
 $id = (int) $_GET['id'];
@@ -39,8 +51,8 @@ if ($id) {
 }
 
 if ($CRON['multi_remote'] && (( time() - $CRON['last_remotecheck'] ) < $CRON['remotecheck_interval'] ) ) {
-	print "ok 1";
-	die();
+	lt_lock_release($updatePeersLock);
+	die(update_peers_response_gif());
 }
 
 
@@ -72,5 +84,6 @@ if ($CRON['multi_remote']) {
 }
 
 $memcached->delete('CRON');
-print "ok 2";
+lt_lock_release($updatePeersLock);
+print update_peers_response_gif();
 ?>
