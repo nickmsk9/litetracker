@@ -494,6 +494,7 @@ hr {
   display: flex;
   align-items: center;
   gap: 16px;
+  margin-right: 250px;
 }
 
 .site-auth-link {
@@ -3897,6 +3898,7 @@ iframe {
   .site-auth-actions {
     width: 100%;
     justify-content: space-between;
+    margin-right: 0;
   }
 
   .site-user-name {
