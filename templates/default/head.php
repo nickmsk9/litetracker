@@ -149,7 +149,7 @@ body.site-auth-modal-open{
 				<?php } ?>
 			</nav>
 
-			<div class="site-header-tools">
+			<div class="site-header-tools<?=($USER ? ' site-header-tools-auth' : '');?>">
 				<?php if ($USER) { ?>
 				<a class="site-alert-button<?=($messagesCount > 0 ? ' site-alert-button-active' : '');?>" href="my.mail.php?act=conversation&amp;system=1" aria-label="Оповещения<?=($messagesCount > 0 ? ': '.$messagesBadge : '');?>">
 					<svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true">
