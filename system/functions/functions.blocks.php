@@ -14,6 +14,11 @@ by Nick
  *	Выводим блок
 */
 function render_blocks($blockfile) {
+	$skipBlocks = (!empty($GLOBALS['LITETRACKER_SIDEBAR_SKIP_BLOCKS']) && is_array($GLOBALS['LITETRACKER_SIDEBAR_SKIP_BLOCKS']) ? $GLOBALS['LITETRACKER_SIDEBAR_SKIP_BLOCKS'] : array());
+	if ($skipBlocks && in_array(basename((string) $blockfile), $skipBlocks, true)) {
+		return null;
+	}
+
 	if ($blockfile === 'block-poll.php') {
 		return null;
 	}

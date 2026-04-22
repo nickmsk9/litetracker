@@ -100,7 +100,7 @@ function render_standard_sidebar()
 
 	$buttonHref = trim((string) ($config['project_help_button_href'] ?? ''));
 	if ($buttonHref === '') {
-		$buttonHref = ($USER ? 'voice.webmoney.php' : 'login.php?referer='.rawurlencode('voice.webmoney.php'));
+		$buttonHref = 'donate.php';
 	}
 
 	$buttonLabel = trim((string) ($config['project_help_button_label'] ?? ''));
@@ -126,7 +126,7 @@ function render_standard_sidebar()
 	?>
 	<aside class="site-sidebar site-sidebar-right">
 		<section class="sidebar-panel project-help-panel">
-			<h2 class="sidebar-panel-title">Помощь проекту</h2>
+			<h2 class="sidebar-panel-title"><a class="sidebar-panel-title-link" href="<?=htmlspecialchars($buttonHref, ENT_QUOTES, 'UTF-8');?>">Помощь проекту</a></h2>
 			<p class="project-help-copy"><?=htmlspecialchars($helpText, ENT_QUOTES, 'UTF-8');?></p>
 			<div class="project-help-progress" aria-label="<?=htmlspecialchars($progressLabel, ENT_QUOTES, 'UTF-8');?>">
 				<div class="project-help-progress-fill" style="width: <?=$progress;?>%;"></div>
