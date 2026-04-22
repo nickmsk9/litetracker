@@ -2,13 +2,15 @@
 if (!defined('LITETRACKER')) {
 	die('Direct access denied.');
 }
+
+$settingsActiveTab = ((string) ($_GET['tab'] ?? '') === 'password' ? 'password' : 'profile');
 ?>
 <div class="settings-page">
 	<div class="settings-layout">
 		<nav class="settings-nav" aria-label="Навигация по настройкам">
 			<div class="settings-nav-card">
-				<a class="settings-nav-link" href="#" data-settings-tab="profile">Общие</a>
-				<a class="settings-nav-link" href="#" data-settings-tab="password">Сменить пароль</a>
+				<a class="settings-nav-link" href="my.setting.php?id=<?=$id;?>&amp;tab=profile" data-settings-tab="profile">Общие</a>
+				<a class="settings-nav-link" href="my.setting.php?id=<?=$id;?>&amp;tab=password" data-settings-tab="password">Сменить пароль</a>
 			</div>
 		</nav>
 
@@ -110,7 +112,7 @@ if (!defined('LITETRACKER')) {
 				<form class="settings-form" action="my.setting.take.php?act=password&id=<?=$id;?>" method="post">
 					<section class="settings-section">
 						<div class="settings-password-grid">
-							<?php if (!$PRIV['setting_user']) { ?>
+							<?php if ((int) $USER['id'] === (int) $id) { ?>
 								<div class="settings-field">
 									<label class="settings-field-label" for="old_password">Текущий пароль</label>
 									<input id="old_password" type="password" name="old_password" value="">
@@ -168,10 +170,17 @@ document.addEventListener('DOMContentLoaded', function () {
 	for (var i = 0; i < navLinks.length; i++) {
 		navLinks[i].addEventListener('click', function (e) {
 			e.preventDefault();
-			openSettingsTab(this.getAttribute('data-settings-tab'));
+			var tab = this.getAttribute('data-settings-tab');
+			openSettingsTab(tab);
+
+			if (window.history && window.history.replaceState) {
+				var url = new URL(window.location.href);
+				url.searchParams.set('tab', tab);
+				window.history.replaceState(null, '', url.toString());
+			}
 		});
 	}
 
-	openSettingsTab('profile');
+	openSettingsTab('<?=$settingsActiveTab;?>');
 });
 </script>

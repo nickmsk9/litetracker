@@ -186,12 +186,12 @@ if($act == 'foto_delete') {
 	@unlink('public/avatars/small/'.$arr['avatar']);
 	$db->query("UPDATE users SET avatar='' WHERE id='".$id."'");
 	$memcached->delete('user_'.$id, 0);
-	header('Location:my.setting.php?id='.$id.'&status=8');
+	header('Location:my.setting.php?id='.$id);
 	die();
 }
 
 if($act == 'password') {
-	if(!$PRIV['setting_user']) {
+	if((int) $USER['id'] === (int) $id) {
 		$oldPassword = trim((string) ($_POST['old_password'] ?? ''));
 		if($arr['password'] != md5($arr['password_code'].$oldPassword.$arr['password_code'])) {
 			err($language['default_1'], $language['setting_66'], 1);
@@ -221,7 +221,7 @@ if($act == 'password') {
 		login_cookie($id, $passwordHash);
 	}
 
-	header('Location:my.setting.php?id='.$id.'&status=2');
+	header('Location:my.setting.php?id='.$id.'&tab=password&status=2');
 	die();
 }
 
@@ -324,6 +324,6 @@ if(count($update)) {
 }
 
 $memcached->delete('user_'.$id, 0);
-header('Location:my.setting.php?id='.$id.'&status=1');
+header('Location:my.setting.php?id='.$id);
 die();
 ?>

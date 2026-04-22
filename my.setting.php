@@ -63,16 +63,12 @@ $birthdayMonths = array(
 head($language['setting_17']);
 
 $status = (string) ($_GET['status'] ?? '');
-if($status == '1') {
-	msg($language['default_9'] , $language['setting_18']);
-} elseif($status == '2') {
+if($status == '2') {
 	msg($language['default_9'] , $language['setting_19']);
 } elseif($status == '6') {
 	msg($language['default_1'] , $language['setting_23'] , 'error');
 } elseif($status == '7') {
 	msg($language['default_9'] , $language['setting_24']);
-} elseif($status == '8') {
-	msg($language['default_9'] , $language['setting_25']);
 } elseif($status == '0') {
 	msg($language['default_1'] , $language['setting_30'] , 'error');
 }

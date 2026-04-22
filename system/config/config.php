@@ -61,7 +61,7 @@ $config  = array(
 
 'registeronline' => 1, //Регистрация открыта
 'announce_url' => 'https://localhost:443/announce.php' , //Основной announce URL для новых скачиваемых torrent-файлов
-'local_retracker_url' => 'https://localhost:443/announce.php' , //Локальный retracker для torrent-файлов; при необходимости можно изменить в конфиге
+'local_retracker_url' => 'http://retracker.local/announce' , //Локальный retracker для torrent-файлов; при необходимости можно изменить в конфиге
 'announce_interval' => 30*60 ,
 'remote_tracker_timeout' => $ltRemoteTrackerTimeout ,
 

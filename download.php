@@ -98,9 +98,29 @@ if(!$magnet) {
 }
 
 //Получаем ссылку
+$normalizeAnnounceUrl = function ($url) {
+	$url = trim((string) $url);
+	if ($url === '') {
+		return '';
+	}
+
+	$parts = @parse_url($url);
+	if (!$parts || empty($parts['host'])) {
+		return rtrim($url, '/');
+	}
+
+	$scheme = strtolower((string) ($parts['scheme'] ?? ''));
+	$host = strtolower((string) $parts['host']);
+	$port = (isset($parts['port']) ? ':'.(int) $parts['port'] : '');
+	$path = rtrim((string) ($parts['path'] ?? ''), '/');
+
+	return $scheme.'://'.$host.$port.$path;
+};
+
 $announce_urls_list = array() ;
 $announceBaseUrl = trim((string) ($config['announce_url'] ?? 'https://localhost:443/announce.php'));
 $localRetrackerUrl = trim((string) ($config['local_retracker_url'] ?? $announceBaseUrl));
+$normalizedLocalRetrackerUrl = $normalizeAnnounceUrl($localRetrackerUrl);
 
 if($USER)
 	$announce_urls_list[] = $announceBaseUrl.(strpos($announceBaseUrl, '?') === false ? '?' : '&')."passkey=".$USER['passkey'];
@@ -113,12 +133,23 @@ if ($useLocalRetracker && $localRetrackerUrl !== '' && !in_array($localRetracker
 }
 
 $announce_sql = $db->query("SELECT tracker FROM trackers WHERE torrent='".$id."' AND tracker<>'localhost'");
-while (list($announce) = mysql_fetch_array($announce_sql) ) $announce_urls_list[] = $announce;
+while (list($announce) = mysql_fetch_array($announce_sql) ) {
+	if (!$useLocalRetracker && $normalizedLocalRetrackerUrl !== '' && $normalizeAnnounceUrl($announce) === $normalizedLocalRetrackerUrl) {
+		continue;
+	}
+
+	if (!in_array($announce, $announce_urls_list)) {
+		$announce_urls_list[] = $announce;
+	}
+}
 
 //ReTrackers
 $retrackers = get_retrackers();
 if ($retrackers) foreach ($retrackers as $announce)
-if (!in_array($announce,$announce_urls_list)) $announce_urls_list[] = $announce;
+if (
+	!(!$useLocalRetracker && $normalizedLocalRetrackerUrl !== '' && $normalizeAnnounceUrl($announce) === $normalizedLocalRetrackerUrl) &&
+	!in_array($announce,$announce_urls_list)
+) $announce_urls_list[] = $announce;
 
 //Учитываем , что пользователь скачал данный релиз
 $db->query('UPDATE torrents SET downloaded = (downloaded + 1) WHERE id="'.$db->safesql($id).'"');
