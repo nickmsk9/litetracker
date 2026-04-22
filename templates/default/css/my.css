@@ -2553,6 +2553,16 @@ table.tt .data {
   color: #ffffff;
 }
 
+.details-bookmark-button-active {
+  border-color: #2f6ea9;
+  background: #2f6ea9;
+}
+
+.details-bookmark-button.is-loading {
+  opacity: .72;
+  pointer-events: none;
+}
+
 .details-edit-link {
   color: var(--muted);
   font-size: 13px;
@@ -2801,7 +2811,7 @@ table.tt .data {
 
 .details-info-row {
   color: var(--text);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
@@ -2819,8 +2829,8 @@ table.tt .data {
 .details-update-copy {
   margin-top: 10px;
   color: var(--text);
-  font-size: 15px;
-  line-height: 1.65;
+  font-size: 14px;
+  line-height: 1.72;
 }
 
 .details-copy-block p,
@@ -2828,25 +2838,40 @@ table.tt .data {
   margin: 0 0 10px;
 }
 
+.details-copy-block,
+.details-copy-block * {
+  font-size: inherit;
+}
+
 .details-copy-block p:last-child,
 .details-update-copy p:last-child {
   margin-bottom: 0;
 }
 
+.details-disclosure,
 .details-files-toggle {
   margin-top: 16px;
 }
 
+.details-disclosure summary,
 .details-files-toggle summary {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   color: var(--accent);
   font-size: 14px;
+  line-height: 1.45;
   cursor: pointer;
   user-select: none;
+  list-style: none;
 }
 
+.details-disclosure summary::-webkit-details-marker,
+.details-files-toggle summary::-webkit-details-marker {
+  display: none;
+}
+
+.details-disclosure summary::after,
 .details-files-toggle summary::after {
   content: "";
   width: 0;
@@ -2857,16 +2882,22 @@ table.tt .data {
   transition: transform 160ms ease;
 }
 
+.details-disclosure[open] summary::after,
 .details-files-toggle[open] summary::after {
   transform: rotate(180deg);
 }
 
+.details-disclosure-body,
 .details-files-wrap {
   margin-top: 12px;
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 4px;
   background: var(--surface-muted);
+}
+
+.details-disclosure-body .details-info-list {
+  gap: 6px;
 }
 
 .details-files-table {
@@ -2907,9 +2938,17 @@ table.tt .data {
 
 .details-gallery-item {
   display: block;
+  width: min(100%, 320px);
   max-width: 320px;
   border-radius: 4px;
   overflow: hidden;
+  box-shadow: 0 8px 22px rgba(20, 31, 43, 0.08);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.details-gallery-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(20, 31, 43, 0.14);
 }
 
 .details-gallery-item img {

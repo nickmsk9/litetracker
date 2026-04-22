@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -131,21 +131,8 @@ if($magnet) {
 	}
 
 	$link = make_magnet($arr['infohash'],$arr['name'],$announce_urls_list);
-	head('Скачать торрент');
-	begin_frame('Скачать торрент');
-	echo '<table width="100%">';
-	echo '<tr>';
-	echo '<td width="100" ><a href="details.php?id='.$id.'"><img src="public/downloads/images/'.$arr['image'].'" width="100" /></a></td>';
-	echo '<td valign="top" class="row1">';
-	echo '<b>'.$language['download_6'].'</b><br>';
-	echo '<div class="success" ><a href="'.$link.'" >'.htmlspecialchars($link).'</a></div>';
-	echo '</td>';
-	echo '</tr>';
-	echo '</table>';
-	end_frame();
-
-	foot();
-	die();
+	header('Location: '.$link, true, 302);
+	exit;
 
 }
 
@@ -163,12 +150,26 @@ put_announce_urls($dict,$announce_urls_list);
 
 
 $dict['type'] = 'dictionary';
-$dict['value']['comment']=bdec(benc_str( "{$CACHEARRAY['defaultbaseurl']}/details.php?id=$id")); // change torrent comment  to URL
-$dict['value']['created by']=bdec(benc_str( $row['owner'])); // change created by
-$dict['value']['publisher']=bdec(benc_str( $row['owner'])); // change publisher
-$dict['value']['publisher.utf-8']=bdec(benc_str( $row['owner'])); // change publisher.utf-8
-$dict['value']['publisher-url']=bdec(benc_str( "{$CACHEARRAY['defaultbaseurl']}/userdetails.php?id={$row['userid']}")); // change publisher-url
-$dict['value']['publisher-url.utf-8']=bdec(benc_str( "{$CACHEARRAY['defaultbaseurl']}/userdetails.php?id={$row['userid']}")); // change publisher-url.utf-8
+$siteBaseUrl = rtrim((string) ($config['site_url'] ?? ''), '/');
+if ($siteBaseUrl === '') {
+	$scheme = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');
+	$host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+	if ($host !== '') {
+		$siteBaseUrl = $scheme.'://'.$host;
+	}
+}
+
+$publisher = get_user_info((int) ($arr['id_user'] ?? 0));
+$publisherName = trim((string) ($publisher['name'] ?? 'LiteTracker'));
+$detailsUrl = ($siteBaseUrl !== '' ? $siteBaseUrl : '').'/details.php?id='.(int) $id;
+$publisherUrl = ($siteBaseUrl !== '' ? $siteBaseUrl : '').'/profile.php?id='.(int) ($arr['id_user'] ?? 0);
+
+$dict['value']['comment']=bdec(benc_str($detailsUrl));
+$dict['value']['created by']=bdec(benc_str($publisherName));
+$dict['value']['publisher']=bdec(benc_str($publisherName));
+$dict['value']['publisher.utf-8']=bdec(benc_str($publisherName));
+$dict['value']['publisher-url']=bdec(benc_str($publisherUrl));
+$dict['value']['publisher-url.utf-8']=bdec(benc_str($publisherUrl));
 
 
 //Заголовки

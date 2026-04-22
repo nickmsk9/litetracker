@@ -63,6 +63,9 @@ function get_retrackers($all = false, $table = 'retrackers') {
 	// global $IPCHECK;
 	global $db;
 	$ip = getip();
+	$rtarray = array();
+	$return = array();
+	$retrackers = array();
 	$row = $db->query("SELECT announce_url, mask FROM $table ORDER BY sort ASC");
 	while ($res = $db->get_row() ) { $rtarray[] = $res; if ($all) $return[] = $res['announce_url']; }
 

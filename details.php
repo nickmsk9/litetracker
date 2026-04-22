@@ -242,6 +242,42 @@ function lt_details_append_item(&$sections, $sectionLabel, $label, $value)
 	);
 }
 
+function lt_details_rating_table_ready()
+{
+	global $db;
+	static $ready = null;
+
+	if ($ready !== null) {
+		return $ready;
+	}
+
+	$tableName = 'torrent_ratings';
+	$row = $db->super_query("SHOW TABLES LIKE '".$db->safesql($tableName)."'");
+	if (!empty($row)) {
+		$ready = true;
+		return true;
+	}
+
+	$db->query(
+		"CREATE TABLE IF NOT EXISTS `".$tableName."` (
+			`id` int unsigned NOT NULL AUTO_INCREMENT,
+			`torrent_id` int unsigned NOT NULL,
+			`user_id` int unsigned NOT NULL,
+			`rating` tinyint unsigned NOT NULL DEFAULT '0',
+			`ip` varchar(64) NOT NULL DEFAULT '',
+			`date` datetime NOT NULL,
+			PRIMARY KEY (`id`),
+			UNIQUE KEY `torrent_user` (`torrent_id`, `user_id`),
+			KEY `torrent_rating` (`torrent_id`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3"
+	);
+
+	$row = $db->super_query("SHOW TABLES LIKE '".$db->safesql($tableName)."'");
+	$ready = !empty($row);
+
+	return $ready;
+}
+
 
 if(!empty($USER) && !$PRIV['details_view']) {
 	err($language['default_1'] , $language['details_29'] , 1);
@@ -272,7 +308,21 @@ if(!$db->num_rows() ) {
 $arr = $db->get_row();
 
 $details_rating_cookie_name = 'lt_torrent_rating_'.(int) $id;
-$details_rating_can_vote = (!empty($USER['id']) && empty($_COOKIE[$details_rating_cookie_name]));
+$details_rating_table_ready = lt_details_rating_table_ready();
+$details_rating_user_value = 0;
+
+if ($details_rating_table_ready && !empty($USER['id'])) {
+	$detailsUserRatingRow = $db->super_query(
+		"SELECT rating FROM torrent_ratings WHERE torrent_id = ".(int) $id." AND user_id = ".(int) $USER['id']." LIMIT 1"
+	);
+	$details_rating_user_value = (int) ($detailsUserRatingRow['rating'] ?? 0);
+}
+
+if ($details_rating_user_value <= 0 && empty($USER['id'])) {
+	$details_rating_user_value = (int) ($_COOKIE[$details_rating_cookie_name] ?? 0);
+}
+
+$details_rating_can_vote = (!empty($USER['id']) && $details_rating_table_ready && $details_rating_user_value <= 0);
 
 if (isset($_GET['rating'])) {
 	$ratingValue = (int) $_GET['rating'];
@@ -287,18 +337,34 @@ if (isset($_GET['rating'])) {
 		die();
 	}
 
-	if (!empty($_COOKIE[$details_rating_cookie_name])) {
+	if (!$details_rating_table_ready) {
 		header('Location: details.php?id='.(int) $id);
 		die();
 	}
 
-	$ratingUpIncrement = $ratingValue;
-	$ratingDownIncrement = 5 - $ratingValue;
-	$db->query("UPDATE torrents SET rating_up = COALESCE(rating_up, 0) + ".(int) $ratingUpIncrement.", rating_down = COALESCE(rating_down, 0) + ".(int) $ratingDownIncrement." WHERE id = ".(int) $id." LIMIT 1");
-	setcookie($details_rating_cookie_name, (string) $ratingValue, time() + 31536000, '/');
+	$existingRating = $db->super_query(
+		"SELECT id, rating FROM torrent_ratings WHERE torrent_id = ".(int) $id." AND user_id = ".(int) $USER['id']." LIMIT 1"
+	);
+
+	if (empty($existingRating['id'])) {
+		$db->query(
+			"INSERT INTO torrent_ratings (torrent_id, user_id, rating, ip, date)
+			VALUES (
+				".(int) $id.",
+				".(int) $USER['id'].",
+				".(int) $ratingValue.",
+				'".$db->safesql((string) getip())."',
+				NOW()
+			)"
+		);
+		$details_rating_user_value = $ratingValue;
+	} else {
+		$details_rating_user_value = (int) ($existingRating['rating'] ?? 0);
+	}
+
+	setcookie($details_rating_cookie_name, (string) max(1, $details_rating_user_value), time() + 31536000, '/');
 	$memcached->delete('torrent_'.(int) $id, 0);
-	$glue = (strpos((string) ($_SERVER['REQUEST_URI'] ?? ''), '?') !== false ? '&' : '?');
-	header('Location: details.php?id='.(int) $id.$glue.'rated=1');
+	header('Location: details.php?id='.(int) $id.'&rated=1');
 	die();
 }
 
@@ -551,7 +617,7 @@ if (lt_table_exists('comments_torrents')) {
 }
 
 $details_file_rows = array();
-if ((int) ($arr['num_files'] ?? 0) > 1) {
+if (!empty($USER['id']) && (int) ($arr['num_files'] ?? 0) > 0) {
 	$fileSql = $db->query("SELECT filename, size FROM files WHERE id_torrent = ".(int) $id." ORDER BY id");
 	while ($fileRow = $db->get_row($fileSql)) {
 		$details_file_rows[] = array(
@@ -572,20 +638,26 @@ if ($details_views_count <= 0) {
 	$details_views_count = (int) $arr['downloaded'];
 }
 
-$details_rating_up = (int) ($arr['rating_up'] ?? 0);
-$details_rating_down = (int) ($arr['rating_down'] ?? 0);
-$details_rating_votes = max(0, $details_rating_up + $details_rating_down);
-if ($details_rating_votes > 0) {
-	$details_rating_score = round(($details_rating_up / max(1, $details_rating_votes)) * 5, 1);
-} else {
-	$details_rating_score = 0;
+$details_rating_votes = 0;
+$details_rating_score = 0;
+
+if ($details_rating_table_ready) {
+	$detailsRatingStats = $db->super_query(
+		"SELECT COUNT(*) AS cnt, COALESCE(SUM(rating), 0) AS total_rating FROM torrent_ratings WHERE torrent_id = ".(int) $id
+	);
+	$details_rating_votes = (int) ($detailsRatingStats['cnt'] ?? 0);
+	if ($details_rating_votes > 0) {
+		$details_rating_score = round(((float) ($detailsRatingStats['total_rating'] ?? 0) / $details_rating_votes), 1);
+	}
 }
-$details_rating_user_value = (int) ($_COOKIE[$details_rating_cookie_name] ?? 0);
+
 $details_rating_feedback = '';
 if (!empty($_GET['rated']) && $details_rating_user_value > 0) {
 	$details_rating_feedback = 'Спасибо, ваша оценка учтена.';
 } elseif (!empty($USER['id']) && $details_rating_user_value > 0) {
 	$details_rating_feedback = 'Вы уже оценили эту раздачу.';
+} elseif (!empty($USER['id']) && !$details_rating_table_ready) {
+	$details_rating_feedback = 'Голосование временно недоступно.';
 } elseif (!$USER) {
 	$details_rating_feedback = 'Чтобы оценить раздачу, войдите в аккаунт.';
 }
@@ -669,6 +741,7 @@ $details_magnet_href = ($infohash && $PRIV['download_magnet'] ? 'download.php?id
 $details_edit_href = ($details_can_edit ? 'edit.php?id='.$id : '');
 $details_bookmark_href = '';
 $details_bookmark_label = $language['details_25'];
+$details_bookmarked = false;
 $details_guest_register_href = '';
 $details_guest_login_href = '';
 $details_guest_notice = 'Чтобы скачать этот торрент, вам необходимо зарегистрироваться или войти на сайт.';
@@ -676,6 +749,7 @@ $details_guest_notice = 'Чтобы скачать этот торрент, ва
 if (!empty($USER['id'])) {
 	$details_bookmark_href = 'my.book.php?id='.$id.'&act='.($count_b['count'] ? 'delete' : 'add');
 	$details_bookmark_label = ($count_b['count'] ? $language['details_26'] : $language['details_25']);
+	$details_bookmarked = !empty($count_b['count']);
 } else {
 	$details_guest_register_href = (!empty($config['registeronline']) ? 'signup.php?referer='.rawurlencode('details.php?id='.$id) : '');
 	$details_guest_login_href = 'login.php?referer='.rawurlencode('details.php?id='.$id);

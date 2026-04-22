@@ -1,10 +1,19 @@
-<?
+<?php
 /*
 Назначение: Мои закладки
 */
 
 require 'system/init.php';
 is_login();
+
+$ltBookmarkAjax = (!empty($_GET['ajax']) || strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest');
+
+function lt_bookmark_json($payload, $statusCode = 200)
+{
+	header('Content-Type: application/json; charset=UTF-8', true, (int) $statusCode);
+	echo json_encode($payload);
+	die();
+}
 
 // безопасный act (фикс warning)
 $act = isset($_GET['act']) ? trim((string) $_GET['act']) : '';
@@ -55,15 +64,30 @@ if($act === 'add') {
 
 	$count_t = $db->super_query("SELECT COUNT(*) AS count FROM torrents WHERE id=".$id);
 	if(!$count_t['count']) {
+		if ($ltBookmarkAjax) {
+			lt_bookmark_json(array('success' => false, 'message' => $language['download_1']), 404);
+		}
 		err($language['default_1'] , $language['download_1'] , 1);
 	}
 
 	$count_b = $db->super_query("SELECT COUNT(*) AS count FROM books WHERE id_torrent=".$id." AND id_user=".$USER['id']);
 	if($count_b['count']) {
+		if ($ltBookmarkAjax) {
+			lt_bookmark_json(array('success' => false, 'message' => $language['books_1']), 409);
+		}
 		err($language['default_1'] , $language['books_1'] , 1);
 	}
 
 	$db->query("INSERT INTO books(id_torrent , id_user , date ) VALUES (".$id." , ".$USER['id']." , NOW() )");
+
+	if ($ltBookmarkAjax) {
+		lt_bookmark_json(array(
+			'success' => true,
+			'bookmarked' => true,
+			'label' => $language['details_26'],
+			'href' => 'my.book.php?id='.$id.'&act=delete',
+		));
+	}
 
 	header("Location:details.php?id=".$id);
 	die();
@@ -78,15 +102,30 @@ if($act === 'delete') {
 
 	$count_t = $db->super_query("SELECT COUNT(*) AS count FROM torrents WHERE id=".$id);
 	if(!$count_t['count']) {
+		if ($ltBookmarkAjax) {
+			lt_bookmark_json(array('success' => false, 'message' => $language['download_1']), 404);
+		}
 		err($language['default_1'] , $language['download_1'] , 1);
 	}
 
 	$count_b = $db->super_query("SELECT COUNT(*) AS count FROM books WHERE id_torrent=".$id." AND id_user=".$USER['id']);
 	if(!$count_b['count']) {
+		if ($ltBookmarkAjax) {
+			lt_bookmark_json(array('success' => false, 'message' => $language['books_2']), 409);
+		}
 		err($language['default_1'] , $language['books_2'] , 1);
 	}
 
 	$db->query("DELETE FROM books WHERE id_torrent=".$id." AND id_user=".$USER['id']);
+
+	if ($ltBookmarkAjax) {
+		lt_bookmark_json(array(
+			'success' => true,
+			'bookmarked' => false,
+			'label' => $language['details_25'],
+			'href' => 'my.book.php?id='.$id.'&act=add',
+		));
+	}
 
 	header("Location:details.php?id=".$id);
 	die();
@@ -191,7 +230,7 @@ if($db->num_rows($sql) > 0) {
 		<td class="tt"><input type="submit" value="Удалить"></td>
 	</tr>
 
-	<?
+	<?php
 	while($arr = $db->get_row($sql)) {
 		require 'modules/releases.arr.php';
 	}
@@ -200,7 +239,7 @@ if($db->num_rows($sql) > 0) {
 	</table>
 	</form>
 
-	<?
+	<?php
 
 	echo $pagerbottom;
 	echo '</div>';

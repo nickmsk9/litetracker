@@ -42,7 +42,12 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 				<?php } ?>
 
 				<?php if ($details_bookmark_href !== '') { ?>
-				<a class="details-bookmark-button" href="<?=htmlspecialchars($details_bookmark_href, ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars($details_bookmark_label, ENT_QUOTES, 'UTF-8');?></a>
+				<a
+					class="details-bookmark-button<?=(!empty($details_bookmarked) ? ' details-bookmark-button-active' : '');?>"
+					href="<?=htmlspecialchars($details_bookmark_href, ENT_QUOTES, 'UTF-8');?>"
+					data-details-bookmark="1"
+					data-bookmarked="<?=(!empty($details_bookmarked) ? '1' : '0');?>"
+				><?=htmlspecialchars($details_bookmark_label, ENT_QUOTES, 'UTF-8');?></a>
 				<?php } ?>
 
 				<?php if ($details_edit_href !== '') { ?>
@@ -155,17 +160,19 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 				</div>
 
 				<?php foreach ($details_extra_sections as $section) { ?>
-				<div class="details-section-group">
-					<h2 class="details-section-title"><?=htmlspecialchars((string) ($section['label'] ?? ''), ENT_QUOTES, 'UTF-8');?></h2>
-					<dl class="details-info-list">
-						<?php foreach ((array) ($section['items'] ?? array()) as $item) { ?>
-						<div class="details-info-row">
-							<dt><?=htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');?>:</dt>
-							<dd><?=lt_details_render_text_html((string) ($item['value'] ?? ''));?></dd>
-						</div>
-						<?php } ?>
-					</dl>
-				</div>
+				<details class="details-disclosure">
+					<summary><?=htmlspecialchars((string) ($section['label'] ?? ''), ENT_QUOTES, 'UTF-8');?></summary>
+					<div class="details-disclosure-body">
+						<dl class="details-info-list">
+							<?php foreach ((array) ($section['items'] ?? array()) as $item) { ?>
+							<div class="details-info-row">
+								<dt><?=htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');?>:</dt>
+								<dd><?=lt_details_render_text_html((string) ($item['value'] ?? ''));?></dd>
+							</div>
+							<?php } ?>
+						</dl>
+					</div>
+				</details>
 				<?php } ?>
 
 				<?php if ($details_has_update || $details_update_reason !== '') { ?>
@@ -181,7 +188,7 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 				</div>
 				<?php } ?>
 
-				<?php if ($details_file_rows) { ?>
+				<?php if ($details_file_rows && !empty($USER['id'])) { ?>
 				<details class="details-files-toggle">
 					<summary>Список файлов</summary>
 					<div class="details-files-wrap">
@@ -204,50 +211,20 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 			<section class="details-panel details-gallery-panel">
 				<div class="details-gallery-grid" id="details-gallery">
 					<?php foreach ($screens as $screen) { ?>
-					<a class="details-gallery-item" href="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>" rel="lightbox-tour" title="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>">
+					<a
+						class="details-gallery-item"
+						href="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>"
+						data-gallery="torrent-screens"
+						data-title="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>"
+						title="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>"
+					>
 						<img src="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>" alt="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>">
 					</a>
 					<?php } ?>
 				</div>
 			</section>
-			<script type="text/javascript" src="/public/js/jquery.lightbox.js"></script>
-			<link rel="stylesheet" type="text/css" href="/public/css/lightbox.css">
-			<script type="text/javascript">
-			$("#details-gallery a").lightbox();
-			$.Lightbox.construct({
-				"speed": 500,
-				"show_linkback": true,
-				"keys": {
-					close: "q",
-					prev: "z",
-					next: "x"
-				},
-				"opacity": 0.2,
-				text: {
-					image: "Картинка",
-					of: "из",
-					close: "Закрыть",
-					closeInfo: "Завершить просмотр можно, кликнув мышью вне картинки.",
-					help: {
-						close: "Закрыть",
-						interact: "Закрыть скриншоты"
-					},
-					about: {
-						text: "",
-						title: "",
-						link: ""
-					}
-				},
-				files: {
-					images: {
-						prev: "public/images/lightbox/prev.gif",
-						next: "public/images/lightbox/next.gif",
-						blank: "public/images/lightbox/blank.gif",
-						loading: "public/images/lightbox/loading.gif"
-					}
-				}
-			});
-			</script>
+			<link rel="stylesheet" type="text/css" href="/public/vendor/glightbox/glightbox.min.css">
+			<script type="text/javascript" src="/public/vendor/glightbox/glightbox.min.js"></script>
 			<?php } ?>
 
 			<?php if (!empty($video_vkontakte)) { ?>
@@ -257,17 +234,17 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 			</section>
 			<?php } ?>
 
+			<?php if (!empty($USER['id'])) { ?>
 			<section class="details-panel details-comments-panel">
 				<header class="details-comments-header">
 					<h2 class="details-comments-title">Комментарии к торренту</h2>
 				</header>
 				<div class="details-comments-body">
-					<?php if (empty($USER['id'])) { ?>
-					<div class="details-comments-guest-note">Комментарии доступны для чтения. Чтобы написать свой комментарий, войдите или зарегистрируйтесь.</div>
-					<?php } ?>
 					<?php listComment('torrents' , $id , 'details.php?'); ?>
 				</div>
 			</section>
+			<?php } ?>
 		</div>
 	</div>
 </div>
+<script type="text/javascript" src="/public/js/details.js"></script>
