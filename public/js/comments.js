@@ -117,20 +117,21 @@
 
   window.replyWallComment = function (userName) {
     var activeForm = document.querySelector('[data-comment-form]');
-    var textarea = getCommentTextarea(activeForm);
-    var cleanUserName = String(userName || '').replace(/\s+/g, ' ').trim();
-    var prefix;
+    var textarea = getCommentTextarea(activeForm || document);
 
-    if (!textarea || !cleanUserName) {
+    if (activeForm) {
+      resetReplyState(activeForm);
+    }
+
+    if (!textarea) {
       return false;
     }
 
-    prefix = '[b]' + cleanUserName + '[/b], ';
-    if (textarea.value.indexOf(prefix) !== 0) {
-      textarea.value = prefix + textarea.value;
+    textarea.focus();
+    if (typeof textarea.setSelectionRange === 'function') {
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
     }
 
-    focusTextarea(activeForm);
     return false;
   };
 })();

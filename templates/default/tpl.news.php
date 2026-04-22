@@ -7,61 +7,32 @@ if (!defined('LITETRACKER'))
 //Шаблон для Новостной системы
 ////////////////////////////////////////////////////////
 
-begin_frame($name);
+begin_frame('', '100', false, 0);
 ?>
-<a href="news.php?id=<?=$id;?>"><?=$name;?></a>
-<hr>
-<table width="100%">
-<tr>
-<td valign="top" width="50">
-<a href="<?=profile_href($user_id);?>"><?=$avatar;?></a>
-</td>
-<td valign="top">
-	<table cellspacing="3" cellpadding="0" class="profileTable" width="100%">
-		
-		 <tbody>	
-		 <tr>
-		 <td class="label" width="10%"><b><?=$language['news_14'];?></b>:</td>
-		 <td class="data">
-		  <div class="dataWrap">
-			<?=$date;?>
-		  </div>
-		 </td>
-		</tr>
-		
-		<tr>
-		 <td class="label"><b><?=$language['news_15'];?></b>:</td>
-		 <td class="data">
-		  <div class="dataWrap">
-			<a href="<?=profile_href($user_id);?>"><?=get_user_color($user_class , $user_name);?></a>
-		  </div>
-		 </td>
-		</tr>
-		
-		
+<div class="news-detail-page">
+	<article class="news-detail-card">
+		<header class="news-detail-header">
+			<h1 class="news-detail-title"><?=$name;?></h1>
+			<div class="news-detail-date"><?=htmlspecialchars((string) ($published_at ?? $date), ENT_QUOTES, 'UTF-8');?></div>
+		</header>
 
-		
-		<tr>
-		 
-		 <td class="data" colspan="2">
-		  <div class="dataWrap">
-		  <hr>
-			<?=$text;?>
-		  </div>
-		 </td>
-		</tr>
-		
+		<div class="news-detail-content"><?=$text;?></div>
 
-		 </tbody></table>
+		<div class="news-detail-footer">
+			<div class="news-detail-publisher-block">
+				<span class="news-detail-publisher-label"><?=$language['news_15'];?>:</span>
+				<a class="news-detail-publisher-link" href="<?=profile_href($user_id);?>"><?=get_user_color($user_class , htmlspecialchars((string) $user_name, ENT_QUOTES, 'UTF-8'));?></a>
+			</div>
 
-		<? if($PRIV['news_add']){ ?>
-		<input type="button" value="<?=$language['news_16'];?>" onCLick="window.location.href='news.php?act=edit&id=<?=$id;?>'">&nbsp
-		<input type="button" value="<?=$language['news_17'];?>" onCLick="window.location.href='news.php?act=delete&id=<?=$id;?>'">&nbsp
-		<? } ?>
-		<?=$field;?>
-</td>
-</tr>
-</table>		
+			<?php if (!empty($PRIV['news_add'])) { ?>
+			<div class="news-detail-admin-links">
+				<a class="news-detail-admin-link" href="news.php?act=edit&id=<?=$id;?>"><?=$language['news_16'];?></a>
+				<a class="news-detail-admin-link" href="news.php?act=delete&id=<?=$id;?>" onclick="return confirm('Удалить эту новость?');"><?=$language['news_17'];?></a>
+			</div>
+			<?php } ?>
+		</div>
+	</article>
+</div>
 <?
 end_frame();
 ?>

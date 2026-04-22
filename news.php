@@ -16,6 +16,47 @@ $act = (string) ($_GET['act'] ?? '');
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $status = (string) ($_GET['status'] ?? '');
 
+function lt_news_format_publication_date($date)
+{
+	global $language;
+
+	$date = trim((string) $date);
+	if ($date === '' || strpos($date, ' ') === false) {
+		return convent_date($date);
+	}
+
+	$months = array(
+		'01' => $language['month_1'],
+		'02' => $language['month_2'],
+		'03' => $language['month_3'],
+		'04' => $language['month_4'],
+		'05' => $language['month_5'],
+		'06' => $language['month_6'],
+		'07' => $language['month_7'],
+		'08' => $language['month_8'],
+		'09' => $language['month_9'],
+		'10' => $language['month_10'],
+		'11' => $language['month_11'],
+		'12' => $language['month_12'],
+	);
+
+	list($datePart, $timePart) = explode(' ', $date, 2);
+	$explodeDate = explode('-', $datePart);
+	$explodeTime = explode(':', $timePart);
+
+	if (count($explodeDate) !== 3 || count($explodeTime) < 2) {
+		return convent_date($date);
+	}
+
+	$day = (int) $explodeDate[2];
+	$month = ($months[$explodeDate[1]] ?? $explodeDate[1]);
+	$year = (int) $explodeDate[0];
+	$hour = (int) $explodeTime[0];
+	$minute = str_pad((string) ((int) $explodeTime[1]), 2, '0', STR_PAD_LEFT);
+
+	return $day.' '.$month.' '.$year.' в '.$hour.':'.$minute;
+}
+
 
 
 
@@ -78,52 +119,27 @@ if($act == 'edit' && $id) {
 	head($language['news_4']);
 	begin_frame($language['news_4']);
 	?>
-	<form enctype="multipart/form-data" action="news.php?act=edit&id=<?=$id;?>" method="post" name="news">
+	<form enctype="multipart/form-data" action="news.php?act=edit&id=<?=$id;?>" method="post" name="news" class="news-editor-form">
+		<div class="news-editor-grid">
+			<label class="news-editor-field">
+				<span class="news-editor-label"><?=$language['news_5'];?>:</span>
+				<input class="news-editor-input" type="text" name="name" value="<?=htmlspecialchars((string) $arr['name'], ENT_QUOTES, 'UTF-8');?>">
+			</label>
 
-	<!--Файлы-->
-	<table width="80%"  cellspacing="7" cellpadding="0" border="0"  align="center">
-	<tbody>
+			<label class="news-editor-field news-editor-field-full">
+				<span class="news-editor-label">Текст новости:</span>
+				<textarea class="news-editor-textarea" name="text"><?=htmlspecialchars((string) $arr['text'], ENT_QUOTES, 'UTF-8');?></textarea>
+			</label>
 
+			<label class="news-editor-checkbox">
+				<input type="checkbox" name="up" value="1">
+				<span><?=$language['news_7'];?></span>
+			</label>
 
-	<tr>
-		<td class="ta_r" width="1%">
-		 <span class="grey"><?=$language['news_5'];?>:</span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="text" name="name" style="margin: 0px;" size="50%" class="inputText" value="<?=htmlspecialchars($arr['name']);?>">
-		</td><td>
-	   </td></tr>
-		<tr>
-
-		<td style="padding: 0px;" colspan="2">
-		 <?=textbb('text' , $arr['text'],  '100%' , '300');?>
-		</td><td>
-	   </td></tr>
-	   <tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" ></span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="checkbox" name="up" value="1"> <?=$language['news_7'];?>
-		</td><td>
-	   </td></tr>
-
-	   	<tr>
-		<td class="ta_r">
-		 <span class="grey"></span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="submit" value="<?=$language['news_8'];?>">
-		</td><td>
-	   </td></tr>
-
-
-
-
-	</tbody>
-	</table>
-
-
+			<div class="news-editor-actions">
+				<input class="news-editor-submit" type="submit" value="<?=$language['news_8'];?>">
+			</div>
+		</div>
 	</form>
 	<?
 	end_frame();
@@ -173,42 +189,22 @@ if($act == 'add') {
 	head($language['news_9']);
 	begin_frame($language['news_9']);
 	?>
-	<form enctype="multipart/form-data" action="news.php?act=add" method="post" name="news">
+	<form enctype="multipart/form-data" action="news.php?act=add" method="post" name="news" class="news-editor-form">
+		<div class="news-editor-grid">
+			<label class="news-editor-field">
+				<span class="news-editor-label"><?=$language['news_5'];?>:</span>
+				<input class="news-editor-input" type="text" name="name" value="<?=htmlspecialchars((string) ($_POST['name'] ?? ''), ENT_QUOTES, 'UTF-8');?>">
+			</label>
 
-	<!--Файлы-->
-	<table width="80%"  cellspacing="7" cellpadding="0" border="0"  align="center">
-	<tbody>
+			<label class="news-editor-field news-editor-field-full">
+				<span class="news-editor-label">Текст новости:</span>
+				<textarea class="news-editor-textarea" name="text"><?=htmlspecialchars((string) ($_POST['text'] ?? ''), ENT_QUOTES, 'UTF-8');?></textarea>
+			</label>
 
-
-	<tr>
-		<td class="ta_r"  width="1%">
-		 <span class="grey"><?=$language['news_5'];?>:</span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="text" name="name" style="margin: 0px;" size="50%" class="inputText">
-		</td><td>
-	   </td></tr>
-		<tr>
-
-		<td style="padding: 0px;" colspan="2">
-		 <?=textbb('text' , $_POST['text'] ?? '',  '100%' , '300');?>
-		</td><td>
-	   </td></tr>
-
-	   	<tr>
-
-		<td style="padding: 0px;" colspan="2">
-		 <input type="submit" value="<?=$language['news_10'];?>">
-		</td><td>
-	   </td></tr>
-
-
-
-
-	</tbody>
-	</table>
-
-
+			<div class="news-editor-actions">
+				<input class="news-editor-submit" type="submit" value="<?=$language['news_10'];?>">
+			</div>
+		</div>
 	</form>
 	<?
 	end_frame();
@@ -275,6 +271,7 @@ if($id && $act == '') {
 
 	//Дата добавления
 	$date = convent_date($arr['date']);
+	$published_at = lt_news_format_publication_date($arr['date']);
 
 	/////////////////////////////////////////////////////////
 	//Пользователь
@@ -286,12 +283,6 @@ if($id && $act == '') {
 	$user_name = $user['name'];
 	//Класс пользователя
 	$user_class = $user['class'];
-
-	//Аватар пользователя
-	$avatar = ($user['avatar'] ? '<img src="public/avatars/'.$user['avatar'].'" width="50">' : '<img src="public/images/default_avatar.gif" width="50">');
-
-	//Дополнительные поля
-	$field = '<input type="button" value="К новостям" onClick="window.location.href=\'news.php\'">';
 
 	//Определяем  , что это детали новости
 	define('NEWS_DETAILS' , true);
