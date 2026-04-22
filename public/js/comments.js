@@ -1,130 +1,136 @@
-///////////////////////////////////////////////////////////////////////
-// Комментирование
-///////////////////////////////////////////////////////////////////////
+(function () {
+  function ready(fn) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn);
+      return;
+    }
 
-function getCommentTextarea() {
-	var field = document.getElementById('wall-comment-text');
-	if (field) {
-		return field;
-	}
+    fn();
+  }
 
-	field = document.querySelector("textarea[name='text']");
-	if (field) {
-		return field;
-	}
+  function getCommentTextarea(root) {
+    if (!root) {
+      return null;
+    }
 
-	field = document.querySelector("textarea[name='textComment']");
-	if (field) {
-		return field;
-	}
+    return root.querySelector('[data-comment-textarea]') ||
+      root.querySelector("textarea[name='text']") ||
+      root.querySelector("textarea[name='textComment']");
+  }
 
-	return null;
-}
+  function resetReplyState(root) {
+    var parentInput;
+    var replyBanner;
+    var replyLabel;
 
-function safeSlideDown(selector, callback) {
-	if (typeof window.jQuery === 'undefined') {
-		var el = document.querySelector(selector);
-		if (el) {
-			el.style.display = '';
-		}
-		if (typeof callback === 'function') {
-			callback();
-		}
-		return;
-	}
+    if (!root) {
+      return;
+    }
 
-	window.jQuery(selector).stop(true, true).slideDown(350, function () {
-		if (typeof callback === 'function') {
-			callback();
-		}
-	});
-}
+    parentInput = root.querySelector('[data-comment-parent]');
+    replyBanner = root.querySelector('[data-comment-reply-banner]');
+    replyLabel = root.querySelector('[data-comment-reply-label]');
 
-function safeSlideUp(selector, callback) {
-	if (typeof window.jQuery === 'undefined') {
-		var el = document.querySelector(selector);
-		if (el) {
-			el.style.display = 'none';
-		}
-		if (typeof callback === 'function') {
-			callback();
-		}
-		return;
-	}
+    if (parentInput) {
+      parentInput.value = '0';
+    }
 
-	window.jQuery(selector).stop(true, true).slideUp(350, function () {
-		if (typeof callback === 'function') {
-			callback();
-		}
-	});
-}
+    if (replyLabel) {
+      replyLabel.textContent = '';
+    }
 
-function safeSliderElement(selector, speed) {
-	if (typeof window.sliderElement === 'function') {
-		window.sliderElement(selector, speed);
-	}
-}
+    if (replyBanner) {
+      replyBanner.hidden = true;
+    }
+  }
 
-// Возврат к форме
-function upCommentForm() {
-	var field = getCommentTextarea();
-	if (field) {
-		field.value = '';
-	}
+  function focusTextarea(root) {
+    var textarea = getCommentTextarea(root);
+    if (!textarea) {
+      return;
+    }
 
-	safeSlideDown('#addComment', function () {
-		safeSliderElement('#addComment', 800);
-	});
+    textarea.focus();
 
-	return false;
-}
+    if (typeof textarea.setSelectionRange === 'function') {
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    }
+  }
 
-// Скрытие формы
-function downCommentForm() {
-	var addComment = document.getElementById('addComment');
-	if (!addComment) {
-		return false;
-	}
+  function activateReply(button) {
+    var threadRoot = button.closest('[data-comment-thread]');
+    var form = threadRoot ? threadRoot.querySelector('[data-comment-form]') : null;
+    var parentInput = form ? form.querySelector('[data-comment-parent]') : null;
+    var replyBanner = form ? form.querySelector('[data-comment-reply-banner]') : null;
+    var replyLabel = form ? form.querySelector('[data-comment-reply-label]') : null;
+    var authorName = button.getAttribute('data-author-name') || '';
 
-	var isVisible = true;
-	if (typeof window.jQuery !== 'undefined') {
-		isVisible = window.jQuery('#addComment').is(':visible');
-	} else {
-		isVisible = addComment.style.display !== 'none';
-	}
+    if (!form || !parentInput) {
+      return;
+    }
 
-	if (isVisible) {
-		safeSlideUp('#addComment', function () {
-			safeSliderElement('#setComment', 800);
-		});
-	}
+    parentInput.value = button.getAttribute('data-comment-id') || '0';
 
-	return false;
-}
+    if (replyBanner && replyLabel) {
+      replyLabel.textContent = 'Ответ пользователю ' + authorName;
+      replyBanner.hidden = false;
+    }
 
-function replyWallComment(userName) {
-	var field = getCommentTextarea();
-	if (!field) {
-		return false;
-	}
+    focusTextarea(form);
+  }
 
-	var cleanUserName = String(userName || '').replace(/\s+/g, ' ').trim();
-	if (!cleanUserName) {
-		field.focus();
-		return false;
-	}
+  ready(function () {
+    document.addEventListener('click', function (event) {
+      var replyButton = event.target.closest('[data-comment-reply]');
+      var cancelButton = event.target.closest('[data-comment-reply-cancel]');
+      var form;
 
-	var prefix = '[b]' + cleanUserName + '[/b], ';
-	if (field.value.indexOf(prefix) !== 0) {
-		field.value = prefix + field.value;
-	}
+      if (replyButton) {
+        event.preventDefault();
+        activateReply(replyButton);
+        return;
+      }
 
-	field.focus();
+      if (cancelButton) {
+        event.preventDefault();
+        form = cancelButton.closest('[data-comment-form]');
+        resetReplyState(form);
+        focusTextarea(form);
+      }
+    });
 
-	if (typeof field.setSelectionRange === 'function') {
-		var pos = field.value.length;
-		field.setSelectionRange(pos, pos);
-	}
+    document.addEventListener('submit', function (event) {
+      var form = event.target.closest('[data-comment-form]');
+      if (!form) {
+        return;
+      }
 
-	return false;
-}
+      if (!getCommentTextarea(form)) {
+        return;
+      }
+
+      if (!getCommentTextarea(form).value.trim()) {
+        resetReplyState(form);
+      }
+    });
+  });
+
+  window.replyWallComment = function (userName) {
+    var activeForm = document.querySelector('[data-comment-form]');
+    var textarea = getCommentTextarea(activeForm);
+    var cleanUserName = String(userName || '').replace(/\s+/g, ' ').trim();
+    var prefix;
+
+    if (!textarea || !cleanUserName) {
+      return false;
+    }
+
+    prefix = '[b]' + cleanUserName + '[/b], ';
+    if (textarea.value.indexOf(prefix) !== 0) {
+      textarea.value = prefix + textarea.value;
+    }
+
+    focusTextarea(activeForm);
+    return false;
+  };
+})();

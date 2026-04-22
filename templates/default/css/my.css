@@ -1067,7 +1067,7 @@ hr {
 }
 
 .comment-entry-body-has-side-actions {
-  padding-right: 150px;
+  padding-right: 118px;
 }
 
 .wall-comment-meta {
@@ -1117,6 +1117,17 @@ hr {
   display: flex;
   align-items: center;
   gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(4px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.wall-comment:hover .comment-side-actions,
+.wall-comment:focus-within .comment-side-actions {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
 }
 
 .comment-side-button,
@@ -1155,22 +1166,44 @@ hr {
   color: #6f7d8c;
 }
 
+.comment-side-button-report,
 .wall-comment-report {
   cursor: pointer;
+  width: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  padding: 0;
+  border-color: #d9e1e8;
+  background: #f8fafc;
+  color: #98a4b0;
+}
+
+.comment-side-button-report:hover,
+.wall-comment-report:hover {
+  border-color: #c9d3dc;
+  background: #f0f4f8;
+  color: #6f7d8c;
 }
 
 .wall-comment-report-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: auto;
-  font-size: 11px;
+  width: 100%;
+  font-size: 13px;
   line-height: 1;
 }
 
 .wall-comment-report-label {
-  font-size: 11px;
-  line-height: 1;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .wall-comment-actions {

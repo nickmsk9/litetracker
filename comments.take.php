@@ -22,13 +22,37 @@ $file = isset($_REQUEST['file']) ? trim((string) $_REQUEST['file']) : '';
 $file_explode = explode('?', $file, 2);
 $file_name = isset($file_explode[0]) ? trim((string) $file_explode[0]) : '';
 
-function comment_debug_log($message)
+function comment_return_url($file, $objectId, $suffix = '')
 {
-    $logFile = __DIR__ . '/comments_debug.log';
-    @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL, FILE_APPEND);
+    $file = trim((string) $file);
+    $objectId = (int) $objectId;
+    $suffix = (string) $suffix;
+
+    if ($file === '') {
+        return '';
+    }
+
+    $url = $file;
+    if (strpos($url, 'id=') === false) {
+        $url .= 'id=' . $objectId;
+    }
+
+    if ($suffix !== '') {
+        if ($suffix[0] === '#') {
+            $url .= $suffix;
+        } else {
+            $needsGlue = (substr($url, -1) !== '&' && substr($url, -1) !== '?' && strpos($suffix, '&') !== 0);
+            $url .= ($needsGlue ? '&' : '') . ltrim($suffix, '&');
+        }
+    }
+
+    return $url;
 }
 
-comment_debug_log('REQUEST=' . print_r($_REQUEST, true));
+function comment_debug_log($message)
+{
+    return;
+}
 
 if ($type === '' || $object_id <= 0 || $file_name === '') {
     comment_debug_log('Ошибка: пустой type/object_id/file');
@@ -42,6 +66,7 @@ if (!is_file($file_name)) {
 
 $table_name = 'comments_' . $type;
 $object_name = 'id_' . $type;
+comments_ensure_thread_support($type);
 
 // Проверяем объект
 $object_exists = $db->super_query("SELECT id FROM `{$type}` WHERE id = {$object_id} LIMIT 1");
@@ -68,9 +93,26 @@ if ($act === 'add') {
 
     $text_sql = $db->safesql($text);
     $user_id = (int) $USER['id'];
+    $supportsThreads = comments_supports_threads($type);
+    $parentId = ($supportsThreads ? (int) ($_REQUEST['parent_id'] ?? 0) : 0);
 
-        $insert_sql = "INSERT INTO `{$table_name}` (`id_user`, `{$object_name}`, `date`, `text`, `id_user_edit`, `date_edit`)
-                   VALUES ({$user_id}, {$object_id}, NOW(), '{$text_sql}', {$user_id}, NOW())";
+    if ($supportsThreads && $parentId > 0) {
+        $parentCheck = $db->super_query("SELECT id FROM `{$table_name}` WHERE id = {$parentId} AND `{$object_name}` = {$object_id} LIMIT 1");
+        if (empty($parentCheck['id'])) {
+            $parentId = 0;
+        }
+    }
+
+    $insertFields = array('id_user', $object_name, 'date', 'text', 'id_user_edit', 'date_edit');
+    $insertValues = array($user_id, $object_id, 'NOW()', "'{$text_sql}'", $user_id, 'NOW()');
+
+    if ($supportsThreads) {
+        $insertFields[] = 'parent_id';
+        $insertValues[] = $parentId;
+    }
+
+    $insert_sql = "INSERT INTO `{$table_name}` (`".implode('`,`', $insertFields)."`)
+                   VALUES (".implode(', ', $insertValues).")";
 
     comment_debug_log('INSERT SQL: ' . $insert_sql);
 
@@ -99,7 +141,55 @@ if ($act === 'add') {
         }
     }
 
-header('Location:' . $file . 'id=' . $object_id);
+header('Location:' . comment_return_url($file, $object_id));
+    die();
+}
+
+//////////////////////////////////////////////////////////////
+// Жалоба на комментарий
+//////////////////////////////////////////////////////////////
+if ($act === 'report' && !empty($_REQUEST['id_comment'])) {
+    $id_comment = (int) $_REQUEST['id_comment'];
+
+    $arr = $db->super_query("SELECT id, id_user, text FROM `{$table_name}` WHERE id = {$id_comment} AND `{$object_name}` = {$object_id} LIMIT 1");
+    if (empty($arr['id'])) {
+        err($language['default_1'], $language['comments_8'], 1);
+    }
+
+    if ((int) $arr['id_user'] === (int) $USER['id']) {
+        header('Location:' . comment_return_url($file, $object_id));
+        die();
+    }
+
+    comments_reports_ensure_table();
+    $reportsTable = comments_reports_table_name();
+    $existingReport = $db->super_query(
+        "SELECT id
+         FROM `".$reportsTable."`
+         WHERE comment_type = '".$db->safesql($type)."'
+           AND comment_id = {$id_comment}
+           AND reporter_user_id = ".(int) $USER['id']."
+           AND status = 'open'
+         LIMIT 1"
+    );
+
+    if (empty($existingReport['id'])) {
+        $db->query(
+            "INSERT INTO `".$reportsTable."` (`comment_type`, `comment_id`, `object_id`, `comment_user_id`, `reporter_user_id`, `comment_text_snapshot`, `status`, `created_at`)
+             VALUES (
+                '".$db->safesql($type)."',
+                {$id_comment},
+                {$object_id},
+                ".(int) $arr['id_user'].",
+                ".(int) $USER['id'].",
+                '".$db->safesql((string) ($arr['text'] ?? ''))."',
+                'open',
+                NOW()
+             )"
+        );
+    }
+
+    header('Location:' . comment_return_url($file, $object_id, '#wall-comment-' . $id_comment));
     die();
 }
 
@@ -123,7 +213,7 @@ if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
 
     $deletedMeta = lt_comment_deleted_meta((string) ($arr['text'] ?? ''));
     if (!empty($deletedMeta['is_deleted'])) {
-        header('Location:' . $file . 'id=' . $object_id . '&status=3');
+        header('Location:' . comment_return_url($file, $object_id, 'status=3'));
         die();
     }
 
@@ -133,7 +223,7 @@ if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
     comment_debug_log('DELETE SQL: ' . $delete_sql);
     $db->query($delete_sql, 0);
 
-    header('Location:' . $file . 'id=' . $object_id . '&status=3');
+    header('Location:' . comment_return_url($file, $object_id, 'status=3'));
     die();
 }
 
@@ -186,7 +276,7 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
             $db->query($update_sql, 0);
         }
 
-        header('Location:' . $file . 'id=' . $object_id . '&status=2');
+        header('Location:' . comment_return_url($file, $object_id, 'status=2'));
         die();
     }
 
