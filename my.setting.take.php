@@ -83,7 +83,7 @@ function prepare_user_avatar_upload($fieldName, $userId, $userRow)
 		err('Ошибка', 'Некорректный размер изображения.', 1);
 	}
 
-	$fileName = (string) $userId . '.jpg';
+	$fileName = (string) $userId.'_'.time().'_'.substr(md5(mksecret(16)), 0, 8).'.jpg';
 	$mainPath = $dirDest . $fileName;
 	$smallPath = $dirDestSmall . $fileName;
 
