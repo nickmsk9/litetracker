@@ -209,6 +209,72 @@ function user_is_blacklisted($userId, $blockedUserId)
 	return $cache[$cacheKey];
 }
 
+function admin_dashboard_is_superadmin($user = null, $priv = null)
+{
+	if ($user === null) {
+		$user = ($GLOBALS['USER'] ?? null);
+	}
+
+	if ($priv === null) {
+		$priv = ($GLOBALS['PRIV'] ?? array());
+	}
+
+	$user = (is_array($user) ? $user : array());
+	$priv = (is_array($priv) ? $priv : array());
+
+	return ((int) ($user['class'] ?? 0) === 6 || !empty($priv['EDIT_PRIV']));
+}
+
+function admin_dashboard_can_access($user = null, $priv = null)
+{
+	if ($user === null) {
+		$user = ($GLOBALS['USER'] ?? null);
+	}
+
+	if ($priv === null) {
+		$priv = ($GLOBALS['PRIV'] ?? array());
+	}
+
+	$user = (is_array($user) ? $user : array());
+	$priv = (is_array($priv) ? $priv : array());
+
+	if (empty($user['id'])) {
+		return false;
+	}
+
+	if (admin_dashboard_is_superadmin($user, $priv)) {
+		return true;
+	}
+
+	$flags = array(
+		'cats',
+		'users_view',
+		'user_add',
+		'messages',
+		'setting_user',
+		'ip_util',
+		'search_query',
+		'sessions_view',
+		'sessions_clear',
+		'multitracker_accounts',
+		'news_add',
+		'edit_news',
+		'faq_moderate',
+		'comments_edit',
+		'comments_delete',
+		'edit_release',
+		'edit_banned',
+	);
+
+	foreach ($flags as $flag) {
+		if (!empty($priv[$flag])) {
+			return true;
+		}
+	}
+
+	return user_wall_reports_can_moderate();
+}
+
 
 
 //Gzip сжатие

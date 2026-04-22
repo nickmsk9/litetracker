@@ -12,7 +12,7 @@ $mainNav = array(
 	array('href' => 'browse.php?act=all', 'label' => 'Торренты'),
 );
 
-if ($USER && (int) ($USER['class'] ?? 0) === 6) {
+if ($USER && admin_dashboard_can_access($USER, $PRIV)) {
 	$mainNav[] = array('href' => 'admin.php', 'label' => 'Админка');
 }
 
