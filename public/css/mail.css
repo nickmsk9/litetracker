@@ -43,11 +43,17 @@
 }
 
 .mail-thread-name {
+	display: inline-block;
 	color: #111111;
 	font-size: 16px;
 	font-weight: 700;
 	line-height: 1.25;
+	text-decoration: none;
 	word-break: break-word;
+}
+
+.mail-thread-name:hover {
+	color: #2f6fad;
 }
 
 .mail-thread-status {
@@ -196,6 +202,11 @@
 .mail-modal-history-link:hover {
 	color: #ffffff;
 	background: #9faeb9;
+}
+
+.mail-modal-history-link-loading {
+	opacity: 0.75;
+	pointer-events: none;
 }
 
 .mail-modal-message {

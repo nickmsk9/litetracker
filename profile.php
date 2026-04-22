@@ -295,7 +295,7 @@ $profileCanMessage = (!empty($USER['id']) && (int) $USER['id'] !== $id);
 $profileBlacklistEnabled = ($profileCanMessage && user_blacklist_available());
 $profileBlacklisted = ($profileBlacklistEnabled ? user_is_blacklisted((int) $USER['id'], $id) : false);
 
-if ($canEditProfile) {
+if ($isOwnProfile) {
 	$profileActions[] = array(
 		'type' => 'link',
 		'label' => 'Редактировать',

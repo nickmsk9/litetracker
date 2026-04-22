@@ -131,6 +131,27 @@ function mail_load_message($messageId, $currentUserId)
 	return $db->super_query("SELECT * FROM mail WHERE id = {$messageId} AND (id_user_in = {$currentUserId} OR id_user_out = {$currentUserId}) LIMIT 1");
 }
 
+function mail_render_message_html($row, $currentUserId, $currentUserName)
+{
+	$row = (array) $row;
+	$currentUserId = (int) $currentUserId;
+	$isOutgoing = ((int) ($row['id_user_out'] ?? 0) === $currentUserId);
+	$messageAuthor = ($isOutgoing ? ($currentUserName !== '' ? $currentUserName : 'Вы') : (!empty($row['sender_name']) ? $row['sender_name'] : 'System'));
+
+	ob_start();
+	?>
+	<div class="mail-modal-message<?=($isOutgoing ? ' mail-modal-message-outgoing' : '');?>">
+		<div class="mail-modal-message-meta">
+			<span class="mail-modal-message-author"><?=htmlspecialchars($messageAuthor, ENT_QUOTES, 'UTF-8');?></span>
+			<span class="mail-modal-message-date"><?=convent_date($row['date']);?></span>
+		</div>
+		<div class="mail-modal-message-text"><?=format_comment($row['text']);?></div>
+	</div>
+	<?php
+
+	return (string) ob_get_clean();
+}
+
 $currentUserId = (int) $USER['id'];
 $act = trim((string) ($_GET['act'] ?? 'list'));
 $messageId = (int) ($_GET['id'] ?? 0);
@@ -138,6 +159,7 @@ $targetUserId = (int) ($_GET['id_user'] ?? 0);
 $systemConversation = !empty($_GET['system']);
 $status = trim((string) ($_GET['status'] ?? ''));
 $statusMessageId = (int) ($_GET['id_message'] ?? 0);
+$loadOlderMessages = !empty($_GET['load_older']);
 
 if ($act === '') {
 	$act = 'list';
@@ -234,7 +256,7 @@ $conversationSubtitle = 'Все личные сообщения сгруппир
 $messages = array();
 $blockedByParticipant = false;
 $blockedByCurrent = false;
-$conversationLimit = 20;
+$conversationLimit = 10;
 $showAllConversationMessages = !empty($_GET['all']);
 $conversationHasOlderMessages = false;
 $conversationOlderHref = '';
@@ -328,8 +350,18 @@ if ($act === 'conversation') {
 	$conversationWhere = mail_conversation_where($currentUserId, $targetUserId, $systemConversation, 'm');
 	$totalMessagesRow = $db->super_query("SELECT COUNT(*) AS c FROM mail AS m WHERE ".$conversationWhere);
 	$totalMessagesCount = (int) ($totalMessagesRow['c'] ?? 0);
+	$olderMessagesCount = max(0, $totalMessagesCount - $conversationLimit);
 
-	if (!$showAllConversationMessages && $totalMessagesCount > $conversationLimit) {
+	if ($loadOlderMessages && $totalMessagesCount > $conversationLimit) {
+		$conversationHasOlderMessages = true;
+		$conversationOlderHref = mail_build_href('conversation', $targetUserId, $systemConversation, array('all' => 1));
+		$sql = $db->query("SELECT m.*, u.name AS sender_name, u.class AS sender_class, u.avatar AS sender_avatar
+			FROM mail AS m
+			LEFT JOIN users AS u ON u.id = m.id_user_out
+			WHERE ".$conversationWhere."
+			ORDER BY m.date ASC, m.id ASC
+			LIMIT ".$olderMessagesCount);
+	} elseif (!$showAllConversationMessages && $totalMessagesCount > $conversationLimit) {
 		$conversationHasOlderMessages = true;
 		$conversationOlderHref = mail_build_href('conversation', $targetUserId, $systemConversation, array('all' => 1));
 		$sql = $db->query("SELECT * FROM (
@@ -347,6 +379,13 @@ if ($act === 'conversation') {
 
 	while($row = $db->get_row($sql)) {
 		$messages[] = $row;
+	}
+
+	if ($loadOlderMessages) {
+		foreach ($messages as $row) {
+			echo mail_render_message_html($row, $currentUserId, (string) ($USER['name'] ?? ''));
+		}
+		die();
 	}
 }
 
@@ -414,6 +453,7 @@ while($conversation = $db->get_row($conversationsSql)) {
 		$partner = $conversation['partner'];
 		$partnerName = (!empty($partner['name']) ? $partner['name'] : 'System');
 		$openHref = mail_build_href('conversation', $conversation['partner_id'], $conversation['system']);
+		$partnerProfileHref = ($conversation['system'] ? $openHref : 'profile.php?id='.(int) $conversation['partner_id']);
 		$countLabel = $conversation['total_messages'].' '.mail_plural($conversation['total_messages'], 'сообщение', 'сообщения', 'сообщений');
 		$isActiveConversation = ($act === 'conversation' && (int) $conversation['partner_id'] === (int) $targetUserId && (bool) $conversation['system'] === (bool) $systemConversation);
 		?>
@@ -423,7 +463,7 @@ while($conversation = $db->get_row($conversationsSql)) {
 			</a>
 
 			<div class="mail-thread-main">
-				<div class="mail-thread-name"><?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?></div>
+				<a class="mail-thread-name" href="<?=$partnerProfileHref;?>"><?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?></a>
 				<div class="mail-thread-status"><?=$conversation['subtitle'];?></div>
 			</div>
 
@@ -453,7 +493,7 @@ while($conversation = $db->get_row($conversationsSql)) {
 			<div class="mail-modal-body">
 				<div class="mail-modal-stream">
 					<?php if ($conversationHasOlderMessages && $conversationOlderHref !== '') { ?>
-					<a class="mail-modal-history-link" href="<?=$conversationOlderHref;?>">Показать более старые сообщения</a>
+					<a class="mail-modal-history-link" href="<?=$conversationOlderHref;?>" data-mail-load-older="1">Показать более старые сообщения</a>
 					<?php } ?>
 
 					<?php if (!$messages) { ?>
@@ -461,17 +501,7 @@ while($conversation = $db->get_row($conversationsSql)) {
 					<?php } ?>
 
 					<?php foreach($messages as $row) { ?>
-					<?php
-					$isOutgoing = ((int) $row['id_user_out'] === $currentUserId);
-					$messageAuthor = ($isOutgoing ? (!empty($USER['name']) ? $USER['name'] : 'Вы') : (!empty($row['sender_name']) ? $row['sender_name'] : 'System'));
-					?>
-					<div class="mail-modal-message<?=($isOutgoing ? ' mail-modal-message-outgoing' : '');?>">
-						<div class="mail-modal-message-meta">
-							<span class="mail-modal-message-author"><?=htmlspecialchars($messageAuthor, ENT_QUOTES, 'UTF-8');?></span>
-							<span class="mail-modal-message-date"><?=convent_date($row['date']);?></span>
-						</div>
-						<div class="mail-modal-message-text"><?=format_comment($row['text']);?></div>
-					</div>
+					<?=mail_render_message_html($row, $currentUserId, (string) ($USER['name'] ?? ''));?>
 					<?php } ?>
 				</div>
 
@@ -495,6 +525,70 @@ while($conversation = $db->get_row($conversationsSql)) {
 	</div>
 	<?php } ?>
 </div>
+
+<script>
+document.addEventListener('click', function (event) {
+	var overlay = event.target.closest('.mail-overlay');
+	if (overlay && !event.target.closest('.mail-modal')) {
+		event.preventDefault();
+		var closeLink = overlay.querySelector('.mail-overlay-close');
+		if (closeLink && closeLink.href) {
+			window.location.href = closeLink.href;
+		}
+		return;
+	}
+
+	var loadOlderLink = event.target.closest('[data-mail-load-older="1"]');
+	if (!loadOlderLink) {
+		return;
+	}
+
+	event.preventDefault();
+
+	if (loadOlderLink.getAttribute('data-mail-loading') === '1') {
+		return;
+	}
+
+	var stream = loadOlderLink.closest('.mail-modal-stream');
+	if (!stream) {
+		window.location.href = loadOlderLink.href;
+		return;
+	}
+
+	loadOlderLink.setAttribute('data-mail-loading', '1');
+	loadOlderLink.classList.add('mail-modal-history-link-loading');
+
+	var beforeHeight = stream.scrollHeight;
+	var requestUrl = loadOlderLink.href + (loadOlderLink.href.indexOf('?') === -1 ? '?' : '&') + 'load_older=1';
+
+	fetch(requestUrl, {
+		credentials: 'same-origin',
+		headers: {
+			'X-Requested-With': 'XMLHttpRequest'
+		}
+	})
+		.then(function (response) {
+			if (!response.ok) {
+				throw new Error('Request failed');
+			}
+
+			return response.text();
+		})
+		.then(function (html) {
+			if (html.replace(/\s+/g, '') !== '') {
+				loadOlderLink.insertAdjacentHTML('afterend', html);
+			}
+
+			loadOlderLink.remove();
+			stream.scrollTop += stream.scrollHeight - beforeHeight;
+		})
+		.catch(function () {
+			loadOlderLink.removeAttribute('data-mail-loading');
+			loadOlderLink.classList.remove('mail-modal-history-link-loading');
+			window.location.href = loadOlderLink.href;
+		});
+});
+</script>
 
 <?php
 foot();
