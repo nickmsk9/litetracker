@@ -33,7 +33,6 @@ define ( 'CMS', true );
 */
 //Подключаем конфигурационные файл
 require __DIR__ . '/config/config.php';
-require __DIR__ . '/config/config.vkontakte.php';
 require __DIR__ . '/config/config.mysql.php';
 
 

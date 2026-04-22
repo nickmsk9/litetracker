@@ -9,6 +9,5 @@ by Nick
 ===================================================================
 */
 global $config;
-
-require 'templates/'.$config['template'].'/blocks/block.vkontakte.php';
+return;
 ?>

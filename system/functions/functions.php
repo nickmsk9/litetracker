@@ -328,20 +328,6 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 	$header .= '<meta name="robots" content="INDEX,FOLLOW" />
 	';
 
-	if($config['vkontakte_use']) {
-		$header .= '<script src="https://vk.com/js/api/openapi.js" type="text/javascript" charset="utf-8"></script>
-		';
-		$header .= '<script type="text/javascript" src="https://vk.com/js/api/share.js?9" charset="utf-8"></script>
-		';
-		$header .= '<script type="text/javascript">
-		  VK.init({
-			apiId: '.$config['vkontakte_api_id'].',
-			onlyWidgets: true
-		  });
-		</script>
-		';
-	}
-
 
 
 

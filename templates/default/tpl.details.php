@@ -227,13 +227,6 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 			<script type="text/javascript" src="/public/vendor/glightbox/glightbox.min.js"></script>
 			<?php } ?>
 
-			<?php if (!empty($video_vkontakte)) { ?>
-			<section class="details-panel details-video-panel">
-				<div class="details-video-title">Видео</div>
-				<div class="details-video-embed"><?=$video_vkontakte;?></div>
-			</section>
-			<?php } ?>
-
 			<?php if (!empty($USER['id'])) { ?>
 			<section class="details-panel details-comments-panel">
 				<header class="details-comments-header">

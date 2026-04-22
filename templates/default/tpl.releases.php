@@ -23,7 +23,6 @@ if (!defined('LITETRACKER'))
 //$completed - Скачали релиз
 //$size - Размер релиза
 //$type_seeders - Тип раздачи
-//$video_vkontakte - Видео ВКонтакте
 // begin_frame($name);
 
 
@@ -32,8 +31,8 @@ if (!defined('LITETRACKER'))
 <tr>
 	<td rowspan="2" align="center"><a href="browse.php?id_category=<?=$cat_id;?>"><img src="public/images/categories/<?=$cat_image;?>"></a></td>
 	<td colspan="7"><?=($news ? '<span class="topic_prefix">'.$language['releases_12'].'</span>' : '');?> <a href="details.php?id=<?=$id;?>" title='<?=$language['releases_10'];?>'><font <?=($banned ? 'color="red"' : '') ;?>  onmouseover="setTimeout('Tip(\'<img width=&quot;200&quot;  src=public/downloads/images/<?=$image;?>>\')', 1);" onmouseout="setTimeout('UnTip()', 1);" ";
-><?=$name;?></font></a>  <?=$type_seeders;?> <?=$video_vkontakte;?></td>
-	
+><?=$name;?></font></a>  <?=$type_seeders;?></td>
+
 	<tr>
 		<td>Метки: <?=$tags;?></td>
 		<td align="center"><?=$size;?></td>
@@ -42,10 +41,10 @@ if (!defined('LITETRACKER'))
 		<td align="center"> <?=$num_files;?> </td>
 		<td align="center"> <?=$completed;?> </td>
 		<?=($PRIV['edit_release'] || $_SERVER['PHP_SELF'] == '/my.book.php' ? '<td align="center"><input type="checkbox" value="'.$id.'" name="check[]">' : '');?></td>
-		
+
 	</tr>
 </tr>
-<?	
+<?
 
 
 ?>

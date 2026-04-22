@@ -66,9 +66,6 @@ $num_files = number_format($arr['num_files']);
 //Размер
 $size = mksize($arr['size']);
 
-//Видео ВКонтакте
-$video_vkontakte = ($arr['video_vkontakte'] ? '<a href="video_vkontakte.php?id='.$id.'"><img src="public/images/binocular.png" title="'.$language['releases_14'].'"></a>' : '');
-
 //Определяем тип релиза
 $type_seeders_array = array();
 if($arr['multi']) {

@@ -36,6 +36,21 @@ $ltCronMode = strtolower(trim((string) lt_env_value('LITETRACKER_CRON_MODE', 'br
 $ltUseExternalCron = (int) in_array($ltCronMode, array('external', 'scheduler', 'cron'), true);
 $ltSqlDebug = lt_env_bool('LITETRACKER_SQL_DEBUG', 0);
 $ltRemoteTrackerTimeout = max(1, (int) lt_env_value('LITETRACKER_REMOTE_TIMEOUT', 8));
+$ltPublicScheme = strtolower(trim((string) lt_env_value('LITETRACKER_PUBLIC_SCHEME', 'https')));
+if (!in_array($ltPublicScheme, array('http', 'https'), true)) {
+	$ltPublicScheme = 'https';
+}
+$ltPublicHost = trim((string) lt_env_value('LITETRACKER_PUBLIC_HOST', 'localhost'));
+$ltAnnounceHost = trim((string) lt_env_value('LITETRACKER_ANNOUNCE_HOST', 'bt.localhost'));
+$ltAnnouncePath = trim((string) lt_env_value('LITETRACKER_ANNOUNCE_PATH', '/announce.php'));
+if ($ltAnnouncePath === '') {
+	$ltAnnouncePath = '/announce.php';
+}
+if ($ltAnnouncePath[0] !== '/') {
+	$ltAnnouncePath = '/'.$ltAnnouncePath;
+}
+$ltAnnounceUrl = trim((string) lt_env_value('LITETRACKER_ANNOUNCE_URL', $ltPublicScheme.'://'.$ltAnnounceHost.$ltAnnouncePath));
+$ltLocalRetrackerUrl = trim((string) lt_env_value('LITETRACKER_LOCAL_RETRACKER_URL', $ltAnnounceUrl));
 
 $config  = array(
 'sitename' => 'LiteTracker Engine' , //Название сайта
@@ -60,8 +75,8 @@ $config  = array(
 'project_help_button_href' => '' ,
 
 'registeronline' => 1, //Регистрация открыта
-'announce_url' => 'https://localhost:443/announce.php' , //Основной announce URL для новых скачиваемых torrent-файлов
-'local_retracker_url' => 'http://retracker.local/announce' , //Локальный retracker для torrent-файлов; при необходимости можно изменить в конфиге
+'announce_url' => $ltAnnounceUrl , //Основной announce URL для новых скачиваемых torrent-файлов
+'local_retracker_url' => $ltLocalRetrackerUrl , //Локальный retracker для torrent-файлов; при необходимости можно изменить в конфиге
 'announce_interval' => 30*60 ,
 'remote_tracker_timeout' => $ltRemoteTrackerTimeout ,
 

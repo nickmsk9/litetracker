@@ -598,13 +598,6 @@ if($USER) {
 	}
 }
 
-
-//Мульти
-if(!empty($arr['video_vkontakte']) ) {
-
-	$video_vkontakte  = '<iframe src="'.htmlspecialchars($arr['video_vkontakte']).'" width="100%" height="360" frameborder="0"></iframe>';
-}
-
 $screens = lt_details_collect_screens($arr);
 $category_badge = lt_details_lower($cat_name_plain);
 $details_created_label = lt_details_format_date_label($arr['added']);

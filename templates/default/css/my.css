@@ -2784,6 +2784,41 @@ table.tt .data {
   pointer-events: none;
 }
 
+body.theme-dark .details-download-button {
+  border-color: #436c3f;
+  background: #4a7c47;
+  color: #f3f5f8;
+}
+
+body.theme-dark .details-download-button:hover {
+  border-color: #5d9158;
+  background: #5d9158;
+  color: #ffffff;
+}
+
+body.theme-dark .details-download-button-magnet {
+  border-color: #b77728;
+  background: #b77728;
+}
+
+body.theme-dark .details-download-button-magnet:hover {
+  border-color: #d08a30;
+  background: #d08a30;
+}
+
+body.theme-dark .details-bookmark-button {
+  border-color: #456ea8;
+  background: #456ea8;
+  color: #f3f5f8;
+}
+
+body.theme-dark .details-bookmark-button:hover,
+body.theme-dark .details-bookmark-button-active {
+  border-color: #5b87c5;
+  background: #5b87c5;
+  color: #ffffff;
+}
+
 .details-edit-link {
   color: var(--muted);
   font-size: 13px;

@@ -41,14 +41,12 @@ $timer['a'] = timer();
 //Подключаем конфигурационные файл
 require __DIR__ . '/config/config.php';
 require __DIR__ . '/config/config.version.php';
-require __DIR__ . '/config/config.vkontakte.php';
 require __DIR__ . '/config/config.mysql.php';
 
 
 
 //Подключаем главный функционал
 require __DIR__ . '/functions/functions.php';
-require __DIR__ . '/functions/functions.vkontakte.php';
 require __DIR__ . '/functions/functions.blocks.php';
 require __DIR__ . '/functions/functions.upload.php';
 

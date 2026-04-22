@@ -457,6 +457,10 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
 
 
 	$urlInfo = @parse_url($url);
+	$scheme = strtolower((string) ($urlInfo['scheme'] ?? 'http'));
+	if ($scheme !== 'https') {
+		$scheme = 'http';
+	}
 	$http_host = $urlInfo['host'];
 	$http_port = getUrlPort($urlInfo);
 
@@ -465,8 +469,8 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
 	else
 	$http_port = ':' . $http_port;
 
-	$http_path = $urlInfo['path'];
-	$get_request_params = explode('&', $urlInfo['query']);
+	$http_path = ($urlInfo['path'] ?? '/');
+	$get_request_params = explode('&', (string) ($urlInfo['query'] ?? ''));
 
 	foreach (array_filter($get_request_params) as $array_value) {
 		list($key, $value) = explode('=', $array_value);
@@ -482,14 +486,22 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
 	$opts = array('http' =>
 	array(
         'method' => 'GET',
-    	'header' => 'User-Agent: uTorrent/1820',
+	    'header' => 'User-Agent: qBittorrent/5.0.0',
     	'timeout' => $timeout
 	//'Accept: text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2',
 	)
 	);
 
+	if ($scheme === 'https') {
+		$opts['ssl'] = array(
+			'verify_peer' => false,
+			'verify_peer_name' => false,
+			'allow_self_signed' => true,
+		);
+	}
+
 	$context = @stream_context_create($opts);
-	$result = @file_get_contents('http://'.$http_host.$http_port.$http_path.($http_params ? '?'.$http_params : ''), false, $context);
+	$result = @file_get_contents($scheme.'://'.$http_host.$http_port.$http_path.($http_params ? '?'.$http_params : ''), false, $context);
 	// $result = true;
 	if (!$result)
 	{

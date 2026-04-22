@@ -33,12 +33,12 @@ $showBottomBlocks = empty($GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS']);
 			<div>LiteTracker &copy; 2026</div>
 
 			<div class="clearfix">
-				<div class="pull-left mr40"><a href="/rules.php" class="u">Правила</a></div>
+				<div class="pull-left mr40"><a href="/disclaimer.php" class="u">Пользовательское соглашение</a></div>
+				<div class="pull-left mr40"><a href="/complaint.php" class="u">Правообладателям</a></div>
+				<div class="pull-left mr40"><a href="/avatars.php" class="u">Аватары</a></div>
 				<div class="pull-left mr40"><a href="/faq.php" class="u">FAQ</a></div>
-				<div class="pull-left mr40"><a href="/topten.php" class="u">Топ</a></div>
-				<div class="pull-left mr40"><a href="/browse.php" class="u">Торренты</a></div>
-				<div class="pull-left mr40"><a href="/upload.php" class="u">Загрузка</a></div>
-				<div class="pull-left"><a href="/contact.php" class="u">Обратная связь</a></div>
+				<div class="pull-left mr40"><a href="/rules.php" class="u">Правила</a></div>
+				<div class="pull-left"><a href="/feedback.php" class="u">Обратная связь</a></div>
 			</div>
 		</div>
 	</div>
@@ -52,7 +52,6 @@ $showBottomBlocks = empty($GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS']);
 		</div>
 
 		<div class="social-links pull-right clearfix">
-			<a target="_blank" href="https://vk.com/animelayer" class="iblock pull-left mr10 s-icons-vkontakte"></a>
 			<a target="_blank" href="https://www.facebook.com/animelayer" class="iblock pull-left mr10 s-icons-facebook"></a>
 			<a target="_blank" href="https://twitter.com/animelayer" class="iblock pull-left mr10 s-icons-twitter"></a>
 			<a target="_blank" href="/rss/" class="iblock pull-left s-icons-rss"></a>

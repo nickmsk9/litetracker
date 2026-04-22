@@ -214,27 +214,8 @@ elseif($act == 'releases' || $id_category || $search !== '' || !$config['search_
 		echo ($PRIV['edit_release'] ? '</form>'  : '');
 
 
-		//Вывод видео и картинок
+		//Вывод картинок
 		if($page === 0) {
-				//Видео
-				if(strlen($search) >= $config['search_video_lenght'] && $config['search_video']) {
-					$video = $db->query("SELECT id , video_vkontakte , COUNT(*) AS count FROM torrents WHERE name LIKE '%" . sqlwildcardesc($search) . "%' AND video_vkontakte != '' GROUP BY id DESC LIMIT 1 ");
-					if($db->num_rows($video) > 0) {
-						$video = $db->get_row($video);
-
-
-						if(!empty($video['video_vkontakte']) ) {
-							begin_frame($language['details_17']);
-							echo '<iframe src="'.htmlspecialchars($video['video_vkontakte']).'" width="100%" height="200" frameborder="0"></iframe>';
-							echo '<a href="video_vkontakte.php?id='.$video['id'].'"  class="proleft">'.$language['video_vkontakte_1'].'</a>';
-							end_frame();
-						}
-
-					}
-
-				}
-
-
 				//Картинки
 				if(strlen($search) >= $config['search_image_lenght'] && $config['search_image']) {
 					$image_sql = mysql_query("SELECT id , image , COUNT(*) AS c , name FROM torrents WHERE name LIKE '%" . sqlwildcardesc($search) . "%' AND image != '' GROUP BY id DESC LIMIT 5 ");
