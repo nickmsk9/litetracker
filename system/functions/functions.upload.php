@@ -23,12 +23,7 @@ function lt_torrent_metadata_schema()
 			'label' => 'Тип',
 			'input' => 'radio',
 			'columns' => 4,
-			'options' => array(
-				'movie' => 'Фильм',
-				'series' => 'Сериал',
-				'cartoon' => 'Мультфильм',
-				'show' => 'ТВ-шоу',
-			),
+			'options' => lt_torrent_metadata_type_options_all(),
 		),
 		'subtitles' => array(
 			'column' => 'subtitles',
@@ -133,6 +128,84 @@ function lt_torrent_metadata_schema()
 	);
 
 	return $schema;
+}
+
+function lt_torrent_type_options_map()
+{
+	static $map = null;
+
+	if ($map !== null) {
+		return $map;
+	}
+
+	$map = array(
+		'anime' => array(
+			'tv' => 'ТВ',
+			'movie' => 'Фильм',
+			'ova' => 'OVA',
+			'special' => 'Спец',
+		),
+		'shows' => array(
+			'show' => 'ТВ-шоу',
+			'reality' => 'Реалити-шоу',
+			'concert' => 'Концерт',
+			'special' => 'Спецвыпуск',
+		),
+		'music' => array(
+			'album' => 'Альбом',
+			'single' => 'Сингл',
+			'discography' => 'Дискография',
+			'concert' => 'Концерт',
+		),
+		'movies' => array(
+			'movie' => 'Фильм',
+			'series' => 'Сериал',
+			'cartoon' => 'Мультфильм',
+			'documentary' => 'Документальный',
+		),
+		'games' => array(
+			'pc' => 'PC',
+			'console' => 'Консольная',
+			'mobile' => 'Мобильная',
+			'repack' => 'Репак',
+		),
+		'software' => array(
+			'windows' => 'Windows',
+			'macos' => 'macOS',
+			'linux' => 'Linux',
+			'android' => 'Android',
+		),
+	);
+
+	return $map;
+}
+
+function lt_torrent_metadata_type_options_all()
+{
+	$map = lt_torrent_type_options_map();
+	$result = array();
+
+	foreach ($map as $options) {
+		foreach ($options as $value => $label) {
+			if (!isset($result[$value])) {
+				$result[$value] = $label;
+			}
+		}
+	}
+
+	return $result;
+}
+
+function lt_torrent_metadata_type_options_for_category($categoryNameOrKey = '')
+{
+	$key = trim((string) $categoryNameOrKey);
+	$map = lt_torrent_type_options_map();
+
+	if ($key === '' || empty($map[$key])) {
+		$key = lt_torrent_description_template_key($categoryNameOrKey);
+	}
+
+	return (!empty($map[$key]) ? $map[$key] : array());
 }
 
 function lt_torrent_metadata_group($group)

@@ -96,18 +96,50 @@ function browse_apply_filter_conditions(&$where, $schema, $selectedFilters)
 	}
 }
 
-$schema = lt_torrent_metadata_schema();
+function browse_filter_options_split($options, $selectedValues, $limit = 4)
+{
+	$visible = array();
+	$hidden = array();
+	$index = 0;
+
+	foreach ((array) $options as $value => $label) {
+		$isSelected = in_array($value, (array) $selectedValues, true);
+
+		if ($index < $limit || $isSelected) {
+			$visible[$value] = $label;
+		} else {
+			$hidden[$value] = $label;
+		}
+
+		$index++;
+	}
+
+	return array($visible, $hidden);
+}
+
 $search = trim((string) ($_GET['search'] ?? ''));
 $id_category = isset($_GET['id_category']) ? (int) $_GET['id_category'] : 0;
 $view = (string) ($_GET['view'] ?? 'compact');
 $view = ($view === 'full' ? 'full' : 'compact');
-$selectedFilters = browse_collect_selected_filters($schema);
+$schema = lt_torrent_metadata_schema();
 $categories = categories_array();
 $categoriesById = array();
 
 foreach ($categories as $category) {
 	$categoriesById[(int) $category['id']] = $category;
 }
+
+$currentCategoryName = (!empty($categoriesById[$id_category]['name']) ? (string) $categoriesById[$id_category]['name'] : '');
+if (!empty($schema['type'])) {
+	$typeOptions = lt_torrent_metadata_type_options_for_category($currentCategoryName);
+	if ($typeOptions) {
+		$schema['type']['options'] = $typeOptions;
+	} else {
+		unset($schema['type']);
+	}
+}
+
+$selectedFilters = browse_collect_selected_filters($schema);
 
 $where = array();
 if (!$PRIV['details_banned_view']) {
@@ -415,16 +447,39 @@ head('Торренты');
 				<input type="hidden" name="view" value="<?=htmlspecialchars($view, ENT_QUOTES, 'UTF-8');?>" data-browse-view-input>
 
 				<?php foreach ($schema as $group => $definition) { ?>
+				<?php
+				list($visibleOptions, $hiddenOptions) = browse_filter_options_split($definition['options'], $selectedFilters[$group], 4);
+				$hiddenSelectedCount = 0;
+				foreach (array_keys($hiddenOptions) as $hiddenValue) {
+					if (in_array($hiddenValue, $selectedFilters[$group], true)) {
+						$hiddenSelectedCount++;
+					}
+				}
+				$showMoreLabel = 'Показать ещё '.count($hiddenOptions);
+				?>
 				<fieldset class="browse-filter-group">
 					<legend class="browse-filter-title"><?=$definition['label'];?>:</legend>
 					<div class="browse-filter-options">
-						<?php foreach ($definition['options'] as $value => $label) { ?>
+						<?php foreach ($visibleOptions as $value => $label) { ?>
 						<label class="browse-filter-option">
 							<input type="checkbox" name="filter_<?=$group;?>[]" value="<?=htmlspecialchars($value, ENT_QUOTES, 'UTF-8');?>"<?=(in_array($value, $selectedFilters[$group], true) ? ' checked' : '');?>>
 							<span><?=htmlspecialchars($label, ENT_QUOTES, 'UTF-8');?></span>
 						</label>
 						<?php } ?>
 					</div>
+					<?php if ($hiddenOptions) { ?>
+					<details class="browse-filter-more"<?=(($hiddenSelectedCount > 0) ? ' open' : '');?>>
+						<summary class="browse-filter-more-toggle" data-closed-label="<?=htmlspecialchars($showMoreLabel, ENT_QUOTES, 'UTF-8');?>" data-open-label="Скрыть"><?=$hiddenSelectedCount > 0 ? 'Скрыть' : $showMoreLabel;?></summary>
+						<div class="browse-filter-options browse-filter-options-extra">
+							<?php foreach ($hiddenOptions as $value => $label) { ?>
+							<label class="browse-filter-option">
+								<input type="checkbox" name="filter_<?=$group;?>[]" value="<?=htmlspecialchars($value, ENT_QUOTES, 'UTF-8');?>"<?=(in_array($value, $selectedFilters[$group], true) ? ' checked' : '');?>>
+								<span><?=htmlspecialchars($label, ENT_QUOTES, 'UTF-8');?></span>
+							</label>
+							<?php } ?>
+						</div>
+					</details>
+					<?php } ?>
 				</fieldset>
 				<?php } ?>
 
@@ -498,6 +553,23 @@ document.addEventListener('DOMContentLoaded', function () {
 		viewButtons[i].addEventListener('click', function () {
 			setView(this.getAttribute('data-browse-view') || 'compact', true);
 		});
+	}
+
+	var filterMoreToggles = document.querySelectorAll('.browse-filter-more-toggle');
+	for (var k = 0; k < filterMoreToggles.length; k++) {
+		(function (toggle) {
+			var details = toggle.parentNode;
+			if (!details) {
+				return;
+			}
+
+			function syncToggleLabel() {
+				toggle.textContent = details.open ? (toggle.getAttribute('data-open-label') || 'Скрыть') : (toggle.getAttribute('data-closed-label') || '');
+			}
+
+			details.addEventListener('toggle', syncToggleLabel);
+			syncToggleLabel();
+		})(filterMoreToggles[k]);
 	}
 
 	setView(initialView, false);

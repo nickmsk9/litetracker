@@ -333,6 +333,9 @@ $metadataSchema = lt_torrent_metadata_schema();
 $categories = lt_upload_categories_list();
 $defaultCategoryId = lt_upload_default_category_id($categories);
 $defaultCategoryName = lt_upload_category_name($categories, $defaultCategoryId);
+$typeOptionsMap = lt_torrent_type_options_map();
+$defaultTypeOptions = lt_torrent_metadata_type_options_for_category($defaultCategoryName);
+$defaultContentType = (string) key($defaultTypeOptions);
 
 if (!$categories) {
 	head('Загрузить торрент');
@@ -344,10 +347,10 @@ if (!$categories) {
 $defaults = array(
 	'name' => '',
 	'catid' => $defaultCategoryId,
-	'content_type' => 'movie',
+	'content_type' => ($defaultContentType !== '' ? $defaultContentType : 'movie'),
 	'tags' => '',
 	'descr' => lt_torrent_default_description($defaultCategoryName, array(
-		'Тип' => lt_torrent_metadata_option_label('type', 'movie'),
+		'Тип' => lt_torrent_metadata_option_label('type', ($defaultContentType !== '' ? $defaultContentType : 'movie')),
 	)),
 );
 
@@ -375,6 +378,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	$categoryInfo = lt_upload_category_info($form['catid']);
 	if (!$categoryInfo) {
 		err($language['default_1'], $language['upload_3'], 1);
+	}
+
+	$currentTypeOptions = lt_torrent_metadata_type_options_for_category((string) ($categoryInfo['name'] ?? ''));
+	if ($currentTypeOptions) {
+		$metadataSchema['type']['options'] = $currentTypeOptions;
 	}
 
 	$torrent = lt_upload_parse_torrent();
@@ -500,6 +508,15 @@ foreach ($categories as $category) {
 	$categoryTemplateMap[(int) $category['id']] = lt_torrent_description_template_key((string) ($category['name'] ?? ''));
 }
 
+$currentCategoryName = lt_upload_category_name($categories, (int) ($form['catid'] ?? $defaultCategoryId));
+$currentTypeOptions = lt_torrent_metadata_type_options_for_category($currentCategoryName);
+if ($currentTypeOptions) {
+	$metadataSchema['type']['options'] = $currentTypeOptions;
+	if (empty($metadataSchema['type']['options'][$form['content_type']])) {
+		$form['content_type'] = (string) key($currentTypeOptions);
+	}
+}
+
 head('Загрузить торрент');
 ?>
 <div class="upload-page">
@@ -535,7 +552,7 @@ head('Загрузить торрент');
 					<?php foreach ($metadataSchema as $group => $definition) { ?>
 					<fieldset class="upload-section upload-section-<?=$group;?>">
 						<legend class="upload-section-title"><?=$definition['label'];?></legend>
-						<div class="upload-option-grid upload-option-grid-cols-<?=max(2, (int) ($definition['columns'] ?? 4));?>">
+						<div class="upload-option-grid upload-option-grid-cols-<?=max(2, (int) ($definition['columns'] ?? 4));?>"<?=($group === 'type' ? ' id="upload_type_options"' : '');?>>
 							<?php foreach ($definition['options'] as $value => $label) { ?>
 							<label class="upload-option">
 								<?php if ($definition['input'] === 'radio') { ?>
@@ -591,10 +608,12 @@ head('Загрузить торрент');
 	var form = document.querySelector('.upload-form');
 	var categorySelect = document.getElementById('upload_category');
 	var descriptionField = document.getElementById('upload_descr');
+	var typeOptionsContainer = document.getElementById('upload_type_options');
 	var templates = <?=json_encode($descriptionTemplates, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
+	var typeOptions = <?=json_encode($typeOptionsMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
 	var defaultTemplateKey = 'movies';
 
-	if (!form || !categorySelect || !descriptionField) {
+	if (!form || !categorySelect || !descriptionField || !typeOptionsContainer) {
 		return;
 	}
 
@@ -626,6 +645,45 @@ head('Загрузить торрент');
 
 		var label = input.parentNode.querySelector('span');
 		return label ? String(label.textContent || '').trim() : '';
+	}
+
+	function currentTypeOptions() {
+		return typeOptions[selectedCategoryTemplateKey()] || {};
+	}
+
+	function renderTypeOptions() {
+		var options = currentTypeOptions();
+		var currentInput = form.querySelector('input[name="content_type"]:checked');
+		var currentValue = currentInput ? String(currentInput.value || '') : '';
+		var firstValue = '';
+		var html = '';
+
+		Object.keys(options).forEach(function (value) {
+			var label = String(options[value] || '').trim();
+			var checked = '';
+
+			if (!firstValue) {
+				firstValue = value;
+			}
+
+			if (currentValue !== '' && currentValue === value) {
+				checked = ' checked';
+			}
+
+			html += '<label class="upload-option">'
+				+ '<input type="radio" name="content_type" value="' + value.replace(/"/g, '&quot;') + '"' + checked + '>'
+				+ '<span>' + label.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>'
+				+ '</label>';
+		});
+
+		typeOptionsContainer.innerHTML = html;
+
+		if (!typeOptionsContainer.querySelector('input[name="content_type"]:checked')) {
+			var firstInput = typeOptionsContainer.querySelector('input[name="content_type"]');
+			if (firstInput) {
+				firstInput.checked = true;
+			}
+		}
 	}
 
 	function parseDescription(text) {
@@ -708,12 +766,23 @@ head('Загрузить торрент');
 		descriptionField.value = buildDescription();
 	}
 
-	categorySelect.addEventListener('change', syncDescription);
-
-	Array.prototype.forEach.call(form.querySelectorAll('input[name="content_type"], input[name="genre[]"], input[name="language[]"], input[name="subtitles[]"], input[name="country[]"]'), function (input) {
-		input.addEventListener('change', syncDescription);
+	categorySelect.addEventListener('change', function () {
+		renderTypeOptions();
+		syncDescription();
 	});
 
+	form.addEventListener('change', function (event) {
+		var target = event.target;
+		if (!target || !target.name) {
+			return;
+		}
+
+		if (target.name === 'content_type' || target.name === 'genre[]' || target.name === 'language[]' || target.name === 'subtitles[]' || target.name === 'country[]') {
+			syncDescription();
+		}
+	});
+
+	renderTypeOptions();
 	syncDescription();
 })();
 </script>
