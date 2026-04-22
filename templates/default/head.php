@@ -12,18 +12,22 @@ $mainNav = array(
 	array('href' => 'browse.php?act=all', 'label' => 'Торренты'),
 );
 
+if ($USER && (int) ($USER['class'] ?? 0) === 6) {
+	$mainNav[] = array('href' => 'admin.php', 'label' => 'Админка');
+}
+
 if ($USER) {
 	$userMenu = array(
-		array('href' => 'my.setting.php', 'label' => 'Настройки'),
-		array('href' => 'my.mail.php', 'label' => 'Сообщения'),
-		array('href' => 'my.book.php', 'label' => 'Закладки'),
-		array('href' => profile_href((int) $USER['id']), 'label' => 'Профиль'),
-		array('href' => 'exit.php', 'label' => 'Выход'),
+		array('href' => 'my.setting.php', 'label' => 'Настройки', 'icon' => 'settings'),
+		array('href' => 'my.mail.php', 'label' => 'Сообщения', 'icon' => 'messages'),
+		array('href' => 'my.book.php', 'label' => 'Закладки', 'icon' => 'bookmarks'),
+		array('href' => profile_href((int) $USER['id']), 'label' => 'Профиль', 'icon' => 'profile'),
+		array('href' => 'exit.php', 'label' => 'Выход', 'icon' => 'logout'),
 	);
 
 	if (user_wall_reports_can_moderate()) {
 		array_splice($userMenu, 4, 0, array(
-			array('href' => user_wall_reports_href(), 'label' => 'Жалобы'),
+			array('href' => user_wall_reports_href(), 'label' => 'Жалобы', 'icon' => 'reports'),
 		));
 	}
 }
@@ -72,16 +76,16 @@ if (!empty($USER['theme_dark'])) {
 .site-auth-overlay-dialog{
 	position:relative;
 	z-index:1;
-	width:min(100%, 520px);
+	width:min(100%, 430px);
 	max-height:calc(100vh - 40px);
 }
 
 .site-auth-overlay-dialog[data-auth-kind="signup"]{
-	width:min(100%, 620px);
+	width:min(100%, 560px);
 }
 
 .site-auth-overlay-dialog[data-auth-kind="forgot"]{
-	width:min(100%, 560px);
+	width:min(100%, 430px);
 }
 
 .site-auth-overlay-panel{
@@ -151,7 +155,7 @@ body.site-auth-modal-open{
 
 			<div class="site-header-tools<?=($USER ? ' site-header-tools-auth' : '');?>">
 				<?php if ($USER) { ?>
-				<a class="site-alert-button<?=($messagesCount > 0 ? ' site-alert-button-active' : '');?>" href="my.mail.php?act=conversation&amp;system=1" aria-label="Оповещения<?=($messagesCount > 0 ? ': '.$messagesBadge : '');?>">
+				<a class="site-alert-button<?=($messagesCount > 0 ? ' site-alert-button-active' : '');?>" href="notify.php" aria-label="Оповещения<?=($messagesCount > 0 ? ': '.$messagesBadge : '');?>">
 					<svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M12 3a5 5 0 0 0-5 5v2.42c0 .8-.32 1.56-.88 2.12L4.3 14.36a1 1 0 0 0 .7 1.71h14a1 1 0 0 0 .7-1.71l-1.82-1.82A3 3 0 0 1 17 10.42V8a5 5 0 0 0-5-5Zm0 18a3 3 0 0 0 2.82-2H9.18A3 3 0 0 0 12 21Z" fill="currentColor"/>
 					</svg>
@@ -172,7 +176,24 @@ body.site-auth-modal-open{
 					</summary>
 					<div class="site-user-menu">
 						<?php foreach ($userMenu as $item) { ?>
-						<a class="site-user-menu-link" href="<?=$item['href'];?>"><?=htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8');?></a>
+						<a class="site-user-menu-link" href="<?=$item['href'];?>">
+							<span class="site-user-menu-icon" aria-hidden="true">
+								<?php if (($item['icon'] ?? '') === 'settings') { ?>
+								<svg viewBox="0 0 24 24" fill="none"><path d="M12 8.6A3.4 3.4 0 1 0 12 15.4 3.4 3.4 0 0 0 12 8.6Zm8 4.1-1.74-.58a6.73 6.73 0 0 0-.47-1.13l.83-1.63a.9.9 0 0 0-.17-1.05l-1.77-1.77a.9.9 0 0 0-1.05-.17l-1.63.83c-.36-.19-.74-.34-1.13-.47L12.3 4a.9.9 0 0 0-.86-.63h-2.5a.9.9 0 0 0-.86.63l-.58 1.74c-.39.13-.77.28-1.13.47l-1.63-.83a.9.9 0 0 0-1.05.17L1.92 7.32a.9.9 0 0 0-.17 1.05l.83 1.63c-.19.36-.34.74-.47 1.13L.37 12.7a.9.9 0 0 0-.63.86v2.5c0 .39.25.73.63.86l1.74.58c.13.39.28.77.47 1.13l-.83 1.63a.9.9 0 0 0 .17 1.05l1.77 1.77c.28.28.71.35 1.05.17l1.63-.83c.36.19.74.34 1.13.47l.58 1.74c.13.38.47.63.86.63h2.5c.39 0 .73-.25.86-.63l.58-1.74c.39-.13.77-.28 1.13-.47l1.63.83c.34.18.77.11 1.05-.17l1.77-1.77a.9.9 0 0 0 .17-1.05l-.83-1.63c.19-.36.34-.74.47-1.13l1.74-.58c.38-.13.63-.47.63-.86v-2.5a.9.9 0 0 0-.63-.86Z" fill="currentColor"/></svg>
+								<?php } elseif (($item['icon'] ?? '') === 'messages') { ?>
+								<svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7A2.5 2.5 0 0 1 17.5 16h-7.7L5 19.6V16.9A2.5 2.5 0 0 1 4 15V6.5Z" fill="currentColor"/></svg>
+								<?php } elseif (($item['icon'] ?? '') === 'bookmarks') { ?>
+								<svg viewBox="0 0 24 24" fill="none"><path d="M7 4.5A1.5 1.5 0 0 1 8.5 3h7A1.5 1.5 0 0 1 17 4.5V21l-5-3.2L7 21V4.5Z" fill="currentColor"/></svg>
+								<?php } elseif (($item['icon'] ?? '') === 'profile') { ?>
+								<svg viewBox="0 0 24 24" fill="none"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-7 8a7 7 0 0 1 14 0v1H5v-1Z" fill="currentColor"/></svg>
+								<?php } elseif (($item['icon'] ?? '') === 'logout') { ?>
+								<svg viewBox="0 0 24 24" fill="none"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+								<?php } elseif (($item['icon'] ?? '') === 'reports') { ?>
+								<svg viewBox="0 0 24 24" fill="none"><path d="M12 3 2.7 19.5A1 1 0 0 0 3.58 21h16.84a1 1 0 0 0 .88-1.5L12 3Zm0 6.5v4.5m0 3h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+								<?php } ?>
+							</span>
+							<span><?=htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8');?></span>
+						</a>
 						<?php } ?>
 					</div>
 				</details>

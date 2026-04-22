@@ -214,7 +214,7 @@ if (!$isModalView) {
 		width:100% !important;
 		max-width:none !important;
 		margin:0 !important;
-		padding:16px 14px 12px !important;
+		padding:14px 14px 12px !important;
 		box-shadow:none !important;
 	}
 
@@ -233,12 +233,25 @@ if (!$isModalView) {
 	}
 
 	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-title.auth-modal-title{
-		font-size:54px;
-		margin-bottom:16px;
+		font-size:32px;
+		margin-bottom:12px;
+	}
+
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-field .auth-label{
+		margin-bottom:7px;
+		font-size:13px;
+	}
+
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-field input,
+	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-field select{
+		min-height:38px;
+		padding:8px 10px;
+		font-size:14px;
 	}
 
 	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-consent{
 		margin-top:10px;
+		font-size:13px;
 		line-height:1.35;
 	}
 

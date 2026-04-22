@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -65,7 +65,7 @@ function login_render_start($title)
 		return;
 	}
 
-	echo '<!doctype html><html lang="ru"><head><meta charset="'.htmlspecialchars($language['charset'], ENT_QUOTES, 'UTF-8').'"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="templates/'.htmlspecialchars($config['template'], ENT_QUOTES, 'UTF-8').'/css/my.css" rel="stylesheet" type="text/css"><style>html,body{width:100% !important;min-width:0 !important;max-width:100% !important;overflow-x:hidden !important;}body.auth-modal-frame{margin:0;padding:12px;overflow:hidden;background:#f4f5f7;}body.auth-modal-frame .auth-modal-page{padding:0 !important;width:100% !important;max-width:none !important;margin:0 !important;}body.auth-modal-frame .auth-modal-layout{display:block !important;width:100% !important;margin:0 !important;}body.auth-modal-frame .auth-modal-card{display:block !important;float:none !important;position:relative;left:auto !important;right:auto !important;transform:none !important;width:100% !important;max-width:none !important;margin:0 !important;padding:20px 18px 16px !important;box-shadow:none !important;}body.auth-modal-frame .auth-modal-title{margin-bottom:20px;font-size:56px;line-height:1;font-weight:400;}body.auth-modal-frame .auth-modal-footer{display:flex;align-items:center;gap:14px;margin-top:24px;padding-top:20px;border-top:1px solid #d8e1ea;}body.auth-modal-frame .auth-modal-footer .auth-link{width:auto !important;}body.auth-modal-frame .auth-modal-footer .auth-form button{width:auto;}body.auth-modal-frame .auth-modal-separator{color:#7d8894;font-size:14px;}body.auth-modal-frame .auth-field{margin-bottom:18px;}body.auth-modal-frame .auth-field:last-child{margin-bottom:0;}body.auth-modal-frame .auth-grid{display:block !important;}body.auth-modal-frame .auth-card-compact{max-width:none !important;}body.auth-modal-frame .auth-info-card{display:none !important;}</style></head><body class="auth-modal-frame">';
+	echo '<!doctype html><html lang="ru"><head><meta charset="'.htmlspecialchars($language['charset'], ENT_QUOTES, 'UTF-8').'"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="templates/'.htmlspecialchars($config['template'], ENT_QUOTES, 'UTF-8').'/css/my.css" rel="stylesheet" type="text/css"><style>html,body{width:100% !important;min-width:0 !important;max-width:100% !important;overflow-x:hidden !important;}body.auth-modal-frame{margin:0;padding:12px;overflow:hidden;background:#f4f5f7;}body.auth-modal-frame .auth-modal-page{padding:0 !important;width:100% !important;max-width:none !important;margin:0 !important;}body.auth-modal-frame .auth-modal-layout{display:block !important;width:100% !important;margin:0 !important;}body.auth-modal-frame .auth-modal-card{display:block !important;float:none !important;position:relative;left:auto !important;right:auto !important;transform:none !important;width:100% !important;max-width:none !important;margin:0 !important;padding:14px 14px 12px !important;box-shadow:none !important;}body.auth-modal-frame .auth-modal-title{margin-bottom:14px;font-size:32px;line-height:1.15;font-weight:400;}body.auth-modal-frame .auth-modal-footer{display:flex;align-items:center;gap:14px;margin-top:18px;padding-top:16px;border-top:1px solid #d8e1ea;}body.auth-modal-frame .auth-modal-footer .auth-link{width:auto !important;}body.auth-modal-frame .auth-modal-footer .auth-form button{width:auto;}body.auth-modal-frame .auth-modal-separator{color:#7d8894;font-size:13px;}body.auth-modal-frame .auth-field{margin-bottom:14px;}body.auth-modal-frame .auth-field:last-child{margin-bottom:0;}body.auth-modal-frame .auth-grid{display:block !important;}body.auth-modal-frame .auth-card-compact{max-width:none !important;}body.auth-modal-frame .auth-label{margin-bottom:7px;font-size:13px;}body.auth-modal-frame .auth-field input,body.auth-modal-frame .auth-field select{min-height:38px;padding:8px 12px;font-size:14px;}body.auth-modal-frame .auth-info-card{display:none !important;}</style></head><body class="auth-modal-frame">';
 }
 
 function login_render_end()
@@ -311,14 +311,14 @@ if($op == 'forgot') {
 				</section>
 			</div>
 		</div>
-		<?php
-		login_render_end();
-		die();
+			<?php
+			login_render_end();
+			die();
+		}
 	}
-}
 
-/////////////////////////////////////////////////////////////////////
-//Обработка данных
+	/////////////////////////////////////////////////////////////////////
+	//Обработка данных
 /////////////////////////////////////////////////////////////////////
 if($_POST) {
 	$login = trim((string) ($_POST['login'] ?? ''));	//E-mail адрес
@@ -445,7 +445,7 @@ login_render_start($language['login_1']);
 </div>
 
 
-<?
+<?php
 //Подвал
 login_render_end();
 ?>
