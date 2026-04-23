@@ -121,6 +121,15 @@ $search = trim((string) ($_GET['search'] ?? ''));
 $id_category = isset($_GET['id_category']) ? (int) $_GET['id_category'] : 0;
 $view = (string) ($_GET['view'] ?? 'compact');
 $view = ($view === 'full' ? 'full' : 'compact');
+$searchRateLimitId = ($USER ? 'user:'.$USER['id'] : 'ip:'.($_SERVER['REMOTE_ADDR'] ?? 'cli'));
+
+if ($search !== '') {
+	$searchRateLimit = lt_rate_limit_hit('search', $searchRateLimitId, 30, 5 * 60);
+	if (!empty($searchRateLimit['limited'])) {
+		err('Ошибка', 'Слишком много поисковых запросов. Попробуйте немного позже.', 1);
+	}
+}
+
 $schema = lt_torrent_metadata_schema();
 $categories = categories_array();
 $categoriesById = array();

@@ -136,6 +136,11 @@ class db
 		return mysql_insert_id($this->db_id);
 	}
 
+	function affected_rows()
+	{
+		return mysql_affected_rows($this->db_id);
+	}
+
 	function get_result_fields($query_id = '') {
 
 		if ($query_id == '') $query_id = $this->query_id;

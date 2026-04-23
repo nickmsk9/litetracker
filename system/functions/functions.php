@@ -662,6 +662,58 @@ $set = array("a","A","b","B","c","C","d","D","e","E","f","F","g","G","h","H","i"
 	return $str;
 }
 
+function lt_csrf_token($scope = 'default')
+{
+	$scope = preg_replace('~[^a-z0-9:_-]+~i', '-', trim((string) $scope));
+	if ($scope === '') {
+		$scope = 'default';
+	}
+
+	if (!isset($_SESSION['lt_csrf']) || !is_array($_SESSION['lt_csrf'])) {
+		$_SESSION['lt_csrf'] = array();
+	}
+
+	if (empty($_SESSION['lt_csrf'][$scope])) {
+		if (function_exists('random_bytes')) {
+			$_SESSION['lt_csrf'][$scope] = bin2hex(random_bytes(16));
+		} else {
+			$_SESSION['lt_csrf'][$scope] = md5(mksecret(32).microtime(true).$scope);
+		}
+	}
+
+	return (string) $_SESSION['lt_csrf'][$scope];
+}
+
+function lt_csrf_input($scope = 'default', $fieldName = 'csrf_token')
+{
+	$scope = (string) $scope;
+	$fieldName = trim((string) $fieldName);
+	if ($fieldName === '') {
+		$fieldName = 'csrf_token';
+	}
+
+	return '<input type="hidden" name="'.htmlspecialchars($fieldName, ENT_QUOTES, 'UTF-8').'" value="'.htmlspecialchars(lt_csrf_token($scope), ENT_QUOTES, 'UTF-8').'">';
+}
+
+function lt_csrf_validate($scope = 'default', $token = null)
+{
+	$scope = preg_replace('~[^a-z0-9:_-]+~i', '-', trim((string) $scope));
+	if ($scope === '') {
+		$scope = 'default';
+	}
+
+	if ($token === null) {
+		$token = (string) ($_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '');
+	}
+
+	$expected = (string) ($_SESSION['lt_csrf'][$scope] ?? '');
+	if ($expected === '' || $token === '') {
+		return false;
+	}
+
+	return hash_equals($expected, (string) $token);
+}
+
 //Добавление cookies
 function login_cookie($id, $password_hash,  $expires = 0x7fffffff) {
 	global $memcached , $config;

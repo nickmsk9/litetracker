@@ -74,6 +74,17 @@ if($act === 'confirm') {
 }
 
 if($_POST && $signupBlockedMessage === '') {
+	if (!lt_csrf_validate('signup_form')) {
+		signup_error_response($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
+
+	if ($signupModalError === '') {
+		$signupRateLimit = lt_rate_limit_hit('signup', $_SERVER['REMOTE_ADDR'] ?? '', 5, 15 * 60);
+		if (!empty($signupRateLimit['blocked'])) {
+			signup_error_response($language['default_1'], 'Слишком много попыток регистрации. Повторите попытку позже.', 1);
+		}
+	}
+
 	$name = $signupName;
 	$email = $signupEmail;
 	$password = $signupPassword;
@@ -351,6 +362,7 @@ $signupFormAction = 'signup.php'.($isModalView ? '?modal=1' : '');
 				<div class="auth-submit-row signup-submit-row<?=($isModalView ? ' auth-modal-footer' : '');?>">
 					<button type="submit"><?=$language['signup_3'];?></button>
 				</div>
+				<?=lt_csrf_input('signup_form');?>
 			</form>
 		</section>
 

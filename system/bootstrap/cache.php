@@ -43,3 +43,197 @@ function lt_cache_bind_globals()
 
 	return $memcached;
 }
+
+function lt_cache_prefix()
+{
+	global $config;
+
+	static $prefix = null;
+
+	if ($prefix !== null) {
+		return $prefix;
+	}
+
+	$seed = (defined('COOKIE_SALT') ? (string) COOKIE_SALT : '').'|'.(string) ($config['sitename'] ?? 'litetracker');
+	$prefix = 'lt:'.substr(md5($seed), 0, 12);
+
+	return $prefix;
+}
+
+function lt_cache_namespace_normalize($namespace)
+{
+	$namespace = strtolower(trim((string) $namespace));
+	$namespace = preg_replace('~[^a-z0-9:_-]+~', '-', $namespace);
+
+	return ($namespace !== '' ? $namespace : 'default');
+}
+
+function lt_cache_raw_key($key)
+{
+	$key = trim((string) $key);
+	$key = preg_replace('~\s+~', '-', $key);
+
+	return lt_cache_prefix().':'.$key;
+}
+
+function lt_cache_raw_get($key)
+{
+	$cache = lt_cache();
+
+	if (!is_object($cache) || !method_exists($cache, 'get')) {
+		return false;
+	}
+
+	return $cache->get(lt_cache_raw_key($key));
+}
+
+function lt_cache_raw_set($key, $value, $ttl = 0)
+{
+	$cache = lt_cache();
+
+	if (!is_object($cache) || !method_exists($cache, 'set')) {
+		return false;
+	}
+
+	return $cache->set(lt_cache_raw_key($key), $value, 0, (int) $ttl);
+}
+
+function lt_cache_raw_delete($key)
+{
+	$cache = lt_cache();
+
+	if (!is_object($cache) || !method_exists($cache, 'delete')) {
+		return false;
+	}
+
+	return $cache->delete(lt_cache_raw_key($key), 0);
+}
+
+function lt_cache_namespace_version($namespace)
+{
+	$namespace = lt_cache_namespace_normalize($namespace);
+	$versionKey = 'nsver:'.$namespace;
+	$version = lt_cache_raw_get($versionKey);
+
+	if (!is_numeric($version) || (int) $version < 1) {
+		$version = 1;
+		lt_cache_raw_set($versionKey, $version, 30 * 24 * 60 * 60);
+	}
+
+	return (int) $version;
+}
+
+function lt_cache_key($key, $namespace = 'default')
+{
+	$namespace = lt_cache_namespace_normalize($namespace);
+	$key = trim((string) $key);
+	$key = preg_replace('~\s+~', '-', $key);
+
+	return lt_cache_raw_key($namespace.':v'.lt_cache_namespace_version($namespace).':'.$key);
+}
+
+function lt_cache_get($key, $namespace = 'default')
+{
+	$cache = lt_cache();
+
+	if (!is_object($cache) || !method_exists($cache, 'get')) {
+		return false;
+	}
+
+	return $cache->get(lt_cache_key($key, $namespace));
+}
+
+function lt_cache_set($key, $value, $ttl = 0, $namespace = 'default')
+{
+	$cache = lt_cache();
+
+	if (!is_object($cache) || !method_exists($cache, 'set')) {
+		return false;
+	}
+
+	return $cache->set(lt_cache_key($key, $namespace), $value, 0, (int) $ttl);
+}
+
+function lt_cache_delete($key, $namespace = 'default')
+{
+	$cache = lt_cache();
+
+	if (!is_object($cache) || !method_exists($cache, 'delete')) {
+		return false;
+	}
+
+	return $cache->delete(lt_cache_key($key, $namespace), 0);
+}
+
+function lt_cache_remember($key, $ttl, $callback, $namespace = 'default')
+{
+	$value = lt_cache_get($key, $namespace);
+	if (false !== $value) {
+		return $value;
+	}
+
+	if (!is_callable($callback)) {
+		return false;
+	}
+
+	$value = call_user_func($callback);
+	lt_cache_set($key, $value, (int) $ttl, $namespace);
+
+	return $value;
+}
+
+function lt_cache_invalidate_namespace($namespace)
+{
+	$namespace = lt_cache_namespace_normalize($namespace);
+	$versionKey = 'nsver:'.$namespace;
+	$nextVersion = lt_cache_namespace_version($namespace) + 1;
+	lt_cache_raw_set($versionKey, $nextVersion, 30 * 24 * 60 * 60);
+
+	return $nextVersion;
+}
+
+function lt_cache_delete_by_prefix($namespace)
+{
+	return lt_cache_invalidate_namespace($namespace);
+}
+
+function lt_rate_limit_identifier($identifier = '')
+{
+	$identifier = trim((string) $identifier);
+
+	if ($identifier !== '') {
+		return $identifier;
+	}
+
+	return (string) ($_SERVER['REMOTE_ADDR'] ?? 'cli');
+}
+
+function lt_rate_limit_hit($scope, $identifier, $limit, $windowSeconds)
+{
+	$scope = lt_cache_namespace_normalize($scope);
+	$identifier = lt_rate_limit_identifier($identifier);
+	$limit = max(1, (int) $limit);
+	$windowSeconds = max(1, (int) $windowSeconds);
+	$key = 'hit:'.$scope.':'.md5($identifier);
+	$bucket = lt_cache_get($key, 'ratelimit');
+	$now = time();
+
+	if (!is_array($bucket) || empty($bucket['reset_at']) || (int) $bucket['reset_at'] <= $now) {
+		$bucket = array(
+			'count' => 0,
+			'reset_at' => ($now + $windowSeconds),
+		);
+	}
+
+	$bucket['count'] = (int) ($bucket['count'] ?? 0) + 1;
+	$ttl = max(1, (int) $bucket['reset_at'] - $now);
+	lt_cache_set($key, $bucket, $ttl, 'ratelimit');
+
+	return array(
+		'limit' => $limit,
+		'count' => (int) $bucket['count'],
+		'remaining' => max(0, $limit - (int) $bucket['count']),
+		'reset_at' => (int) $bucket['reset_at'],
+		'blocked' => ((int) $bucket['count'] > $limit),
+	);
+}

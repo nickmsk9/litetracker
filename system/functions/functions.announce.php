@@ -10,21 +10,224 @@ by Nick
 */
 
 
+function announce_fail_message()
+{
+	return 'Не удалось обработать запрос трекера.';
+}
+
+function announce_get_string_param($name)
+{
+	return (string) ($_GET[$name] ?? '');
+}
+
+function announce_get_int_param($name)
+{
+	return (int) ($_GET[$name] ?? 0);
+}
+
+function announce_ensure_string_length($value, $length, $label)
+{
+	$value = (string) $value;
+	$length = (int) $length;
+
+	if (strlen($value) !== $length) {
+		err(sprintf($GLOBALS['language']['announce_2'], $label, strlen($value), urlencode($value)));
+	}
+
+	return $value;
+}
+
+function announce_parse_request()
+{
+	$request = array(
+		'info_hash' => announce_ensure_string_length(announce_get_string_param('info_hash'), 20, 'info_hash'),
+		'peer_id' => announce_ensure_string_length(announce_get_string_param('peer_id'), 20, 'peer_id'),
+		'event' => announce_get_string_param('event'),
+		'ip' => announce_get_string_param('ip'),
+		'localip' => announce_get_string_param('localip'),
+		'port' => announce_get_int_param('port'),
+		'downloaded' => announce_get_int_param('downloaded'),
+		'uploaded' => announce_get_int_param('uploaded'),
+		'left' => announce_get_int_param('left'),
+		'passkey' => trim((string) ($_GET['passkey'] ?? '')),
+		'compact' => ((int) ($_GET['compact'] ?? 0) === 1),
+		'no_peer_id' => ((int) ($_GET['no_peer_id'] ?? 0) === 1),
+	);
+
+	foreach (array('info_hash', 'peer_id', 'port', 'downloaded', 'uploaded', 'left') as $field) {
+		if ($request[$field] === '' && !is_int($request[$field])) {
+			err(sprintf($GLOBALS['language']['announce_1'], $field));
+		}
+	}
+
+	return $request;
+}
+
+function announce_numwant($default = 50)
+{
+	foreach (array('num want', 'numwant', 'num_want') as $key) {
+		if (isset($_GET[$key])) {
+			return max(1, (int) $_GET[$key]);
+		}
+	}
+
+	return max(1, (int) $default);
+}
+
+function announce_apply_rate_limit($scope, $identifier, $limit, $windowSeconds, $message)
+{
+	$result = lt_rate_limit_hit($scope, $identifier, $limit, $windowSeconds);
+	if (!empty($result['blocked'])) {
+		err((string) $message);
+	}
+
+	return $result;
+}
+
+function announce_cache_get($key, $namespace)
+{
+	return lt_cache_get($key, $namespace);
+}
+
+function announce_cache_set($key, $value, $ttl, $namespace)
+{
+	return lt_cache_set($key, $value, $ttl, $namespace);
+}
+
+function announce_safe_query($query)
+{
+	global $db;
+
+	$result = $db->query($query, 0);
+	if (!$result) {
+		err(announce_fail_message());
+	}
+
+	return $result;
+}
+
+function announce_super_query($query)
+{
+	global $db;
+
+	$row = $db->super_query($query);
+	if ($row === false) {
+		err(announce_fail_message());
+	}
+
+	return $row;
+}
+
+function announce_rows_affected()
+{
+	global $db;
+
+	return (int) $db->affected_rows();
+}
+
+function announce_escape($value)
+{
+	global $db;
+
+	if (!is_numeric($value)) {
+		return "'".$db->safesql((string) $value)."'";
+	}
+
+	return (string) $value;
+}
+
+function announce_fetch_ip_ban($ipLong)
+{
+	$ipLong = (string) $ipLong;
+
+	return lt_cache_remember(
+		'ip_ban:'.$ipLong,
+		1000,
+		function () use ($ipLong) {
+			return announce_super_query("SELECT * FROM bans WHERE '".$ipLong."' >= first AND '".$ipLong."' <= last");
+		},
+		'announce'
+	);
+}
+
+function announce_fetch_user_by_passkey($passkey)
+{
+	$passkey = trim((string) $passkey);
+	if ($passkey === '') {
+		return array();
+	}
+
+	return announce_super_query("SELECT id, slots FROM users WHERE passkey = ".announce_escape($passkey)." LIMIT 1");
+}
+
+function announce_fetch_user_stats_by_passkey($passkey)
+{
+	$passkey = trim((string) $passkey);
+	if ($passkey === '') {
+		return array();
+	}
+
+	return announce_super_query("SELECT id, uploaded, downloaded, class FROM users WHERE passkey = ".announce_escape($passkey)." LIMIT 1");
+}
+
+function announce_fetch_torrent($infoHashHex)
+{
+	$infoHashHex = strtolower(trim((string) $infoHashHex));
+
+	return lt_cache_remember(
+		'torrent:'.$infoHashHex,
+		400,
+		function () use ($infoHashHex) {
+			return announce_super_query(
+				'SELECT torrents.id, torrents.banned, (trackers.seeders + trackers.leechers) AS numpeers, UNIX_TIMESTAMP(torrents.added) AS ts
+				 FROM torrents
+				 LEFT JOIN trackers ON torrents.id = trackers.torrent
+				 WHERE torrents.infohash = '.announce_escape($infoHashHex).' AND trackers.tracker = "localhost"
+				 LIMIT 1'
+			);
+		},
+		'announce'
+	);
+}
+
+function announce_fetch_peer_rows($torrentId, $fields, $limitSql = '')
+{
+	$torrentId = (int) $torrentId;
+	$fields = trim((string) $fields);
+	$limitSql = trim((string) $limitSql);
+
+	return announce_safe_query("SELECT ".$fields." FROM peers WHERE torrent = ".$torrentId." ".$limitSql);
+}
+
+function announce_fetch_self_peer($torrentId, $peerId, $fields)
+{
+	$torrentId = (int) $torrentId;
+	$fields = trim((string) $fields);
+	$peerId = (string) $peerId;
+
+	return announce_super_query("SELECT ".$fields." FROM peers WHERE torrent = ".$torrentId." AND peer_id = ".announce_escape($peerId)." LIMIT 1");
+}
+
+function announce_count_peers_by_passkey($torrentId, $passkey)
+{
+	$row = announce_super_query("SELECT COUNT(*) AS cnt FROM peers WHERE torrent = ".(int) $torrentId." AND passkey = ".announce_escape($passkey));
+
+	return (int) ($row['cnt'] ?? 0);
+}
+
 //Информация о правах класса
 function get_priv_info($class) {
-	global $memcached , $db;
-	// if(empty($class) ) {
-		// return false;
-	// }
+	global $db;
 	$class = (int)$class;
 
-	//Определяем права пользовател
-	if (false === ($row = $memcached->get('priv_'.$class)))
-	{
-		$row = $db->super_query("SELECT * FROM priv WHERE id=".$class);
-		$memcached->set('priv_'.$class , $row , 0, 300);
-	}
-	return $row;
+	return lt_cache_remember(
+		'priv_'.$class,
+		300,
+		function () use ($db, $class) {
+			return $db->super_query("SELECT * FROM priv WHERE id=".$class);
+		},
+		'privileges'
+	);
 }
 
 //Преобразуем размер файла
@@ -244,11 +447,7 @@ function portblacklisted($port)
 
 
 function sqlesc($value) {
-	// Quote if not a number or a numeric string
-	if (!is_numeric($value)) {
-		$value = "'" . mysql_real_escape_string($value) . "'";
-	}
-	return $value;
+	return announce_escape($value);
 }
 
 //Определяем ратио

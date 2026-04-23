@@ -67,6 +67,8 @@ if (!is_file($file_name)) {
 $table_name = 'comments_' . $type;
 $object_name = 'id_' . $type;
 comments_ensure_thread_support($type);
+$commentCsrfScope = 'comments_' . $type . '_' . $object_id;
+$commentRateLimitId = ((int) ($USER['id'] ?? 0)) . ':' . ($_SERVER['REMOTE_ADDR'] ?? 'cli');
 
 // Проверяем объект
 $object_exists = $db->super_query("SELECT id FROM `{$type}` WHERE id = {$object_id} LIMIT 1");
@@ -79,6 +81,15 @@ if (empty($object_exists['id'])) {
 // Добавление комментария
 //////////////////////////////////////////////////////////////
 if ($act === 'add') {
+    if (!lt_csrf_validate($commentCsrfScope)) {
+        err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+    }
+
+    $commentRateLimit = lt_rate_limit_hit('comments_add', $commentRateLimitId, 8, 5 * 60);
+    if (!empty($commentRateLimit['blocked'])) {
+        err($language['default_1'], 'Слишком много комментариев за короткое время. Повторите попытку позже.', 1);
+    }
+
     $text = '';
 
     if (isset($_REQUEST['text'])) {
@@ -149,6 +160,10 @@ header('Location:' . comment_return_url($file, $object_id));
 // Жалоба на комментарий
 //////////////////////////////////////////////////////////////
 if ($act === 'report' && !empty($_REQUEST['id_comment'])) {
+    if (!lt_csrf_validate($commentCsrfScope)) {
+        err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+    }
+
     $id_comment = (int) $_REQUEST['id_comment'];
 
     $arr = $db->super_query("SELECT id, id_user, text FROM `{$table_name}` WHERE id = {$id_comment} AND `{$object_name}` = {$object_id} LIMIT 1");
@@ -174,6 +189,11 @@ if ($act === 'report' && !empty($_REQUEST['id_comment'])) {
     );
 
     if (empty($existingReport['id'])) {
+        $commentRateLimit = lt_rate_limit_hit('comments_report', $commentRateLimitId, 20, 15 * 60);
+        if (!empty($commentRateLimit['blocked'])) {
+            err($language['default_1'], 'Слишком много жалоб за короткое время. Повторите попытку позже.', 1);
+        }
+
         $db->query(
             "INSERT INTO `".$reportsTable."` (`comment_type`, `comment_id`, `object_id`, `comment_user_id`, `reporter_user_id`, `comment_text_snapshot`, `status`, `created_at`)
              VALUES (
@@ -197,6 +217,15 @@ if ($act === 'report' && !empty($_REQUEST['id_comment'])) {
 // Удаление комментария
 //////////////////////////////////////////////////////////////
 if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
+    if (!lt_csrf_validate($commentCsrfScope)) {
+        err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+    }
+
+    $commentRateLimit = lt_rate_limit_hit('comments_delete', $commentRateLimitId, 20, 5 * 60);
+    if (!empty($commentRateLimit['blocked'])) {
+        err($language['default_1'], 'Слишком много операций с комментариями. Повторите попытку позже.', 1);
+    }
+
     $id_comment = (int) $_REQUEST['id_comment'];
 
     $arr = $db->super_query("SELECT id, id_user FROM `{$table_name}` WHERE id = {$id_comment} LIMIT 1");
@@ -250,6 +279,15 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
     }
 
     if ($_POST) {
+        if (!lt_csrf_validate($commentCsrfScope)) {
+            err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+        }
+
+        $commentRateLimit = lt_rate_limit_hit('comments_edit', $commentRateLimitId, 15, 5 * 60);
+        if (!empty($commentRateLimit['blocked'])) {
+            err($language['default_1'], 'Слишком много операций с комментариями. Повторите попытку позже.', 1);
+        }
+
         $update = array();
 
         $text = '';
@@ -292,6 +330,7 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
     echo '<input type="hidden" value="' . $id_comment . '" name="id_comment">';
     echo '<input type="hidden" value="' . htmlspecialchars($file, ENT_QUOTES, 'UTF-8') . '" name="file">';
     echo '<input type="hidden" value="edit" name="act">';
+    echo lt_csrf_input($commentCsrfScope);
     echo '</form>';
     end_frame();
     foot();

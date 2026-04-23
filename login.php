@@ -211,6 +211,16 @@ if($op == 'forgot') {
 
 		//Обработка
 		if($_POST) {
+			if (!lt_csrf_validate('login_forgot')) {
+				login_error_response($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+			}
+
+			if ($loginModalError === '') {
+				$forgotRateLimit = lt_rate_limit_hit('login_forgot', $_SERVER['REMOTE_ADDR'] ?? '', 5, 15 * 60);
+				if (!empty($forgotRateLimit['blocked'])) {
+					login_error_response($language['default_1'], 'Слишком много запросов на восстановление пароля. Повторите попытку позже.', 1);
+				}
+			}
 
 			//Определяем переменные
 			$email = trim((string) ($_POST['email'] ?? ''));
@@ -300,13 +310,14 @@ if($op == 'forgot') {
 								<label class="auth-label login-label" for="forgot-email">E-mail</label>
 								<input id="forgot-email" type="email" name="email" value="<?=htmlspecialchars((string) ($_POST['email'] ?? ''), ENT_QUOTES, 'UTF-8');?>" autocomplete="email">
 							</div>
-						</div>
+					</div>
 
 						<div class="auth-footer login-footer">
 							<button type="submit">Отправить письмо</button>
 							<a class="auth-link login-forgot-link" href="<?=htmlspecialchars(login_form_action(array('referer' => $forgotReferer)), ENT_QUOTES, 'UTF-8');?>">Вернуться ко входу</a>
 						</div>
 						<input type="hidden" name="referer" value="<?=htmlspecialchars($forgotReferer, ENT_QUOTES, 'UTF-8');?>">
+						<?=lt_csrf_input('login_forgot');?>
 					</form>
 				</section>
 			</div>
@@ -321,6 +332,17 @@ if($op == 'forgot') {
 	//Обработка данных
 /////////////////////////////////////////////////////////////////////
 if($_POST) {
+	if (!lt_csrf_validate('login_form')) {
+		login_error_response($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
+
+	if ($loginModalError === '') {
+		$loginRateLimit = lt_rate_limit_hit('login', $_SERVER['REMOTE_ADDR'] ?? '', 10, 5 * 60);
+		if (!empty($loginRateLimit['blocked'])) {
+			login_error_response($language['default_1'], 'Слишком много попыток входа. Повторите попытку позже.', 1);
+		}
+	}
+
 	$login = trim((string) ($_POST['login'] ?? ''));	//E-mail адрес
 	$password = trim((string) ($_POST['password'] ?? '')); //Пароль
 	$referer = login_normalize_referer($_POST['referer'] ?? ''); //Реферер
@@ -439,6 +461,7 @@ login_render_start($language['login_1']);
 				<a class="auth-link login-forgot-link" href="<?=$forgotHref;?>"><?=$language['login_6'];?></a>
 			</div>
 			<input type="hidden" value="<?=$referer;?>" name="referer">
+			<?=lt_csrf_input('login_form');?>
 		</form>
 	</section>
 	</div>

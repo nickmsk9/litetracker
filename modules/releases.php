@@ -18,6 +18,14 @@ $id_user = isset($_GET['id_user']) ? (int) $_GET['id_user'] : 0;
 $releases_news = !empty($_GET['releases_news']);
 $releases_to_day = !empty($_GET['releases_to_day']);
 $page = isset($_GET['page']) ? (int) $_GET['page'] : 0;
+$searchRateLimitId = ($USER ? 'user:'.$USER['id'] : 'ip:'.($_SERVER['REMOTE_ADDR'] ?? 'cli'));
+
+if ($search !== '') {
+	$searchRateLimit = lt_rate_limit_hit('search', $searchRateLimitId, 30, 5 * 60);
+	if (!empty($searchRateLimit['limited'])) {
+		err('Ошибка', 'Слишком много поисковых запросов. Попробуйте немного позже.', 1);
+	}
+}
 
 //////////////////////////////////////////////////////////////////
 //Вывод Категорий
@@ -218,12 +226,12 @@ elseif($act == 'releases' || $id_category || $search !== '' || !$config['search_
 		if($page === 0) {
 				//Картинки
 				if(strlen($search) >= $config['search_image_lenght'] && $config['search_image']) {
-					$image_sql = mysql_query("SELECT id , image , COUNT(*) AS c , name FROM torrents WHERE name LIKE '%" . sqlwildcardesc($search) . "%' AND image != '' GROUP BY id DESC LIMIT 5 ");
-					if(mysql_num_rows($image_sql) > 0) {
+					$image_sql = $db->query("SELECT id, image, COUNT(*) AS c, name FROM torrents WHERE name LIKE '%" . sqlwildcardesc($search) . "%' AND image != '' GROUP BY id DESC LIMIT 5 ");
+					if($db->num_rows($image_sql) > 0) {
 						begin_frame($language['image_1']);
 						echo '<center>';
 
-						while($row = mysql_fetch_array($image_sql) ) {
+						while($row = $db->get_row($image_sql) ) {
 							echo '<a href="details.php?id='.$row['id'].'"><img src="public/downloads/images/'.$row['image'].'" width="100" height="100" title="'.htmlspecialchars($row['name']).'"></a>&nbsp';
 						}
 
