@@ -503,12 +503,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $form = $defaults;
 $descriptionTemplates = lt_torrent_description_templates();
 $categoryTemplateMap = array();
+$descriptionExampleMap = array();
 
 foreach ($categories as $category) {
-	$categoryTemplateMap[(int) $category['id']] = lt_torrent_description_template_key((string) ($category['name'] ?? ''));
+	$templateKey = lt_torrent_description_template_key((string) ($category['name'] ?? ''));
+	$categoryTemplateMap[(int) $category['id']] = $templateKey;
+	if (empty($descriptionExampleMap[$templateKey])) {
+		$descriptionExampleMap[$templateKey] = lt_torrent_template_example_lines($templateKey, 5);
+	}
 }
 
 $currentCategoryName = lt_upload_category_name($categories, (int) ($form['catid'] ?? $defaultCategoryId));
+$currentTemplateKey = (string) ($categoryTemplateMap[(int) ($form['catid'] ?? $defaultCategoryId)] ?? 'movies');
+$currentDescriptionExampleLines = (array) ($descriptionExampleMap[$currentTemplateKey] ?? lt_torrent_template_example_lines($currentCategoryName, 5));
 $currentTypeOptions = lt_torrent_metadata_type_options_for_category($currentCategoryName);
 if ($currentTypeOptions) {
 	$metadataSchema['type']['options'] = $currentTypeOptions;
@@ -537,7 +544,8 @@ head('Загрузить торрент');
 				<div class="upload-grid-main">
 					<div class="upload-field">
 						<label class="upload-label" for="upload_name">Название</label>
-						<input id="upload_name" class="upload-input" type="text" name="name" value="<?=htmlspecialchars($form['name'], ENT_QUOTES, 'UTF-8');?>" required>
+						<input id="upload_name" class="upload-input" type="text" name="name" value="<?=htmlspecialchars($form['name'], ENT_QUOTES, 'UTF-8');?>" placeholder="<?=htmlspecialchars(lt_torrent_form_help_text('release_name'), ENT_QUOTES, 'UTF-8');?>" required>
+						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('release_name'), ENT_QUOTES, 'UTF-8');?></div>
 					</div>
 
 					<div class="upload-field">
@@ -572,27 +580,40 @@ head('Загрузить торрент');
 					<div class="upload-field">
 						<label class="upload-label" for="upload_file">Торрент файл</label>
 						<input id="upload_file" class="upload-input upload-file-input" type="file" name="file" accept=".torrent" required>
+						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('torrent_file'), ENT_QUOTES, 'UTF-8');?></div>
 					</div>
 
 					<div class="upload-field">
 						<label class="upload-label" for="upload_cover">Обложка</label>
 						<input id="upload_cover" class="upload-input upload-file-input" type="file" name="image" accept=".jpg,.jpeg,.png,.gif" required>
+						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('cover'), ENT_QUOTES, 'UTF-8');?></div>
 					</div>
 
 					<div class="upload-field">
 						<label class="upload-label" for="upload_screens">Скринлист</label>
 						<input id="upload_screens" class="upload-input upload-file-input" type="file" name="screenshot[]" accept=".jpg,.jpeg,.png,.gif" multiple required>
 						<div class="upload-hint">до 4 изображений</div>
+						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('screens'), ENT_QUOTES, 'UTF-8');?></div>
 					</div>
 
 					<div class="upload-field">
 						<label class="upload-label" for="upload_tags">Тэги</label>
-						<input id="upload_tags" class="upload-input" type="text" name="tags" value="<?=htmlspecialchars($form['tags'], ENT_QUOTES, 'UTF-8');?>" placeholder="через запятую">
+						<input id="upload_tags" class="upload-input" type="text" name="tags" value="<?=htmlspecialchars($form['tags'], ENT_QUOTES, 'UTF-8');?>" placeholder="боевик, 1080p, netflix">
+						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('tags'), ENT_QUOTES, 'UTF-8');?></div>
 					</div>
 
 					<div class="upload-field upload-field-description">
 						<label class="upload-label" for="upload_descr">Описание</label>
+						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('description'), ENT_QUOTES, 'UTF-8');?></div>
 						<textarea id="upload_descr" class="upload-textarea" name="descr" required><?=htmlspecialchars($form['descr'], ENT_QUOTES, 'UTF-8');?></textarea>
+						<div class="upload-example-card">
+							<div class="upload-example-title">Пример заполнения шаблона</div>
+							<div class="upload-example-list" id="upload_description_example">
+								<?php foreach ($currentDescriptionExampleLines as $exampleLine) { ?>
+								<div class="upload-example-line"><?=htmlspecialchars((string) $exampleLine, ENT_QUOTES, 'UTF-8');?></div>
+								<?php } ?>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -608,13 +629,22 @@ head('Загрузить торрент');
 	var form = document.querySelector('.upload-form');
 	var categorySelect = document.getElementById('upload_category');
 	var descriptionField = document.getElementById('upload_descr');
+	var descriptionExample = document.getElementById('upload_description_example');
 	var typeOptionsContainer = document.getElementById('upload_type_options');
 	var templates = <?=json_encode($descriptionTemplates, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
+	var descriptionExamples = <?=json_encode($descriptionExampleMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
 	var typeOptions = <?=json_encode($typeOptionsMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
 	var defaultTemplateKey = 'movies';
 
-	if (!form || !categorySelect || !descriptionField || !typeOptionsContainer) {
+	if (!form || !categorySelect || !descriptionField || !typeOptionsContainer || !descriptionExample) {
 		return;
+	}
+
+	function escapeHtml(value) {
+		return String(value || '')
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;');
 	}
 
 	function selectedCategoryTemplateKey() {
@@ -684,6 +714,18 @@ head('Загрузить торрент');
 				firstInput.checked = true;
 			}
 		}
+	}
+
+	function renderDescriptionExample() {
+		var templateKey = selectedCategoryTemplateKey();
+		var lines = descriptionExamples[templateKey] || descriptionExamples[defaultTemplateKey] || [];
+		var html = '';
+
+		lines.forEach(function (line) {
+			html += '<div class="upload-example-line">' + escapeHtml(line) + '</div>';
+		});
+
+		descriptionExample.innerHTML = html;
 	}
 
 	function parseDescription(text) {
@@ -768,6 +810,7 @@ head('Загрузить торрент');
 
 	categorySelect.addEventListener('change', function () {
 		renderTypeOptions();
+		renderDescriptionExample();
 		syncDescription();
 	});
 
@@ -783,6 +826,7 @@ head('Загрузить торрент');
 	});
 
 	renderTypeOptions();
+	renderDescriptionExample();
 	syncDescription();
 })();
 </script>

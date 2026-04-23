@@ -151,7 +151,7 @@ if (lt_is_mobile_request()) {
 	<div class="site-auth-overlay-backdrop" data-auth-close="1"></div>
 	<div class="site-auth-overlay-dialog" id="site-auth-overlay-dialog" role="dialog" aria-modal="true" aria-label="Авторизация">
 		<div class="site-auth-overlay-panel">
-			<iframe class="site-auth-frame" id="site-auth-frame" title="Авторизация" src="about:blank" scrolling="no"></iframe>
+			<iframe class="site-auth-frame" id="site-auth-frame" title="Авторизация" src="about:blank" scrolling="auto"></iframe>
 		</div>
 	</div>
 </div>

@@ -1,4 +1,4 @@
-<?
+<?php
 if (!defined('LITETRACKER'))
 	die('Direct access denied.');
 
@@ -33,11 +33,11 @@ begin_frame('', '100', false, 0);
 		</div>
 	</article>
 </div>
-<?
+<?php
 end_frame();
 ?>
 
-<?
+<?php
 if(defined('NEWS_DETAILS') ) {
 	//Комментарии
 	begin_frame($language['comments_13']);

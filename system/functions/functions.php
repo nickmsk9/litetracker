@@ -788,11 +788,51 @@ function lt_require_cron_access()
 	die('Forbidden');
 }
 
+function lt_fix_utf8_mojibake($value)
+{
+	$value = (string) $value;
+	if ($value === '') {
+		return $value;
+	}
+
+	// Common signature of UTF-8 text that was decoded as Latin-1 / Windows-1252.
+	if (!preg_match('/[\x{00D0}\x{00D1}\x{00C3}\x{00E2}]/u', $value)) {
+		return $value;
+	}
+
+	if (!function_exists('mb_convert_encoding')) {
+		return $value;
+	}
+
+	$reencoded = @mb_convert_encoding($value, 'Windows-1252', 'UTF-8');
+	if (!is_string($reencoded) || ($reencoded === '' && $value !== '')) {
+		return $value;
+	}
+
+	$fixed = @mb_convert_encoding($reencoded, 'UTF-8', 'UTF-8');
+	if (!is_string($fixed) || $fixed === '') {
+		return $value;
+	}
+
+	$sourceCyrillic = preg_match_all('/\p{Cyrillic}/u', $value, $sourceMatches);
+	$fixedCyrillic = preg_match_all('/\p{Cyrillic}/u', $fixed, $fixedMatches);
+
+	if ((int) $fixedCyrillic <= (int) $sourceCyrillic) {
+		return $value;
+	}
+
+	return $fixed;
+}
+
 function lt_csrf_token($scope = 'default')
 {
 	$scope = preg_replace('~[^a-z0-9:_-]+~i', '-', trim((string) $scope));
 	if ($scope === '') {
 		$scope = 'default';
+	}
+
+	if (function_exists('lt_session_resume')) {
+		lt_session_resume();
 	}
 
 	if (!isset($_SESSION['lt_csrf']) || !is_array($_SESSION['lt_csrf'])) {
@@ -807,7 +847,13 @@ function lt_csrf_token($scope = 'default')
 		}
 	}
 
-	return (string) $_SESSION['lt_csrf'][$scope];
+	$token = (string) $_SESSION['lt_csrf'][$scope];
+
+	if (function_exists('lt_session_commit')) {
+		lt_session_commit();
+	}
+
+	return $token;
 }
 
 function lt_csrf_input($scope = 'default', $fieldName = 'csrf_token')
@@ -838,16 +884,29 @@ function lt_csrf_validate($scope = 'default', $token = null)
 		$scope = 'default';
 	}
 
+	if (function_exists('lt_session_resume')) {
+		lt_session_resume();
+	}
+
 	if ($token === null) {
 		$token = (string) ($_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '');
 	}
 
 	$expected = (string) ($_SESSION['lt_csrf'][$scope] ?? '');
 	if ($expected === '' || $token === '') {
+		if (function_exists('lt_session_commit')) {
+			lt_session_commit();
+		}
 		return false;
 	}
 
-	return hash_equals($expected, (string) $token);
+	$isValid = hash_equals($expected, (string) $token);
+
+	if (function_exists('lt_session_commit')) {
+		lt_session_commit();
+	}
+
+	return $isValid;
 }
 
 //Добавление cookies

@@ -129,32 +129,21 @@ head('Главная');
 	<section class="browse-panel browse-results-panel home-results-panel">
 
 		<div class="home-browse-toolbar">
-			<div class="home-browse-sort">
+			<ul class="browse-sort-list" role="tablist" aria-label="Сортировка торрентов">
 				<?php foreach ($sortOptions as $sortKey => $sortOption) { ?>
-				<a class="home-browse-sort-link<?=($sort === $sortKey ? ' is-active' : '');?>" href="<?=htmlspecialchars(home_build_url(array('sort' => $sortKey, 'page' => null)), ENT_QUOTES, 'UTF-8');?>"><?=$sortOption['label'];?></a>
+				<li class="browse-sort-item<?=($sort === $sortKey ? ' is-active' : '');?>">
+					<a class="browse-sort-link" href="<?=htmlspecialchars(home_build_url(array('sort' => $sortKey, 'page' => null)), ENT_QUOTES, 'UTF-8');?>"><?=$sortOption['label'];?></a>
+				</li>
 				<?php } ?>
-			</div>
+			</ul>
 
-			<div class="home-browse-actions">
-				<div class="home-browse-count"><?=$countTorrent;?> загружено</div>
-
-				<div class="browse-view-switch" role="group" aria-label="Вид списка">
-					<button type="button" class="browse-view-button<?=($view === 'full' ? ' is-active' : '');?>" data-browse-view-toggle data-browse-view="full" aria-pressed="<?=($view === 'full' ? 'true' : 'false');?>" title="Сетка">
-						<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-							<rect x="3" y="3" width="6" height="6"></rect>
-							<rect x="11" y="3" width="6" height="6"></rect>
-							<rect x="3" y="11" width="6" height="6"></rect>
-							<rect x="11" y="11" width="6" height="6"></rect>
-						</svg>
-					</button>
-					<button type="button" class="browse-view-button<?=($view === 'compact' ? ' is-active' : '');?>" data-browse-view-toggle data-browse-view="compact" aria-pressed="<?=($view === 'compact' ? 'true' : 'false');?>" title="Список">
-						<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-							<rect x="4" y="3" width="12" height="4"></rect>
-							<rect x="4" y="8" width="12" height="4"></rect>
-							<rect x="4" y="13" width="12" height="4"></rect>
-						</svg>
-					</button>
-				</div>
+			<div class="browse-view-switch" role="group" aria-label="Вид списка">
+				<button type="button" class="browse-view-button<?=($view === 'full' ? ' is-active' : '');?>" data-browse-view-toggle data-browse-view="full" aria-pressed="<?=($view === 'full' ? 'true' : 'false');?>" title="Подробный вид">
+					<span class="browse-view-icon browse-view-icon-medium" aria-hidden="true"></span>
+				</button>
+				<button type="button" class="browse-view-button<?=($view === 'compact' ? ' is-active' : '');?>" data-browse-view-toggle data-browse-view="compact" aria-pressed="<?=($view === 'compact' ? 'true' : 'false');?>" title="Компактный вид">
+					<span class="browse-view-icon browse-view-icon-small" aria-hidden="true"></span>
+				</button>
 			</div>
 		</div>
 
@@ -164,147 +153,10 @@ head('Главная');
 			<?php
 			$torrentId = (int) $row['id'];
 			$category = (!empty($categoriesById[(int) $row['id_category']]) ? $categoriesById[(int) $row['id_category']] : array('id' => 0, 'name' => 'Без категории', 'image' => ''));
-			$categoryName = (string) $category['name'];
 			$user = get_user_info((int) $row['id_user']);
-			$userName = (!empty($user['name']) ? $user['name'] : 'Неизвестно');
-			$userClass = (int) ($user['class'] ?? 0);
-			$cover = 'public/images/default_avatar.gif';
-			if (!empty($row['image']) && is_file('public/downloads/images/'.$row['image'])) {
-				$cover = 'public/downloads/images/'.$row['image'];
-			} elseif (!empty($category['image']) && is_file('public/images/categories/'.$category['image'])) {
-				$cover = 'public/images/categories/'.$category['image'];
-			}
-
-			$typeLabel = lt_torrent_metadata_format('type', $row['content_type'] ?? '');
-			$subtitlesLabel = lt_torrent_metadata_format('subtitles', $row['subtitles'] ?? '');
-			$languagesLabel = lt_torrent_metadata_format('language', $row['languages'] ?? '');
-			$genresLabel = lt_torrent_metadata_format('genre', $row['genres'] ?? '');
-			$infoLabel = lt_torrent_metadata_format('info', $row['meta_info'] ?? '');
-			$countryLabel = lt_torrent_metadata_format('country', $row['countries'] ?? '');
-			$tagsLabel = implode(', ', array_values(array_unique(array_filter(array_map('trim', explode(',', (string) ($row['tags'] ?? '')))))));
-			$description = template_truncate_text(format_comment((string) $row['descr']), 520);
-			$sizeLabel = mksize((float) $row['size']);
-			$filesLabel = number_format((int) $row['num_files']);
-			$seedersLabel = number_format((int) $row['seeders']);
-			$leechersLabel = number_format((int) $row['leechers']);
-			$completedLabel = number_format((int) $row['completed']);
-			$dateLabel = convent_date($row['added']);
+			$torrentCard = lt_torrent_prepare_browse_card($row, $category, $user);
 			?>
-			<article class="browse-torrent-card<?=(!empty($row['banned']) ? ' is-banned' : '');?>">
-				<div class="browse-torrent-card-head">
-					<div class="browse-torrent-card-heading">
-						<div class="browse-torrent-card-category-row">
-							<a class="browse-torrent-card-category" href="<?=htmlspecialchars(home_build_url(array('id_category' => (int) $category['id'], 'page' => null)), ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars($categoryName, ENT_QUOTES, 'UTF-8');?></a>
-							<?php if ($typeLabel !== '') { ?>
-							<span class="browse-torrent-card-pill"><?=htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8');?></span>
-							<?php } ?>
-							<?php if (!empty($row['new_release'])) { ?>
-							<span class="browse-torrent-card-pill">Новинка</span>
-							<?php } ?>
-						</div>
-						<h3 class="browse-torrent-card-title">
-							<a href="details.php?id=<?=$torrentId;?>"><?=htmlspecialchars((string) $row['name'], ENT_QUOTES, 'UTF-8');?></a>
-						</h3>
-					</div>
-				</div>
-
-				<div class="browse-torrent-card-meta">
-					<span class="browse-torrent-card-meta-item">
-						<img src="public/images/up.png" alt="" width="16" height="16">
-						<span><?=$seedersLabel;?></span>
-					</span>
-					<span class="browse-torrent-card-meta-item">
-						<img src="public/images/down.png" alt="" width="16" height="16">
-						<span><?=$leechersLabel;?></span>
-					</span>
-					<span class="browse-torrent-card-meta-item">
-						<span><?=$sizeLabel;?></span>
-					</span>
-					<span class="browse-torrent-card-meta-item">
-						<img src="public/images/user.png" alt="" width="16" height="16">
-						<span><?=get_user_color($userClass, htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'));?></span>
-					</span>
-					<span class="browse-torrent-card-meta-item">
-						<span>Добавлен: <?=$dateLabel;?></span>
-					</span>
-				</div>
-
-				<div class="browse-torrent-card-body">
-					<a class="browse-torrent-card-cover" href="details.php?id=<?=$torrentId;?>">
-						<span class="browse-torrent-card-cover-badge"><?=htmlspecialchars($categoryName, ENT_QUOTES, 'UTF-8');?></span>
-						<img src="<?=htmlspecialchars($cover, ENT_QUOTES, 'UTF-8');?>" alt="<?=htmlspecialchars((string) $row['name'], ENT_QUOTES, 'UTF-8');?>">
-					</a>
-
-					<div class="browse-torrent-card-content">
-						<div class="browse-torrent-card-section">Информация о торренте</div>
-						<dl class="browse-torrent-card-facts">
-							<div class="browse-torrent-card-fact">
-								<dt>Категория:</dt>
-								<dd><?=htmlspecialchars($categoryName, ENT_QUOTES, 'UTF-8');?></dd>
-							</div>
-							<?php if ($typeLabel !== '') { ?>
-							<div class="browse-torrent-card-fact">
-								<dt>Тип:</dt>
-								<dd><?=htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8');?></dd>
-							</div>
-							<?php } ?>
-							<?php if ($languagesLabel !== '') { ?>
-							<div class="browse-torrent-card-fact">
-								<dt>Язык:</dt>
-								<dd><?=htmlspecialchars($languagesLabel, ENT_QUOTES, 'UTF-8');?></dd>
-							</div>
-							<?php } ?>
-							<?php if ($subtitlesLabel !== '') { ?>
-							<div class="browse-torrent-card-fact">
-								<dt>Субтитры:</dt>
-								<dd><?=htmlspecialchars($subtitlesLabel, ENT_QUOTES, 'UTF-8');?></dd>
-							</div>
-							<?php } ?>
-							<?php if ($genresLabel !== '') { ?>
-							<div class="browse-torrent-card-fact">
-								<dt>Жанр:</dt>
-								<dd><?=htmlspecialchars($genresLabel, ENT_QUOTES, 'UTF-8');?></dd>
-							</div>
-							<?php } ?>
-							<?php if ($infoLabel !== '') { ?>
-							<div class="browse-torrent-card-fact">
-								<dt>Инфо:</dt>
-								<dd><?=htmlspecialchars($infoLabel, ENT_QUOTES, 'UTF-8');?></dd>
-							</div>
-							<?php } ?>
-							<?php if ($countryLabel !== '') { ?>
-							<div class="browse-torrent-card-fact">
-								<dt>Страна:</dt>
-								<dd><?=htmlspecialchars($countryLabel, ENT_QUOTES, 'UTF-8');?></dd>
-							</div>
-							<?php } ?>
-							<?php if ($tagsLabel !== '') { ?>
-							<div class="browse-torrent-card-fact">
-								<dt>Тэги:</dt>
-								<dd><?=htmlspecialchars($tagsLabel, ENT_QUOTES, 'UTF-8');?></dd>
-							</div>
-							<?php } ?>
-							<div class="browse-torrent-card-fact">
-								<dt>Размер:</dt>
-								<dd><?=$sizeLabel;?></dd>
-							</div>
-							<div class="browse-torrent-card-fact">
-								<dt>Файлов:</dt>
-								<dd><?=$filesLabel;?></dd>
-							</div>
-							<div class="browse-torrent-card-fact">
-								<dt>Скачан:</dt>
-								<dd><?=$completedLabel;?></dd>
-							</div>
-						</dl>
-
-						<?php if ($description !== '') { ?>
-						<div class="browse-torrent-card-section browse-torrent-card-section-secondary">Описание</div>
-						<p class="browse-torrent-card-description"><?=htmlspecialchars($description, ENT_QUOTES, 'UTF-8');?></p>
-						<?php } ?>
-					</div>
-				</div>
-			</article>
+			<?php include __DIR__.'/templates/default/tpl.torrent.card.php'; ?>
 			<?php } ?>
 		</div>
 		<?php } else { ?>

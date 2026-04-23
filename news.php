@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -81,7 +81,7 @@ if($act == 'edit' && $id) {
 		$update = array();
 
 		//Название
-		$name = trim($_POST['name']);
+		$name = lt_fix_utf8_mojibake(trim((string) ($_POST['name'] ?? '')));
 		if($arr['name'] != $name) {
 			if(empty($name) ) {
 				err($language['default_1'] , $language['news_2'] , 1);
@@ -91,7 +91,7 @@ if($act == 'edit' && $id) {
 
 
 		//Описание
-		$text = $_POST['text'];
+		$text = lt_fix_utf8_mojibake((string) ($_POST['text'] ?? ''));
 		if($arr['text'] != $text) {
 			if(empty($text) ) {
 				err($language['default_1'] , $language['news_3'] , 1);
@@ -123,12 +123,12 @@ if($act == 'edit' && $id) {
 		<div class="news-editor-grid">
 			<label class="news-editor-field">
 				<span class="news-editor-label"><?=$language['news_5'];?>:</span>
-				<input class="news-editor-input" type="text" name="name" value="<?=htmlspecialchars((string) $arr['name'], ENT_QUOTES, 'UTF-8');?>">
+				<input class="news-editor-input" type="text" name="name" value="<?=htmlspecialchars(lt_fix_utf8_mojibake((string) $arr['name']), ENT_QUOTES, 'UTF-8');?>">
 			</label>
 
 			<label class="news-editor-field news-editor-field-full">
 				<span class="news-editor-label">Текст новости:</span>
-				<textarea class="news-editor-textarea" name="text"><?=htmlspecialchars((string) $arr['text'], ENT_QUOTES, 'UTF-8');?></textarea>
+				<textarea class="news-editor-textarea" name="text"><?=htmlspecialchars(lt_fix_utf8_mojibake((string) $arr['text']), ENT_QUOTES, 'UTF-8');?></textarea>
 			</label>
 
 			<label class="news-editor-checkbox">
@@ -141,7 +141,7 @@ if($act == 'edit' && $id) {
 			</div>
 		</div>
 	</form>
-	<?
+	<?php
 	end_frame();
 	foot();
 	die();
@@ -163,13 +163,13 @@ if($act == 'add') {
 	//Обработка новости
 	if(count($_POST) ) {
 		//Название
-		$name = trim($_POST['name']);
+		$name = lt_fix_utf8_mojibake(trim((string) ($_POST['name'] ?? '')));
 		if(empty($name) ) {
 			err($language['default_1'] , $language['news_2'] , 1);
 		}
 
 		//Описание
-		$text = $_POST['text'];
+		$text = lt_fix_utf8_mojibake((string) ($_POST['text'] ?? ''));
 		if(empty($text) ) {
 			err($language['default_1'] , $language['news_3'] , 1);
 		}
@@ -193,12 +193,12 @@ if($act == 'add') {
 		<div class="news-editor-grid">
 			<label class="news-editor-field">
 				<span class="news-editor-label"><?=$language['news_5'];?>:</span>
-				<input class="news-editor-input" type="text" name="name" value="<?=htmlspecialchars((string) ($_POST['name'] ?? ''), ENT_QUOTES, 'UTF-8');?>">
+				<input class="news-editor-input" type="text" name="name" value="<?=htmlspecialchars(lt_fix_utf8_mojibake((string) ($_POST['name'] ?? '')), ENT_QUOTES, 'UTF-8');?>">
 			</label>
 
 			<label class="news-editor-field news-editor-field-full">
 				<span class="news-editor-label">Текст новости:</span>
-				<textarea class="news-editor-textarea" name="text"><?=htmlspecialchars((string) ($_POST['text'] ?? ''), ENT_QUOTES, 'UTF-8');?></textarea>
+				<textarea class="news-editor-textarea" name="text"><?=htmlspecialchars(lt_fix_utf8_mojibake((string) ($_POST['text'] ?? '')), ENT_QUOTES, 'UTF-8');?></textarea>
 			</label>
 
 			<div class="news-editor-actions">
@@ -206,7 +206,7 @@ if($act == 'add') {
 			</div>
 		</div>
 	</form>
-	<?
+	<?php
 	end_frame();
 	foot();
 	die();
@@ -264,10 +264,10 @@ if($id && $act == '') {
 
 
 	//Название новости
-	$name = htmlspecialchars($arr['name']);
+	$name = htmlspecialchars(lt_fix_utf8_mojibake((string) $arr['name']), ENT_QUOTES, 'UTF-8');
 
 	//Текст новости
-	$text = cleanhtml($arr['text']);
+	$text = cleanhtml(lt_fix_utf8_mojibake((string) $arr['text']));
 
 	//Дата добавления
 	$date = convent_date($arr['date']);
@@ -329,8 +329,8 @@ if(!$db->num_rows() ) {
 		<div class="news-archive-list">
 			<?php while($arr = $db->get_row() ) { ?>
 			<?php
-			$title = htmlspecialchars((string) $arr['name'], ENT_QUOTES, 'UTF-8');
-			$excerpt = trim(preg_replace('~\s+~u', ' ', strip_tags(cleanhtml((string) $arr['text']))));
+			$title = htmlspecialchars(lt_fix_utf8_mojibake((string) $arr['name']), ENT_QUOTES, 'UTF-8');
+			$excerpt = trim(preg_replace('~\s+~u', ' ', strip_tags(cleanhtml(lt_fix_utf8_mojibake((string) $arr['text'])))));
 			?>
 			<article class="news-archive-item">
 				<a class="news-archive-link" href="news.php?id=<?=(int) $arr['id'];?>">

@@ -341,6 +341,7 @@ hr {
   grid-template-columns: fit-content(240px) minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 40px;
+  row-gap: 10px;
   padding: 10px 0;
 }
 
@@ -401,6 +402,7 @@ hr {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
   min-width: 0;
 }
 
@@ -425,6 +427,9 @@ hr {
   align-items: center;
   gap: 12px;
   justify-self: end;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .site-header-tools-auth {
@@ -594,6 +599,8 @@ hr {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   margin-right: 0;
 }
 
@@ -630,6 +637,14 @@ hr {
 }
 
 .site-auth-link-login {
+  border-color: var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.site-auth-link-login:hover {
+  background: var(--surface-muted);
+  border-color: var(--accent);
   color: var(--accent);
 }
 
@@ -3677,37 +3692,51 @@ iframe {
 .browse-results-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
-  padding: 12px 14px;
+  padding: 10px 15px;
   border-bottom: 1px solid var(--line);
 }
 
-.browse-results-title-group {
-  min-width: 0;
-}
-
-.browse-results-title {
+.browse-sort-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   margin: 0;
-  font-size: 14px;
-  line-height: 1.2;
-  font-weight: 700;
+  padding: 0;
+  list-style: none;
 }
 
-.browse-results-count {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 12px;
+.browse-sort-item {
+  padding: 7px 10px;
+}
+
+.browse-sort-link {
+  display: block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  color: #909fa7;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.browse-sort-item:hover .browse-sort-link {
+  color: var(--text);
+}
+
+.browse-sort-item.is-active .browse-sort-link {
+  background: #454c54;
+  color: #ffffff;
 }
 
 .browse-view-switch {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0;
-  border: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
   border-radius: 4px;
   overflow: hidden;
-  background: var(--surface-alt);
+  background: var(--surface-solid);
 }
 
 .browse-view-button {
@@ -3718,7 +3747,7 @@ iframe {
   border: 0;
   border-left: 1px solid var(--line);
   border-radius: 0;
-  background: var(--surface-alt);
+  background: var(--surface-solid);
   color: var(--muted);
 }
 
@@ -3727,85 +3756,95 @@ iframe {
 }
 
 .browse-view-button:hover {
-  background: var(--surface-muted);
+  background: #f7f7f7;
   color: var(--text);
 }
 
 .browse-view-button.is-active {
-  background: var(--surface-solid);
+  box-shadow: inset 0 1px 10px rgba(0, 0, 0, 0.12);
   color: var(--text);
 }
 
-.browse-view-button svg {
+.browse-view-icon {
+  position: relative;
+  display: block;
   width: 18px;
   height: 18px;
 }
 
+.browse-view-icon-medium::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  box-shadow: 0 8px 0 currentColor, 8px 0 0 currentColor, 8px 8px 0 currentColor;
+}
+
+.browse-view-icon-small::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 1px;
+  width: 4px;
+  height: 4px;
+  background: currentColor;
+  box-shadow: 0 6px 0 currentColor, 0 12px 0 currentColor;
+}
+
+.browse-view-icon-small::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 7px;
+  width: 10px;
+  height: 4px;
+  background: currentColor;
+  box-shadow: 0 6px 0 currentColor, 0 12px 0 currentColor;
+}
+
 .browse-pagination {
-  padding: 0 14px;
+  padding: 0;
 }
 
 .browse-torrent-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 0 14px 14px;
+  gap: 20px;
+  padding: 20px 0 0;
 }
 
 .browse-torrent-card {
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 4px;
   background: var(--surface-solid);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
   overflow: hidden;
 }
 
-.browse-torrent-card.is-banned .browse-torrent-card-title a {
+.browse-torrent-card.is-banned .browse-torrent-card-title a,
+.browse-torrent-card.is-banned .browse-torrent-card-compact-title a {
   color: #c33b3b;
 }
 
-.browse-torrent-card-head {
-  padding: 14px 16px 0;
+.browse-torrent-card-full {
+  display: block;
 }
 
-.browse-torrent-card-category-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 8px;
+.browse-torrent-card-compact {
+  display: none;
 }
 
-.browse-torrent-card-category,
-.browse-torrent-card-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.browse-torrent-card-category {
-  background: #4f5661;
-  color: #ffffff;
-  text-transform: lowercase;
-}
-
-.browse-torrent-card-category:hover {
-  color: #ffffff;
-  background: #434954;
-}
-
-.browse-torrent-card-pill {
-  background: var(--surface-alt);
-  color: var(--text);
+.browse-torrent-card-title-wrap {
+  padding: 10px 20px;
 }
 
 .browse-torrent-card-title {
   margin: 0;
   font-size: 16px;
-  line-height: 1.35;
+  line-height: 30px;
   font-weight: 400;
 }
 
@@ -3820,47 +3859,72 @@ iframe {
 .browse-torrent-card-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 0;
-  padding: 10px 16px 12px;
+  align-items: center;
+  gap: 0;
+  padding: 5px 20px;
+  border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   color: var(--text);
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 20px;
 }
 
 .browse-torrent-card-meta-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-right: 12px;
-  padding-right: 12px;
-  border-right: 1px solid var(--line);
-  line-height: 1.3;
+  gap: 4px;
+  line-height: 20px;
 }
 
-.browse-torrent-card-meta-item:last-child {
-  margin-right: 0;
-  padding-right: 0;
-  border-right: 0;
+.browse-torrent-card-meta-item:not(:last-child)::after {
+  content: "|";
+  margin: 0 8px 0 10px;
+  color: #909fa7;
 }
 
-.browse-torrent-card-meta-item img {
-  flex: 0 0 auto;
-  opacity: 0.78;
+.browse-torrent-card-meta-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  color: #7b7b7b;
+}
+
+.browse-torrent-card-meta-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.browse-torrent-card-meta-label {
+  color: #909fa7;
+}
+
+.browse-torrent-card-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text);
+}
+
+.browse-torrent-card-user:hover {
+  color: var(--accent);
 }
 
 .browse-torrent-card-body {
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  gap: 18px;
-  padding: 16px;
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+
+.browse-torrent-card-poster-col {
+  flex: 0 0 auto;
+  width: 240px;
 }
 
 .browse-torrent-card-cover {
   position: relative;
   display: block;
-  width: 100%;
-  max-width: 240px;
-  aspect-ratio: 3 / 4;
+  width: 240px;
+  height: 360px;
   overflow: hidden;
   border-radius: 4px;
   background: var(--surface-alt);
@@ -3875,95 +3939,143 @@ iframe {
 
 .browse-torrent-card-cover-badge {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 0;
+  left: 0;
   z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 4px 8px;
-  border-radius: 3px;
-  background: rgba(76, 84, 94, 0.92);
+  display: inline-block;
+  padding: 0 5px;
+  border-radius: 0 0 4px 0;
+  background: #909fa7;
   color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.browse-torrent-card-content {
-  min-width: 0;
-}
-
-.browse-torrent-card-section {
-  color: var(--text);
   font-size: 13px;
   font-weight: 700;
+  line-height: 20px;
+  text-transform: lowercase;
+}
+
+.browse-torrent-card-copy {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.browse-torrent-card-copy-body {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.browse-torrent-card-copy-body strong {
+  font-weight: 700;
+}
+
+.browse-torrent-card-info-title,
+.browse-torrent-card-extra-title {
+  color: var(--text);
   text-decoration: underline;
 }
 
-.browse-torrent-card-section-secondary {
-  margin-top: 18px;
+.browse-torrent-card-spoiler {
+  display: inline-block;
+  margin: 2px 0 0;
 }
 
-.browse-torrent-card-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 18px;
-  margin: 14px 0 0;
+.browse-torrent-card-spoiler summary {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  border-bottom: 1px dotted var(--accent);
+  cursor: pointer;
+  list-style: none;
 }
 
-.browse-torrent-card-fact {
+.browse-torrent-card-spoiler summary::-webkit-details-marker {
+  display: none;
+}
+
+.browse-torrent-card-spoiler summary::after {
+  content: "";
+  margin-left: 7px;
+  margin-top: 7px;
+  border: 5px solid transparent;
+  border-top-color: var(--text);
+}
+
+.browse-torrent-card-spoiler[open] summary::after {
+  margin-top: 1px;
+  transform: rotate(180deg);
+}
+
+.browse-torrent-card-spoiler-content {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+}
+
+.browse-torrent-card-update-title {
+  font-size: 13px;
+}
+
+.browse-torrent-card-compact-inner {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 10px 20px;
+}
+
+.browse-torrent-card-compact-cover {
+  position: relative;
+  display: block;
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--surface-alt);
+  flex: 0 0 auto;
+}
+
+.browse-torrent-card-compact-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.browse-torrent-card-cover-badge-compact {
+  font-size: 10px;
+  line-height: 14px;
+  padding: 0 4px;
+}
+
+.browse-torrent-card-compact-content {
   min-width: 0;
 }
 
-.browse-torrent-card-fact dt,
-.browse-torrent-card-fact dd {
-  display: inline;
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.browse-torrent-card-fact dt {
-  font-weight: 700;
-}
-
-.browse-torrent-card-description {
-  margin: 12px 0 0;
-  color: var(--text);
-  font-size: 13px;
-  line-height: 1.65;
-}
-
-.browse-torrent-list[data-view="compact"] .browse-torrent-card-head {
-  padding: 10px 14px 0;
-}
-
-.browse-torrent-list[data-view="compact"] .browse-torrent-card-title {
+.browse-torrent-card-compact-title {
+  margin: 0 0 5px;
   font-size: 14px;
+  line-height: 24px;
+  font-weight: 400;
 }
 
-.browse-torrent-list[data-view="compact"] .browse-torrent-card-meta {
-  padding: 8px 14px 10px;
-  border-bottom: 0;
+.browse-torrent-card-compact-title a {
+  color: var(--accent);
 }
 
-.browse-torrent-list[data-view="compact"] .browse-torrent-card-body {
-  grid-template-columns: 60px minmax(0, 1fr);
-  gap: 14px;
-  align-items: start;
-  padding: 0 14px 14px;
+.browse-torrent-card-compact-title a:hover {
+  color: var(--accent-hover);
 }
 
-.browse-torrent-list[data-view="compact"] .browse-torrent-card-cover {
-  max-width: 60px;
-  aspect-ratio: 1 / 1;
+.browse-torrent-card-meta-compact {
+  padding: 0;
+  border: 0;
 }
 
-.browse-torrent-list[data-view="compact"] .browse-torrent-card-section,
-.browse-torrent-list[data-view="compact"] .browse-torrent-card-facts,
-.browse-torrent-list[data-view="compact"] .browse-torrent-card-description {
+.browse-torrent-list[data-view="compact"] .browse-torrent-card-full {
   display: none;
+}
+
+.browse-torrent-list[data-view="compact"] .browse-torrent-card-compact {
+  display: block;
 }
 
 .browse-filter-panel {
@@ -4067,51 +4179,13 @@ iframe {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 12px 14px;
+  gap: 12px;
+  padding: 0;
   border-bottom: 1px solid var(--line);
 }
 
-.home-browse-sort {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 18px;
-}
-
-.home-browse-sort-link {
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.2;
-}
-
-.home-browse-sort-link:hover {
-  color: var(--text);
-}
-
-.home-browse-sort-link.is-active {
-  color: var(--text);
-  font-weight: 700;
-}
-
-.home-browse-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.home-browse-count {
-  color: var(--muted);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
 .home-torrent-list {
-  padding-top: 14px;
-}
-
-.home-torrent-list[data-view="compact"] .browse-torrent-card-cover-badge {
-  display: none;
+  padding-top: 20px;
 }
 
 .browse-empty-state-filtered {
@@ -4254,6 +4328,40 @@ iframe {
   font-size: 12px;
 }
 
+.upload-example-hint {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.upload-example-card {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-alt);
+}
+
+.upload-example-title {
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.upload-example-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.upload-example-line {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .upload-section {
   margin: 0;
   padding: 0;
@@ -4311,6 +4419,98 @@ iframe {
   min-height: 40px;
   border-radius: 4px !important;
   font-weight: 700;
+}
+
+.edit-media-card {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-alt);
+}
+
+.edit-template-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.edit-template-field {
+  min-width: 0;
+}
+
+.edit-template-field-full {
+  grid-column: 1 / -1;
+}
+
+.edit-template-textarea {
+  min-height: 150px;
+}
+
+.edit-media-card-cover {
+  max-width: 280px;
+}
+
+.edit-media-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.edit-media-card-head strong {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.edit-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.edit-media-grid-item {
+  min-width: 0;
+}
+
+.edit-media-preview {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.edit-media-preview-cover {
+  max-width: 220px;
+}
+
+.edit-media-preview-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: var(--surface-muted);
+}
+
+.edit-media-preview-image-cover {
+  aspect-ratio: 250 / 360;
+}
+
+.edit-media-preview-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.edit-media-preview-title {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .is-hidden,
@@ -4401,6 +4601,15 @@ iframe {
     grid-template-columns: 1fr;
   }
 
+  .edit-media-card-cover,
+  .edit-media-preview-cover {
+    max-width: none;
+  }
+
+  .edit-template-fields {
+    grid-template-columns: 1fr;
+  }
+
 }
 
 @media (max-width: 720px) {
@@ -4484,19 +4693,27 @@ iframe {
     border-radius: 4px !important;
   }
 
-  .browse-results-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .edit-media-grid {
+    grid-template-columns: 1fr;
   }
 
-  .home-browse-toolbar,
-  .home-browse-actions {
+  .edit-media-card-head,
+  .edit-media-preview-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .browse-results-header {
+    justify-content: center;
+  }
+
+  .home-browse-toolbar {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .home-browse-sort {
-    gap: 10px 14px;
+  .browse-sort-list {
+    width: 100%;
   }
 
   .browse-view-switch {
@@ -4508,24 +4725,35 @@ iframe {
     width: auto;
   }
 
-  .browse-torrent-card-body,
-  .browse-torrent-list[data-view="compact"] .browse-torrent-card-body {
-    grid-template-columns: 1fr;
+  .browse-torrent-card-body {
+    flex-direction: column;
   }
 
-  .browse-torrent-card-cover,
-  .browse-torrent-list[data-view="compact"] .browse-torrent-card-cover {
+  .browse-torrent-card-poster-col,
+  .browse-torrent-card-cover {
+    width: 100%;
     max-width: 100%;
-    aspect-ratio: 16 / 9;
   }
 
-  .browse-torrent-card-facts {
-    grid-template-columns: 1fr;
+  .browse-torrent-card-cover {
+    height: auto;
   }
 
-  .browse-torrent-card-meta-item {
-    margin-right: 10px;
-    padding-right: 10px;
+  .browse-torrent-card-cover img {
+    width: 100%;
+    height: auto;
+  }
+
+  .browse-torrent-card-compact-inner {
+    align-items: flex-start;
+  }
+
+  .browse-torrent-card-meta {
+    gap: 6px 0;
+  }
+
+  .browse-torrent-card-meta-item:not(:last-child)::after {
+    margin: 0 6px 0 8px;
   }
 
   .upload-header,
@@ -4929,371 +5157,6 @@ body.fluid .wrapper {
     }
 }
 
-/* Keep the desktop template fixed on narrow windows. */
-html,
-body,
-.site-wrapper {
-    min-width: 1180px;
-}
-
-@media (max-width: 1180px) {
-    .site-shell-band {
-        max-width: 1360px;
-    }
-
-    .site-topbar {
-        column-gap: 40px;
-    }
-
-    .site-layout {
-        grid-template-columns: minmax(0, 1fr) 260px;
-    }
-
-    .site-sidebar {
-        position: sticky;
-        top: 12px;
-    }
-
-    .site-sidebar-right {
-        grid-column: 2;
-    }
-
-    .profile-layout {
-        grid-template-columns: minmax(0, 1fr) 260px;
-    }
-
-    .profile-sidebar {
-        order: 0;
-    }
-
-    .settings-layout {
-        grid-template-columns: 250px minmax(0, 1fr);
-        gap: 18px;
-    }
-
-    .settings-profile-top {
-        grid-template-columns: 270px 320px;
-    }
-
-    .settings-password-grid {
-        grid-template-columns: repeat(2, minmax(0, 320px));
-    }
-
-    .settings-grid {
-        grid-template-columns: 260px minmax(0, 1fr);
-    }
-
-    .settings-admin-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .browse-layout {
-        grid-template-columns: minmax(0, 1fr) 260px;
-    }
-
-    .browse-filter-panel {
-        position: sticky;
-        top: 12px;
-    }
-
-    .upload-grid {
-        grid-template-columns: minmax(0, 1fr) 1fr;
-    }
-}
-
-@media (max-width: 720px) {
-    .site-shell {
-        padding: 0 16px;
-    }
-
-    .site-shell-content {
-        padding-top: 22px;
-    }
-
-    .site-topbar {
-        display: grid;
-        grid-template-columns: fit-content(240px) minmax(0, 1fr) auto;
-        align-items: center;
-        column-gap: 40px;
-        padding: 10px 0;
-    }
-
-    .site-brand {
-        width: auto;
-    }
-
-    .site-auth-actions {
-        width: auto;
-        justify-content: flex-start;
-    }
-
-    .site-user-name {
-        max-width: 180px;
-    }
-
-    .site-user-menu {
-        left: auto;
-        right: 0;
-    }
-
-    .site-user-menu::before {
-        left: auto;
-        right: 20px;
-    }
-
-    .browse-hero {
-        flex-direction: row;
-        align-items: center;
-    }
-
-    .browse-hero-action,
-    .browse-upload-button {
-        width: auto;
-    }
-
-    .browse-search-row {
-        grid-template-columns: minmax(0, 1fr) 170px;
-        gap: 0;
-    }
-
-    .browse-search-input {
-        border-right-width: 0;
-        border-radius: 4px 0 0 4px !important;
-    }
-
-    .browse-search-submit {
-        border-radius: 0 4px 4px 0 !important;
-    }
-
-    .browse-results-header {
-        flex-direction: row;
-        align-items: center;
-    }
-
-    .home-browse-toolbar {
-        flex-direction: row;
-        align-items: center;
-    }
-
-    .home-browse-actions {
-        width: auto;
-        justify-content: flex-start;
-    }
-
-    .browse-view-switch {
-        width: auto;
-    }
-
-    .browse-view-button {
-        flex: 0 0 auto;
-        width: 48px;
-    }
-
-    .browse-torrent-card-body {
-        grid-template-columns: 240px minmax(0, 1fr);
-    }
-
-    .browse-torrent-list[data-view="compact"] .browse-torrent-card-body {
-        grid-template-columns: 60px minmax(0, 1fr);
-    }
-
-    .browse-torrent-card-cover {
-        max-width: 240px;
-        aspect-ratio: 3 / 4;
-    }
-
-    .browse-torrent-list[data-view="compact"] .browse-torrent-card-cover {
-        max-width: 60px;
-        aspect-ratio: 1 / 1;
-    }
-
-    .browse-torrent-card-facts {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .browse-torrent-card-meta-item {
-        margin-right: 12px;
-        padding-right: 12px;
-    }
-
-    .upload-header,
-    .upload-grid,
-    .upload-footer {
-        padding-left: 20px;
-        padding-right: 20px;
-    }
-
-    .upload-actions,
-    .upload-top-danger {
-        flex-direction: row;
-        align-items: center;
-    }
-
-    .upload-top-link {
-        width: auto;
-    }
-
-    .upload-option-grid-cols-2 {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .upload-option-grid-cols-3 {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .upload-option-grid-cols-4 {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .profile-card {
-        flex-direction: row;
-    }
-
-    .comment-entry-body-has-side-actions {
-      padding-right: 150px;
-    }
-
-    .comment-side-actions {
-      position: absolute;
-      margin-top: 0;
-    }
-
-    .profile-torrent-tabs {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .profile-bonus-footer {
-        flex-direction: row;
-        align-items: center;
-    }
-
-    .profile-modal-backdrop {
-        padding: 20px;
-    }
-
-    .profile-modal-form {
-        padding: 18px;
-    }
-
-    .settings-content {
-        padding: 18px 20px 16px;
-    }
-
-    .settings-title {
-        font-size: 24px;
-    }
-
-    .settings-grid {
-        grid-template-columns: 260px minmax(0, 1fr);
-    }
-
-    .settings-profile-top {
-        grid-template-columns: 270px 320px;
-    }
-
-    .settings-password-grid {
-        grid-template-columns: repeat(2, minmax(0, 320px));
-    }
-
-    .settings-birthday {
-        grid-template-columns: 78px 96px 76px;
-        max-width: 250px;
-    }
-
-    .settings-birthday > *:not(:first-child) {
-        margin-left: -1px;
-    }
-
-    .settings-birthday select {
-        border-radius: 0;
-    }
-
-    .settings-avatar-row {
-        flex-direction: row;
-    }
-
-    .profile-sidebar-stat-transfer {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .search-row,
-    .search-row-filters {
-        flex-direction: row;
-    }
-
-    .search-row-primary .search-input {
-        flex: 1 1 360px;
-    }
-
-    .search-row-filters .search-select {
-        flex: 1 1 180px;
-    }
-
-    .ta_r,
-    .label {
-        display: table-cell;
-        width: 160px !important;
-        padding-right: 12px;
-    }
-
-    #loginPage table tr {
-        display: table-row;
-    }
-
-    #loginPage table td {
-        display: table-cell;
-        width: auto !important;
-        padding-right: 0;
-    }
-}
-
-@media (max-width: 900px) {
-    .footer {
-        min-height: 162px;
-    }
-
-    .footer .wrapper {
-        width: 1060px;
-    }
-
-    .footer .pull-left {
-        float: left;
-    }
-
-    .footer .pull-right {
-        float: right;
-    }
-
-    .footer .mr20 {
-        margin-right: 20px;
-    }
-
-    .footer .mr40 {
-        margin-right: 40px;
-    }
-
-    .footer .mr10 {
-        margin-right: 10px;
-    }
-
-    .footer .logo {
-        margin-bottom: 0;
-    }
-
-    .footer .adults-only,
-    .footer .copyrights {
-        width: 350px;
-    }
-
-    .footer .social-links {
-        width: auto;
-        margin-top: 4px;
-    }
-
-    .footer .social-links a {
-        margin-right: 0;
-    }
-}
 .torrents-paging{
 	margin: 20px 0 0;
 	padding: 0;
@@ -5604,7 +5467,7 @@ body.auth-modal-frame {
   margin: 0;
   padding: 0;
   background: #f4f5f7;
-  overflow: hidden;
+  overflow: auto;
 }
 
 body.auth-modal-frame .auth-page {

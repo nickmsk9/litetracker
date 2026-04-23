@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -28,4 +28,3 @@ if($news_array)  {
 	require 'templates/'.$config['template'].'/blocks/block.news.php';
 }
 ?>
-

@@ -8,8 +8,8 @@ begin_frame('<a class="frame-title-link" href="news.php">Последние но
 echo '<div class="sidebar-news-list">';
 
 foreach ($news_array as $arr) {
-	$title = $arr['name'];
-	$text = trim(strip_tags($arr['text']));
+	$title = lt_fix_utf8_mojibake((string) $arr['name']);
+	$text = trim(strip_tags(lt_fix_utf8_mojibake((string) $arr['text'])));
 
 	if (mb_strlen($title) > 56) {
 		$title = mb_substr($title, 0, 56).'...';

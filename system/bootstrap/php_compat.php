@@ -12,10 +12,21 @@ if (!function_exists('get_magic_quotes_gpc')) {
 
 if (!function_exists('lt_session_bootstrap')) {
 	function lt_session_bootstrap() {
+		lt_session_resume();
+		lt_session_commit();
+	}
+}
+
+if (!function_exists('lt_session_resume')) {
+	function lt_session_resume() {
 		if (session_status() !== PHP_SESSION_ACTIVE) {
 			@session_start();
 		}
+	}
+}
 
+if (!function_exists('lt_session_commit')) {
+	function lt_session_commit() {
 		if (session_status() === PHP_SESSION_ACTIVE) {
 			@session_write_close();
 		}
