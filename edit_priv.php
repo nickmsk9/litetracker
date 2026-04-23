@@ -28,6 +28,9 @@ if(!$PRIV['EDIT_PRIV']) {
 if($_GET['act'] == 'location') {
 	//Обработка
 	if($_POST) {
+		if (!lt_csrf_validate('edit_priv_location')) {
+			err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+		}
 
 		//Из категории
 		$location_1 = (int)$_POST['location_1'];
@@ -65,6 +68,7 @@ if($_GET['act'] == 'location') {
 	echo msg('Вы можете переместить пользователей из одной категории в другую');
 
 	echo '<form action="edit_priv.php?&act=location" method="POST">';
+	echo lt_csrf_input('edit_priv_location');
 	echo '<select name="location_1">';
 	echo '<option value="0">(Из класса)</option>';
 	foreach($row AS $arr) {
@@ -98,6 +102,10 @@ if($_GET['act'] == 'delete' && $_GET['id']) {
 	}
 
 	if($_POST) {
+		if (!lt_csrf_validate('edit_priv_delete_'.$id)) {
+			err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+		}
+
 		$location = (int)$_POST['location'];
 
 		//Перемещаем торренты
@@ -132,6 +140,7 @@ if($_GET['act'] == 'delete' && $_GET['id']) {
 	echo 'Вы действительно хотите удалить класс?'.'<br> ';
 
 	echo '<form action="edit_priv.php?id='.$id.'&act=delete" method="POST">';
+	echo lt_csrf_input('edit_priv_delete_'.$id);
 	echo '<select name="location">';
 	echo '<option value="0">Удалить класс и всех пользователей</option>';
 
@@ -165,6 +174,9 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 	}
 	//Обработка
 	if($_POST) {
+		if (!lt_csrf_validate('edit_priv_form')) {
+			err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+		}
 
 		//Массив с правами
 		$array = array('faq_moderate'  , 'edit_banned' ,'edit_news' , 'user_add' , 'bad_rating' , 'news_add' ,'upload', 'cats', 'chat_delete', 'chat_view', 'chat_clear',  'comments_edit', 'comments_delete', 'details_banned_view', 'details_view', 'download_torrent', 'download_magnet', 'edit_release', 'messages', 'multitracker_accounts', 'setting_user', 'ip_util', 'profile_view', 'search_query', 'sessions_view', 'sessions_clear', 'users_view' , 'block_moderators' ,  'block_administrators');
@@ -232,6 +244,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 	begin_frame($title);
 	?>
 	<form action="edit_priv.php?act=<?=($_GET['act'] == 'add' ? 'add' : 'edit');?>&id=<?=$id;?>" method="post">
+	<?=lt_csrf_input('edit_priv_form');?>
 	<table width="80%"  cellspacing="7" cellpadding="0" border="0"  align="center">
 	<tbody>
 

@@ -150,8 +150,16 @@ if (!$arr) {
 }
 
 $act = trim((string) ($_GET['act'] ?? ''));
+$settingsProfileScope = 'settings_profile_'.$id;
+$settingsPasswordScope = 'settings_password_'.$id;
+$settingsAvatarScope = 'settings_avatar_'.$id;
+$settingsModerationScope = 'settings_moderation_'.$id;
 
 if($act == 'ban_ip') {
+	if (!$PRIV['setting_user'] || !lt_csrf_validate($settingsModerationScope)) {
+		err($language['default_1'], 'Недостаточно прав или защитный токен устарел.', 1);
+	}
+
 	$ip = ip2long_db($arr['ip']);
 	$db->query("SELECT * FROM bans WHERE '".$ip."' >= first AND '".$ip."' <= last");
 	if(!$db->num_rows()) {
@@ -168,6 +176,10 @@ if($act == 'ban_ip') {
 }
 
 if($act == 'ban_account') {
+	if (!$PRIV['setting_user'] || !lt_csrf_validate($settingsModerationScope)) {
+		err($language['default_1'], 'Недостаточно прав или защитный токен устарел.', 1);
+	}
+
 	if($arr['banned'] == 0) {
 		$db->query("UPDATE users SET banned='1' WHERE id=".$id);
 		$memcached->delete('user_'.$id, 0);
@@ -182,6 +194,10 @@ if($act == 'ban_account') {
 }
 
 if($act == 'foto_delete') {
+	if (!lt_csrf_validate($settingsAvatarScope)) {
+		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
+
 	@unlink('public/avatars/'.$arr['avatar']);
 	@unlink('public/avatars/small/'.$arr['avatar']);
 	$db->query("UPDATE users SET avatar='' WHERE id='".$id."'");
@@ -191,9 +207,14 @@ if($act == 'foto_delete') {
 }
 
 if($act == 'password') {
+	if (!lt_csrf_validate($settingsPasswordScope)) {
+		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
+
 	if((int) $USER['id'] === (int) $id) {
 		$oldPassword = trim((string) ($_POST['old_password'] ?? ''));
-		if($arr['password'] != md5($arr['password_code'].$oldPassword.$arr['password_code'])) {
+		$passwordNeedsRehash = false;
+		if(!lt_password_verify_user($oldPassword, $arr, $passwordNeedsRehash)) {
 			err($language['default_1'], $language['setting_66'], 1);
 		}
 	}
@@ -210,10 +231,9 @@ if($act == 'password') {
 		err($language['default_1'], $language['setting_68'], 1);
 	}
 
-	$passwordCode = mksecret(32);
-	$passwordHash = md5($passwordCode.$newPassword.$passwordCode);
+	$passwordHash = lt_password_hash_value($newPassword);
 
-	$db->query("UPDATE users SET password='".$passwordHash."' , password_code='".$passwordCode."' WHERE id='".$id."'");
+	$db->query("UPDATE users SET password='".$db->safesql($passwordHash)."' , password_code='' WHERE id='".$id."'");
 	$memcached->delete('user_'.$id, 0);
 
 	if ((int) $USER['id'] === (int) $id) {
@@ -223,6 +243,10 @@ if($act == 'password') {
 
 	header('Location:my.setting.php?id='.$id.'&tab=password&status=2');
 	die();
+}
+
+if (!lt_csrf_validate($settingsProfileScope)) {
+	err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
 }
 
 $update = array();

@@ -194,7 +194,10 @@ elseif($act == 'releases' || $id_category || $search !== '' || !$config['search_
 
 		?>
 		<link href="public/css/torrenttable.css" rel="StyleSheet" type="text/css">
-		<?=($PRIV['edit_release'] ? '<form action="check_release.php" method="post">' : '');?>
+		<?php if ($PRIV['edit_release']) { ?>
+		<form action="check_release.php" method="post">
+			<?=lt_csrf_input('check_release');?>
+		<?php } ?>
 		<table width="95%" class="tt" align="center">
             <tr><td class="tt" style="width:45px;" align="center"><font  color=white>Тип</font></td>
                 <td class="tt"><font color=white>Имя</font></td>

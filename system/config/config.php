@@ -43,6 +43,16 @@ if (!in_array($ltPublicScheme, array('http', 'https'), true)) {
 $ltPublicHost = trim((string) lt_env_value('LITETRACKER_PUBLIC_HOST', 'localhost'));
 $ltAnnounceHost = trim((string) lt_env_value('LITETRACKER_ANNOUNCE_HOST', 'bt.localhost'));
 $ltAnnouncePath = trim((string) lt_env_value('LITETRACKER_ANNOUNCE_PATH', '/announce.php'));
+$ltCookieSalt = trim((string) lt_env_value('LITETRACKER_COOKIE_SALT', sha1($ltRootDir.'|'.$ltPublicHost)));
+$ltCronToken = trim((string) lt_env_value('LITETRACKER_CRON_TOKEN', ''));
+$ltRecaptchaPublicKey = trim((string) lt_env_value('LITETRACKER_RECAPTCHA_PUBLICKEY', ''));
+$ltRecaptchaPrivateKey = trim((string) lt_env_value('LITETRACKER_RECAPTCHA_PRIVATEKEY', ''));
+$ltMailFrom = trim((string) lt_env_value('LITETRACKER_MAIL_FROM', 'admin@localhost'));
+$ltMailLogin = trim((string) lt_env_value('LITETRACKER_MAIL_LOGIN', ''));
+$ltMailPassword = trim((string) lt_env_value('LITETRACKER_MAIL_PASSWORD', ''));
+$ltWmzNumber = trim((string) lt_env_value('LITETRACKER_WMZ_NUMBER', ''));
+$ltWmrNumber = trim((string) lt_env_value('LITETRACKER_WMR_NUMBER', ''));
+$ltAnnounceConnectivityProbe = lt_env_bool('LITETRACKER_ANNOUNCE_CONNECTIVITY_PROBE', 0);
 if ($ltAnnouncePath === '') {
 	$ltAnnouncePath = '/announce.php';
 }
@@ -65,8 +75,8 @@ $config  = array(
 'days_rating' => 30 , //Через какое время будет записываться плохой рейтинг (в днях)
 //Деньги
 'begin_money' => '3', //Начальный деньги при регистрации
-'wmz_number' => 'Z223695950388' , //Кошелек WMZ
-'wmr_number' => 'R266587927979' , //Кошелек WMR
+'wmz_number' => $ltWmzNumber , //Кошелек WMZ
+'wmr_number' => $ltWmrNumber , //Кошелек WMR
 'project_help_text' => 'Оплата аренды сервера, принимаем любую помощь.' ,
 'project_help_period' => '' ,
 'project_help_current' => 5873 ,
@@ -111,8 +121,8 @@ $config  = array(
 
 //reCaptcha
 'reCaptcha' => 0 , //Использовать reCaptcha
-'reCaptcha_publickey' => '6Ldxf8USAAAAANwkMPdxN5yJRrrkyPuB1UTVnpoM ' , //Ваш publickey
-'reCaptcha_privatekey' => '6Ldxf8USAAAAAF_qfi_PhrhpbT5iItUzuVyrNU7W ' , //Ваш publickey
+'reCaptcha_publickey' => $ltRecaptchaPublicKey , //Ваш publickey
+'reCaptcha_privatekey' => $ltRecaptchaPrivateKey , //Ваш privatekey
 
 //reCaptcha for LiteTracker
 'reCaptcha_login' => 0 , //Использовать для входа
@@ -126,13 +136,13 @@ $config  = array(
 			'type' => 'mail' , //Тип отправки почты
 								   //mail - по умолчанию , отправка функцией mail
 								   //smtp - отправка smtp
-			'from' => 'admin@litetracker.ru'  , //Какой e-mail указывать
+			'from' => $ltMailFrom  , //Какой e-mail указывать
 			'from_name' => 'Torrent - Tracker',
 			//Если используете SMTP
 			'host' => '' , //Хост сервера
 			'port' => 25 , //Порт сервера
-			'login' => '' , //Логин
-			'password' => '' ,  //Пароль
+			'login' => $ltMailLogin , //Логин
+			'password' => $ltMailPassword ,  //Пароль
 		),
 
 //Настройка кеша
@@ -164,6 +174,9 @@ $config  = array(
 					//0,15,30,45   *   *   *   *   root   /usr/bin/wget -O /dev/null -q http://site.com/autoclean.php > /dev/null 2>&1
 					//0/10   *   *   *   *   root   /usr/bin/wget -O /dev/null -q http://site.com/update.peers.php > /dev/null 2>&1
 
+'cron_token' => $ltCronToken,
+'announce_connectivity_probe' => $ltAnnounceConnectivityProbe,
+
 
 
 'sql_log_file' => $ltRootDir.'/logs/mysql_log_'.date("M_d_Y").'.log' , //Файл с логами ошибок mySQL
@@ -176,7 +189,7 @@ $config  = array(
 define('DEGUB_SQL' , $ltSqlDebug);
 
 //Настройка cookies
-define ("COOKIE_SALT", '[default]');
+define ("COOKIE_SALT", $ltCookieSalt);
 define ("COOKIE_ID", 'id_user'); //Название ID
 define ("COOKIE_PASSWORD", 'id_password'); //Название PASSWORD
 ?>

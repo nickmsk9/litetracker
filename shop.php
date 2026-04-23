@@ -16,11 +16,23 @@ require 'system/init.php';
 //Проверка авторизации
 is_login();
 
+$shopEditScope = 'shop_edit';
+$shopDeleteScope = 'shop_delete';
+$shopBuyScope = 'shop_buy';
+
 
 /////////////////////////////////////////////////////////////////////
 //Удаление товара
 /////////////////////////////////////////////////////////////////////
 if($_GET['act'] == 'delete' && $_GET['id']) {
+	if(!$PRIV['EDIT_PRIV']) {
+		err($language['default_1'] , 'Вам запрещено удалять услуги' , 1);
+	}
+
+	if (!lt_csrf_validate($shopDeleteScope)) {
+		err($language['default_1'] , 'Защитный токен устарел. Обновите страницу и попробуйте снова.' , 1);
+	}
+
 	$id = (int)$_GET['id'];
 	$db->query("SELECT * FROM shop WHERE id=".$id);
 	if(!$db->num_rows() ) {
@@ -52,6 +64,10 @@ if($_GET['act'] == 'edit') {
 
 	//Обработка
 	if($_POST)  {
+		if (!lt_csrf_validate($shopEditScope)) {
+			err($language['default_1'] , 'Защитный токен устарел. Обновите страницу и попробуйте снова.' , 1);
+		}
+
 		$update = array();
 
 		//Название
@@ -163,6 +179,7 @@ if($_GET['act'] == 'edit') {
 	begin_frame($name);
 	?>
 	<form action="shop.php?id=<?=$id;?>&act=edit" method="POST" enctype="multipart/form-data" >
+	<?=lt_csrf_input($shopEditScope);?>
 
 	<!--Файлы-->
 	<table width="80%"  cellspacing="7" cellpadding="0" border="0"  align="center">
@@ -251,6 +268,9 @@ if($_GET['act'] == 'edit') {
 //Обработка покупки
 /////////////////////////////////////////////////////////////////////
 if($_GET['act'] == 'voicing' && $_GET['id']) {
+	if (!lt_csrf_validate($shopBuyScope)) {
+		err($language['default_1'] , 'Защитный токен устарел. Обновите страницу и попробуйте снова.' , 1);
+	}
 
 	//Номер товара
 	$id = (int)$_GET['id'];
@@ -332,10 +352,10 @@ while($arr = $db->get_row($sql) ) {
 	echo '</td>';
 
 	echo '<td>';
-	echo '<input type="button" value="Купить" onClick="window.location.href=\'shop.php?act=voicing&id='.$arr['id'].'\'">';
+	echo '<input type="button" value="Купить" onClick="window.location.href=\'shop.php?act=voicing&id='.$arr['id'].'&'.lt_csrf_query($shopBuyScope).'\'">';
 	if($PRIV['EDIT_PRIV']) {
 		echo '&nbsp<input type="button" value="Редактировать" onClick="window.location.href=\'shop.php?act=edit&id='.$arr['id'].'\'">';
-		echo '&nbsp<input type="button" value="Удалить" onClick="window.location.href=\'shop.php?act=delete&id='.$arr['id'].'\'">';
+		echo '&nbsp<input type="button" value="Удалить" onClick="window.location.href=\'shop.php?act=delete&id='.$arr['id'].'&'.lt_csrf_query($shopDeleteScope).'\'">';
 	}
 	echo '</td>';
 

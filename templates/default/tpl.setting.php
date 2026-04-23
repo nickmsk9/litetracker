@@ -19,6 +19,7 @@ $settingsActiveTab = ((string) ($_GET['tab'] ?? '') === 'password' ? 'password' 
 				<h1 class="settings-title">Настройки профиля</h1>
 
 				<form class="settings-form" action="my.setting.take.php?id=<?=$id;?>" method="post" enctype="multipart/form-data">
+					<?=lt_csrf_input('settings_profile_'.$id);?>
 					<section class="settings-section">
 						<div class="settings-profile-top">
 							<div class="settings-field">
@@ -31,7 +32,7 @@ $settingsActiveTab = ((string) ($_GET['tab'] ?? '') === 'password' ? 'password' 
 										<label class="settings-upload-button" for="avatar_upload">Загрузить аватар</label>
 										<input class="settings-upload-input" id="avatar_upload" type="file" name="avatar_upload" accept=".jpg,.jpeg,.png,.gif">
 										<?php if (!empty($arr['avatar'])) { ?>
-										<a class="settings-remove-button" href="my.setting.take.php?id=<?=$id;?>&act=foto_delete">Удалить</a>
+										<a class="settings-remove-button" href="my.setting.take.php?id=<?=$id;?>&amp;act=foto_delete&amp;<?=lt_csrf_query('settings_avatar_'.$id);?>">Удалить</a>
 										<?php } ?>
 									</div>
 								</div>
@@ -110,6 +111,7 @@ $settingsActiveTab = ((string) ($_GET['tab'] ?? '') === 'password' ? 'password' 
 				<h1 class="settings-title">Сменить пароль</h1>
 
 				<form class="settings-form" action="my.setting.take.php?act=password&id=<?=$id;?>" method="post">
+					<?=lt_csrf_input('settings_password_'.$id);?>
 					<section class="settings-section">
 						<div class="settings-password-grid">
 							<?php if ((int) $USER['id'] === (int) $id) { ?>

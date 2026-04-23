@@ -133,7 +133,8 @@ if ($useLocalRetracker && $localRetrackerUrl !== '' && !in_array($localRetracker
 }
 
 $announce_sql = $db->query("SELECT tracker FROM trackers WHERE torrent='".$id."' AND tracker<>'localhost'");
-while (list($announce) = mysql_fetch_array($announce_sql) ) {
+while ($announceRow = $db->get_array($announce_sql)) {
+	$announce = (string) ($announceRow[0] ?? '');
 	if (!$useLocalRetracker && $normalizedLocalRetrackerUrl !== '' && $normalizeAnnounceUrl($announce) === $normalizedLocalRetrackerUrl) {
 		continue;
 	}

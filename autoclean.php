@@ -17,6 +17,8 @@ require 'system/init.autoclean.php';
 //Функции для обновления
 require 'system/functions/functions.benc.php';
 
+lt_require_cron_access();
+
 @ignore_user_abort(true);
 @set_time_limit(0);
 

@@ -182,11 +182,8 @@ class db
 	function display_error($error, $error_num, $query = '')
 	{
 		global $config , $USER;
-		$query_str = '';
 		if($query) {
-			// Safify query
-			$query = preg_replace("/([0-9a-f]){32}/", "********************************", $query); // Hides all hashes
-			$query_str = "$query";
+			$query = preg_replace("/([0-9a-f]){32}/", "********************************", $query);
 		}
 
 		/*
@@ -211,44 +208,8 @@ class db
 		/*
 		 *	Выводим
 		*/
-		echo '<?xml version="1.0" encoding="iso-8859-1"?>
-		<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-		<html xmlns="http://www.w3.org/1999/xhtml">
-		<head>
-		<title>MySQL Fatal Error</title>
-		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-		<style type="text/css">
-
-		body {
-			font-family: Verdana, Arial, Helvetica, sans-serif;
-			font-size: 10px;
-			font-style: normal;
-			color: #000000;
-		}
-
-		</style>
-		</head>
-		<body>
-			<font size="4">MySQL Error!</font>
-			<br />------------------------<br />
-			<br />
-
-
-				<u>The Error returned was:</u>
-				<br />
-					<strong>'.$error.'</strong>
-
-				<br /><br />
-				</strong><u>Error Number:</u>
-				<br />
-					<strong>'.$error_num.'</strong>
-				<br />
-					<br />
-
-				<textarea name="" rows="10" cols="52" wrap="virtual">'.$query_str.'</textarea><br />
-
-		</body>
-		</html>';
+		header('HTTP/1.1 500 Internal Server Error');
+		echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Ошибка сервера</title></head><body><h1>Ошибка сервера</h1><p>Во время обработки запроса произошла внутренняя ошибка. Попробуйте повторить действие позже.</p></body></html>';
 
 		exit();
 	}

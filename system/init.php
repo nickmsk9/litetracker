@@ -16,7 +16,7 @@ lt_session_bootstrap();
 @ob_implicit_flush ( 0 );
 
 @error_reporting ( E_ALL ^ E_NOTICE );
-@ini_set ( 'display_errors', true );
+@ini_set ( 'display_errors', false );
 @ini_set ( 'html_errors', false );
 @ini_set ( 'error_reporting', E_ALL ^ E_NOTICE );
 

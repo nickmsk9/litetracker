@@ -80,7 +80,7 @@ if (empty($torrent['id'])) {
 $torrentid = (int) $torrent['id'];
 $numpeers = (int) ($torrent['numpeers'] ?? 0);
 $fields = "seeder, peer_id, ip, port, uploaded, downloaded, userid, UNIX_TIMESTAMP(last_action) AS prevts, UNIX_TIMESTAMP(NOW()) AS nowts, last_action";
-$limitSql = ($numpeers > $rsize ? 'ORDER BY RAND() LIMIT '.$rsize : '');
+$limitSql = ($numpeers > $rsize ? 'ORDER BY last_action DESC LIMIT '.$rsize : '');
 $peers_sql = announce_fetch_peer_rows($torrentid, $fields, $limitSql);
 
 $resp = "d" . benc_str("interval") . "i" . $config['announce_interval'] . "e" . benc_str("peers") . ($compact ? '' : 'l');
@@ -222,12 +222,19 @@ if ($event === 'stopped') {
 			err('Port '.$port.' is blacklisted.');
 		}
 
-		$sockres = @fsockopen($ip, $port, $errno, $errstr, 5);
-		if (!$sockres) {
-			$connectable = '0';
-		} else {
-			$connectable = '1';
-			fclose($sockres);
+		$connectable = '1';
+		if (!empty($config['announce_connectivity_probe'])) {
+			$probeCacheKey = 'announce:connectable:'.md5($ip.':'.$port);
+			$cachedConnectable = lt_cache_get($probeCacheKey, 'announce');
+			if ($cachedConnectable === null) {
+				$sockres = @fsockopen($ip, $port, $errno, $errstr, 2);
+				$cachedConnectable = ($sockres ? '1' : '0');
+				if ($sockres) {
+					fclose($sockres);
+				}
+				lt_cache_set($probeCacheKey, (string) $cachedConnectable, 30 * 60, 'announce');
+			}
+			$connectable = (string) $cachedConnectable;
 		}
 
 		$ret = announce_safe_query(

@@ -153,14 +153,13 @@ if($_POST && $signupBlockedMessage === '') {
 	}
 
 	if ($signupModalError === '') {
-		$passwordCode = mksecret(32);
-		$passwordHash = md5($passwordCode.$password.$passwordCode);
+		$passwordHash = lt_password_hash_value($password);
 
 		$countUsers = $db->super_query("SELECT COUNT(*) AS c FROM users");
 		$class = $db->super_query("SELECT id FROM priv WHERE ".($countUsers['c'] > 0 ? 'SIGNUP=1' : 'EDIT_PRIV=1')." LIMIT 1");
 		$classId = (int) ($class['id'] ?? 0);
 
-		$db->query("INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$signupBonusColumn.", sex, birthday_date, website, icq, last_chat, num_messages, num_friends, confirm) VALUES ('".$db->safesql($name)."', '', '".$db->safesql($email)."', '".$passwordHash."', '".$passwordCode."', '".ip2long_db(getip())."', '".$classId."', NOW(), NOW(), '', '0', '0', '0', '300', '1', '".$db->safesql($birthdayDate)."', '', '', '0', '0', '0', '1')");
+		$db->query("INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$signupBonusColumn.", sex, birthday_date, website, icq, last_chat, num_messages, num_friends, confirm) VALUES ('".$db->safesql($name)."', '', '".$db->safesql($email)."', '".$db->safesql($passwordHash)."', '', '".ip2long_db(getip())."', '".$classId."', NOW(), NOW(), '', '0', '0', '0', '300', '1', '".$db->safesql($birthdayDate)."', '', '', '0', '0', '0', '1')");
 
 		$id = (int) $db->insert_id();
 
@@ -186,103 +185,6 @@ if (!$isModalView) {
 	<meta charset="<?=$language['charset'];?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="templates/<?=$config['template'];?>/css/my.css" rel="stylesheet" type="text/css">
-	<style>
-	body.auth-modal-frame{
-		margin:0;
-		padding:12px !important;
-		overflow:hidden !important;
-		background:#f4f5f7;
-	}
-
-	html,body{
-		width:100% !important;
-		min-width:0 !important;
-		max-width:100% !important;
-		overflow-x:hidden !important;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page{
-		padding:0 !important;
-		width:100% !important;
-		max-width:none !important;
-		margin:0 !important;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-layout.auth-modal-layout{
-		display:block !important;
-		width:100% !important;
-		max-width:none !important;
-		margin:0 !important;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-form-card.auth-modal-card{
-		display:block !important;
-		float:none !important;
-		position:relative;
-		left:auto !important;
-		right:auto !important;
-		transform:none !important;
-		width:100% !important;
-		max-width:none !important;
-		margin:0 !important;
-		padding:14px 14px 12px !important;
-		box-shadow:none !important;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-grid{
-		display:block !important;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-field{
-		margin-bottom:12px;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-birthday-row{
-		display:grid !important;
-		grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
-		gap:6px;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-title.auth-modal-title{
-		font-size:32px;
-		margin-bottom:12px;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-field .auth-label{
-		margin-bottom:7px;
-		font-size:13px;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-field input,
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-field select{
-		min-height:38px;
-		padding:8px 10px;
-		font-size:14px;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-consent{
-		margin-top:10px;
-		font-size:13px;
-		line-height:1.35;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-submit-row.auth-modal-footer{
-		display:flex;
-		align-items:center;
-		margin-top:14px;
-		padding-top:12px;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-submit-row.auth-modal-footer button{
-		width:auto;
-		min-width:132px;
-	}
-
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .signup-info-card,
-	body.auth-modal-frame .auth-page.signup-page.auth-modal-page .auth-info-card{
-		display:none !important;
-	}
-	</style>
 	</head>
 	<body class="auth-modal-frame">
 	<?php

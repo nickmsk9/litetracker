@@ -362,7 +362,7 @@ if (isset($_GET['rating'])) {
 		$details_rating_user_value = (int) ($existingRating['rating'] ?? 0);
 	}
 
-	setcookie($details_rating_cookie_name, (string) max(1, $details_rating_user_value), time() + 31536000, '/');
+	lt_set_cookie($details_rating_cookie_name, (string) max(1, $details_rating_user_value), time() + 31536000, false, 'Lax');
 	$memcached->delete('torrent_'.(int) $id, 0);
 	header('Location: details.php?id='.(int) $id.'&rated=1');
 	die();

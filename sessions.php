@@ -22,9 +22,15 @@ if(!$PRIV['sessions_view']) {
 
 
 //Принудительная очистка
-if($_GET['clean'] && $PRIV['sessions_clear']) {
+if($_POST && !empty($_POST['clean']) && $PRIV['sessions_clear']) {
+	if (!lt_csrf_validate('sessions_clean')) {
+		err('Ошибка', 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
+
 	//Удаляем все записи
 	$db->query("DELETE FROM sessions");
+	header('Location:sessions.php');
+	die();
 }
 
 head('Сессии' , true);
@@ -33,7 +39,9 @@ begin_frame('Сессии');
 
 
 
-echo ($PRIV['sessions_clear'] ? '<input type="button" value="Очистить" onClick="window.location.href=\'sessions.php?clean=1\'">' : '');
+if ($PRIV['sessions_clear']) {
+	echo '<form action="sessions.php" method="post" class="inline-action-form">'.lt_csrf_input('sessions_clean').'<input type="hidden" name="clean" value="1"><button type="submit">Очистить</button></form>';
+}
 
 
 

@@ -43,6 +43,9 @@ $bodyClasses = array();
 if (!empty($USER['theme_dark'])) {
 	$bodyClasses[] = 'theme-dark';
 }
+if (lt_is_mobile_request()) {
+	$bodyClasses[] = 'is-mobile';
+}
 ?>
 <!doctype html>
 <html lang="ru">
@@ -51,84 +54,6 @@ if (!empty($USER['theme_dark'])) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <?=$header;?>
 <link href="templates/<?=$tpl;?>/css/my.css" rel="stylesheet" type="text/css">
-<?php if (!$USER) { ?>
-<style>
-.site-auth-overlay{
-	position:fixed;
-	inset:0;
-	z-index:10000;
-	display:flex;
-	align-items:center;
-	justify-content:center;
-	padding:20px;
-}
-
-.site-auth-overlay[hidden]{
-	display:none;
-}
-
-.site-auth-overlay-backdrop{
-	position:absolute;
-	inset:0;
-	background:rgba(0, 0, 0, .58);
-}
-
-.site-auth-overlay-dialog{
-	position:relative;
-	z-index:1;
-	width:min(100%, 430px);
-	max-height:calc(100vh - 40px);
-}
-
-.site-auth-overlay-dialog[data-auth-kind="signup"]{
-	width:min(100%, 560px);
-}
-
-.site-auth-overlay-dialog[data-auth-kind="forgot"]{
-	width:min(100%, 430px);
-}
-
-.site-auth-overlay-panel{
-	position:relative;
-	width:100%;
-	min-height:320px;
-	max-height:calc(100vh - 40px);
-	background:#f4f5f7;
-	border-radius:4px;
-	overflow:hidden;
-	box-shadow:0 24px 60px rgba(0, 0, 0, .35);
-}
-
-.site-auth-frame{
-	display:block;
-	width:100%;
-	height:420px;
-	min-height:320px;
-	max-height:calc(100vh - 40px);
-	border:0;
-	background:#f4f5f7;
-}
-
-body.site-auth-modal-open{
-	overflow:hidden;
-}
-
-@media (max-width: 820px){
-	.site-auth-overlay{
-		padding:12px;
-	}
-
-	.site-auth-overlay-dialog,
-	.site-auth-overlay-panel{
-		max-height:calc(100vh - 24px);
-	}
-
-	.site-auth-frame{
-		height:calc(100vh - 24px);
-	}
-}
-</style>
-<?php } ?>
 </head>
 <body<?=($bodyClasses ? ' class="'.htmlspecialchars(implode(' ', $bodyClasses), ENT_QUOTES, 'UTF-8').'"' : '');?>>
 <div class="site-wrapper">

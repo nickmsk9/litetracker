@@ -9,8 +9,6 @@ by Nick
 ===================================================================
 */
 
-//Если ты не гнида черножопая , не удаляй эти строки
-//Если ты взял за основу мой движок , пиши "mod by Name"
 define('LITETRACKER' , 1);
 define('LITETRACKER_VERSION' , '1.0.1 alpha');
 define('LITETRACKER_NAME' , 'Starter');

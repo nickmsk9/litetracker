@@ -662,6 +662,132 @@ $set = array("a","A","b","B","c","C","d","D","e","E","f","F","g","G","h","H","i"
 	return $str;
 }
 
+function lt_is_https_request()
+{
+	if (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off') {
+		return true;
+	}
+
+	if ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443) {
+		return true;
+	}
+
+	return (strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https');
+}
+
+function lt_cookie_domain()
+{
+	global $config;
+
+	if (empty($config['cookies_mode'])) {
+		return '';
+	}
+
+	$domain = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+	if ($domain === '') {
+		return '';
+	}
+
+	if (strtolower(substr($domain, 0, 4)) === 'www.') {
+		$domain = substr($domain, 4);
+	}
+
+	if (substr($domain, 0, 1) !== '.') {
+		$domain = '.'.$domain;
+	}
+
+	return $domain;
+}
+
+function lt_set_cookie($name, $value, $expires = 0x7fffffff, $httpOnly = true, $sameSite = 'Lax')
+{
+	$options = array(
+		'expires' => (int) $expires,
+		'path' => '/',
+		'domain' => lt_cookie_domain(),
+		'secure' => lt_is_https_request(),
+		'httponly' => (bool) $httpOnly,
+		'samesite' => ($sameSite !== '' ? (string) $sameSite : 'Lax'),
+	);
+
+	setcookie((string) $name, (string) $value, $options);
+}
+
+function lt_password_hash_value($password)
+{
+	return password_hash((string) $password, PASSWORD_DEFAULT);
+}
+
+function lt_password_verify_user($password, $userRow, &$needsRehash = false)
+{
+	$needsRehash = false;
+	$password = (string) $password;
+	$storedHash = trim((string) ($userRow['password'] ?? ''));
+	$passwordCode = (string) ($userRow['password_code'] ?? '');
+
+	if ($storedHash === '') {
+		return false;
+	}
+
+	if (strpos($storedHash, '$2y$') === 0 || strpos($storedHash, '$argon2') === 0) {
+		$isValid = password_verify($password, $storedHash);
+		if ($isValid) {
+			$needsRehash = password_needs_rehash($storedHash, PASSWORD_DEFAULT);
+		}
+
+		return $isValid;
+	}
+
+	$legacyHash = md5($passwordCode.$password.$passwordCode);
+	if (!hash_equals($storedHash, $legacyHash)) {
+		return false;
+	}
+
+	$needsRehash = true;
+
+	return true;
+}
+
+function lt_is_mobile_request()
+{
+	$userAgent = strtolower((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+	if ($userAgent === '') {
+		return false;
+	}
+
+	return (bool) preg_match('~android|iphone|ipad|ipod|mobile|opera mini|iemobile|windows phone|blackberry|webos~i', $userAgent);
+}
+
+function lt_is_private_ip($ip)
+{
+	$ip = trim((string) $ip);
+	if ($ip === '' || $ip === '127.0.0.1' || $ip === '::1') {
+		return ($ip !== '');
+	}
+
+	return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
+}
+
+function lt_require_cron_access()
+{
+	global $config;
+
+	$token = trim((string) ($config['cron_token'] ?? ''));
+	$providedToken = trim((string) ($_GET['token'] ?? $_POST['token'] ?? $_SERVER['HTTP_X_CRON_TOKEN'] ?? ''));
+	$remoteIp = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+
+	if ($token !== '' && hash_equals($token, $providedToken)) {
+		return true;
+	}
+
+	if (lt_is_private_ip($remoteIp)) {
+		return true;
+	}
+
+	header('HTTP/1.1 403 Forbidden');
+	die('Forbidden');
+}
+
 function lt_csrf_token($scope = 'default')
 {
 	$scope = preg_replace('~[^a-z0-9:_-]+~i', '-', trim((string) $scope));
@@ -695,6 +821,16 @@ function lt_csrf_input($scope = 'default', $fieldName = 'csrf_token')
 	return '<input type="hidden" name="'.htmlspecialchars($fieldName, ENT_QUOTES, 'UTF-8').'" value="'.htmlspecialchars(lt_csrf_token($scope), ENT_QUOTES, 'UTF-8').'">';
 }
 
+function lt_csrf_query($scope = 'default', $fieldName = 'csrf_token')
+{
+	$fieldName = trim((string) $fieldName);
+	if ($fieldName === '') {
+		$fieldName = 'csrf_token';
+	}
+
+	return rawurlencode($fieldName).'='.rawurlencode(lt_csrf_token($scope));
+}
+
 function lt_csrf_validate($scope = 'default', $token = null)
 {
 	$scope = preg_replace('~[^a-z0-9:_-]+~i', '-', trim((string) $scope));
@@ -722,21 +858,11 @@ function login_cookie($id, $password_hash,  $expires = 0x7fffffff) {
 	$subnet[2] = $subnet[3] = 0;
 	$subnet = implode('.', $subnet); // 255.255.0.0
 
-	if($config['cookies_mode']) {
-		// хак от wennet'a
-		$domain = $_SERVER['HTTP_HOST'];
-		if ( strtolower( substr($domain, 0, 4) ) == 'www.' )
-			$domain = substr($domain, 4);	// Fix the domain to accept domains with and without 'www.'.
-		if ( substr($domain, 0, 1) != '.' )
-			$domain = '.'.$domain;	// Add the dot prefix to ensure compatibility with subdomains
-	} else {
-		$domain = '';
-	}
 	//Очищаем старые cookies
 	logout_cookie();
 	//Добавляем cookies
-	setcookie(COOKIE_ID, $id, $expires, "/" , $domain , false , true);
-	setcookie(COOKIE_PASSWORD, md5($password_hash.COOKIE_SALT.$subnet) , $expires, "/" , $domain ,  false, true);
+	lt_set_cookie(COOKIE_ID, $id, $expires, true, 'Lax');
+	lt_set_cookie(COOKIE_PASSWORD, md5($password_hash.COOKIE_SALT.$subnet), $expires, true, 'Lax');
 
 
 	//Удаляем memcached файл
@@ -748,20 +874,10 @@ function login_cookie($id, $password_hash,  $expires = 0x7fffffff) {
 //Удаление cookies
 function logout_cookie() {
 	global  $memcached , $USER , $config;
-	//хак от wennet'a
-	if($config['cookies_mode']) {
-		$domain = $_SERVER['HTTP_HOST'];
-		if ( strtolower( substr($domain, 0, 4) ) == 'www.' )
-			$domain = substr($domain, 4);	// Fix the domain to accept domains with and without 'www.'.
-		if ( substr($domain, 0, 1) != '.' )
-			$domain = '.'.$domain;	// Add the dot prefix to ensure compatibility with subdomains
-	} else {
-		$domain = '';
-	}
 
 	$expires = time() - 3600;
-	setcookie(COOKIE_ID, "", $expires, "/" , $domain , false , true);
-	setcookie(COOKIE_PASSWORD, "", $expires, "/" , $domain , false , true);
+	lt_set_cookie(COOKIE_ID, '', $expires, true, 'Lax');
+	lt_set_cookie(COOKIE_PASSWORD, '', $expires, true, 'Lax');
 	unset($_COOKIE[COOKIE_ID], $_COOKIE[COOKIE_PASSWORD]);
 	//Удаляем memcached файл
 	if($USER && isset($USER['id'])) {

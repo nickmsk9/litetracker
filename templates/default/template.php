@@ -6,9 +6,9 @@ if (!defined('LITETRACKER')) {
 
 function begin_frame($caption = "", $width = "100", $center = false, $padding = null)
 {
-	$bodyStyle = '';
-	if ($padding !== null && is_numeric($padding)) {
-		$bodyStyle = ' style="padding: '.(int) $padding.'px;"';
+	$bodyClass = 'frame-body';
+	if ($padding !== null && (int) $padding === 0) {
+		$bodyClass .= ' frame-body-no-padding';
 	}
 	?>
 <section class="frame">
@@ -17,7 +17,7 @@ function begin_frame($caption = "", $width = "100", $center = false, $padding = 
 		<h2 class="frame-title"><?=$caption;?></h2>
 	</header>
 	<?php } ?>
-	<div class="frame-body"<?=$bodyStyle;?>>
+	<div class="<?=$bodyClass;?>">
 	<?php
 }
 

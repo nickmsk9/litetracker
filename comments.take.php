@@ -49,18 +49,11 @@ function comment_return_url($file, $objectId, $suffix = '')
     return $url;
 }
 
-function comment_debug_log($message)
-{
-    return;
-}
-
 if ($type === '' || $object_id <= 0 || $file_name === '') {
-    comment_debug_log('Ошибка: пустой type/object_id/file');
     err($language['default_1'], $language['comments_14'], 1);
 }
 
 if (!is_file($file_name)) {
-    comment_debug_log('Ошибка: файл не найден: ' . $file_name);
     err($language['default_1'], $language['comments_14'], 1);
 }
 
@@ -73,7 +66,6 @@ $commentRateLimitId = ((int) ($USER['id'] ?? 0)) . ':' . ($_SERVER['REMOTE_ADDR'
 // Проверяем объект
 $object_exists = $db->super_query("SELECT id FROM `{$type}` WHERE id = {$object_id} LIMIT 1");
 if (empty($object_exists['id'])) {
-    comment_debug_log('Ошибка: объект не найден. type=' . $type . ', object_id=' . $object_id);
     err($language['default_1'], $language['comments_8'], 1);
 }
 
@@ -125,19 +117,15 @@ if ($act === 'add') {
     $insert_sql = "INSERT INTO `{$table_name}` (`".implode('`,`', $insertFields)."`)
                    VALUES (".implode(', ', $insertValues).")";
 
-    comment_debug_log('INSERT SQL: ' . $insert_sql);
-
     $insert_ok = false;
     try {
         $db->query($insert_sql, 0);
         $insert_ok = true;
     } catch (Throwable $e) {
-        comment_debug_log('INSERT ERROR: ' . $e->getMessage());
     }
 
     if (!$insert_ok) {
-        comment_debug_log('INSERT FAILED');
-        err($language['default_1'], 'Не удалось добавить комментарий. Проверьте comments_debug.log', 1);
+        err($language['default_1'], 'Не удалось добавить комментарий. Попробуйте еще раз позже.', 1);
     }
 
     if ($type === 'users' && $USER['id'] != $object_id) {
@@ -230,13 +218,11 @@ if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
 
     $arr = $db->super_query("SELECT id, id_user FROM `{$table_name}` WHERE id = {$id_comment} LIMIT 1");
     if (empty($arr['id'])) {
-        comment_debug_log('DELETE: комментарий не найден: id=' . $id_comment);
         err($language['default_1'], $language['comments_8'], 1);
     }
 
     $canDeleteComment = (!empty($PRIV['comments_delete']) || ($type !== 'users' && (int) $USER['id'] === (int) $arr['id_user']));
     if (!$canDeleteComment) {
-        comment_debug_log('DELETE: нет прав. user=' . $USER['id'] . ', owner=' . $arr['id_user']);
         err($language['default_1'], $language['comments_10'], 1);
     }
 
@@ -249,7 +235,6 @@ if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
     $deletedByAdmin = (!empty($PRIV['comments_delete']) && ((int) $USER['id'] !== (int) $arr['id_user'] || $type === 'users'));
     $deletedText = $db->safesql(lt_comment_deleted_placeholder($deletedByAdmin));
     $delete_sql = "UPDATE `{$table_name}` SET text = '{$deletedText}', id_user_edit = ".(int) $USER['id'].", date_edit = NOW() WHERE id = {$id_comment} AND `{$object_name}` = {$object_id}";
-    comment_debug_log('DELETE SQL: ' . $delete_sql);
     $db->query($delete_sql, 0);
 
     header('Location:' . comment_return_url($file, $object_id, 'status=3'));
@@ -264,7 +249,6 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
 
     $arr = $db->super_query("SELECT * FROM `{$table_name}` WHERE id = {$id_comment} LIMIT 1");
     if (empty($arr['id'])) {
-        comment_debug_log('EDIT: комментарий не найден: id=' . $id_comment);
         err($language['default_1'], $language['comments_8'], 1);
     }
 
@@ -274,7 +258,6 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
 
     $canEditComment = (!empty($PRIV['comments_edit']) || ($type !== 'users' && (int) $USER['id'] === (int) $arr['id_user']));
     if (!$canEditComment) {
-        comment_debug_log('EDIT: нет прав. user=' . $USER['id'] . ', owner=' . $arr['id_user']);
         err($language['default_1'], $language['comments_11'], 1);
     }
 
@@ -299,7 +282,6 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
 
         if ((string) $arr['text'] !== $text) {
             if ($text === '') {
-                comment_debug_log('EDIT: пустой текст');
                 err($language['default_1'], $language['comments_9'], 1);
             }
 
@@ -310,7 +292,6 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
 
         if (count($update)) {
             $update_sql = "UPDATE `{$table_name}` SET " . implode(',', $update) . " WHERE id = {$id_comment}";
-            comment_debug_log('UPDATE SQL: ' . $update_sql);
             $db->query($update_sql, 0);
         }
 

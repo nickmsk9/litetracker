@@ -18,6 +18,10 @@ if(!$PRIV['user_add']) {
 }
 
 if($_POST) {
+	if (!lt_csrf_validate('user_add_form')) {
+		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
+
 	$name = trim((string) ($_POST['name'] ?? ''));
 	$password = trim((string) ($_POST['password'] ?? ''));
 
@@ -46,8 +50,7 @@ if($_POST) {
 		err($language['default_1'], $language['signup_17'], 1);
 	}
 
-	$passwordCode = mksecret(32);
-	$passwordHash = md5($passwordCode.$password.$passwordCode);
+	$passwordHash = lt_password_hash_value($password);
 
 	$class = (int) ($_POST['class'] ?? 0);
 	$db->query("SELECT * FROM priv WHERE id > 0 AND id = ".$class);
@@ -55,7 +58,7 @@ if($_POST) {
 		err($language['default_1'], $language['signup_20'], 1);
 	}
 
-	$db->query("INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$userAddBonusColumn.", website, icq, last_chat, num_messages, num_friends) VALUES ('".$db->safesql($name)."', '', '', '".$passwordHash."', '".$passwordCode."', '".ip2long_db(getip())."', '".$class."', NOW(), NOW(), '', '0', '0', '0', '300', '', '', '0', '0', '0')");
+	$db->query("INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$userAddBonusColumn.", website, icq, last_chat, num_messages, num_friends) VALUES ('".$db->safesql($name)."', '', '', '".$db->safesql($passwordHash)."', '', '".ip2long_db(getip())."', '".$class."', NOW(), NOW(), '', '0', '0', '0', '300', '', '', '0', '0', '0')");
 	header("Location:user_add.php?status=1");
 	die();
 }
@@ -69,6 +72,7 @@ if(($_GET['status'] ?? '') == '1') {
 begin_frame($language['user_add_2']);
 ?>
 <form action="user_add.php" id="loginPage" method="post">
+<?=lt_csrf_input('user_add_form');?>
 <table width="80%" cellspacing="7" cellpadding="0" border="0" align="center">
 	<tbody>
 	<tr>

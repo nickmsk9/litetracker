@@ -1,5 +1,5 @@
 <?php
-// Для Docker по умолчанию: root без пароля и база lite.
+// Параметры подключения читаются из переменных окружения.
 $mysql = array(
 	'host' => getenv('LITETRACKER_DB_HOST') ?: 'db',
 	'user' => getenv('LITETRACKER_DB_USER') ?: 'root',

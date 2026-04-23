@@ -27,19 +27,13 @@ if($_POST) {
 	$use = $_POST['use'];
 	// print_r($use);
 	// die();
-	//хак от wennet'a
-	$domain = $_SERVER['HTTP_HOST'];
-	if ( strtolower( substr($domain, 0, 4) ) == 'www.' )
-		$domain = substr($domain, 4);	// Fix the domain to accept domains with and without 'www.'.
-	if ( substr($domain, 0, 1) != '.' )
-		$domain = '.'.$domain;	// Add the dot prefix to ensure compatibility with subdomains
 
 	//Перебираем в цикле
 	foreach($use AS  $id => $value) {
 		// die($value);
 		// $value = ($value == 0 ? 0 : 1);
 		//Перезаписываем cookies
-		setcookie('block_'.$id, $value, 0x7fffffff, "/" , $domain);
+		lt_set_cookie('block_'.$id, $value, 0x7fffffff, false, 'Lax');
 		$_COOKIE['block_'.$id] = $value;
 	}
 

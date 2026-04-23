@@ -20,8 +20,12 @@ if(!$PRIV['edit_release']) {
 	err($language['default_1'] , $language['default_12']  , 1);
 }
 
+if ($_POST && !lt_csrf_validate('check_release')) {
+	err($language['default_1'] , 'Защитный токен устарел. Обновите страницу и попробуйте снова.' , 1);
+}
+
 //Массив с данными
-(!$_POST['act'] ? $array = $_POST['check'] : $array = unserialize($_POST['check']) );
+$array = (isset($_POST['check']) && is_array($_POST['check']) ? $_POST['check'] : array());
 if(!count($array) || !is_array($array)) {
 	err($language['default_1'] , 'Вы ничего не пометили' , 1);
 }
@@ -31,6 +35,7 @@ $ids = array();
 foreach($array AS $id) {
 	$ids[] = (int)$id;
 }
+$ids = array_values(array_unique(array_filter($ids)));
 
 
 
@@ -129,18 +134,17 @@ if($_POST['act'] == 'delete') {
 		$arr = $db->get_row();
 
 		//Удаляем торрент - файл
-		unlink('downloads/'.$id.'.torrent');
+		@unlink('public/downloads/torrents/'.$id.'.torrent');
 
 		//Удаляем картинку
 		if($arr['image']) {
-				unlink('downloads/images/'.$arr['image']);
+				@unlink('public/downloads/images/'.$arr['image']);
 		}
 
 		//Удаляем скринщоты
-		$k = 4;
-		for($z = 0 ; $z >= $k ; $z++) {
-			if($arr['screen_'.$z]) {
-				unlink('downloads/images/'.$arr['screen_'.$z]);
+		for($z = 1 ; $z <= 4 ; $z++) {
+			if(!empty($arr['screen_'.$z])) {
+				@unlink('public/downloads/images/'.$arr['screen_'.$z]);
 			}
 		}
 
@@ -179,7 +183,10 @@ function check_value() {
 
 
 <form action="check_release.php" method="post">
-<input type="hidden" name="check" value="<?=serialize($ids);?>">
+<?=lt_csrf_input('check_release');?>
+<?php foreach ($ids as $selectedId) { ?>
+<input type="hidden" name="check[]" value="<?=$selectedId;?>">
+<?php } ?>
 <select name="act" onChange="check_value();">
 <option value="delete">Удалить отмеченные релизы</option>
 <option value="location">Перенести в другую категорию</option>

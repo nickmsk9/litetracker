@@ -28,6 +28,8 @@ require DIRNAME.'/system/init.autoclean.php';
 //Функции для обновления
 require DIRNAME.'/system/functions/functions.benc.php';
 
+lt_require_cron_access();
+
 $updatePeersLock = lt_lock_acquire('update.peers');
 if (!$updatePeersLock) {
 	die(update_peers_response_gif());
@@ -44,9 +46,11 @@ if ($id) {
 							LEFT JOIN torrents ON torrents.id=trackers.torrent
 							WHERE trackers.torrent=".$id." AND trackers.tracker<>'localhost'");
 
-	while (list($infohash,$url) = mysql_fetch_array($anarray)) {
+	while ($trackerRow = $db->get_array($anarray)) {
+		$infohash = (string) ($trackerRow[0] ?? '');
+		$url = (string) ($trackerRow[1] ?? '');
 		$peers = get_remote_peers($url, $infohash);
-		$db->query("UPDATE LOW_PRIORITY trackers SET seeders=".(int)$peers['seeders'].", leechers=".(int)$peers['leechers'].", lastchecked=".time().", state='".mysql_real_escape_string($peers['state'])."' WHERE torrent=".$id." AND tracker='$url'");
+		$db->query("UPDATE LOW_PRIORITY trackers SET seeders=".(int)$peers['seeders'].", leechers=".(int)$peers['leechers'].", lastchecked=".time().", state='".$db->safesql((string) ($peers['state'] ?? ''))."' WHERE torrent=".$id." AND tracker='".$db->safesql($url)."'");
 	}
 }
 
@@ -75,7 +79,7 @@ if ($CRON['multi_remote']) {
 			$hash = $torrent['info_hash'];
 			$url = $torrent['tracker'];
 			$peers = get_remote_peers($url, $hash);
-			$db->query("UPDATE LOW_PRIORITY trackers SET seeders=".(int)$peers['seeders'].", leechers=".(int)$peers['leechers'].", lastchecked=".time().", state='".mysql_real_escape_string($peers['state'])."' WHERE torrent=$id AND tracker='$url'");
+			$db->query("UPDATE LOW_PRIORITY trackers SET seeders=".(int)$peers['seeders'].", leechers=".(int)$peers['leechers'].", lastchecked=".time().", state='".$db->safesql((string) ($peers['state'] ?? ''))."' WHERE torrent=$id AND tracker='".$db->safesql($url)."'");
 		}
 
 	} else $db->query("UPDATE cron SET cron_value=0 WHERE cron_name='remote_lastchecked'");

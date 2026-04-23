@@ -65,7 +65,7 @@ function login_render_start($title)
 		return;
 	}
 
-	echo '<!doctype html><html lang="ru"><head><meta charset="'.htmlspecialchars($language['charset'], ENT_QUOTES, 'UTF-8').'"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="templates/'.htmlspecialchars($config['template'], ENT_QUOTES, 'UTF-8').'/css/my.css" rel="stylesheet" type="text/css"><style>html,body{width:100% !important;min-width:0 !important;max-width:100% !important;overflow-x:hidden !important;}body.auth-modal-frame{margin:0;padding:12px;overflow:hidden;background:#f4f5f7;}body.auth-modal-frame .auth-modal-page{padding:0 !important;width:100% !important;max-width:none !important;margin:0 !important;}body.auth-modal-frame .auth-modal-layout{display:block !important;width:100% !important;margin:0 !important;}body.auth-modal-frame .auth-modal-card{display:block !important;float:none !important;position:relative;left:auto !important;right:auto !important;transform:none !important;width:100% !important;max-width:none !important;margin:0 !important;padding:14px 14px 12px !important;box-shadow:none !important;}body.auth-modal-frame .auth-modal-title{margin-bottom:14px;font-size:32px;line-height:1.15;font-weight:400;}body.auth-modal-frame .auth-modal-footer{display:flex;align-items:center;gap:14px;margin-top:18px;padding-top:16px;border-top:1px solid #d8e1ea;}body.auth-modal-frame .auth-modal-footer .auth-link{width:auto !important;}body.auth-modal-frame .auth-modal-footer .auth-form button{width:auto;}body.auth-modal-frame .auth-modal-separator{color:#7d8894;font-size:13px;}body.auth-modal-frame .auth-field{margin-bottom:14px;}body.auth-modal-frame .auth-field:last-child{margin-bottom:0;}body.auth-modal-frame .auth-grid{display:block !important;}body.auth-modal-frame .auth-card-compact{max-width:none !important;}body.auth-modal-frame .auth-label{margin-bottom:7px;font-size:13px;}body.auth-modal-frame .auth-field input,body.auth-modal-frame .auth-field select{min-height:38px;padding:8px 12px;font-size:14px;}body.auth-modal-frame .auth-info-card{display:none !important;}</style></head><body class="auth-modal-frame">';
+	echo '<!doctype html><html lang="ru"><head><meta charset="'.htmlspecialchars($language['charset'], ENT_QUOTES, 'UTF-8').'"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="templates/'.htmlspecialchars($config['template'], ENT_QUOTES, 'UTF-8').'/css/my.css" rel="stylesheet" type="text/css"></head><body class="auth-modal-frame">';
 }
 
 function login_render_end()
@@ -145,11 +145,10 @@ if($op == 'forgot') {
 
 		//Генерируем новый пароль
 		$password = mksecret(15);
-		$password_code = mksecret(32); //Формируем секретный код
-		$password_hash = md5($password_code . $password . $password_code); // Пасс для Базы
+		$password_hash = lt_password_hash_value($password);
 
 		//Перезаписываем пароль
-		$db->query("UPDATE users SET password='".$password_hash."' , password_code='".$password_code."' WHERE id=".$arr['id']);
+		$db->query("UPDATE users SET password='".$db->safesql($password_hash)."' , password_code='' WHERE id=".$arr['id']);
 
 		//Удаляем кеш
 		$memcached->delete('user_'.$arr['id'] , 0);
@@ -362,11 +361,12 @@ if($_POST) {
 
 	//Хеш пароля
 	if ($loginModalError === '') {
-		$password_hash = md5($arr['password_code'].$password.$arr['password_code']);
+		$passwordNeedsRehash = false;
+		$password_hash = (string) ($arr['password'] ?? '');
 	}
 
 	//Проверяем пароль
-	if($loginModalError === '' && $arr['password'] != $password_hash ) {
+	if($loginModalError === '' && !lt_password_verify_user($password, $arr, $passwordNeedsRehash)) {
 		login_error_response($language['default_1'] ,  $language['login_8'] , 1);
 	}
 
@@ -396,6 +396,12 @@ if($_POST) {
 	}
 
 	if ($loginModalError === '') {
+		if (!empty($passwordNeedsRehash)) {
+			$password_hash = lt_password_hash_value($password);
+			$db->query("UPDATE users SET password='".$db->safesql($password_hash)."', password_code='' WHERE id=".(int) $arr['id']);
+			$arr['password'] = $password_hash;
+		}
+
 		//Удаляем кеш
 		$memcached->delete('user_'.$arr['id'] , 0);
 
