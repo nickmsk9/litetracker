@@ -161,8 +161,8 @@ if (lt_is_mobile_request()) {
 	var overlay = document.getElementById('site-auth-overlay');
 	var frame = document.getElementById('site-auth-frame');
 	var dialog = document.getElementById('site-auth-overlay-dialog');
-	var defaultFrameHeight = 420;
-	var defaultDialogWidth = 520;
+	var defaultFrameHeight = 340;
+	var defaultDialogWidth = 320;
 
 	function maxFrameHeight() {
 		return Math.max(320, window.innerHeight - 40);
@@ -175,12 +175,13 @@ if (lt_is_mobile_request()) {
 	}
 
 	function maxDialogWidth() {
-		return Math.max(320, window.innerWidth - 40);
+		return Math.max(292, window.innerWidth - 40);
 	}
 
 	function setDialogWidth(width) {
 		var numericWidth = Number(width) || defaultDialogWidth;
-		var clampedWidth = Math.max(320, Math.min(maxDialogWidth(), Math.round(numericWidth)));
+		var minWidth = dialog.getAttribute('data-auth-kind') === 'login' ? 292 : 320;
+		var clampedWidth = Math.max(minWidth, Math.min(maxDialogWidth(), Math.round(numericWidth)));
 		dialog.style.width = clampedWidth + 'px';
 		dialog.style.maxWidth = '100%';
 	}
@@ -244,7 +245,7 @@ if (lt_is_mobile_request()) {
 		} else if (meta.kind === 'forgot') {
 			setDialogWidth(460);
 		} else {
-			setDialogWidth(420);
+			setDialogWidth(292);
 		}
 		overlay.hidden = false;
 		body.classList.add('site-auth-modal-open');

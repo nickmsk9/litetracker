@@ -5528,6 +5528,10 @@ body.auth-modal-frame .auth-card-compact {
   max-width: 292px;
 }
 
+body.auth-modal-frame .login-card {
+  max-width: none;
+}
+
 body.auth-modal-frame .signup-form-card {
   max-width: 560px;
   margin: 0 auto;
