@@ -23,7 +23,7 @@ head('Мультитрекерные аккаунты');
 $count = 0;
 $array = array();
 $res = $db->query("SELECT GROUP_CONCAT(DISTINCT p.torrent) AS torrents, GROUP_CONCAT(DISTINCT p.ip) AS ips, p.userid, u.name FROM peers p LEFT JOIN users u ON p.userid = u.id  GROUP BY p.userid ORDER BY p.torrent;");
-while ($row = mysql_fetch_assoc($res) ) {
+while ($row = $db->get_row($res) ) {
     if (count(explode(",",$row["ips"])) > 1 && count(explode(",",$row["torrents"])) < 5) {
         $array[] = array
         (
@@ -36,7 +36,7 @@ while ($row = mysql_fetch_assoc($res) ) {
     }
 }
 $res = $db->query("SELECT id, name FROM torrents");
-while ($row = mysql_fetch_assoc($res)) $torrents[$row["id"]] = $row["name"];
+while ($row = $db->get_row($res)) $torrents[$row["id"]] = $row["name"];
 
 begin_frame('Мультитрекерные аккаунты');
 msg('Найдено '.$count.' мультитрекерных аккаунтов');

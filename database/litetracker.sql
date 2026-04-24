@@ -40,7 +40,8 @@ CREATE TABLE `books` (
   `id_torrent` int NOT NULL,
   `id_user` int NOT NULL,
   `date` datetime NOT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_books_user_torrent` (`id_user`,`id_torrent`)
 ) ENGINE=MyISAM AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -138,7 +139,9 @@ CREATE TABLE `comments_torrents` (
   `parent_id` int NOT NULL DEFAULT '0',
   `id_user_edit` int NOT NULL,
   `date_edit` datetime NOT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_comments_torrents_object_date` (`id_torrents`,`date`),
+  KEY `idx_comments_torrents_parent` (`parent_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=70 DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -224,7 +227,7 @@ CREATE TABLE `cron` (
 
 LOCK TABLES `cron` WRITE;
 /*!40000 ALTER TABLE `cron` DISABLE KEYS */;
-INSERT INTO `cron` VALUES ('autoclean_interval',1000),('autoclean_last',1777010991),('multi_remote',1),('remotecheck_interval',600),('remote_torrents',30),('remotepeers_cleantime',10800),('remote_lastchecked',0),('in_remotecheck',0),('num_checked',294),('last_remotecheck',1777011051),('multi_timeout',100);
+INSERT INTO `cron` VALUES ('autoclean_interval',1000),('autoclean_last',1777026345),('multi_remote',1),('remotecheck_interval',600),('remote_torrents',30),('remotepeers_cleantime',10800),('remote_lastchecked',0),('in_remotecheck',0),('num_checked',320),('last_remotecheck',1777027245),('multi_timeout',100);
 /*!40000 ALTER TABLE `cron` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `faq`;
@@ -329,7 +332,8 @@ CREATE TABLE `news` (
   `text` text CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `date` datetime NOT NULL,
   `id_user` int NOT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_news_date` (`date`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -397,7 +401,6 @@ CREATE TABLE `peers` (
 
 LOCK TABLES `peers` WRITE;
 /*!40000 ALTER TABLE `peers` DISABLE KEYS */;
-INSERT INTO `peers` VALUES (1,5,'-LTDEMO-01c5e63638f4','10.20.0.11',51001,9780928760,8168326342,0,0,0,1,'2026-04-24 04:10:05','2026-04-24 05:42:15','2026-04-24 05:31:27',1,5,'LiteTracker Demo Seeder',1777009335,'a217c5ee254e83bd81ee2990b2f39e46'),(2,5,'-LTDEMO-3f1d13ace0c4','10.20.0.12',51002,10756923193,8168326342,0,0,0,1,'2026-04-24 04:15:19','2026-04-24 05:45:55','2026-04-24 05:31:38',1,6,'LiteTracker Demo Seeder',1777009555,'45cb04516b59322561ce90bf0ea392dc');
 /*!40000 ALTER TABLE `peers` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `polls`;
@@ -525,7 +528,8 @@ CREATE TABLE `search_query` (
   `id_user` int NOT NULL,
   `last_date` datetime NOT NULL,
   `sended` smallint NOT NULL DEFAULT '0',
-  UNIQUE KEY `id` (`id`)
+  UNIQUE KEY `id` (`id`),
+  KEY `idx_search_query_user_last` (`id_user`,`last_date`)
 ) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=cp1251;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -546,13 +550,15 @@ CREATE TABLE `sessions` (
   `user_agent` text CHARACTER SET cp1251 COLLATE cp1251_bin NOT NULL,
   `php_self` text CHARACTER SET cp1251 COLLATE cp1251_bin NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `session_id` (`session_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=466 DEFAULT CHARSET=cp1251;
+  UNIQUE KEY `session_id` (`session_id`),
+  KEY `idx_sessions_user_access` (`user_id`,`last_access`),
+  KEY `idx_sessions_last_access` (`last_access`)
+) ENGINE=MyISAM AUTO_INCREMENT=483 DEFAULT CHARSET=cp1251;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `sessions` WRITE;
 /*!40000 ALTER TABLE `sessions` DISABLE KEYS */;
-INSERT INTO `sessions` VALUES (465,'7d309206f505ba04a474932e24db3ab8',-1,'2026-04-24 09:16:36',-1407975423,'curl/8.7.1','/index.php'),(464,'bd5acabe04dba4e9a6cec7200fd2f936',-1,'2026-04-24 09:16:31',0,'','Standard input code'),(463,'327fb181b89efb486356504609053ca2',-1,'2026-04-24 06:15:27',-1407975423,'curl/8.7.1','/browse.php'),(462,'91a12d665ee46e175d6921b6e23f5908',-1,'2026-04-24 06:15:27',-1407975423,'curl/8.7.1','/index.php'),(461,'71a04e0af3499cafdf79524fa85012f0',-1,'2026-04-24 06:13:20',-1407975423,'curl/8.7.1','/index.php'),(460,'38b3c8820200bf218df5fdd0a39a2be5',-1,'2026-04-24 06:13:20',-1407975423,'curl/8.7.1','/browse.php'),(459,'e2105be2f4e54d628b8ed45201f723a9',-1,'2026-04-24 06:13:04',-1407975423,'curl/8.7.1','/signup.php'),(458,'27e07fa12975494f71442993c123db69',-1,'2026-04-24 06:12:55',-1407975423,'curl/8.7.1','/signup.php'),(457,'b4996d7dbda398b40b5db4dca7db0cdb',-1,'2026-04-24 06:12:50',-1407975423,'curl/8.7.1','/signup.php'),(456,'c1005ef1b86571d8483d1ccfebb20f1c',-1,'2026-04-24 06:14:48',-1407975423,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/browse.php'),(455,'dc109721e7bea2462b6ccde03d1d37de',-1,'2026-04-24 04:46:59',0,'','Standard input code'),(454,'7457cd27b1ab6a92be62781bc4e7a6a2',-1,'2026-04-24 04:46:59',0,'','Standard input code'),(453,'5a1ecee1d4b4e0e9de577e31209e09e9',-1,'2026-04-24 04:46:49',0,'','Standard input code'),(451,'04deaf1b5e754f9dd5a9f539d895cfe3',7,'2026-04-24 04:39:55',169082893,'LiteTracker Demo Seeder','/index.php'),(452,'b7e5be1ed5c358b8f8090ddeb659932a',8,'2026-04-24 04:43:41',169082894,'LiteTracker Demo Seeder','/index.php'),(450,'54f16a615896cc24b92c1609b38b791f',6,'2026-04-24 04:44:28',169082892,'LiteTracker Demo Seeder','/index.php'),(449,'385080cb3991019629809a335a174d0b',5,'2026-04-24 04:45:45',169082891,'LiteTracker Demo Seeder','/index.php'),(448,'aee8c7a623f0b040bce374bba1dca03c',-1,'2026-04-24 04:46:41',2130706433,'','/var/www/html/scripts/seed_demo_activity.php'),(447,'622bf2fb04168b6c04f4050660765b67',-1,'2026-04-24 04:43:53',0,'','Standard input code'),(446,'01acdbac02e1c0bd46685b82c180c1e9',-1,'2026-04-24 04:43:21',0,'','Standard input code'),(445,'3e6652ce56bb8bfa54715568c5c85f50',-1,'2026-04-24 04:43:21',0,'','Standard input code'),(444,'d9d50d56dc0194d053391dc107155d38',-1,'2026-04-24 04:47:32',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/browse.php'),(443,'0f41647299e87f64787273bab23ca8d5',2,'2026-04-23 16:18:46',-1407975423,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/edit.php');
+INSERT INTO `sessions` VALUES (469,'c28f0197069cb88dd379a70e5756745f',-1,'2026-04-24 09:20:46',-1407975423,'curl/8.7.1','/browse.php'),(468,'609813af0f0f1125de4c1bb844b5f0bb',-1,'2026-04-24 09:20:46',-1407975423,'curl/8.7.1','/index.php'),(467,'146fa0698d6acbb3e0e0507aa23f3dac',-1,'2026-04-24 09:20:30',0,'','Standard input code'),(466,'81db1aea57bae345eaad22c83811412e',-1,'2026-04-24 09:19:40',0,'','Standard input code'),(465,'7d309206f505ba04a474932e24db3ab8',-1,'2026-04-24 09:16:36',-1407975423,'curl/8.7.1','/index.php'),(464,'bd5acabe04dba4e9a6cec7200fd2f936',-1,'2026-04-24 09:16:31',0,'','Standard input code'),(463,'327fb181b89efb486356504609053ca2',-1,'2026-04-24 06:15:27',-1407975423,'curl/8.7.1','/browse.php'),(462,'91a12d665ee46e175d6921b6e23f5908',-1,'2026-04-24 06:15:27',-1407975423,'curl/8.7.1','/index.php'),(461,'71a04e0af3499cafdf79524fa85012f0',-1,'2026-04-24 06:13:20',-1407975423,'curl/8.7.1','/index.php'),(460,'38b3c8820200bf218df5fdd0a39a2be5',-1,'2026-04-24 06:13:20',-1407975423,'curl/8.7.1','/browse.php'),(459,'e2105be2f4e54d628b8ed45201f723a9',-1,'2026-04-24 06:13:04',-1407975423,'curl/8.7.1','/signup.php'),(458,'27e07fa12975494f71442993c123db69',-1,'2026-04-24 06:12:55',-1407975423,'curl/8.7.1','/signup.php'),(457,'b4996d7dbda398b40b5db4dca7db0cdb',-1,'2026-04-24 06:12:50',-1407975423,'curl/8.7.1','/signup.php'),(456,'c1005ef1b86571d8483d1ccfebb20f1c',-1,'2026-04-24 13:39:57',-1407975423,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(455,'dc109721e7bea2462b6ccde03d1d37de',-1,'2026-04-24 04:46:59',0,'','Standard input code'),(454,'7457cd27b1ab6a92be62781bc4e7a6a2',-1,'2026-04-24 04:46:59',0,'','Standard input code'),(453,'5a1ecee1d4b4e0e9de577e31209e09e9',-1,'2026-04-24 04:46:49',0,'','Standard input code'),(451,'04deaf1b5e754f9dd5a9f539d895cfe3',7,'2026-04-24 04:39:55',169082893,'LiteTracker Demo Seeder','/index.php'),(452,'b7e5be1ed5c358b8f8090ddeb659932a',8,'2026-04-24 04:43:41',169082894,'LiteTracker Demo Seeder','/index.php'),(450,'54f16a615896cc24b92c1609b38b791f',6,'2026-04-24 04:44:28',169082892,'LiteTracker Demo Seeder','/index.php'),(449,'385080cb3991019629809a335a174d0b',5,'2026-04-24 04:45:45',169082891,'LiteTracker Demo Seeder','/index.php'),(448,'aee8c7a623f0b040bce374bba1dca03c',-1,'2026-04-24 04:46:41',2130706433,'','/var/www/html/scripts/seed_demo_activity.php'),(447,'622bf2fb04168b6c04f4050660765b67',-1,'2026-04-24 04:43:53',0,'','Standard input code'),(446,'01acdbac02e1c0bd46685b82c180c1e9',-1,'2026-04-24 04:43:21',0,'','Standard input code'),(445,'3e6652ce56bb8bfa54715568c5c85f50',-1,'2026-04-24 04:43:21',0,'','Standard input code'),(444,'d9d50d56dc0194d053391dc107155d38',-1,'2026-04-24 04:47:32',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/browse.php'),(443,'0f41647299e87f64787273bab23ca8d5',2,'2026-04-23 16:18:46',-1407975423,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/edit.php'),(470,'fcd02050fd48dffea221bbb8cfdf9034',-1,'2026-04-24 09:21:41',-1407975423,'curl/8.7.1','/index.php'),(471,'0e7ee81d6b183c4bb2db65364af4cc34',-1,'2026-04-24 09:21:41',-1407975423,'curl/8.7.1','/browse.php'),(472,'a795941bf1233ac697ffbd2b038aa39c',-1,'2026-04-24 09:21:41',-1407975423,'curl/8.7.1','/signup.php'),(473,'485f101e737313262bdb24e77a9ff358',-1,'2026-04-24 09:21:41',-1407975423,'curl/8.7.1','/login.php'),(474,'69df30443e24f718ea4e0a98cd098ff7',-1,'2026-04-24 09:21:41',-1407975423,'curl/8.7.1','/admin.php'),(475,'51c434b868176f9fff1994f8253e0309',-1,'2026-04-24 09:22:07',-1407975423,'curl/8.7.1','/index.php'),(476,'6b3921491f69f7669ea99a8199daf0d9',-1,'2026-04-24 09:22:07',-1407975423,'curl/8.7.1','/browse.php'),(477,'2c382def04179ba34c8c1ccdcf46df0b',-1,'2026-04-24 09:22:07',-1407975423,'curl/8.7.1','/users.php'),(478,'b5fdd87f52435eb3fb27528bb9f37d14',-1,'2026-04-24 09:22:07',-1407975423,'curl/8.7.1','/signup.php'),(479,'c606181034b74200199df6f2681b9739',-1,'2026-04-24 09:22:07',-1407975423,'curl/8.7.1','/login.php'),(480,'b7f29db95049413f2f5bbb33893b3fd8',-1,'2026-04-24 09:22:07',-1407975423,'curl/8.7.1','/admin.php'),(481,'07a564e90674c8ce22ddb77e9bb2dda6',-1,'2026-04-24 13:41:25',-1407975423,'curl/8.7.1','/browse.php'),(482,'c00dc6495f236c38eb5c497a7d2e16c3',-1,'2026-04-24 13:41:25',-1407975423,'curl/8.7.1','/browse.php');
 /*!40000 ALTER TABLE `sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `shop`;
@@ -703,7 +709,7 @@ CREATE TABLE `trackers` (
 
 LOCK TABLES `trackers` WRITE;
 /*!40000 ALTER TABLE `trackers` DISABLE KEYS */;
-INSERT INTO `trackers` VALUES (5,4,'localhost',0,0,1777010991,''),(6,4,'http://tr2.torrent4me.com/ann?uk=cAETnuUKbT',0,0,1776960630,'failed:no_benc_result_or_timeout_announce'),(7,4,'http://retracker.local/announce',0,0,1777005627,'failed:no_benc_result_or_timeout_announce'),(8,5,'localhost',2,0,1777010991,''),(9,6,'localhost',0,0,1777010991,''),(10,7,'localhost',0,0,1777010991,''),(11,8,'localhost',0,0,1777010991,''),(12,9,'localhost',0,0,1777010991,''),(13,10,'localhost',0,0,1777010991,''),(14,11,'localhost',0,0,1777010991,''),(15,12,'localhost',0,0,1777010991,''),(16,13,'localhost',0,0,1777010991,''),(17,14,'localhost',0,0,1777010991,''),(18,15,'localhost',0,0,1777010991,''),(19,16,'localhost',0,0,1777010991,''),(20,17,'localhost',0,0,1777010991,''),(21,18,'localhost',0,0,1777010991,''),(22,19,'localhost',0,0,1777010991,''),(23,20,'localhost',0,0,1777010991,''),(24,21,'localhost',0,0,1777010991,''),(25,22,'localhost',0,0,1777010991,''),(26,23,'localhost',0,0,1777010991,''),(27,24,'localhost',0,0,1777010991,'');
+INSERT INTO `trackers` VALUES (5,4,'localhost',0,0,1777026345,''),(6,4,'http://tr2.torrent4me.com/ann?uk=cAETnuUKbT',0,0,1777023044,'failed:no_benc_result_or_timeout_announce'),(7,4,'http://retracker.local/announce',0,0,1777017025,'failed:no_benc_result_or_timeout_announce'),(8,5,'localhost',0,0,1777026345,''),(9,6,'localhost',0,0,1777026345,''),(10,7,'localhost',0,0,1777026345,''),(11,8,'localhost',0,0,1777026345,''),(12,9,'localhost',0,0,1777026345,''),(13,10,'localhost',0,0,1777026345,''),(14,11,'localhost',0,0,1777026345,''),(15,12,'localhost',0,0,1777026345,''),(16,13,'localhost',0,0,1777026345,''),(17,14,'localhost',0,0,1777026345,''),(18,15,'localhost',0,0,1777026345,''),(19,16,'localhost',0,0,1777026345,''),(20,17,'localhost',0,0,1777026345,''),(21,18,'localhost',0,0,1777026345,''),(22,19,'localhost',0,0,1777026345,''),(23,20,'localhost',0,0,1777026345,''),(24,21,'localhost',0,0,1777026345,''),(25,22,'localhost',0,0,1777026345,''),(26,23,'localhost',0,0,1777026345,''),(27,24,'localhost',0,0,1777026345,'');
 /*!40000 ALTER TABLE `trackers` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `users`;

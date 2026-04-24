@@ -212,7 +212,7 @@ $db->query("SELECT t.id
 $countTorrent = $db->num_rows();
 
 $pagerHref = 'browse.php'.($pagerParams ? '?'.http_build_query($pagerParams).'&' : '?');
-list($pagertop, $pagerbottom, $limit) = pager('5', $countTorrent, $pagerHref);
+list($pagertop, $pagerbottom, $limit) = pager('10', $countTorrent, $pagerHref);
 
 if ($search !== '' && substr_count((string) ($_SERVER['QUERY_STRING'] ?? ''), 'page') == 0 && strlen($search) >= 5 && $USER) {
 	$checkQuery = $db->super_query("SELECT COUNT(*) AS count FROM search_query WHERE id_user=".($USER ? $USER['id'] : '-1')." AND text LIKE '%".sqlwildcardesc($search)."%'");

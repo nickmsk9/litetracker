@@ -266,6 +266,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	$activeTab = $postedTab;
 	$action = trim((string) ($_POST['admin_action'] ?? ''));
 
+	if (!lt_csrf_validate('admin_dashboard')) {
+		$flashMessage = array(
+			'type' => 'error',
+			'text' => 'Защитный токен устарел. Обновите страницу и повторите действие.',
+		);
+		$action = '';
+	}
+
 	if ($action === 'quick_action') {
 		$quickAction = trim((string) ($_POST['quick_action'] ?? ''));
 
@@ -387,11 +395,17 @@ if (user_wall_reports_can_moderate()) {
 	$openWallReportsCount = admin_dashboard_stat_value("SELECT COUNT(*) AS c FROM `".user_wall_reports_table_name()."` WHERE status = 'open'");
 }
 
+$statsRow = $db->super_query("SELECT
+	(SELECT COUNT(*) FROM users) AS users_count,
+	(SELECT COUNT(*) FROM torrents) AS torrents_count,
+	(SELECT COUNT(*) FROM categories) AS categories_count,
+	(SELECT COUNT(*) FROM sessions) AS sessions_count");
+
 $stats = array(
-	array('label' => 'Пользователи', 'value' => admin_dashboard_stat_value('SELECT COUNT(*) AS c FROM users'), 'href' => 'users.php'),
-	array('label' => 'Торренты', 'value' => admin_dashboard_stat_value('SELECT COUNT(*) AS c FROM torrents'), 'href' => 'browse.php?act=all'),
-	array('label' => 'Категории', 'value' => admin_dashboard_stat_value('SELECT COUNT(*) AS c FROM categories'), 'href' => 'categories.php'),
-	array('label' => 'Сессии', 'value' => admin_dashboard_stat_value('SELECT COUNT(*) AS c FROM sessions'), 'href' => 'sessions.php'),
+	array('label' => 'Пользователи', 'value' => (int) ($statsRow['users_count'] ?? 0), 'href' => 'users.php'),
+	array('label' => 'Торренты', 'value' => (int) ($statsRow['torrents_count'] ?? 0), 'href' => 'browse.php?act=all'),
+	array('label' => 'Категории', 'value' => (int) ($statsRow['categories_count'] ?? 0), 'href' => 'categories.php'),
+	array('label' => 'Сессии', 'value' => (int) ($statsRow['sessions_count'] ?? 0), 'href' => 'sessions.php'),
 );
 
 if (user_wall_reports_can_moderate()) {
@@ -867,6 +881,7 @@ head('Админка');
 					<input type='hidden' name='tab' value='overview'>
 					<input type='hidden' name='admin_action' value='quick_action'>
 					<input type='hidden' name='quick_action' value='<?=$action['id'];?>'>
+					<?=lt_csrf_input('admin_dashboard');?>
 					<div class='admin-action-row'>
 						<div class='admin-action-title'><?=$action['label'];?></div>
 						<button class='admin-action-button' type='submit'>Выполнить</button>
@@ -930,6 +945,7 @@ head('Админка');
 			<input type='hidden' name='tab' value='<?=$activeTab;?>'>
 			<input type='hidden' name='admin_action' value='save_settings'>
 			<input type='hidden' name='settings_tab' value='<?=$activeTab;?>'>
+			<?=lt_csrf_input('admin_dashboard');?>
 			<div class='admin-settings-grid'>
 				<?php foreach ($settingsTab['fields'] as $field) { ?>
 				<?php

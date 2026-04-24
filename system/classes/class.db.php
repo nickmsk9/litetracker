@@ -11,43 +11,41 @@ by Nick
 
 class db
 {
-	var $db_id = false;
-	var $connected = false;
-	var $query_num = 0;
-	var $query_list = array();
-	var $mysql_error = '';
-	var $mysql_version = '';
-	var $mysql_error_num = 0;
-	var $mysql_extend = "MySQL";
-	var $MySQL_time_taken = 0;
-	var $query_id = false;
+	public $db_id = false;
+	public $connected = false;
+	public $query_num = 0;
+	public $query_list = array();
+	public $mysql_error = '';
+	public $mysql_version = '';
+	public $mysql_error_num = 0;
+	public $mysql_extend = 'MySQLi';
+	public $MySQL_time_taken = 0;
+	public $query_id = false;
 
 	function connect($db_user, $db_pass, $db_name, $db_location = 'localhost', $show_error=1)
 	{
-		if(!$this->db_id = @mysql_connect($db_location, $db_user, $db_pass)) {
+		$this->db_id = @mysqli_connect($db_location, $db_user, $db_pass, $db_name);
+		if(!$this->db_id) {
 			if($show_error == 1) {
-				$this->display_error(mysql_error(), mysql_errno());
+				$this->display_error(mysqli_connect_error(), mysqli_connect_errno());
 			} else {
 				return false;
 			}
 		}
 
-		if(!@mysql_select_db($db_name, $this->db_id)) {
-			if($show_error == 1) {
-				$this->display_error(mysql_error(), mysql_errno());
-			} else {
-				return false;
-			}
-		}
-
-		$this->mysql_version = mysql_get_server_info();
+		$this->mysql_version = mysqli_get_server_info($this->db_id);
 
 		if(!defined('COLLATE'))
 		{
 			define('COLLATE', !empty($GLOBALS['mysql']['charset']) ? $GLOBALS['mysql']['charset'] : 'utf8mb4');
 		}
 
-		if (version_compare($this->mysql_version, '4.1', ">=")) mysql_query("/*!40101 SET NAMES '" . COLLATE . "' */");
+		if (version_compare($this->mysql_version, '4.1', ">=")) {
+			@mysqli_set_charset($this->db_id, COLLATE);
+			@mysqli_query($this->db_id, "/*!40101 SET NAMES '" . $this->safesql(COLLATE) . "' */");
+		}
+
+		$GLOBALS['mysql_compat_default_link'] = $this->db_id;
 
 		$this->connected = true;
 
@@ -60,10 +58,10 @@ class db
 
 		if(!$this->connected) $this->connect(DBUSER, DBPASS, DBNAME, DBHOST);
 
-		if(!($this->query_id = mysql_query($query, $this->db_id) )) {
+		if(!($this->query_id = mysqli_query($this->db_id, $query) )) {
 
-			$this->mysql_error = mysql_error();
-			$this->mysql_error_num = mysql_errno();
+			$this->mysql_error = mysqli_error($this->db_id);
+			$this->mysql_error_num = mysqli_errno($this->db_id);
 
 			if($show_error) {
 				$this->display_error($this->mysql_error, $this->mysql_error_num, $query);
@@ -85,17 +83,15 @@ class db
 	function get_row($query_id = '')
 	{
 		if ($query_id == '') $query_id = $this->query_id;
-		// return $query_id;
-		// if($this->num_rows($query_id) ) {
-			return @mysql_fetch_assoc($query_id);
-		// }
+
+		return ($query_id instanceof mysqli_result ? mysqli_fetch_assoc($query_id) : false);
 	}
 
 	function get_array($query_id = '')
 	{
 		if ($query_id == '') $query_id = $this->query_id;
 
-		return @mysql_fetch_array($query_id);
+		return ($query_id instanceof mysqli_result ? mysqli_fetch_array($query_id) : false);
 	}
 
 
@@ -128,17 +124,17 @@ class db
 
 		if ($query_id == '') $query_id = $this->query_id;
 
-		return mysql_num_rows($query_id);
+		return ($query_id instanceof mysqli_result ? mysqli_num_rows($query_id) : 0);
 	}
 
 	function insert_id()
 	{
-		return mysql_insert_id($this->db_id);
+		return ($this->db_id instanceof mysqli ? mysqli_insert_id($this->db_id) : 0);
 	}
 
 	function affected_rows()
 	{
-		return mysql_affected_rows($this->db_id);
+		return ($this->db_id instanceof mysqli ? mysqli_affected_rows($this->db_id) : 0);
 	}
 
 	function get_result_fields($query_id = '') {
@@ -146,7 +142,11 @@ class db
 		if ($query_id == '') $query_id = $this->query_id;
 
 		$fields = array();
-		while ($field = mysql_fetch_field($query_id))
+		if (!$query_id instanceof mysqli_result) {
+			return $fields;
+		}
+
+		while ($field = mysqli_fetch_field($query_id))
 		{
             $fields[] = $field;
 		}
@@ -156,8 +156,8 @@ class db
 
 	function safesql( $source )
 	{
-		if ($this->db_id) return mysql_real_escape_string ($source, $this->db_id);
-		else return mysql_escape_string($source);
+		if ($this->db_id instanceof mysqli) return mysqli_real_escape_string ($this->db_id, (string) $source);
+		else return addslashes((string) $source);
 	}
 
 	function free( $query_id = '' )
@@ -165,12 +165,16 @@ class db
 
 		if ($query_id == '') $query_id = $this->query_id;
 
-		@mysql_free_result($query_id);
+		if ($query_id instanceof mysqli_result) {
+			@mysqli_free_result($query_id);
+		}
 	}
 
 	function close()
 	{
-		@mysql_close($this->db_id);
+		if ($this->db_id instanceof mysqli) {
+			@mysqli_close($this->db_id);
+		}
 	}
 
 	function get_real_time()

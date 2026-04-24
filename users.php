@@ -120,11 +120,11 @@ end_frame();
 
 begin_frame($language['users_1']);
 
-if(!mysql_num_rows($sql)) {
+if(!$db->num_rows($sql)) {
 	msg($language['default_8'] , $language['users_14']);
 } else {
 	echo $pagertop;
-	while($arr = mysql_fetch_assoc($sql) ) {
+	while($arr = $db->get_row($sql) ) {
 
 		//Номер пользователя
 		$id = $arr['id'];

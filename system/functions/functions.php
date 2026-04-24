@@ -1031,7 +1031,10 @@ function antixss() {
 
 //sqlwildcardesc
 function sqlwildcardesc($x) {
-    return str_replace(array("%","_"), array("\\%","\\_"), mysql_real_escape_string($x));
+	global $db;
+
+	$value = ($db ? $db->safesql($x) : addslashes((string) $x));
+	return str_replace(array("%","_"), array("\\%","\\_"), $value);
 }
 
 

@@ -244,7 +244,7 @@
 
             $max_line_length = 998; # used below; set here for ease in change
 
-            while(list(,$line) = @each($lines)) {
+            foreach($lines as $line) {
                 $lines_out = null;
                 if($line == "" && $in_headers) {
                     $in_headers = false;
@@ -265,7 +265,7 @@
                 $lines_out[] = $line;
 
                 # now send the lines to the server
-                while(list(,$line_out) = @each($lines_out)) {
+                foreach($lines_out as $line_out) {
                     if($line_out[0] == ".") {
                         $line_out = "." . $line_out;
                     }
@@ -346,7 +346,7 @@
 
             # parse the reply and place in our array to return to user
             $entries = explode($this->CRLF,$rply);
-            while(list(,$l) = @each($entries)) {
+            foreach($entries as $l) {
                 $list[] = substr($l,4);
             }
 
