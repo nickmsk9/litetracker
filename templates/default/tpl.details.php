@@ -211,20 +211,17 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 			<section class="details-panel details-gallery-panel">
 				<div class="details-gallery-grid" id="details-gallery">
 					<?php foreach ($screens as $screen) { ?>
-					<a
+					<div
 						class="details-gallery-item"
-						href="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>"
-						data-gallery="torrent-screens"
-						data-title="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>"
+						data-details-screenshot-zoom="1"
+						data-zoom-src="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>"
 						title="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>"
 					>
 						<img src="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>" alt="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>">
-					</a>
+					</div>
 					<?php } ?>
 				</div>
 			</section>
-			<link rel="stylesheet" type="text/css" href="/public/vendor/glightbox/glightbox.min.css">
-			<script type="text/javascript" src="/public/vendor/glightbox/glightbox.min.js"></script>
 			<?php } ?>
 
 			<?php if (!empty($USER['id'])) { ?>

@@ -205,6 +205,68 @@ function lt_edit_build_description($categoryNameOrKey, $templateValues, $autoVal
 	return trim(implode("\n", $lines));
 }
 
+function lt_edit_ensure_directory($path)
+{
+	if (is_dir($path)) {
+		return true;
+	}
+
+	return @mkdir($path, 0777, true);
+}
+
+function lt_edit_image_extension($filename)
+{
+	$extension = strtolower((string) pathinfo((string) $filename, PATHINFO_EXTENSION));
+	$allowed = array('jpg', 'jpeg', 'png', 'gif');
+
+	return (in_array($extension, $allowed, true) ? ($extension === 'jpeg' ? 'jpg' : $extension) : '');
+}
+
+function lt_edit_validate_image($file, $label)
+{
+	global $config, $language;
+
+	$name = (string) ($file['name'] ?? '');
+	$tmp = (string) ($file['tmp_name'] ?? '');
+	$size = (int) ($file['size'] ?? 0);
+	$error = (int) ($file['error'] ?? UPLOAD_ERR_OK);
+
+	if ($error !== UPLOAD_ERR_OK || $name === '' || $tmp === '' || !is_uploaded_file($tmp)) {
+		err($language['default_1'], $label.' не был загружен.', 1);
+	}
+
+	$extension = lt_edit_image_extension($name);
+	if ($extension === '') {
+		err($language['default_1'], $label.' должен быть в формате JPG, PNG или GIF.', 1);
+	}
+
+	if ($size <= 0 || $size > (int) $config['max_size_image']) {
+		err($language['default_1'], $label.' превышает допустимый размер '.mksize($config['max_size_image']).'.', 1);
+	}
+
+	$imageInfo = @getimagesize($tmp);
+	if (!$imageInfo || empty($imageInfo[2]) || !in_array((int) $imageInfo[2], array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG), true)) {
+		err($language['default_1'], $label.' не похож на изображение.', 1);
+	}
+
+	return $extension;
+}
+
+function lt_edit_move_uploaded_image($file, $directory, $targetName, $label)
+{
+	global $language;
+
+	if (!lt_edit_ensure_directory($directory)) {
+		err($language['default_1'], 'Не удалось подготовить каталог для загрузки файлов.', 1);
+	}
+
+	if (!@move_uploaded_file((string) ($file['tmp_name'] ?? ''), $directory.$targetName)) {
+		err($language['default_1'], 'Не удалось сохранить '.$label.'.', 1);
+	}
+
+	return $targetName;
+}
+
 is_login();
 
 $act = isset($_GET['act']) ? (string) $_GET['act'] : '';
@@ -373,7 +435,7 @@ if ($act == 'take') {
 		$update[] = 'name="'.$db->safesql($name).'"';
 	}
 
-	$tags = lt_upload_collect_tags((string) ($_POST['tags'] ?? ''));
+	$tags = lt_torrent_tags_to_string((string) ($_POST['tags'] ?? ''));
 	if ((string) $arr['tags'] !== $tags) {
 		$update[] = 'tags="'.$db->safesql($tags).'"';
 	}
@@ -427,9 +489,9 @@ if ($act == 'take') {
 	}
 
 	if (!empty($_FILES['image']['name'])) {
-		$coverExtension = lt_upload_validate_image((array) $_FILES['image'], 'Обложка');
+		$coverExtension = lt_edit_validate_image((array) $_FILES['image'], 'Обложка');
 		$coverName = $id.'.'.$coverExtension;
-		lt_upload_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $coverName, 'обложку');
+		lt_edit_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $coverName, 'обложку');
 
 		if (!empty($arr['image']) && $arr['image'] !== $coverName) {
 			@unlink('public/downloads/images/'.$arr['image']);
@@ -453,9 +515,9 @@ if ($act == 'take') {
 			'size' => (int) ($screenFiles['size'][$index] ?? 0),
 		);
 
-		$screenExtension = lt_upload_validate_image($screenFile, 'Скриншот '.$slot);
+		$screenExtension = lt_edit_validate_image($screenFile, 'Скриншот '.$slot);
 		$screenStoredName = $id.'_'.$index.'.'.$screenExtension;
-		lt_upload_move_uploaded_image($screenFile, 'public/downloads/screens/', $screenStoredName, 'скриншот '.$slot);
+		lt_edit_move_uploaded_image($screenFile, 'public/downloads/screens/', $screenStoredName, 'скриншот '.$slot);
 
 		if (!empty($arr['screen_'.$slot]) && $arr['screen_'.$slot] !== $screenStoredName) {
 			@unlink('public/downloads/screens/'.$arr['screen_'.$slot]);

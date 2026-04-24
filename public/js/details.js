@@ -8,24 +8,6 @@
     callback();
   }
 
-  function initLightbox() {
-    if (typeof window.GLightbox !== 'function') {
-      return;
-    }
-
-    window.GLightbox({
-      selector: '#details-gallery .details-gallery-item',
-      loop: true,
-      touchNavigation: true,
-      draggable: true,
-      zoomable: true,
-      openEffect: 'zoom',
-      closeEffect: 'fade',
-      slideEffect: 'slide',
-      descPosition: 'bottom'
-    });
-  }
-
   function initBookmarkButton() {
     var button = document.querySelector('[data-details-bookmark]');
     if (!button || typeof window.fetch !== 'function') {
@@ -89,8 +71,68 @@
     });
   }
 
+  function initScreenshotZoom() {
+    var items = document.querySelectorAll('[data-details-screenshot-zoom]');
+
+    if (!items.length) {
+      return;
+    }
+
+    Array.prototype.forEach.call(items, function (item) {
+      var image = item.querySelector('img');
+      var zoomSrc = item.getAttribute('data-zoom-src') || (image ? image.getAttribute('src') : '');
+      var zoomWindow = document.createElement('div');
+
+      if (!image || !zoomSrc) {
+        return;
+      }
+
+      zoomWindow.className = 'details-gallery-zoom-window';
+      zoomWindow.style.backgroundImage = 'url("' + zoomSrc.replace(/"/g, '%22') + '")';
+      item.appendChild(zoomWindow);
+
+      function refreshZoomSize() {
+        var rect = image.getBoundingClientRect();
+
+        zoomWindow.style.width = Math.round(rect.width) + 'px';
+        zoomWindow.style.height = Math.round(rect.height) + 'px';
+      }
+
+      function positionZoom(event) {
+        var rect = image.getBoundingClientRect();
+        var naturalWidth = image.naturalWidth || rect.width;
+        var naturalHeight = image.naturalHeight || rect.height;
+        var x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
+        var y = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
+        var xPercent = rect.width ? (x / rect.width) * 100 : 50;
+        var yPercent = rect.height ? (y / rect.height) * 100 : 50;
+
+        zoomWindow.style.backgroundSize = naturalWidth + 'px ' + naturalHeight + 'px';
+        zoomWindow.style.backgroundPosition = xPercent + '% ' + yPercent + '%';
+      }
+
+      item.addEventListener('mouseenter', function (event) {
+        refreshZoomSize();
+        positionZoom(event);
+        item.classList.add('is-zooming');
+      });
+
+      item.addEventListener('mousemove', positionZoom);
+
+      item.addEventListener('mouseleave', function () {
+        item.classList.remove('is-zooming');
+      });
+
+      if (image.complete) {
+        refreshZoomSize();
+      } else {
+        image.addEventListener('load', refreshZoomSize);
+      }
+    });
+  }
+
   onReady(function () {
-    initLightbox();
+    initScreenshotZoom();
     initBookmarkButton();
   });
 })();

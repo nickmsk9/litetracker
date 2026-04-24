@@ -3067,7 +3067,7 @@ body.theme-dark .details-bookmark-button-active {
   flex-wrap: wrap;
   padding: 9px 22px;
   border-bottom: 1px solid var(--line);
-  color: #262b33;
+  color: var(--text);
   font-size: 14px;
 }
 
@@ -3095,7 +3095,7 @@ body.theme-dark .details-bookmark-button-active {
   justify-content: center;
   width: 14px;
   height: 14px;
-  color: #7f8994;
+  color: var(--muted);
 }
 
 .details-meta-icon svg {
@@ -3281,28 +3281,49 @@ body.theme-dark .details-bookmark-button-active {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 18px;
+  gap: 12px;
+  overflow: visible;
 }
 
 .details-gallery-item {
+  position: relative;
+  z-index: 1;
   display: block;
   width: min(100%, 320px);
   max-width: 320px;
-  border-radius: 4px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 8px 22px rgba(20, 31, 43, 0.08);
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  cursor: zoom-in;
+  transition: box-shadow 180ms ease;
 }
 
-.details-gallery-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 26px rgba(20, 31, 43, 0.14);
+.details-gallery-item.is-zooming {
+  z-index: 20;
+  box-shadow: 0 18px 44px rgba(20, 31, 43, 0.28);
 }
 
 .details-gallery-item img {
   display: block;
   width: 100%;
   height: auto;
+  border-radius: 4px;
+}
+
+.details-gallery-zoom-window {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 0px);
+  z-index: 30;
+  display: none;
+  border-radius: 4px;
+  background-repeat: no-repeat;
+  background-color: var(--surface-solid);
+  box-shadow: 0 18px 44px rgba(20, 31, 43, 0.28);
+  pointer-events: none;
+}
+
+.details-gallery-item.is-zooming .details-gallery-zoom-window {
+  display: block;
 }
 
 .details-video-title {
@@ -3686,7 +3707,9 @@ iframe {
 
 .browse-results-panel {
   padding: 0;
-  overflow: hidden;
+  border: 0;
+  background: transparent;
+  overflow: visible;
 }
 
 .browse-results-header {
@@ -3812,8 +3835,12 @@ iframe {
 .browse-torrent-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
   padding: 20px 0 0;
+}
+
+.browse-torrent-list[data-view="full"] {
+  gap: 20px;
 }
 
 .browse-torrent-card {
@@ -4172,7 +4199,7 @@ iframe {
 }
 
 .home-results-panel {
-  overflow: hidden;
+  overflow: visible;
 }
 
 .home-browse-toolbar {
@@ -4181,7 +4208,10 @@ iframe {
   justify-content: space-between;
   gap: 12px;
   padding: 0;
-  border-bottom: 1px solid var(--line);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  overflow: hidden;
 }
 
 .home-torrent-list {
