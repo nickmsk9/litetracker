@@ -11,7 +11,7 @@ by Nick
 
 require 'system/init.php';
 
-if (!$PRIV['profile_view']) {
+if (!empty($USER) && !$PRIV['profile_view']) {
 	err($language['default_1'], $language['profile_20'], 1);
 }
 

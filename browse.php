@@ -119,9 +119,33 @@ function browse_filter_options_split($options, $selectedValues, $limit = 4)
 
 $search = trim((string) ($_GET['search'] ?? ''));
 $id_category = isset($_GET['id_category']) ? (int) $_GET['id_category'] : 0;
+$sort = trim((string) ($_GET['sort'] ?? 'date'));
 $view = (string) ($_GET['view'] ?? 'compact');
 $view = ($view === 'full' ? 'full' : 'compact');
 $searchRateLimitId = ($USER ? 'user:'.$USER['id'] : 'ip:'.($_SERVER['REMOTE_ADDR'] ?? 'cli'));
+
+$sortOptions = array(
+	'date' => array(
+		'label' => 'Дата',
+		'order' => 't.added DESC',
+	),
+	'size' => array(
+		'label' => 'Размер',
+		'order' => 't.size DESC, t.added DESC',
+	),
+	'seeders' => array(
+		'label' => 'Раздающие',
+		'order' => 'seeders DESC, t.added DESC',
+	),
+	'name' => array(
+		'label' => 'А - Я',
+		'order' => 't.name ASC',
+	),
+);
+
+if (empty($sortOptions[$sort])) {
+	$sort = 'date';
+}
 
 if ($search !== '') {
 	$searchRateLimit = lt_rate_limit_hit('search', $searchRateLimitId, 30, 5 * 60);
@@ -172,6 +196,7 @@ if ($search !== '') {
 if ($id_category > 0) {
 	$pagerParams['id_category'] = $id_category;
 }
+$pagerParams['sort'] = $sort;
 $pagerParams['view'] = $view;
 foreach ($selectedFilters as $group => $values) {
 	if ($values) {
@@ -207,7 +232,7 @@ $sql = $db->query("SELECT t.*, COALESCE(SUM(CASE WHEN tr.tracker = 'localhost' T
 	LEFT JOIN trackers AS tr ON tr.torrent = t.id
 	".($where ? 'WHERE '.implode(' AND ', $where) : '')."
 	GROUP BY t.id
-	ORDER BY t.added DESC
+	ORDER BY ".$sortOptions[$sort]['order']."
 	".$limit);
 
 while ($row = $db->get_row($sql)) {
@@ -267,7 +292,15 @@ head('Торренты');
 			<?php } ?>
 
 			<section class="browse-panel browse-results-panel">
-				<div class="browse-results-header">
+				<div class="home-browse-toolbar">
+					<ul class="browse-sort-list" role="tablist" aria-label="Сортировка торрентов">
+						<?php foreach ($sortOptions as $sortKey => $sortOption) { ?>
+						<li class="browse-sort-item<?=($sort === $sortKey ? ' is-active' : '');?>">
+							<a class="browse-sort-link" href="<?=htmlspecialchars(browse_build_url(array('sort' => $sortKey, 'page' => null)), ENT_QUOTES, 'UTF-8');?>"><?=$sortOption['label'];?></a>
+						</li>
+						<?php } ?>
+					</ul>
+
 					<div class="browse-view-switch" role="group" aria-label="Вид списка">
 						<button type="button" class="browse-view-button<?=($view === 'full' ? ' is-active' : '');?>" data-browse-view-toggle data-browse-view="full" aria-pressed="<?=($view === 'full' ? 'true' : 'false');?>">
 							<span class="browse-view-icon browse-view-icon-medium" aria-hidden="true"></span>

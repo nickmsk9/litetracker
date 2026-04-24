@@ -36,6 +36,28 @@ function lt_bookmark_parse_tags($value)
 	return array_values(array_unique($result));
 }
 
+function lt_bookmark_build_url($overrides = array(), $drop = array())
+{
+	$params = $_GET;
+
+	foreach ($drop as $key) {
+		unset($params[$key]);
+	}
+
+	foreach ($overrides as $key => $value) {
+		if ($value === null || $value === '' || $value === array()) {
+			unset($params[$key]);
+			continue;
+		}
+
+		$params[$key] = $value;
+	}
+
+	$query = http_build_query($params);
+
+	return 'my.book.php'.($query !== '' ? '?'.$query : '');
+}
+
 // безопасный act (фикс warning)
 $act = isset($_GET['act']) ? trim((string) $_GET['act']) : '';
 
@@ -158,8 +180,32 @@ if($act === 'delete') {
 
 head($language['books_3']);
 
+$sort = trim((string) ($_GET['sort'] ?? 'date'));
 $view = (string) ($_GET['view'] ?? 'compact');
 $view = ($view === 'full' ? 'full' : 'compact');
+
+$sortOptions = array(
+	'date' => array(
+		'label' => 'Дата',
+		'order' => 't.added DESC',
+	),
+	'size' => array(
+		'label' => 'Размер',
+		'order' => 't.size DESC, t.added DESC',
+	),
+	'seeders' => array(
+		'label' => 'Раздающие',
+		'order' => 'seeders DESC, t.added DESC',
+	),
+	'name' => array(
+		'label' => 'А - Я',
+		'order' => 't.name ASC',
+	),
+);
+
+if (empty($sortOptions[$sort])) {
+	$sort = 'date';
+}
 
 $categories = categories_array();
 $categoriesById = array();
@@ -169,7 +215,11 @@ foreach ($categories as $category) {
 
 $countRow = $db->super_query("SELECT COUNT(*) AS c FROM books AS b INNER JOIN torrents AS t ON b.id_torrent = t.id WHERE b.id_user=".(int) $USER['id']);
 $count = (int) ($countRow['c'] ?? 0);
-$pagerHref = 'my.book.php?'.($view !== 'compact' ? 'view='.$view.'&' : '');
+$pagerParams = array(
+	'sort' => $sort,
+	'view' => $view,
+);
+$pagerHref = 'my.book.php?'.http_build_query($pagerParams).'&';
 list($pagertop, $pagerbottom, $limit) = pager('10', $count, $pagerHref);
 
 $rows = array();
@@ -183,7 +233,7 @@ $sql = $db->query("SELECT t.*,
 	LEFT JOIN trackers AS tr ON tr.torrent = t.id
 	WHERE b.id_user=".(int) $USER['id']."
 	GROUP BY t.id
-	ORDER BY t.added DESC
+	ORDER BY ".$sortOptions[$sort]['order']."
 	".$limit);
 
 while ($row = $db->get_row($sql)) {
@@ -200,7 +250,15 @@ while ($row = $db->get_row($sql)) {
 	<div class="browse-layout">
 		<div class="browse-main">
 			<section class="browse-panel browse-results-panel">
-				<div class="browse-results-header">
+				<div class="home-browse-toolbar">
+					<ul class="browse-sort-list" role="tablist" aria-label="Сортировка закладок">
+						<?php foreach ($sortOptions as $sortKey => $sortOption) { ?>
+						<li class="browse-sort-item<?=($sort === $sortKey ? ' is-active' : '');?>">
+							<a class="browse-sort-link" href="<?=htmlspecialchars(lt_bookmark_build_url(array('sort' => $sortKey, 'page' => null)), ENT_QUOTES, 'UTF-8');?>"><?=$sortOption['label'];?></a>
+						</li>
+						<?php } ?>
+					</ul>
+
 					<div class="browse-view-switch" role="group" aria-label="Вид списка">
 						<button type="button" class="browse-view-button<?=($view === 'full' ? ' is-active' : '');?>" data-bookmarks-view-toggle data-bookmarks-view="full" aria-pressed="<?=($view === 'full' ? 'true' : 'false');?>">
 							<span class="browse-view-icon browse-view-icon-medium" aria-hidden="true"></span>
