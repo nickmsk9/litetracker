@@ -97,60 +97,8 @@ if(!$magnet) {
 	}
 }
 
-//Получаем ссылку
-$normalizeAnnounceUrl = function ($url) {
-	$url = trim((string) $url);
-	if ($url === '') {
-		return '';
-	}
-
-	$parts = @parse_url($url);
-	if (!$parts || empty($parts['host'])) {
-		return rtrim($url, '/');
-	}
-
-	$scheme = strtolower((string) ($parts['scheme'] ?? ''));
-	$host = strtolower((string) $parts['host']);
-	$port = (isset($parts['port']) ? ':'.(int) $parts['port'] : '');
-	$path = rtrim((string) ($parts['path'] ?? ''), '/');
-
-	return $scheme.'://'.$host.$port.$path;
-};
-
-$announce_urls_list = array() ;
-$announceBaseUrl = trim((string) ($config['announce_url'] ?? 'https://localhost:443/announce.php'));
-$localRetrackerUrl = trim((string) ($config['local_retracker_url'] ?? $announceBaseUrl));
-$normalizedLocalRetrackerUrl = $normalizeAnnounceUrl($localRetrackerUrl);
-
-if($USER)
-	$announce_urls_list[] = $announceBaseUrl.(strpos($announceBaseUrl, '?') === false ? '?' : '&')."passkey=".$USER['passkey'];
-else
-	$announce_urls_list[] = $announceBaseUrl;
-
 $useLocalRetracker = (!$USER || !isset($USER['download_local_retracker']) || !empty($USER['download_local_retracker']));
-if ($useLocalRetracker && $localRetrackerUrl !== '' && !in_array($localRetrackerUrl, $announce_urls_list)) {
-	$announce_urls_list[] = $localRetrackerUrl;
-}
-
-$announce_sql = $db->query("SELECT tracker FROM trackers WHERE torrent='".$id."' AND tracker<>'localhost'");
-while ($announceRow = $db->get_array($announce_sql)) {
-	$announce = (string) ($announceRow[0] ?? '');
-	if (!$useLocalRetracker && $normalizedLocalRetrackerUrl !== '' && $normalizeAnnounceUrl($announce) === $normalizedLocalRetrackerUrl) {
-		continue;
-	}
-
-	if (!in_array($announce, $announce_urls_list)) {
-		$announce_urls_list[] = $announce;
-	}
-}
-
-//ReTrackers
-$retrackers = get_retrackers();
-if ($retrackers) foreach ($retrackers as $announce)
-if (
-	!(!$useLocalRetracker && $normalizedLocalRetrackerUrl !== '' && $normalizeAnnounceUrl($announce) === $normalizedLocalRetrackerUrl) &&
-	!in_array($announce,$announce_urls_list)
-) $announce_urls_list[] = $announce;
+$announce_urls_list = lt_torrent_site_announce_urls($USER ?: null, $useLocalRetracker);
 
 //Учитываем , что пользователь скачал данный релиз
 $db->query('UPDATE torrents SET downloaded = (downloaded + 1) WHERE id="'.$db->safesql($id).'"');
@@ -177,8 +125,11 @@ if(!$PRIV['download_torrent']) {
 $filename = str_replace(array(',', ';'), '', $arr['filename']);
 
 //Выдаем на сохранение torrent - файл
-$dict = bdec_file($file_path, (1024*1024));
-put_announce_urls($dict,$announce_urls_list);
+$dict = lt_torrent_decode_file($file_path);
+if (!is_array($dict)) {
+	err($language['default_1'], 'Torrent-файл поврежден или не читается', 1);
+}
+$dict = put_announce_urls($dict,$announce_urls_list);
 
 
 $dict['type'] = 'dictionary';

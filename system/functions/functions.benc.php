@@ -31,8 +31,14 @@ function hex($string){
  * @return string
  */
 function make_magnet($info_hash,$filename,$trackers){
-	if (is_array($trackers)) $trackers = implode('&tr=',array_map('urlencode',$trackers)); else $trackers = urlencode($trackers);
-	return 'magnet:?xt=urn:btih:'.$info_hash.'&dn='.urlencode($filename).'&tr='.$trackers;
+	if (is_array($trackers)) {
+		$trackers = array_values(array_filter($trackers, 'strlen'));
+		$trackers = implode('&tr=', array_map('urlencode', $trackers));
+	} else {
+		$trackers = urlencode((string) $trackers);
+	}
+
+	return 'magnet:?xt=urn:btih:'.$info_hash.'&dn='.urlencode($filename).($trackers !== '' ? '&tr='.$trackers : '');
 
 }
 
@@ -227,6 +233,18 @@ function bdec_file($f, $ms) {
 	fclose($fp);
 	return bdec($e);
 }
+
+function lt_torrent_decode_file($path) {
+	$path = (string) $path;
+	if ($path === '' || !is_file($path) || !is_readable($path)) {
+		return;
+	}
+
+	$size = (int) @filesize($path);
+	$readBytes = max(1024 * 1024, $size + 1);
+
+	return bdec_file($path, $readBytes);
+}
 /**
  * Binary decodes a Value
  * @param string $s Value to be decoded
@@ -327,32 +345,214 @@ function bdec_dict($s) {
  * @param array $dict Decoded torrent dictionary
  * @return array|boolean Array of urls on success, false on fail
  */
+function lt_tracker_url_key($url, $includeQuery = true) {
+	$url = trim((string) $url);
+	if ($url === '') {
+		return '';
+	}
+
+	$parts = @parse_url($url);
+	if (!$parts || empty($parts['host'])) {
+		return rtrim($url, '/');
+	}
+
+	$scheme = strtolower((string) ($parts['scheme'] ?? ''));
+	$host = strtolower((string) $parts['host']);
+	$port = (isset($parts['port']) ? ':'.(int) $parts['port'] : '');
+	$path = (string) ($parts['path'] ?? '');
+	if ($path === '') {
+		$path = '/';
+	}
+	$path = rtrim($path, '/');
+	if ($path === '') {
+		$path = '/';
+	}
+	$query = ($includeQuery && isset($parts['query']) && $parts['query'] !== '' ? '?'.$parts['query'] : '');
+
+	return $scheme.'://'.$host.$port.$path.$query;
+}
+
+function lt_tracker_unique_urls($trackers) {
+	$result = array();
+	$seen = array();
+
+	foreach ((array) $trackers as $tracker) {
+		$tracker = trim((string) $tracker);
+		if ($tracker === '') {
+			continue;
+		}
+
+		$key = lt_tracker_url_key($tracker, true);
+		if ($key === '' || isset($seen[$key])) {
+			continue;
+		}
+
+		$seen[$key] = true;
+		$result[] = $tracker;
+	}
+
+	return $result;
+}
+
+function lt_tracker_is_site_url($url) {
+	global $config;
+
+	$url = trim((string) $url);
+	if ($url === '' || $url === 'localhost') {
+		return true;
+	}
+
+	$key = lt_tracker_url_key($url, false);
+	if ($key === '') {
+		return false;
+	}
+
+	$siteUrls = array(
+		(string) ($config['announce_url'] ?? ''),
+		(string) ($config['local_retracker_url'] ?? ''),
+	);
+
+	foreach ($siteUrls as $siteUrl) {
+		$siteKey = lt_tracker_url_key($siteUrl, false);
+		if ($siteKey !== '' && $siteKey === $key) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+function lt_torrent_external_trackers($trackers) {
+	$trackers = lt_tracker_unique_urls($trackers);
+	$result = array();
+	$retrackers = array();
+
+	if (function_exists('get_retrackers')) {
+		$retrackers = get_retrackers(true);
+	}
+
+	$retrackerKeys = array();
+	foreach ((array) $retrackers as $retracker) {
+		$key = lt_tracker_url_key($retracker, false);
+		if ($key !== '') {
+			$retrackerKeys[$key] = true;
+		}
+	}
+
+	foreach ($trackers as $tracker) {
+		if (lt_tracker_is_site_url($tracker)) {
+			continue;
+		}
+
+		$parts = @parse_url($tracker);
+		$scheme = strtolower((string) ($parts['scheme'] ?? ''));
+		if (!in_array($scheme, array('http', 'https', 'udp'), true)) {
+			continue;
+		}
+
+		$key = lt_tracker_url_key($tracker, false);
+		if ($key !== '' && isset($retrackerKeys[$key])) {
+			continue;
+		}
+
+		$result[] = $tracker;
+	}
+
+	return lt_tracker_unique_urls($result);
+}
+
+function lt_torrent_site_announce_urls($user = null, $includeLocalRetracker = false) {
+	global $config;
+
+	$announceBaseUrl = trim((string) ($config['announce_url'] ?? ''));
+	if ($announceBaseUrl === '') {
+		$scheme = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');
+		$host = trim((string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+		$announceBaseUrl = $scheme.'://'.$host.'/announce.php';
+	}
+
+	$urls = array();
+	if (is_array($user) && !empty($user['passkey'])) {
+		$urls[] = $announceBaseUrl.(strpos($announceBaseUrl, '?') === false ? '?' : '&').'passkey='.$user['passkey'];
+	} else {
+		$urls[] = $announceBaseUrl;
+	}
+
+	if ($includeLocalRetracker) {
+		$localRetrackerUrl = trim((string) ($config['local_retracker_url'] ?? ''));
+		if ($localRetrackerUrl !== '' && lt_tracker_is_site_url($localRetrackerUrl)) {
+			$urls[] = $localRetrackerUrl;
+		}
+	}
+
+	return lt_tracker_unique_urls($urls);
+}
+
+function lt_torrent_store_trackers($torrentId, $trackers) {
+	global $db;
+
+	$torrentId = (int) $torrentId;
+	if ($torrentId <= 0) {
+		return array();
+	}
+
+	$externalTrackers = lt_torrent_external_trackers($trackers);
+	$stored = array_merge(array('localhost'), $externalTrackers);
+
+	foreach ($stored as $trackerUrl) {
+		$db->query("INSERT INTO trackers (torrent, tracker, state) VALUES (".$torrentId.", '".$db->safesql($trackerUrl)."', '')");
+	}
+
+	return $stored;
+}
+
+function lt_torrent_rewrite_file_announces($path, $announceUrls = null) {
+	$dict = lt_torrent_decode_file($path);
+	if (!is_array($dict)) {
+		return false;
+	}
+
+	if ($announceUrls === null) {
+		$announceUrls = lt_torrent_site_announce_urls(null, false);
+	}
+
+	$dict = put_announce_urls($dict, (array) $announceUrls);
+	if (!is_array($dict)) {
+		return false;
+	}
+
+	return (@file_put_contents($path, benc($dict), LOCK_EX) !== false);
+}
+
 function get_announce_urls($dict){
 	$announce = (isset($dict['value']['announce']) ? $dict['value']['announce'] : null);
 	$announceList = (isset($dict['value']['announce-list']) ? $dict['value']['announce-list'] : null);
 	$anarray = array();
 
-	if (!empty($announce['value']) && empty($announceList)) {
+	if (!empty($announce['value'])) {
 		$anarray[] = $announce['value'];
-		return $anarray;
 	}
 
 	if (!empty($announceList)) {
-		if (empty($announceList['value'])) return false;
+		if (empty($announceList['value'])) return ($anarray ? lt_tracker_unique_urls($anarray) : false);
 		$retrackers = get_retrackers(true);
 		foreach ($announceList['value'] as $urls) {
-			if (empty($urls['value'][0]['value'])) {
+			if (empty($urls['value']) || !is_array($urls['value'])) {
 				continue;
 			}
-			if (!in_array($urls['value'][0]['value'],$retrackers))
-			$anarray[] = $urls['value'][0]['value'];
+			foreach ($urls['value'] as $announceUrl) {
+				if (empty($announceUrl['value'])) {
+					continue;
+				}
+				if (!in_array($announceUrl['value'],$retrackers))
+				$anarray[] = $announceUrl['value'];
+			}
 		}
-
-		return $anarray;
-
 	}
 
-	return false;
+	$anarray = lt_tracker_unique_urls($anarray);
+
+	return ($anarray ? $anarray : false);
 }
 
 /**
@@ -361,26 +561,28 @@ function get_announce_urls($dict){
  * @param array $anarray Array of announce urls. First element good to be a local announce-url
  * @return void Uses global $dict
  */
-function put_announce_urls($dict,$anarray){
-	global $dict;
-	$liststring = '';
+function put_announce_urls(&$dict,$anarray){
 	unset($dict['value']['announce']);
 	unset($dict['value']['announce-list']);
+	$anarray = lt_tracker_unique_urls((array) $anarray);
+	if (!$anarray) {
+		return $dict;
+	}
+
 	$dict['value']['announce'] = bdec(benc_str($anarray[0]));
 
-
-	if (is_array($anarray))
+	$announces = array();
 	foreach ($anarray as $announce) {
-		$announces[] = array('type' => 'list', 'value' => array(bdec(benc_str($announce))), 'strlen' => strlen("l".$announce."e"), 'string' => "l".$announce."e");
-		$liststring .= "l".$announce."e";
+		$list = array(bdec(benc_str($announce)));
+		$announces[] = array('type' => 'list', 'value' => $list, 'strlen' => strlen(benc_list($list)), 'string' => benc_list($list));
 	}
+
 	$dict['value']['announce-list']['type'] = 'list';
 	$dict['value']['announce-list']['value'] = $announces;
-
-
-	$dict['value']['announce-list']['string'] = "l".$liststring."e";
+	$dict['value']['announce-list']['string'] = benc_list($announces);
 	$dict['value']['announce-list']['strlen'] = strlen($dict['value']['announce-list']['string']);
 
+	return $dict;
 }
 
 /**
@@ -458,10 +660,16 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
 
 	$urlInfo = @parse_url($url);
 	$scheme = strtolower((string) ($urlInfo['scheme'] ?? 'http'));
+	if (!in_array($scheme, array('http', 'https'), true)) {
+		return array('tracker' => (string) ($urlInfo['host'] ?? $url), 'seeders' => 0, 'leechers' => 0, 'state' => 'skipped:unsupported_scheme_'.$scheme);
+	}
 	if ($scheme !== 'https') {
 		$scheme = 'http';
 	}
-	$http_host = $urlInfo['host'];
+	$http_host = (string) ($urlInfo['host'] ?? '');
+	if ($http_host === '') {
+		return array('tracker' => $url, 'seeders' => 0, 'leechers' => 0, 'state' => 'failed:no_host_detected_'.$method);
+	}
 	$http_port = getUrlPort($urlInfo);
 
 	if ($http_port === 0)

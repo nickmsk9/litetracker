@@ -140,6 +140,45 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 				</div>
 			</section>
 
+			<?php if (!empty($details_tracker_rows)) { ?>
+			<section class="details-panel details-trackers-panel">
+				<div class="details-section-group">
+					<h2 class="details-section-title">Мультитрекерная раздача</h2>
+					<div class="details-tracker-summary">
+						<span>Внешних трекеров: <?=number_format((int) $details_external_tracker_count);?></span>
+						<span>Пиры в списках учитывают локальный и внешний announce.</span>
+					</div>
+					<div class="details-trackers-wrap">
+						<table class="details-trackers-table">
+							<thead>
+								<tr>
+									<th>Трекер</th>
+									<th>Раздают</th>
+									<th>Качают</th>
+									<th>Проверка</th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php foreach ($details_tracker_rows as $trackerRow) { ?>
+								<tr>
+									<td>
+										<div class="details-tracker-url"><?=htmlspecialchars((string) ($trackerRow['tracker'] ?? ''), ENT_QUOTES, 'UTF-8');?></div>
+										<?php if (!empty($trackerRow['state'])) { ?>
+										<div class="details-tracker-state"><?=htmlspecialchars((string) $trackerRow['state'], ENT_QUOTES, 'UTF-8');?></div>
+										<?php } ?>
+									</td>
+									<td><?=htmlspecialchars((string) ($trackerRow['seeders'] ?? '0'), ENT_QUOTES, 'UTF-8');?></td>
+									<td><?=htmlspecialchars((string) ($trackerRow['leechers'] ?? '0'), ENT_QUOTES, 'UTF-8');?></td>
+									<td><?=htmlspecialchars((string) ($trackerRow['lastchecked'] ?? ''), ENT_QUOTES, 'UTF-8');?></td>
+								</tr>
+								<?php } ?>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</section>
+			<?php } ?>
+
 			<section class="details-panel details-info-panel">
 				<div class="details-section-group">
 					<h2 class="details-section-title"><?=$detailsInfoTitle;?></h2>

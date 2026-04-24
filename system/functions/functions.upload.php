@@ -885,6 +885,8 @@ function lt_torrent_prepare_browse_card($torrent, $category = array(), $user = a
 			'cover' => lt_torrent_cover_path($torrent, $category),
 			'seeders' => number_format(max(0, (int) ($torrent['seeders'] ?? 0))),
 			'leechers' => number_format(max(0, (int) ($torrent['leechers'] ?? 0))),
+			'is_multitracker' => !empty($torrent['multi']),
+			'external_tracker_count' => max(0, (int) ($torrent['external_tracker_count'] ?? 0)),
 			'size' => mksize((float) ($torrent['size'] ?? 0)),
 			'user_href' => profile_href($userId),
 			'user_html' => get_user_color($userClass, htmlspecialchars($userName, ENT_QUOTES, 'UTF-8')),

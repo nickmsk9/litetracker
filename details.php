@@ -290,8 +290,13 @@ $id = (int)$_GET['id'];
 
 //Запрос к таблице torrents
 $db->query("SELECT t.* ,
-			COALESCE(SUM(CASE WHEN tr.tracker='localhost' THEN tr.seeders ELSE 0 END), 0) AS seeders ,
-			COALESCE(SUM(CASE WHEN tr.tracker='localhost' THEN tr.leechers ELSE 0 END), 0) AS leechers ,
+			COALESCE(SUM(tr.seeders), 0) AS seeders ,
+			COALESCE(SUM(tr.leechers), 0) AS leechers ,
+			COALESCE(SUM(CASE WHEN tr.tracker='localhost' THEN tr.seeders ELSE 0 END), 0) AS local_seeders_count ,
+			COALESCE(SUM(CASE WHEN tr.tracker='localhost' THEN tr.leechers ELSE 0 END), 0) AS local_leechers_count ,
+			COALESCE(SUM(CASE WHEN tr.tracker<>'localhost' THEN tr.seeders ELSE 0 END), 0) AS external_seeders_count ,
+			COALESCE(SUM(CASE WHEN tr.tracker<>'localhost' THEN tr.leechers ELSE 0 END), 0) AS external_leechers_count ,
+			COALESCE(SUM(CASE WHEN tr.tracker<>'localhost' THEN 1 ELSE 0 END), 0) AS external_tracker_count ,
 			t.multi,
 			IF((SELECT SUM(seeders) FROM trackers WHERE torrent = t.id AND tracker='localhost' GROUP BY tracker) > 0 , true , false) AS local_seeders
 			FROM torrents AS t
@@ -583,6 +588,22 @@ $leechers = number_format($leechers_count);
 //Пиры
 $peers = number_format($seeders_count + $leechers_count);
 
+$details_tracker_rows = array();
+$details_external_tracker_count = (int) ($arr['external_tracker_count'] ?? 0);
+if ($details_external_tracker_count > 0) {
+	$trackerSql = $db->query("SELECT tracker, seeders, leechers, lastchecked, state FROM trackers WHERE tracker <> 'localhost' AND torrent=".(int) $id." ORDER BY seeders DESC, leechers DESC, tracker ASC");
+	while ($trackerRow = $db->get_row($trackerSql)) {
+		$lastChecked = (int) ($trackerRow['lastchecked'] ?? 0);
+		$details_tracker_rows[] = array(
+			'tracker' => (string) ($trackerRow['tracker'] ?? ''),
+			'seeders' => number_format(max(0, (int) ($trackerRow['seeders'] ?? 0))),
+			'leechers' => number_format(max(0, (int) ($trackerRow['leechers'] ?? 0))),
+			'lastchecked' => ($lastChecked > 0 ? convent_date(get_date_time($lastChecked)) : 'ещё не проверялся'),
+			'state' => trim((string) ($trackerRow['state'] ?? '')),
+		);
+	}
+}
+
 
 //Мульти
 $multi  = $arr['multi'];
@@ -660,7 +681,7 @@ if ($arr['banned']) {
 	$details_status_badges[] = array('label' => 'Заблокирован', 'class' => 'details-badge-danger');
 }
 if ($arr['multi']) {
-	$details_status_badges[] = array('label' => 'Мульти-трекер', 'class' => '');
+	$details_status_badges[] = array('label' => 'Мультитрекерная раздача', 'class' => 'details-badge-multitracker');
 }
 if ($arr['local_seeders']) {
 	$details_status_badges[] = array('label' => 'Локальные сиды', 'class' => 'details-badge-success');

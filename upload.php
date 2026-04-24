@@ -250,7 +250,10 @@ function lt_upload_parse_torrent()
 		err($language['default_1'], $language['upload_23'], 1);
 	}
 
-	$dict = bdec_file($tmpname, (1024 * 1024));
+	$dict = lt_torrent_decode_file($tmpname);
+	if (!is_array($dict)) {
+		err('Ошибка', 'Не удалось прочитать torrent-файл.', 1);
+	}
 	unset($dict['value']['nodes']);
 	unset($dict['value']['azureus_properties']);
 	unset($dict['value']['comment']);
@@ -424,20 +427,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	$screenshots[2] = ($screenshots[2] ?? '');
 	$screenshots[3] = ($screenshots[3] ?? '');
 
-	$trackers = array();
-	$trackers[] = 'localhost';
-	foreach ($torrent['trackers'] as $trackerUrl) {
-		if ($trackerUrl === '' || $trackerUrl === 'localhost') {
-			continue;
-		}
-		$trackers[] = $trackerUrl;
-	}
-	$trackers = array_values(array_unique($trackers));
+	$externalTrackers = lt_torrent_external_trackers($torrent['trackers']);
+	$isMultitracker = ($externalTrackers ? 1 : 0);
 
 	$insert = $db->query("INSERT INTO torrents
 		(name, filename, num_files, type, size, descr, infohash, tags, id_category, id_user, added, image, multi, downloaded, completed, last_action, screen_1, screen_2, screen_3, screen_4, video_vkontakte, news, content_type, subtitles, languages, genres, meta_info, countries)
 		VALUES
-		('".$db->safesql($form['name'])."', '".$db->safesql($torrent['filename'])."', ".count($torrent['filelist']).", '".$db->safesql($torrent['type'])."', '".$torrent['total_length']."', '".$db->safesql($form['descr'])."', '".$db->safesql($torrent['infohash'])."', '".$db->safesql($tags)."', ".(int) $form['catid'].", ".(int) $USER['id'].", NOW(), '".$db->safesql($coverName)."', '0', 0, 0, NOW(), '".$db->safesql($screenshots[0])."', '".$db->safesql($screenshots[1])."', '".$db->safesql($screenshots[2])."', '".$db->safesql($screenshots[3])."', '', 0, '".$db->safesql($contentType)."', '".$db->safesql($metadataValues['subtitles'])."', '".$db->safesql($metadataValues['language'])."', '".$db->safesql($metadataValues['genre'])."', '".$db->safesql($metadataValues['info'])."', '".$db->safesql($metadataValues['country'])."')", 0);
+		('".$db->safesql($form['name'])."', '".$db->safesql($torrent['filename'])."', ".count($torrent['filelist']).", '".$db->safesql($torrent['type'])."', '".$torrent['total_length']."', '".$db->safesql($form['descr'])."', '".$db->safesql($torrent['infohash'])."', '".$db->safesql($tags)."', ".(int) $form['catid'].", ".(int) $USER['id'].", NOW(), '".$db->safesql($coverName)."', '".$isMultitracker."', 0, 0, NOW(), '".$db->safesql($screenshots[0])."', '".$db->safesql($screenshots[1])."', '".$db->safesql($screenshots[2])."', '".$db->safesql($screenshots[3])."', '', 0, '".$db->safesql($contentType)."', '".$db->safesql($metadataValues['subtitles'])."', '".$db->safesql($metadataValues['language'])."', '".$db->safesql($metadataValues['genre'])."', '".$db->safesql($metadataValues['info'])."', '".$db->safesql($metadataValues['country'])."')", 0);
 
 	if (!$insert) {
 		@unlink('public/downloads/images/'.$coverName);
@@ -477,9 +473,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		$db->query("INSERT INTO files (id_torrent, filename, size) VALUES (".$id.", '".$db->safesql($fileRow[0])."', '".(int) $fileRow[1]."')");
 	}
 
-	foreach ($trackers as $trackerUrl) {
-		$db->query("INSERT INTO trackers (torrent, tracker, state) VALUES (".$id.", '".$db->safesql($trackerUrl)."', '')");
-	}
+	lt_torrent_store_trackers($id, $externalTrackers);
 
 	lt_upload_save_tags($form['catid'], $tags);
 
@@ -490,6 +484,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	if (!@move_uploaded_file($torrent['tmp_name'], 'public/downloads/torrents/'.$id.'.torrent')) {
 		err('Ошибка', 'Релиз добавлен, но torrent-файл не удалось сохранить на сервер.', 1);
 	}
+
+	lt_torrent_rewrite_file_announces('public/downloads/torrents/'.$id.'.torrent', lt_torrent_site_announce_urls(null, false));
 
 	$memcached->delete('upload_categories');
 	$memcached->delete('news_releases');

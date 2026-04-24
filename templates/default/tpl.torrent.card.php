@@ -55,6 +55,9 @@ if (!empty($extraSections[0]['label'])) {
 			<div class="browse-torrent-card-poster-col">
 				<a class="browse-torrent-card-cover" href="<?=htmlspecialchars((string) ($torrentCard['details_href'] ?? ''), ENT_QUOTES, 'UTF-8');?>">
 					<label class="browse-torrent-card-cover-badge"><?=htmlspecialchars((string) ($torrentCard['category_badge'] ?? 'торрент'), ENT_QUOTES, 'UTF-8');?></label>
+					<?php if (!empty($torrentCard['is_multitracker'])) { ?>
+					<span class="browse-torrent-card-multi-badge">multi</span>
+					<?php } ?>
 					<img src="<?=htmlspecialchars((string) ($torrentCard['cover'] ?? ''), ENT_QUOTES, 'UTF-8');?>" alt="<?=htmlspecialchars((string) ($torrentCard['name'] ?? ''), ENT_QUOTES, 'UTF-8');?>">
 				</a>
 			</div>
@@ -104,6 +107,9 @@ if (!empty($extraSections[0]['label'])) {
 		<div class="browse-torrent-card-compact-inner">
 			<a class="browse-torrent-card-compact-cover" href="<?=htmlspecialchars((string) ($torrentCard['details_href'] ?? ''), ENT_QUOTES, 'UTF-8');?>">
 				<label class="browse-torrent-card-cover-badge browse-torrent-card-cover-badge-compact"><?=htmlspecialchars((string) ($torrentCard['category_badge'] ?? 'торрент'), ENT_QUOTES, 'UTF-8');?></label>
+				<?php if (!empty($torrentCard['is_multitracker'])) { ?>
+				<span class="browse-torrent-card-multi-badge browse-torrent-card-multi-badge-compact">m</span>
+				<?php } ?>
 				<img src="<?=htmlspecialchars((string) ($torrentCard['cover'] ?? ''), ENT_QUOTES, 'UTF-8');?>" alt="<?=htmlspecialchars((string) ($torrentCard['name'] ?? ''), ENT_QUOTES, 'UTF-8');?>">
 			</a>
 

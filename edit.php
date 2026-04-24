@@ -320,10 +320,7 @@ if ($act == 'take') {
 		err($language['default_1'], $language['upload_3'], 1);
 	}
 
-	$multi = (!empty($_POST['multi']) ? 1 : 0);
-	if ((int) $arr['multi'] !== $multi) {
-		$update[] = 'multi="'.$multi.'"';
-	}
+	$multi = (int) $arr['multi'];
 
 	$file = (isset($_FILES['file']) && is_array($_FILES['file']) ? $_FILES['file'] : array());
 	$fname = trim((string) ($file['name'] ?? ''));
@@ -345,7 +342,10 @@ if ($act == 'take') {
 			err($language['default_1'], $language['upload_23'], 1);
 		}
 
-		$dict = bdec_file($tmpname, (1024 * 1024));
+		$dict = lt_torrent_decode_file($tmpname);
+		if (!is_array($dict)) {
+			err('Ошибка', 'Не удалось прочитать torrent-файл.', 1);
+		}
 		unset($dict['value']['nodes']);
 		unset($dict['value']['azureus_properties']);
 		unset($dict['value']['comment']);
@@ -355,17 +355,9 @@ if ($act == 'take') {
 		unset($dict['value']['publisher-url']);
 		unset($dict['value']['publisher-url.windows-1251']);
 
-		if (!$multi) {
-			unset($dict['value']['announce-list']);
-			unset($dict['value']['announce']);
-		} else {
-			$trackers = get_announce_urls($dict);
-			$trackers = (is_array($trackers) ? array_values(array_unique($trackers)) : array());
-		}
-
-		if ($multi && !$trackers) {
-			err($language['default_1'], $language['upload_24'], 1);
-		}
+		$trackers = get_announce_urls($dict);
+		$trackers = lt_torrent_external_trackers(is_array($trackers) ? $trackers : array());
+		$multi = ($trackers ? 1 : 0);
 
 		$dict = bdec(benc($dict));
 		list($info) = dict_check($dict, 'info');
@@ -550,12 +542,10 @@ if ($act == 'take') {
 		}
 
 		move_uploaded_file($tmpname, 'public/downloads/torrents/'.(int) $id.'.torrent');
+		lt_torrent_rewrite_file_announces('public/downloads/torrents/'.(int) $id.'.torrent', lt_torrent_site_announce_urls(null, false));
 
 		$db->query('DELETE FROM trackers WHERE torrent='.(int) $id);
-		$db->query('INSERT INTO trackers (torrent,tracker) VALUES ("'.(int) $id.'","localhost")');
-		foreach ($trackers as $trackerUrl) {
-			$db->query('INSERT INTO trackers (torrent,tracker) VALUES ("'.(int) $id.'","'.$db->safesql($trackerUrl).'")');
-		}
+		lt_torrent_store_trackers($id, $trackers);
 	}
 
 	if ((string) $arr['tags'] !== $tags) {
@@ -724,13 +714,10 @@ head($language['edit_3'], true);
 					</fieldset>
 					<?php } ?>
 
+					<?php if ($PRIV['edit_news'] || ($PRIV['edit_banned'] && $arr['id_user'] != $USER['id'])) { ?>
 					<fieldset class="upload-section">
 						<legend class="upload-section-title">Параметры</legend>
 						<div class="upload-option-grid upload-option-grid-cols-2">
-							<label class="upload-option">
-								<input type="checkbox" name="multi" value="1"<?=(!empty($arr['multi']) ? ' checked' : '');?>>
-								<span><?=$language['upload_15'];?></span>
-							</label>
 							<?php if ($PRIV['edit_news']) { ?>
 							<label class="upload-option">
 								<input type="checkbox" name="news" value="1"<?=(!empty($arr['news']) ? ' checked' : '');?>>
@@ -745,6 +732,7 @@ head($language['edit_3'], true);
 							<?php } ?>
 						</div>
 					</fieldset>
+					<?php } ?>
 				</div>
 
 				<div class="upload-grid-side">

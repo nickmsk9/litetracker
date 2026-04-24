@@ -3071,6 +3071,11 @@ body.theme-dark .details-bookmark-button-active {
   color: #4d7b43;
 }
 
+.details-badge-multitracker {
+  background: #e9f1fb;
+  color: #2f6fa5;
+}
+
 .details-alert-panel {
   padding: 14px 18px;
   border-color: #e4c7ba;
@@ -3234,6 +3239,7 @@ body.theme-dark .details-bookmark-button-active {
 .details-info-panel,
 .details-gallery-panel,
 .details-video-panel,
+.details-trackers-panel,
 .details-comments-panel {
   padding: 20px;
 }
@@ -3372,6 +3378,66 @@ body.theme-dark .details-bookmark-button-active {
   color: var(--muted);
   text-align: right;
   white-space: nowrap;
+}
+
+.details-tracker-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.details-trackers-wrap {
+  overflow-x: auto;
+}
+
+.details-trackers-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.details-trackers-table th,
+.details-trackers-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+  vertical-align: top;
+}
+
+.details-trackers-table th {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.details-trackers-table th:not(:first-child),
+.details-trackers-table td:not(:first-child) {
+  width: 96px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.details-trackers-table th:last-child,
+.details-trackers-table td:last-child {
+  width: 150px;
+}
+
+.details-tracker-url {
+  max-width: 520px;
+  overflow-wrap: anywhere;
+}
+
+.details-tracker-state {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .details-gallery-panel {
@@ -4081,6 +4147,26 @@ iframe {
   text-transform: lowercase;
 }
 
+.browse-torrent-card-multi-badge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 4px 0 0 0;
+  background: #2f6fa5;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-transform: lowercase;
+}
+
 .browse-torrent-card-copy {
   min-width: 0;
   overflow: hidden;
@@ -4172,6 +4258,14 @@ iframe {
   font-size: 10px;
   line-height: 14px;
   padding: 0 4px;
+}
+
+.browse-torrent-card-multi-badge-compact {
+  min-width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 11px;
+  line-height: 18px;
 }
 
 .browse-torrent-card-compact-content {
