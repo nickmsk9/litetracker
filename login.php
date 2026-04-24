@@ -381,8 +381,8 @@ if($_POST) {
 	if($loginModalError === '' && $config['reCaptcha'] && $config['reCaptcha_login']) {
 		$resp = recaptcha_check_answer ($config['reCaptcha_privatekey'],
 									$_SERVER["REMOTE_ADDR"],
-									$_POST["recaptcha_challenge_field"],
-									$_POST["recaptcha_response_field"]);
+									$_POST["recaptcha_challenge_field"] ?? '',
+									$_POST["recaptcha_response_field"] ?? '');
 
 		if (!$resp->is_valid) {
 			// What happens when the CAPTCHA was entered incorrectly

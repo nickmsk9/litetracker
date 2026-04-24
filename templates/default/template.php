@@ -118,20 +118,23 @@ function render_standard_sidebar()
 		$periodLabel = template_current_month_label();
 	}
 
-	$currentAmount = (float) ($config['project_help_current'] ?? 5873);
-	$goalAmount = (float) ($config['project_help_goal'] ?? 4900);
+	$currentAmount = (float) ($config['project_help_current'] ?? 0);
+	$goalAmount = (float) ($config['project_help_goal'] ?? 0);
 	$progress = ($goalAmount > 0 ? min(100, max(0, ($currentAmount / $goalAmount) * 100)) : 0);
 	$progressLabel = $periodLabel.': '.template_format_number($currentAmount).' из '.template_format_number($goalAmount);
+	$showProgress = ($goalAmount > 0);
 	$newsItems = template_get_sidebar_news();
 	?>
 	<aside class="site-sidebar site-sidebar-right">
 		<section class="sidebar-panel project-help-panel">
 			<h2 class="sidebar-panel-title"><a class="sidebar-panel-title-link" href="<?=htmlspecialchars($buttonHref, ENT_QUOTES, 'UTF-8');?>">Помощь проекту</a></h2>
 			<p class="project-help-copy"><?=htmlspecialchars($helpText, ENT_QUOTES, 'UTF-8');?></p>
+			<?php if ($showProgress) { ?>
 			<div class="project-help-progress" aria-label="<?=htmlspecialchars($progressLabel, ENT_QUOTES, 'UTF-8');?>">
 				<div class="project-help-progress-fill" style="width: <?=$progress;?>%;"></div>
 				<div class="project-help-progress-label"><?=htmlspecialchars($progressLabel, ENT_QUOTES, 'UTF-8');?></div>
 			</div>
+			<?php } ?>
 			<a class="project-help-button" href="<?=htmlspecialchars($buttonHref, ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars($buttonLabel, ENT_QUOTES, 'UTF-8');?></a>
 		</section>
 

@@ -35,9 +35,10 @@
 /**
  * The reCAPTCHA server URL's
  */
-define("RECAPTCHA_API_SERVER", "http://www.google.com/recaptcha/api");
-define("RECAPTCHA_API_SECURE_SERVER", "https://www.google.com/recaptcha/api");
+define("RECAPTCHA_API_SERVER", "https://www.google.com/recaptcha/api.js");
+define("RECAPTCHA_API_SECURE_SERVER", "https://www.google.com/recaptcha/api.js");
 define("RECAPTCHA_VERIFY_SERVER", "www.google.com");
+define("RECAPTCHA_VERIFY_URL", "https://www.google.com/recaptcha/api/siteverify");
 
 /**
  * Encodes the given data into a query string format
@@ -106,26 +107,11 @@ function _recaptcha_http_post($host, $path, $data, $port = 80) {
 function recaptcha_get_html ($pubkey, $error = null, $use_ssl = false)
 {
 	if ($pubkey == null || $pubkey == '') {
-		die ("To use reCAPTCHA you must get an API key from <a href='https://www.google.com/recaptcha/admin/create'>https://www.google.com/recaptcha/admin/create</a>");
+		return '<div class="auth-alert">reCAPTCHA не настроена: отсутствует публичный ключ.</div>';
 	}
-	
-	if ($use_ssl) {
-                $server = RECAPTCHA_API_SECURE_SERVER;
-        } else {
-                $server = RECAPTCHA_API_SERVER;
-        }
 
-        $errorpart = "";
-        if ($error) {
-           $errorpart = "&amp;error=" . $error;
-        }
-        return '<script type="text/javascript" src="'. $server . '/challenge?k=' . $pubkey . $errorpart . '"></script>
-
-	<noscript>
-  		<iframe src="'. $server . '/noscript?k=' . $pubkey . $errorpart . '" height="300" width="500" frameborder="0"></iframe><br/>
-  		<textarea name="recaptcha_challenge_field" rows="3" cols="40"></textarea>
-  		<input type="hidden" name="recaptcha_response_field" value="manual_challenge"/>
-	</noscript>';
+	$siteKey = htmlspecialchars((string) $pubkey, ENT_QUOTES, 'UTF-8');
+	return '<script src="'.RECAPTCHA_API_SECURE_SERVER.'" async defer></script><div class="g-recaptcha" data-sitekey="'.$siteKey.'"></div>';
 }
 
 
@@ -151,44 +137,60 @@ class ReCaptchaResponse {
   */
 function recaptcha_check_answer ($privkey, $remoteip, $challenge, $response, $extra_params = array())
 {
+	$recaptcha_response = new ReCaptchaResponse();
+	$recaptcha_response->is_valid = false;
+	$recaptcha_response->error = '';
+
 	if ($privkey == null || $privkey == '') {
-		die ("To use reCAPTCHA you must get an API key from <a href='https://www.google.com/recaptcha/admin/create'>https://www.google.com/recaptcha/admin/create</a>");
+		$recaptcha_response->error = 'missing-private-key';
+		return $recaptcha_response;
 	}
 
 	if ($remoteip == null || $remoteip == '') {
-		die ("For security reasons, you must pass the remote ip to reCAPTCHA");
+		$recaptcha_response->error = 'missing-remote-ip';
+		return $recaptcha_response;
 	}
 
-	
-	
-        //discard spam submissions
-        if ($challenge == null || strlen($challenge) == 0 || $response == null || strlen($response) == 0) {
-                $recaptcha_response = new ReCaptchaResponse();
-                $recaptcha_response->is_valid = false;
-                $recaptcha_response->error = 'incorrect-captcha-sol';
-                return $recaptcha_response;
-        }
+	$captchaToken = trim((string) ($_POST['g-recaptcha-response'] ?? $response ?? ''));
+	if ($captchaToken === '') {
+		$recaptcha_response->error = 'missing-input-response';
+		return $recaptcha_response;
+	}
 
-        $response = _recaptcha_http_post (RECAPTCHA_VERIFY_SERVER, "/recaptcha/api/verify",
-                                          array (
-                                                 'privatekey' => $privkey,
-                                                 'remoteip' => $remoteip,
-                                                 'challenge' => $challenge,
-                                                 'response' => $response
-                                                 ) + $extra_params
-                                          );
+	$postData = array(
+		'secret' => $privkey,
+		'remoteip' => $remoteip,
+		'response' => $captchaToken,
+	) + $extra_params;
 
-        $answers = explode ("\n", $response [1]);
-        $recaptcha_response = new ReCaptchaResponse();
+	$context = stream_context_create(array(
+		'http' => array(
+			'method' => 'POST',
+			'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+			'content' => http_build_query($postData),
+			'timeout' => 10,
+		),
+	));
 
-        if (trim ($answers [0]) == 'true') {
-                $recaptcha_response->is_valid = true;
-        }
-        else {
-                $recaptcha_response->is_valid = false;
-                $recaptcha_response->error = $answers [1];
-        }
-        return $recaptcha_response;
+	$verifyResponse = @file_get_contents(RECAPTCHA_VERIFY_URL, false, $context);
+	if ($verifyResponse === false) {
+		$recaptcha_response->error = 'verify-request-failed';
+		return $recaptcha_response;
+	}
+
+	$decodedResponse = json_decode($verifyResponse, true);
+	if (is_array($decodedResponse) && !empty($decodedResponse['success'])) {
+		$recaptcha_response->is_valid = true;
+		return $recaptcha_response;
+	}
+
+	if (is_array($decodedResponse) && !empty($decodedResponse['error-codes'])) {
+		$recaptcha_response->error = implode(',', (array) $decodedResponse['error-codes']);
+	} else {
+		$recaptcha_response->error = 'incorrect-captcha-sol';
+	}
+
+	return $recaptcha_response;
 
 }
 

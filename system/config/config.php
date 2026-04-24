@@ -85,8 +85,8 @@ $config  = array(
 'wmr_number' => $ltWmrNumber , //Кошелек WMR
 'project_help_text' => 'Оплата аренды сервера, принимаем любую помощь.' ,
 'project_help_period' => '' ,
-'project_help_current' => 5873 ,
-'project_help_goal' => 4900 ,
+'project_help_current' => 0 ,
+'project_help_goal' => 0 ,
 'project_help_button_label' => 'Помочь проекту' ,
 'project_help_button_href' => '' ,
 
@@ -128,13 +128,13 @@ $config  = array(
 'voice_price' => 100 , //Совместимость со старым конфигом
 
 //reCaptcha
-'reCaptcha' => 0 , //Использовать reCaptcha
+'reCaptcha' => lt_env_bool('LITETRACKER_RECAPTCHA_ENABLED', ($ltRecaptchaPublicKey !== '' && $ltRecaptchaPrivateKey !== '' ? 1 : 0)) , //Использовать reCaptcha
 'reCaptcha_publickey' => $ltRecaptchaPublicKey , //Ваш publickey
 'reCaptcha_privatekey' => $ltRecaptchaPrivateKey , //Ваш privatekey
 
 //reCaptcha for LiteTracker
 'reCaptcha_login' => 0 , //Использовать для входа
-'reCaptcha_signup' => 1 , //Использовать для регистрации
+'reCaptcha_signup' => lt_env_bool('LITETRACKER_RECAPTCHA_SIGNUP', 1) , //Использовать для регистрации
 'reCaptcha_download' => 0 , //Использовать для скачивания
 
 
