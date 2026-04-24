@@ -326,6 +326,21 @@ document.addEventListener('DOMContentLoaded', function () {
 		window.history.replaceState({}, '', url.toString());
 	}
 
+	function syncViewLinks(view) {
+		var links = document.querySelectorAll('.browse-pagination a, .browse-sort-list a');
+		for (var i = 0; i < links.length; i++) {
+			try {
+				var url = new URL(links[i].getAttribute('href'), window.location.href);
+				if (url.pathname.split('/').pop() !== 'my.book.php') {
+					continue;
+				}
+
+				url.searchParams.set('view', view);
+				links[i].setAttribute('href', 'my.book.php' + url.search + url.hash);
+			} catch (error) {}
+		}
+	}
+
 	function setView(view, syncUrl) {
 		if (!list) {
 			return;
@@ -342,6 +357,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		try {
 			window.localStorage.setItem(storageKey, view);
 		} catch (error) {}
+
+		syncViewLinks(view);
 
 		if (syncUrl) {
 			updateUrlParam('view', view);

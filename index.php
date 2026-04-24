@@ -97,7 +97,7 @@ if ($id_category > 0) {
 }
 
 $pagerHref = 'index.php'.($pagerParams ? '?'.http_build_query($pagerParams).'&' : '?');
-list($pagertop, $pagerbottom, $limit) = pager('1', $countTorrent, $pagerHref);
+list($pagertop, $pagerbottom, $limit) = pager('5', $countTorrent, $pagerHref);
 
 $rows = array();
 $sql = $db->query("SELECT t.*, COALESCE(SUM(CASE WHEN tr.tracker = 'localhost' THEN tr.seeders ELSE 0 END), 0) AS seeders, COALESCE(SUM(CASE WHEN tr.tracker = 'localhost' THEN tr.leechers ELSE 0 END), 0) AS leechers,
@@ -202,6 +202,21 @@ document.addEventListener('DOMContentLoaded', function () {
 		window.history.replaceState({}, '', url.toString());
 	}
 
+	function syncViewLinks(view) {
+		var links = document.querySelectorAll('.browse-pagination a, .browse-sort-list a, .browse-categories a');
+		for (var i = 0; i < links.length; i++) {
+			try {
+				var url = new URL(links[i].getAttribute('href'), window.location.href);
+				if (url.pathname.split('/').pop() !== 'index.php') {
+					continue;
+				}
+
+				url.searchParams.set('view', view);
+				links[i].setAttribute('href', 'index.php' + url.search + url.hash);
+			} catch (error) {}
+		}
+	}
+
 	function setView(view, syncUrl) {
 		if (!list) {
 			return;
@@ -218,6 +233,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		try {
 			window.localStorage.setItem(storageKey, view);
 		} catch (error) {}
+
+		syncViewLinks(view);
 
 		if (syncUrl) {
 			updateUrlParam('view', view);

@@ -212,7 +212,7 @@ $db->query("SELECT t.id
 $countTorrent = $db->num_rows();
 
 $pagerHref = 'browse.php'.($pagerParams ? '?'.http_build_query($pagerParams).'&' : '?');
-list($pagertop, $pagerbottom, $limit) = pager('1', $countTorrent, $pagerHref);
+list($pagertop, $pagerbottom, $limit) = pager('5', $countTorrent, $pagerHref);
 
 if ($search !== '' && substr_count((string) ($_SERVER['QUERY_STRING'] ?? ''), 'page') == 0 && strlen($search) >= 5 && $USER) {
 	$checkQuery = $db->super_query("SELECT COUNT(*) AS count FROM search_query WHERE id_user=".($USER ? $USER['id'] : '-1')." AND text LIKE '%".sqlwildcardesc($search)."%'");
@@ -419,6 +419,21 @@ document.addEventListener('DOMContentLoaded', function () {
 		window.history.replaceState({}, '', url.toString());
 	}
 
+	function syncViewLinks(view) {
+		var links = document.querySelectorAll('.browse-pagination a, .browse-sort-list a, .browse-categories a');
+		for (var i = 0; i < links.length; i++) {
+			try {
+				var url = new URL(links[i].getAttribute('href'), window.location.href);
+				if (url.pathname.split('/').pop() !== 'browse.php') {
+					continue;
+				}
+
+				url.searchParams.set('view', view);
+				links[i].setAttribute('href', 'browse.php' + url.search + url.hash);
+			} catch (error) {}
+		}
+	}
+
 	function setView(view, syncUrl) {
 		if (!list) {
 			return;
@@ -439,6 +454,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		try {
 			window.localStorage.setItem(storageKey, view);
 		} catch (error) {}
+
+		syncViewLinks(view);
 
 		if (syncUrl) {
 			updateUrlParam('view', view);
