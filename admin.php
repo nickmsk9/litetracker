@@ -182,7 +182,7 @@ function admin_dashboard_update_config_values($updates, $fieldMap)
 
 		$field = $fieldMap[$key];
 		$literal = admin_dashboard_php_literal($value, $field['type']);
-		$pattern = '/(^[ \t]*\'' . preg_quote($key, '/') . '\'\s*=>\s*)(.*?)(\s*,.*$)/m';
+		$pattern = '/(^[ \t]*\'' . preg_quote($key, '/') . '\'\s*=>\s*)(.*?)(\s*,\s*(?:(?:\/\/.*)?)$)/m';
 		$count = 0;
 		$content = preg_replace_callback(
 			$pattern,

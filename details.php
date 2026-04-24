@@ -461,7 +461,7 @@ if(isset($_GET['peers']) ) {
 if(isset($_GET['trackers']) && $arr['multi']) {
 	$sql = $db->query("SELECT * FROM trackers WHERE tracker <> 'localhost' AND  torrent=".$id);
 	if(!$db->num_rows($sql) ) {
-		err($language['error_1']  , 'Трекеров не найдено' , 1);
+		err($language['default_1']  , 'Трекеров не найдено' , 1);
 	}
 
 	head('Информация о трекерах');

@@ -101,14 +101,14 @@
 {
 	width: 310px;
 	height: 29px;
-	background: url(../img/loginTabBarBg.gif) no-repeat right;
+	background: #f2f5f8;
 	text-align: left;
 }
 #loginForm
 {
 	width: 310px;
 	height: 205px;
-	background-image:url(../img/loginFormBg.gif);
+	background: #ffffff;
 	position: relative;
 }
 #loginLabel
@@ -123,7 +123,8 @@
 	width: 260px;
 	height: 24px;
 	text-align: left;
-	background-image: url(../img/loginFieldBg.gif);
+	background: #ffffff;
+	border: 1px solid #cbd7e2;
 	margin-top: 3px;
 }
 input.loginField
@@ -153,11 +154,13 @@ input.loginField
 }
 #loginSubmit input.login
 {
-	background-image: url(../img/loginSubmit1.gif);
+	background: #4d7fc7;
+	color: #ffffff;
 }
 #loginSubmit input.reglogin
 {
-	background-image: url(../img/loginSubmit2.gif);
+	background: #ffffff;
+	color: #4d7fc7;
 }
 div#loginForm div.error
 {
@@ -196,7 +199,7 @@ div#loginForm div.error
 	position: absolute;
 	left: 0px;
 	top: 0px;
-	background-image: url(../img/chatBg.gif);
+	background: #ffffff;
 }
 #chatWrap
 {
@@ -214,7 +217,8 @@ div#loginForm div.error
 	left: 15px;
 	bottom: 15px;
 	text-align: left;
-	background-image: url(../img/chatInputBg.gif);
+	background: #ffffff;
+	border: 1px solid #cbd7e2;
 }
 #chatInput input
 {
@@ -250,7 +254,7 @@ div#loginForm div.error
 	position: absolute;
 	right: 0px;
 	top: 0px;
-	background-image: url(../img/listBg.gif);
+	background: #f7f9fb;
 }
 #listWrap
 {
@@ -288,7 +292,8 @@ div#loginForm div.error
 	text-align: left;
 	left: 0px;
 	bottom: 0px;
-	background-image: url(../img/listActionsBg.gif);
+	background: #ffffff;
+	border-top: 1px solid #cbd7e2;
 }
 #listActions div.left
 {

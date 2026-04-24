@@ -87,54 +87,6 @@ function cloud($small, $big, $colour = true)
 	return $data;
 }
 
-function flash_cloud($width, $height, $small, $big)
-{
-	$divname = 'tagcloud';
-	$soname = 'settings';
-	$movie = './public/swf/tagcloud.swf';
-	$path = './public/js';
-
-	$options = array();
-	$options['bgcolor'] = 'FFFFFF';
-	$options['trans'] = 'true';
-	$options['tcolor'] = '888888';
-	$options['tcolor2'] = '333333';
-	$options['hicolor'] = '222222';
-	$options['speed'] = '300';
-	$options['distr'] = 'true';
-	$options['mode'] = 'tags';
-
-	ob_start();
-	echo cloud($small, $big);
-	$tags = urlencode(str_replace("&nbsp;", " ", ob_get_clean()));
-
-	$flashtag = '';
-	$flashtag .= '<script type="text/javascript" src="' . $path . '/swfobject.js"> </script>';
-	$flashtag .= '<div id="' . $divname . '"><p style="display:none;">';
-	$flashtag .= urldecode($tags);
-	$flashtag .= '</p></div>';
-	$flashtag .= '<script type="text/javascript">';
-	$flashtag .= 'var rnumber = Math.floor(Math.random()*9999999);';
-	$flashtag .= 'var ' . $soname . ' = new SWFObject("' . $movie . '?r="+rnumber, "tagcloudflash", "' . $width . '", "' . $height . '", "9", "#' . $options['bgcolor'] . '");';
-
-	if ($options['trans'] == 'true') {
-		$flashtag .= $soname . '.addParam("wmode", "transparent");';
-	}
-
-	$flashtag .= $soname . '.addParam("allowScriptAccess", "always");';
-	$flashtag .= $soname . '.addVariable("tcolor", "0x' . $options['tcolor'] . '");';
-	$flashtag .= $soname . '.addVariable("tcolor2", "0x' . ($options['tcolor2'] == "" ? $options['tcolor'] : $options['tcolor2']) . '");';
-	$flashtag .= $soname . '.addVariable("hicolor", "0x' . ($options['hicolor'] == "" ? $options['tcolor'] : $options['hicolor']) . '");';
-	$flashtag .= $soname . '.addVariable("tspeed", "' . $options['speed'] . '");';
-	$flashtag .= $soname . '.addVariable("distr", "' . $options['distr'] . '");';
-	$flashtag .= $soname . '.addVariable("mode", "' . $options['mode'] . '");';
-	$flashtag .= $soname . '.addVariable("tagcloud", "' . urlencode('<tags>') . $tags . urlencode('</tags>') . '");';
-	$flashtag .= $soname . '.write("' . $divname . '");';
-	$flashtag .= '</script>';
-
-	return $flashtag;
-}
-
 function simple_cloud($small, $big)
 {
 	$data = '<style>
@@ -156,11 +108,7 @@ function simple_cloud($small, $big)
 // Вывод тегов
 function get_tags_type()
 {
-	if (empty($_COOKIE['tags_module'])) {
-		return simple_cloud(15, 20);
-	} else {
-		return flash_cloud('100%', '100', '30', '50');
-	}
+	return simple_cloud(15, 20);
 }
 
 // Вывод тегов к релизу

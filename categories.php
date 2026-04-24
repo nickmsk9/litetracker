@@ -339,7 +339,7 @@ if($_GET['act'] == 'add') {
 		//Название
 		$name = $_POST['name'];
 		if(empty($name) ) {
-			err($language['default_1'] , $language['default_31'] , 1);
+			err($language['default_1'] , $language['cats_8'] , 1);
 		}
 
 
