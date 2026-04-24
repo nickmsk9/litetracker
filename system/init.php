@@ -97,6 +97,9 @@ gzip();
 //Запускаем подключение  к mysql
 $db = new db;
 $db->connect($mysql['user'] , $mysql['password'] , $mysql['db'] ,  $mysql['host']);
+if (!empty($config['mysql_timezone_offset'])) {
+	$db->query("SET time_zone = '".$db->safesql($config['mysql_timezone_offset'])."'", 0);
+}
 
 //Запускаем мод ЧПУ
 $rewrite = new rewrite;

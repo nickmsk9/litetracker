@@ -44,6 +44,12 @@ $ltPublicHost = trim((string) lt_env_value('LITETRACKER_PUBLIC_HOST', 'localhost
 $ltAnnounceHost = trim((string) lt_env_value('LITETRACKER_ANNOUNCE_HOST', 'bt.localhost'));
 $ltAnnouncePath = trim((string) lt_env_value('LITETRACKER_ANNOUNCE_PATH', '/announce.php'));
 $ltCookieSalt = trim((string) lt_env_value('LITETRACKER_COOKIE_SALT', sha1($ltRootDir.'|'.$ltPublicHost)));
+$ltTimezone = trim((string) lt_env_value('LITETRACKER_TIMEZONE', 'Europe/Moscow'));
+if ($ltTimezone === '' || @date_default_timezone_set($ltTimezone) === false) {
+	$ltTimezone = 'Europe/Moscow';
+	date_default_timezone_set($ltTimezone);
+}
+$ltMysqlTimezoneOffset = (new DateTime('now', new DateTimeZone($ltTimezone)))->format('P');
 $ltCronToken = trim((string) lt_env_value('LITETRACKER_CRON_TOKEN', ''));
 $ltRecaptchaPublicKey = trim((string) lt_env_value('LITETRACKER_RECAPTCHA_PUBLICKEY', ''));
 $ltRecaptchaPrivateKey = trim((string) lt_env_value('LITETRACKER_RECAPTCHA_PRIVATEKEY', ''));
@@ -89,6 +95,8 @@ $config  = array(
 'local_retracker_url' => $ltLocalRetrackerUrl , //Локальный retracker для torrent-файлов; при необходимости можно изменить в конфиге
 'announce_interval' => 30*60 ,
 'remote_tracker_timeout' => $ltRemoteTrackerTimeout ,
+'timezone' => $ltTimezone,
+'mysql_timezone_offset' => $ltMysqlTimezoneOffset,
 
 'max_size_image' => 5*1024*1024, //Макс размер загружаемой картинки
 
