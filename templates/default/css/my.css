@@ -3390,6 +3390,57 @@ body.theme-dark .details-bookmark-button-active {
   line-height: 1.45;
 }
 
+.details-trackers-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.details-trackers-heading .details-section-title {
+  margin-bottom: 0;
+}
+
+.details-tracker-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid #c8d9ec;
+  border-radius: 4px;
+  background: #e9f3ff;
+  color: #24639f;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.details-tracker-refresh-button:hover {
+  border-color: #9dbfde;
+  background: #d9ebfd;
+  color: #1f568b;
+}
+
+.details-tracker-refresh-button.is-loading {
+  opacity: .72;
+  pointer-events: none;
+}
+
+body.theme-dark .details-tracker-refresh-button {
+  border-color: #334e6b;
+  background: #20364f;
+  color: #cfe6ff;
+}
+
+body.theme-dark .details-tracker-refresh-button:hover {
+  border-color: #456e97;
+  background: #284769;
+  color: #ffffff;
+}
+
 .details-trackers-wrap {
   overflow-x: auto;
 }

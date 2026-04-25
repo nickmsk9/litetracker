@@ -143,7 +143,16 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 			<?php if (!empty($details_tracker_rows)) { ?>
 			<section class="details-panel details-trackers-panel">
 				<div class="details-section-group">
-					<h2 class="details-section-title">Мультитрекерная раздача</h2>
+					<div class="details-trackers-heading">
+						<h2 class="details-section-title">Мультитрекерная раздача</h2>
+						<?php if ($details_tracker_update_href !== '') { ?>
+						<a
+							class="details-tracker-refresh-button"
+							href="<?=htmlspecialchars($details_tracker_update_href, ENT_QUOTES, 'UTF-8');?>"
+							data-details-trackers-refresh="1"
+						>Обновить</a>
+						<?php } ?>
+					</div>
 					<div class="details-tracker-summary">
 						<span>Внешних трекеров: <?=number_format((int) $details_external_tracker_count);?></span>
 						<span>Пиры в списках учитывают локальный и внешний announce.</span>

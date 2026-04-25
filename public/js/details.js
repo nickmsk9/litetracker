@@ -71,6 +71,53 @@
     });
   }
 
+  function initTrackerRefreshButton() {
+    var button = document.querySelector('[data-details-trackers-refresh]');
+    if (!button || typeof window.fetch !== 'function') {
+      return;
+    }
+
+    button.addEventListener('click', function (event) {
+      var href = button.getAttribute('href') || '';
+
+      if (!href || button.classList.contains('is-loading')) {
+        return;
+      }
+
+      event.preventDefault();
+      button.classList.add('is-loading');
+      button.textContent = 'Проверяю...';
+
+      var requestUrl = href + (href.indexOf('?') === -1 ? '?' : '&') + 'ajax=1';
+
+      window.fetch(requestUrl, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        }
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error('Request failed');
+          }
+
+          return response.json();
+        })
+        .then(function (payload) {
+          if (!payload || !payload.success) {
+            throw new Error((payload && payload.message) || 'Request failed');
+          }
+
+          window.location.reload();
+        })
+        .catch(function () {
+          window.location.href = href;
+        });
+    });
+  }
+
   function initScreenshotZoom() {
     var items = document.querySelectorAll('[data-details-screenshot-zoom]');
 
@@ -134,5 +181,6 @@
   onReady(function () {
     initScreenshotZoom();
     initBookmarkButton();
+    initTrackerRefreshButton();
   });
 })();

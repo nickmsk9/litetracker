@@ -590,7 +590,9 @@ $peers = number_format($seeders_count + $leechers_count);
 
 $details_tracker_rows = array();
 $details_external_tracker_count = (int) ($arr['external_tracker_count'] ?? 0);
+$details_tracker_update_href = '';
 if ($details_external_tracker_count > 0) {
+	$details_tracker_update_href = 'update.peers.php?id='.(int) $id.'&return='.rawurlencode('details.php?id='.(int) $id);
 	$trackerSql = $db->query("SELECT tracker, seeders, leechers, lastchecked, state FROM trackers WHERE tracker <> 'localhost' AND torrent=".(int) $id." ORDER BY seeders DESC, leechers DESC, tracker ASC");
 	while ($trackerRow = $db->get_row($trackerSql)) {
 		$lastChecked = (int) ($trackerRow['lastchecked'] ?? 0);
