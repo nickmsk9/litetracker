@@ -67,9 +67,9 @@
         return;
       }
 
-      ajaxMessage.textContent = '';
-      ajaxMessage.className = 'profile-inline-message';
-      ajaxMessage.hidden = true;
+      ajaxMessage.textContent = message || '';
+      ajaxMessage.className = 'profile-inline-message profile-inline-message-' + (isError ? 'error' : 'success');
+      ajaxMessage.hidden = !message;
     }
 
     function resetReplyState() {

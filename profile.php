@@ -294,6 +294,7 @@ $profileActions = array();
 $profileCanMessage = (!empty($USER['id']) && (int) $USER['id'] !== $id);
 $profileBlacklistEnabled = ($profileCanMessage && user_blacklist_available());
 $profileBlacklisted = ($profileBlacklistEnabled ? user_is_blacklisted((int) $USER['id'], $id) : false);
+$profileMessageHref = ($profileCanMessage ? 'my.mail.php?act=conversation&id_user='.$id : '');
 
 if ($isOwnProfile) {
 	$profileActions[] = array(
@@ -304,10 +305,10 @@ if ($isOwnProfile) {
 	);
 } elseif ($profileCanMessage) {
 	$profileActions[] = array(
-		'type' => 'button',
+		'type' => 'link',
 		'label' => 'Написать сообщение',
+		'href' => $profileMessageHref,
 		'class' => 'profile-card-button',
-		'attributes' => ' data-profile-open-message="1"',
 	);
 
 	if ($profileBlacklistEnabled) {
