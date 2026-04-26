@@ -48,7 +48,7 @@ LiteTracker Engine - это PHP-движок BitTorrent-трекера с лок
 .
 ├── ajax/                    # AJAX-обработчики чата, профилей, тегов
 ├── blocks/                  # Блоки боковой панели и главной страницы
-├── database/                # Основной SQL-дамп и upgrade-скрипты
+├── database/                # Основной SQL-дамп
 ├── docker/apache/           # Apache virtual hosts и стартовый скрипт TLS
 ├── modules/                 # Модули релизов, магазина, видео, скриншотов
 ├── public/                  # CSS, JavaScript, изображения и загруженные файлы
@@ -211,20 +211,12 @@ docker compose up -d
 
 Для production-окружения можно заменить контейнер `scheduler` системным cron, но токен должен совпадать с настройкой приложения.
 
-### База данных и миграции
+### База данных
 
 Основной дамп:
 
 ```text
 database/litetracker.sql
-```
-
-Дополнительные upgrade-скрипты находятся в `database/upgrade_*.sql`. Их стоит применять вручную и осознанно, если база была создана из более старой версии схемы.
-
-Пример ручного применения SQL-файла:
-
-```bash
-docker compose exec -T db mysql -uroot lite < database/upgrade_20260424_engine_optimization.sql
 ```
 
 ### Публичный announce URL
@@ -312,7 +304,7 @@ The repository includes an SQL dump with demo data, so the application can be st
 .
 ├── ajax/                    # AJAX handlers for chat, profiles, tags
 ├── blocks/                  # Sidebar and homepage blocks
-├── database/                # Main SQL dump and upgrade scripts
+├── database/                # Main SQL dump
 ├── docker/apache/           # Apache virtual hosts and TLS startup script
 ├── modules/                 # Release, shop, video, and screenshot modules
 ├── public/                  # CSS, JavaScript, images, and uploaded files
@@ -475,20 +467,12 @@ Main tasks:
 
 In production, the `scheduler` container can be replaced with system cron, as long as the token matches the application configuration.
 
-### Database and Migrations
+### Database
 
 Main dump:
 
 ```text
 database/litetracker.sql
-```
-
-Additional upgrade scripts are stored in `database/upgrade_*.sql`. Apply them manually when upgrading a database created from an older schema.
-
-Example:
-
-```bash
-docker compose exec -T db mysql -uroot lite < database/upgrade_20260424_engine_optimization.sql
 ```
 
 ### Public Announce URL

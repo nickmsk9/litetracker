@@ -5,4 +5,15 @@ docker-data/
 logs/*.log
 system/cache/*.cache
 system/cache/locks/
+!system/cache/locks/
+!system/cache/locks/.gitkeep
 comments_debug.log
+
+public/downloads/*
+!public/downloads/.gitkeep
+!public/downloads/images/
+!public/downloads/images/.gitkeep
+!public/downloads/screens/
+!public/downloads/screens/.gitkeep
+!public/downloads/torrents/
+!public/downloads/torrents/.gitkeep
