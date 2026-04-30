@@ -502,6 +502,41 @@ if ($roles['monitoring']) {
 	$roleBadges[] = 'Мониторинг';
 }
 
+$classPermissionLabels = array(
+	'upload' => 'загрузка релизов',
+	'details_view' => 'просмотр релизов',
+	'edit_release' => 'редактирование релизов',
+	'comments_edit' => 'редактирование комментариев',
+	'comments_delete' => 'удаление комментариев',
+	'download_torrent' => 'скачивание torrent',
+	'download_magnet' => 'скачивание magnet',
+	'setting_user' => 'редактирование аккаунтов',
+	'users_view' => 'список пользователей',
+	'user_add' => 'добавление пользователей',
+	'news_add' => 'новости',
+	'cats' => 'категории',
+	'ip_util' => 'IP-утилиты',
+	'sessions_view' => 'сессии',
+	'messages' => 'рассылка',
+	'EDIT_PRIV' => 'классы и права',
+);
+$classPermissionRows = array();
+if (!empty($PRIV['EDIT_PRIV'])) {
+	foreach (get_classes_list() as $classRow) {
+		$enabled = array();
+		foreach ($classPermissionLabels as $permissionKey => $permissionLabel) {
+			if (!empty($classRow[$permissionKey])) {
+				$enabled[] = $permissionLabel;
+			}
+		}
+		$classPermissionRows[] = array(
+			'id' => (int) $classRow['id'],
+			'name' => (string) $classRow['NAME'],
+			'enabled' => $enabled,
+		);
+	}
+}
+
 head('Админка');
 ?>
 <style>
@@ -718,6 +753,32 @@ head('Админка');
 .admin-link-text,
 .admin-action-text {
 	margin-top: 8px;
+}
+
+.admin-permission-list {
+	display: grid;
+	gap: 12px;
+	margin-top: 18px;
+}
+
+.admin-permission-row {
+	padding: 14px 16px;
+	border: 1px solid #e4ebf1;
+	border-radius: 4px;
+	background: #fff;
+}
+
+.admin-permission-name {
+	font-size: 16px;
+	font-weight: 700;
+	color: #111;
+}
+
+.admin-permission-text {
+	margin-top: 6px;
+	font-size: 13px;
+	line-height: 1.5;
+	color: #667584;
 }
 
 .admin-action-card {
@@ -1001,6 +1062,20 @@ head('Админка');
 			<?php } ?>
 		</div>
 	</section>
+	<?php if ($activeTab === 'users' && $classPermissionRows) { ?>
+	<section class='admin-card'>
+		<h2 class='admin-card-title'>Что может каждый класс</h2>
+		<p class='admin-card-text'>Краткая сводка включенных прав. Полный набор переключателей открывается через редактирование класса.</p>
+		<div class='admin-permission-list'>
+			<?php foreach ($classPermissionRows as $classRow) { ?>
+			<a class='admin-permission-row' href='edit_priv.php?id=<?=$classRow['id'];?>&amp;act=edit'>
+				<div class='admin-permission-name'><?=htmlspecialchars($classRow['name'], ENT_QUOTES, 'UTF-8');?></div>
+				<div class='admin-permission-text'><?=htmlspecialchars($classRow['enabled'] ? implode(', ', $classRow['enabled']) : 'нет включенных прав', ENT_QUOTES, 'UTF-8');?></div>
+			</a>
+			<?php } ?>
+		</div>
+	</section>
+	<?php } ?>
 	<?php } ?>
 	<?php if (!$hasVisibleSection) { ?>
 	<div class='admin-empty'>Для этого раздела пока нет доступных модулей.</div>

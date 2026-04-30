@@ -33,6 +33,17 @@ if (!$arr) {
 
 
 $settingsView = 'general';
+$canManageProfileClass = (!empty($PRIV['setting_user']) && (int) $id !== (int) $USER['id']);
+$profileClassOptions = array();
+if ($canManageProfileClass) {
+	foreach (get_classes_list() as $classRow) {
+		$classPriv = get_priv_info((int) $classRow['id']);
+		if (empty($classPriv['EDIT_PRIV']) || !empty($PRIV['EDIT_PRIV'])) {
+			$profileClassOptions[] = $classRow;
+		}
+	}
+}
+
 $avatarPath = 'public/images/default_avatar.gif';
 if (!empty($arr['avatar']) && is_file('public/avatars/'.$arr['avatar'])) {
 	$avatarPath = 'public/avatars/'.$arr['avatar'];

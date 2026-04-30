@@ -1,35 +1,35 @@
 <?php
 if (!defined('LITETRACKER')) {
-	die('Direct access denied.');
+    die('Direct access denied.');
 }
 
 $avatar = 'public/images/default_avatar.gif';
 if ($USER && !empty($USER['avatar']) && is_file('public/avatars/small/'.$USER['avatar'])) {
-	$avatar = 'public/avatars/small/'.$USER['avatar'];
+    $avatar = 'public/avatars/small/'.$USER['avatar'];
 }
 
 $mainNav = array(
-	array('href' => 'browse.php?act=all', 'label' => 'Торренты'),
+    array('href' => 'browse.php?act=all', 'label' => 'Торренты'),
 );
 
 if ($USER && admin_dashboard_can_access($USER, $PRIV)) {
-	$mainNav[] = array('href' => 'admin.php', 'label' => 'Админка');
+    $mainNav[] = array('href' => 'admin.php', 'label' => 'Админка');
 }
 
 if ($USER) {
-	$userMenu = array(
-		array('href' => 'my.setting.php', 'label' => 'Настройки', 'icon' => 'settings'),
-		array('href' => 'my.mail.php', 'label' => 'Сообщения', 'icon' => 'messages'),
-		array('href' => 'my.book.php', 'label' => 'Закладки', 'icon' => 'bookmarks'),
-		array('href' => profile_href((int) $USER['id']), 'label' => 'Профиль', 'icon' => 'profile'),
-		array('href' => 'exit.php', 'label' => 'Выход', 'icon' => 'logout'),
-	);
+    $userMenu = array(
+        array('href' => 'my.setting.php', 'label' => 'Настройки', 'icon' => 'settings'),
+        array('href' => 'my.mail.php', 'label' => 'Сообщения', 'icon' => 'messages'),
+        array('href' => 'my.book.php', 'label' => 'Закладки', 'icon' => 'bookmarks'),
+        array('href' => profile_href((int) $USER['id']), 'label' => 'Профиль', 'icon' => 'profile'),
+        array('href' => 'exit.php', 'label' => 'Выход', 'icon' => 'logout'),
+    );
 
-	if (user_wall_reports_can_moderate()) {
-		array_splice($userMenu, 4, 0, array(
-			array('href' => user_wall_reports_href(), 'label' => 'Жалобы', 'icon' => 'reports'),
-		));
-	}
+    if (user_wall_reports_can_moderate()) {
+        array_splice($userMenu, 4, 0, array(
+            array('href' => user_wall_reports_href(), 'label' => 'Жалобы', 'icon' => 'reports'),
+        ));
+    }
 }
 
 $messagesCount = (!empty($USER['num_messages']) ? (int) $USER['num_messages'] : 0);
@@ -37,14 +37,14 @@ $messagesBadge = ($messagesCount > 99 ? '99+' : (string) $messagesCount);
 $requestUri = ltrim((string) ($_SERVER['REQUEST_URI'] ?? ''), '/');
 $loginHref = 'login.php';
 if ($requestUri !== '' && strpos($requestUri, 'login.php') !== 0) {
-	$loginHref .= '?referer='.rawurlencode($requestUri);
+    $loginHref .= '?referer='.rawurlencode($requestUri);
 }
 $bodyClasses = array();
 if (!empty($USER['theme_dark'])) {
-	$bodyClasses[] = 'theme-dark';
+    $bodyClasses[] = 'theme-dark';
 }
 if (lt_is_mobile_request()) {
-	$bodyClasses[] = 'is-mobile';
+    $bodyClasses[] = 'is-mobile';
 }
 ?>
 <!doctype html>
@@ -325,12 +325,12 @@ if (lt_is_mobile_request()) {
 		<main class="site-main">
 			<div class="blockContent">
 				<?php /*
-				if (!empty($USER['bad_rating']) && !empty($PRIV['bad_rating'])) {
-					begin_frame();
-					msg($language['template_6']);
-					end_frame();
-				} */
-				?>
+                if (!empty($USER['bad_rating']) && !empty($PRIV['bad_rating'])) {
+                    begin_frame();
+                    msg($language['template_6']);
+                    end_frame();
+                } */
+                ?>
 
 				<?php if (empty($GLOBALS['LITETRACKER_HIDE_TOP_BLOCKS'])) { ?>
 					<?php show_blocks('c'); ?>

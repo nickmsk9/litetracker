@@ -332,13 +332,15 @@ if($PRIV['setting_user']) {
 		}
 	}
 
-	if($PRIV['EDIT_PRIV'] && isset($_POST['class'])) {
+	if($PRIV['setting_user'] && isset($_POST['class']) && (int) $id !== (int) $USER['id']) {
 		$class = (int) ($_POST['class'] ?? $arr['class']);
-		$db->query("SELECT * FROM priv WHERE id > 0 AND id=".$class);
-		if($arr['class'] != $class && $db->num_rows()) {
+		$targetClass = $db->super_query("SELECT * FROM priv WHERE id > 0 AND id=".$class." LIMIT 1");
+		if(!empty($targetClass['id']) && !empty($targetClass['EDIT_PRIV']) && empty($PRIV['EDIT_PRIV'])) {
+			err($language['default_1'], 'У вас нет прав назначать этот класс.', 1);
+		}
+		if($arr['class'] != $class && !empty($targetClass['id'])) {
 			$update[] = "class='".$class."'";
-			$infoClass = get_priv_info($class);
-			send_msg($language['setting_76'], sprintf($language['setting_77'], $infoClass['NAME']), $id, 0);
+			send_msg($language['setting_76'], sprintf($language['setting_77'], $targetClass['NAME']), $id, 0);
 		}
 	}
 }

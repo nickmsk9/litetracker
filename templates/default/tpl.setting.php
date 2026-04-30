@@ -101,6 +101,20 @@ $settingsActiveTab = ((string) ($_GET['tab'] ?? '') === 'password' ? 'password' 
 						</div>
 					</section>
 
+					<?php if (!empty($canManageProfileClass) && !empty($profileClassOptions)) { ?>
+					<section class="settings-section">
+						<h2 class="settings-section-title">Администрирование</h2>
+						<div class="settings-field">
+							<label class="settings-field-label" for="settings_user_class">Класс пользователя</label>
+							<select id="settings_user_class" name="class">
+								<?php foreach ($profileClassOptions as $classRow) { ?>
+								<option value="<?=(int) $classRow['id'];?>"<?=((int) $arr['class'] === (int) $classRow['id'] ? ' selected' : '');?>><?=htmlspecialchars($classRow['NAME'], ENT_QUOTES, 'UTF-8');?></option>
+								<?php } ?>
+							</select>
+						</div>
+					</section>
+					<?php } ?>
+
 					<div class="settings-actions">
 						<button class="settings-submit" type="submit">Сохранить</button>
 					</div>

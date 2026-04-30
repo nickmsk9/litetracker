@@ -478,6 +478,47 @@ function user_wall_reports_can_moderate()
     return (!empty($PRIV['comments_edit']) || !empty($PRIV['comments_delete']) || !empty($PRIV['setting_user']));
 }
 
+function user_wall_reports_notify_moderators($reportId, $objectId, $commentId, $reporterName = '')
+{
+    global $db;
+
+    $reportId = (int) $reportId;
+    $objectId = (int) $objectId;
+    $commentId = (int) $commentId;
+    $reporterName = trim((string) $reporterName);
+
+    if ($reportId <= 0 || $objectId <= 0 || $commentId <= 0) {
+        return 0;
+    }
+
+    $sql = $db->query(
+        "SELECT DISTINCT u.id
+         FROM users AS u
+         INNER JOIN priv AS p ON p.id = u.class
+         WHERE p.comments_edit = 1
+            OR p.comments_delete = 1
+            OR p.setting_user = 1"
+    );
+
+    $sent = 0;
+    $subject = 'Новая жалоба на комментарий';
+    $text = 'Поступила новая жалоба на комментарий стены профиля.'."\n";
+    if ($reporterName !== '') {
+        $text .= 'Отправитель: [b]'.$reporterName.'[/b]'."\n";
+    }
+    $text .= 'Жалоба: wall_reports.php?id='.$reportId."\n";
+    $text .= 'Комментарий: '.profile_href($objectId).'#wall-comment-'.$commentId;
+
+    while ($row = $db->get_row($sql)) {
+        if (send_msg($subject, $text, (int) $row['id'], 0)) {
+            $sent++;
+        }
+    }
+    $db->free($sql);
+
+    return $sent;
+}
+
 function user_wall_reports_table_name()
 {
     return 'comments_users_reports';

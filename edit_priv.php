@@ -21,6 +21,56 @@ if(!$PRIV['EDIT_PRIV']) {
 	err($language['default_1'] , $language['edit_priv_1'] , 1);
 }
 
+function edit_priv_permission_labels()
+{
+	return array(
+		'upload' => 'загрузка релизов',
+		'details_view' => 'просмотр релизов',
+		'details_banned_view' => 'видит забаненные релизы',
+		'edit_release' => 'редактирование релизов',
+		'edit_news' => 'новинка месяца',
+		'edit_banned' => 'бан релизов',
+		'cats' => 'категории',
+		'chat_view' => 'чат',
+		'chat_delete' => 'удаление в чате',
+		'chat_clear' => 'очистка чата',
+		'comments_edit' => 'редактирование комментариев',
+		'comments_delete' => 'удаление комментариев',
+		'download_torrent' => 'скачивание torrent',
+		'download_magnet' => 'скачивание magnet',
+		'messages' => 'рассылка',
+		'multitracker_accounts' => 'мультитрекер',
+		'setting_user' => 'редактирование аккаунтов',
+		'ip_util' => 'IP-утилиты',
+		'search_query' => 'мониторинг поиска',
+		'sessions_view' => 'просмотр сессий',
+		'sessions_clear' => 'очистка сессий',
+		'news_add' => 'новости',
+		'user_add' => 'добавление пользователей',
+		'faq_moderate' => 'FAQ',
+		'profile_view' => 'просмотр профилей',
+		'users_view' => 'список пользователей',
+		'bad_rating' => 'плохой рейтинг',
+		'block_moderators' => 'модераторские блоки',
+		'block_administrators' => 'админские блоки',
+		'EDIT_PRIV' => 'классы и права',
+	);
+}
+
+function edit_priv_enabled_permissions($row)
+{
+	$labels = edit_priv_permission_labels();
+	$result = array();
+
+	foreach ($labels as $key => $label) {
+		if (!empty($row[$key])) {
+			$result[] = $label;
+		}
+	}
+
+	return $result;
+}
+
 
 /////////////////////////////////////////////////////////////////
 //Перемещение пользователей
@@ -714,6 +764,11 @@ echo '<input type="button" value="Перемещение пользовател�
 echo '<input type="button" value="Права для гостей" onClick="window.location.href=\'edit_priv.php?id=0&act=edit\'">';
 echo '<table width="100%" cellpadding="3" class="tt">';
 while($arr = $db->get_row($sql) ) {
+		$enabledPermissions = edit_priv_enabled_permissions($arr);
+		$permissionsPreview = ($enabledPermissions ? implode(', ', array_slice($enabledPermissions, 0, 9)) : 'нет включенных прав');
+		if (count($enabledPermissions) > 9) {
+			$permissionsPreview .= ' и еще '.(count($enabledPermissions) - 9);
+		}
 		echo '<tr>';
 
 		echo '<td width="1%" align="center">';
@@ -722,6 +777,7 @@ while($arr = $db->get_row($sql) ) {
 
 		echo '<td width="50%">';
 		echo '<A href="edit_priv.php?id='.$arr['id'].'&act=edit">'.htmlspecialchars($arr['NAME']).'</a> <div style="float:right"><small>Создана '.convent_date($arr['DATE']).'</small></div>';
+		echo '<br><small><b>Может:</b> '.htmlspecialchars($permissionsPreview, ENT_QUOTES, 'UTF-8').'</small>';
 		echo '</td>';
 
 		echo '<td width="15%">';
