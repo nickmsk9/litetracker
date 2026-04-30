@@ -96,6 +96,8 @@ if ($id) {
 		$db->query("UPDATE LOW_PRIORITY trackers SET seeders=".(int)$peers['seeders'].", leechers=".(int)$peers['leechers'].", lastchecked=".time().", state='".$db->safesql((string) ($peers['state'] ?? ''))."' WHERE torrent=".$id." AND tracker='".$db->safesql($url)."'");
 		$updatedTrackers++;
 	}
+
+	update_peers_finish($updatePeersLock, array('updated_trackers' => $updatedTrackers));
 }
 
 if ($CRON['multi_remote'] && (( time() - $CRON['last_remotecheck'] ) < $CRON['remotecheck_interval'] ) ) {

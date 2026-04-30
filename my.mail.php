@@ -335,7 +335,17 @@ if ($act === 'conversation') {
 		die();
 	}
 
-	if (!$systemConversation) {
+	if ($systemConversation) {
+		$unread = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out = 0 AND delete_in = 0 AND reading = 0");
+		$unreadCount = (int) ($unread['c'] ?? 0);
+
+		if ($unreadCount > 0) {
+			$db->query("UPDATE mail SET reading = '1' WHERE id_user_in = {$currentUserId} AND id_user_out = 0 AND delete_in = 0 AND reading = 0");
+			$db->query("UPDATE users SET num_messages = GREATEST(num_messages - {$unreadCount}, 0) WHERE id = {$currentUserId}");
+			$USER['num_messages'] = max(0, (int) $USER['num_messages'] - $unreadCount);
+			$memcached->delete('user_'.$currentUserId, 0);
+		}
+	} else {
 		$unread = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out = {$targetUserId} AND delete_in = 0 AND reading = 0");
 		$unreadCount = (int) ($unread['c'] ?? 0);
 

@@ -222,7 +222,7 @@ function admin_dashboard_is_superadmin($user = null, $priv = null)
 	$user = (is_array($user) ? $user : array());
 	$priv = (is_array($priv) ? $priv : array());
 
-	return ((int) ($user['class'] ?? 0) === 6 || !empty($priv['EDIT_PRIV']));
+	return !empty($priv['EDIT_PRIV']);
 }
 
 function admin_dashboard_can_access($user = null, $priv = null)
@@ -248,7 +248,6 @@ function admin_dashboard_can_access($user = null, $priv = null)
 
 	$flags = array(
 		'cats',
-		'users_view',
 		'user_add',
 		'messages',
 		'setting_user',
@@ -370,7 +369,8 @@ function foot($light = false) {
 	require 'templates/'.$tpl.'/foot.php';
 
 	//DEGUB SQL
-	if(DEGUB_SQL) {
+	$showSqlDebug = (DEGUB_SQL || admin_dashboard_can_access(($USER ?? null), ($PRIV ?? null)));
+	if($showSqlDebug) {
 		foreach($db->query_list AS $res) {
 			echo '<b>'.$res['num'].' - ('.(round($res['time'] , 1) >= 0.6 ? '<font color="red">'.$res['time'].'</font>' : '<font color="green">'.$res['time'].'</font>' ).')</b>'.' - '.$res['query'].'<br><br>';
 		}

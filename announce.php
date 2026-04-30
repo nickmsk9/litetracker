@@ -149,11 +149,6 @@ if (!$GUEST) {
 		$PRIV = get_priv_info((int) $az['class']);
 		$userid = (int) $az['id'];
 
-		if (!empty($PRIV['bad_rating']) && $seeder === '0') {
-			if (get_ratio($az['uploaded'], $az['downloaded']) < $config['bad_rating']) {
-				err(sprintf($language['announce_11'], ($config['bad_rating'] - 1)));
-			}
-		}
 	} else {
 		$upthis = max(0, $uploaded - (int) $self['uploaded']);
 		$downthis = max(0, $downloaded - (int) $self['downloaded']);

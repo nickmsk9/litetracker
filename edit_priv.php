@@ -50,7 +50,6 @@ function edit_priv_permission_labels()
 		'faq_moderate' => 'FAQ',
 		'profile_view' => 'просмотр профилей',
 		'users_view' => 'список пользователей',
-		'bad_rating' => 'плохой рейтинг',
 		'block_moderators' => 'модераторские блоки',
 		'block_administrators' => 'админские блоки',
 		'EDIT_PRIV' => 'классы и права',
@@ -179,6 +178,7 @@ if($_GET['act'] == 'delete' && $_GET['id']) {
 
 		//Удаляем cache
 		$memcached->delete('priv_'.$id , 0);
+		$memcached->delete('priv_all' , 0);
 
 		header("Location:edit_priv.php?status=2");
 		die();
@@ -229,7 +229,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		}
 
 		//Массив с правами
-		$array = array('faq_moderate'  , 'edit_banned' ,'edit_news' , 'user_add' , 'bad_rating' , 'news_add' ,'upload', 'cats', 'chat_delete', 'chat_view', 'chat_clear',  'comments_edit', 'comments_delete', 'details_banned_view', 'details_view', 'download_torrent', 'download_magnet', 'edit_release', 'messages', 'multitracker_accounts', 'setting_user', 'ip_util', 'profile_view', 'search_query', 'sessions_view', 'sessions_clear', 'users_view' , 'block_moderators' ,  'block_administrators');
+		$array = array('faq_moderate'  , 'edit_banned' ,'edit_news' , 'user_add' , 'news_add' ,'upload', 'cats', 'chat_delete', 'chat_view', 'chat_clear',  'comments_edit', 'comments_delete', 'details_banned_view', 'details_view', 'download_torrent', 'download_magnet', 'edit_release', 'messages', 'multitracker_accounts', 'setting_user', 'ip_util', 'profile_view', 'search_query', 'sessions_view', 'sessions_clear', 'users_view' , 'block_moderators' ,  'block_administrators');
 		$update = array();
 
 		//Обрабатываем данные
@@ -283,6 +283,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 
 		//Удаляем cache
 		$memcached->delete('priv_'.$id , 0);
+		$memcached->delete('priv_all' , 0);
 
 		//Перенаправление
 		header('Location:edit_priv.php?status=1');
@@ -668,21 +669,6 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>Возможность просматривать участников</small>
 		</td><td>
 	   </td></tr>
-
-
-
-	      <tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" >Плохой рейтинг:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="checkbox" name="bad_rating" value="1" <?=($arr['bad_rating'] ? 'checked' : '');?> \>
-			<small>Банить аккаунт, если у пользователя плохой рейтинг</small>
-		</td><td>
-	   </td></tr>
-
-
-
 
 	   <tr>
 		<td class="ta_r" valign="top" colspan="2">

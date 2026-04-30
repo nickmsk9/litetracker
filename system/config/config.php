@@ -35,7 +35,7 @@ $ltCachePort = (int) lt_env_value('LITETRACKER_CACHE_PORT', 11213);
 $ltCronMode = strtolower(trim((string) lt_env_value('LITETRACKER_CRON_MODE', 'browser')));
 $ltUseExternalCron = (int) in_array($ltCronMode, array('external', 'scheduler', 'cron'), true);
 $ltSqlDebug = lt_env_bool('LITETRACKER_SQL_DEBUG', 1);
-$ltRemoteTrackerTimeout = max(1, (int) lt_env_value('LITETRACKER_REMOTE_TIMEOUT', 8));
+$ltRemoteTrackerTimeout = max(1, (int) lt_env_value('LITETRACKER_REMOTE_TIMEOUT', 2));
 $ltPublicScheme = strtolower(trim((string) lt_env_value('LITETRACKER_PUBLIC_SCHEME', 'https')));
 if (!in_array($ltPublicScheme, array('http', 'https'), true)) {
 	$ltPublicScheme = 'https';
@@ -134,7 +134,7 @@ $config  = array(
 
 //reCaptcha for LiteTracker
 'reCaptcha_login' => 0 , //Использовать для входа
-'reCaptcha_signup' => lt_env_bool('LITETRACKER_RECAPTCHA_SIGNUP', 1) , //Использовать для регистрации
+'reCaptcha_signup' => 0 , //Использовать для регистрации
 'reCaptcha_download' => 0 , //Использовать для скачивания
 
 

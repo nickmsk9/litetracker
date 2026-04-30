@@ -64,7 +64,7 @@ function admin_dashboard_role_map($user, $priv)
 {
 	$superadmin = admin_dashboard_is_superadmin($user, $priv);
 	$content = ($superadmin || !empty($priv['edit_release']) || !empty($priv['cats']) || !empty($priv['news_add']) || !empty($priv['edit_news']) || !empty($priv['faq_moderate']));
-	$users = ($superadmin || !empty($priv['users_view']) || !empty($priv['user_add']) || !empty($priv['setting_user']) || !empty($priv['messages']));
+	$users = ($superadmin || !empty($priv['user_add']) || !empty($priv['setting_user']) || !empty($priv['messages']));
 	$moderation = ($superadmin || !empty($priv['comments_edit']) || !empty($priv['comments_delete']) || !empty($priv['ip_util']) || !empty($priv['multitracker_accounts']) || user_wall_reports_can_moderate());
 	$monitoring = ($superadmin || !empty($priv['sessions_view']) || !empty($priv['search_query']));
 

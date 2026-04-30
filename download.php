@@ -36,11 +36,6 @@ if(!$arr['infohash']) {
 	err($language['default_1'] ,'У данного релиза нет торрент-файла' , 1);
 }
 
-//Проверяем рейтинг (fix 0.3.0)
-if($USER['bad_rating'] && $PRIV['bad_rating'] && $USER['id'] != $arr['id_user']) {
-	$bad_rating =  ($config['bad_rating'] - 1);
-	err($language['download_3'] , sprintf($language['download_4'] , $bad_rating) , 1);
-}
 
 
 

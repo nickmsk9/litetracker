@@ -506,8 +506,8 @@ function user_wall_reports_notify_moderators($reportId, $objectId, $commentId, $
     if ($reporterName !== '') {
         $text .= 'Отправитель: [b]'.$reporterName.'[/b]'."\n";
     }
-    $text .= 'Жалоба: wall_reports.php?id='.$reportId."\n";
-    $text .= 'Комментарий: '.profile_href($objectId).'#wall-comment-'.$commentId;
+    $text .= '[url=wall_reports.php?id='.$reportId.']Открыть жалобу[/url]'."\n";
+    $text .= '[url='.profile_href($objectId).'#wall-comment-'.$commentId.']Открыть комментарий[/url]';
 
     while ($row = $db->get_row($sql)) {
         if (send_msg($subject, $text, (int) $row['id'], 0)) {

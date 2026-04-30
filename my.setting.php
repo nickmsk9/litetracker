@@ -21,8 +21,9 @@ if (!$id || $id == $USER['id']) {
 } else {
 	$arr = $db->super_query("SELECT * FROM users WHERE id='".$id."'");
 	$priv = get_priv_info($arr['class']);
+	$canManageUsers = (!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV']));
 
-	if (!$PRIV['setting_user'] || $priv['EDIT_PRIV']) {
+	if (!$canManageUsers || (!empty($priv['EDIT_PRIV']) && empty($PRIV['EDIT_PRIV']))) {
 		err($language['default_1'], $language['setting_1'], 1);
 	}
 }
@@ -33,7 +34,7 @@ if (!$arr) {
 
 
 $settingsView = 'general';
-$canManageProfileClass = (!empty($PRIV['setting_user']) && (int) $id !== (int) $USER['id']);
+$canManageProfileClass = ((!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) && (int) $id !== (int) $USER['id']);
 $profileClassOptions = array();
 if ($canManageProfileClass) {
 	foreach (get_classes_list() as $classRow) {

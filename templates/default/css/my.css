@@ -3844,6 +3844,10 @@ iframe {
   align-items: start;
 }
 
+.browse-layout-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .browse-main {
   min-width: 0;
   display: flex;

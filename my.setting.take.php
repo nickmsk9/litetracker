@@ -140,7 +140,8 @@ if (!$id || $id == $USER['id']) {
 } else {
 	$arr = $db->super_query("SELECT * FROM users WHERE id='".$id."'");
 	$priv = get_priv_info($arr['class']);
-	if (!$PRIV['setting_user'] || $priv['EDIT_PRIV']) {
+	$canManageUsers = (!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV']));
+	if (!$canManageUsers || (!empty($priv['EDIT_PRIV']) && empty($PRIV['EDIT_PRIV']))) {
 		err($language['default_1'], $language['setting_1'], 1);
 	}
 }
@@ -301,7 +302,7 @@ if ($avatarFileName !== false) {
 	$update[] = "avatar='".$db->safesql($avatarFileName)."'";
 }
 
-if($PRIV['setting_user']) {
+if(!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) {
 	$downloaded = (int) ($_POST['downloaded'] ?? 0);
 	$downCommand = ((string) ($_POST['down_command'] ?? '+') == '+' ? '+' : '-');
 	$downFormat = (((string) ($_POST['down_format'] ?? 'mb') == 'mb') ? (1024*1024) : (1024*1024*1024));
@@ -332,7 +333,7 @@ if($PRIV['setting_user']) {
 		}
 	}
 
-	if($PRIV['setting_user'] && isset($_POST['class']) && (int) $id !== (int) $USER['id']) {
+	if((!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) && isset($_POST['class']) && (int) $id !== (int) $USER['id']) {
 		$class = (int) ($_POST['class'] ?? $arr['class']);
 		$targetClass = $db->super_query("SELECT * FROM priv WHERE id > 0 AND id=".$class." LIMIT 1");
 		if(!empty($targetClass['id']) && !empty($targetClass['EDIT_PRIV']) && empty($PRIV['EDIT_PRIV'])) {

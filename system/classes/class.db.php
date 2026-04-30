@@ -70,7 +70,7 @@ class db
 
 		$this->MySQL_time_taken += $this->get_real_time() - $time_before;
 
-		if(DEGUB_SQL) {
+		if(DEGUB_SQL || (function_exists('admin_dashboard_can_access') && admin_dashboard_can_access(($GLOBALS['USER'] ?? null), ($GLOBALS['PRIV'] ?? null)))) {
 			$this->query_list[] = array( 'time'  => ($this->get_real_time() - $time_before),
 									'query' => $query,
 									'num'   => (count($this->query_list) + 1));

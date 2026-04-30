@@ -33,7 +33,16 @@ if ($USER) {
 }
 
 $messagesCount = (!empty($USER['num_messages']) ? (int) $USER['num_messages'] : 0);
-$messagesBadge = ($messagesCount > 99 ? '99+' : (string) $messagesCount);
+$openWallReportsCount = 0;
+if ($USER && user_wall_reports_can_moderate()) {
+	user_wall_reports_ensure_table();
+	$openWallReportsRow = $db->super_query("SELECT COUNT(*) AS c FROM `".user_wall_reports_table_name()."` WHERE status = 'open'");
+	$openWallReportsCount = (int) ($openWallReportsRow['c'] ?? 0);
+}
+$alertCount = ($openWallReportsCount > 0 ? $openWallReportsCount : $messagesCount);
+$alertBadge = ($alertCount > 99 ? '99+' : (string) $alertCount);
+$alertHref = ($openWallReportsCount > 0 ? user_wall_reports_href() : 'my.mail.php?act=conversation&system=1');
+$alertLabel = ($openWallReportsCount > 0 ? 'Жалобы: '.$alertBadge : 'Оповещения'.($alertCount > 0 ? ': '.$alertBadge : ''));
 $requestUri = ltrim((string) ($_SERVER['REQUEST_URI'] ?? ''), '/');
 $loginHref = 'login.php';
 if ($requestUri !== '' && strpos($requestUri, 'login.php') !== 0) {
@@ -80,12 +89,12 @@ if (lt_is_mobile_request()) {
 
 			<div class="site-header-tools<?=($USER ? ' site-header-tools-auth' : '');?>">
 				<?php if ($USER) { ?>
-				<a class="site-alert-button<?=($messagesCount > 0 ? ' site-alert-button-active' : '');?>" href="notify.php" aria-label="Оповещения<?=($messagesCount > 0 ? ': '.$messagesBadge : '');?>">
+				<a class="site-alert-button<?=($alertCount > 0 ? ' site-alert-button-active' : '');?>" href="<?=$alertHref;?>" aria-label="<?=htmlspecialchars($alertLabel, ENT_QUOTES, 'UTF-8');?>">
 					<svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M12 3a5 5 0 0 0-5 5v2.42c0 .8-.32 1.56-.88 2.12L4.3 14.36a1 1 0 0 0 .7 1.71h14a1 1 0 0 0 .7-1.71l-1.82-1.82A3 3 0 0 1 17 10.42V8a5 5 0 0 0-5-5Zm0 18a3 3 0 0 0 2.82-2H9.18A3 3 0 0 0 12 21Z" fill="currentColor"/>
 					</svg>
-					<?php if ($messagesCount > 0) { ?>
-					<span class="site-alert-badge"><?=$messagesBadge;?></span>
+					<?php if ($alertCount > 0) { ?>
+					<span class="site-alert-badge"><?=$alertBadge;?></span>
 					<?php } ?>
 				</a>
 

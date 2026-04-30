@@ -168,35 +168,7 @@ if($USER && strlen($USER['passkey']) != 32) {
 }
 
 
-//Определение плозого рейтинга и авто-бан аккаунта
 if($USER) {
-	$certain_time = get_certain_time($USER['added']);
-
-	if( get_ratio($USER['uploaded'] , $USER['downloaded']  ) < $config['bad_rating'] && $PRIV['bad_rating']) {
-
-		if(!$USER['bad_rating']) {
-			$sql = $db->query("UPDATE users SET bad_rating='1' WHERE id=".$USER['id']);
-			$db->free($sql);
-			$memcached->delete('user_'.$USER['id']);
-		}
-
-		//Баним , если прошло время
-		if($certain_time['days'] >= $config['days_rating'] ) {
-			$sql = $db->query("UPDATE users SET banned='1' WHERE id=".$USER['id']);
-			$db->free($sql);
-			$memcached->delete('user_'.$USER['id']);
-		}
-
-	}
-
-
-	//Если рейтинг изменился в лучшую сторону , удаляем пользователя из списка плохих пользователей
-	if($USER['bad_rating'] && get_ratio($USER['uploaded'] , $USER['downloaded'] ) >= $config['bad_rating']  && $PRIV['bad_rating'] ) {
-		$sql = $db->query("UPDATE users SET bad_rating='0' WHERE id=".$USER['id']);
-		$db->free($sql);
-		$memcached->delete('user_'.$USER['id']);
-	}
-
 	//Если пользователь забанен , делаем выход
 	if($USER['banned']) {
 		logout_cookie();

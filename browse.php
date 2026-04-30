@@ -240,7 +240,7 @@ while ($row = $db->get_row($sql)) {
 	$rows[] = $row;
 }
 
-$canUpload = ($USER && !empty($PRIV['upload']) && (int) ($USER['class'] ?? 0) >= 3);
+$canUpload = ($USER && !empty($PRIV['upload']));
 
 head('Торренты');
 ?>

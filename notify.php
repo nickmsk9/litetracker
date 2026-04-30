@@ -13,9 +13,15 @@ require 'system/init.php';
 
 is_login();
 
-head('Уведомления');
-begin_frame('Уведомления');
-msg('Системные уведомления', 'Здесь будут отображаться уведомления от администрации и события по вашим персональным раздачам.');
-end_frame();
-foot();
+if (user_wall_reports_can_moderate()) {
+	user_wall_reports_ensure_table();
+	$openReports = $db->super_query("SELECT COUNT(*) AS c FROM `".user_wall_reports_table_name()."` WHERE status = 'open'");
+	if ((int) ($openReports['c'] ?? 0) > 0) {
+		header('Location: '.user_wall_reports_href());
+		die();
+	}
+}
+
+header('Location: my.mail.php?act=conversation&system=1');
+die();
 ?>

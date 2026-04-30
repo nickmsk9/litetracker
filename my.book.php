@@ -248,7 +248,7 @@ while ($row = $db->get_row($sql)) {
 		</div>
 	</section>
 
-	<div class="browse-layout">
+	<div class="browse-layout browse-layout-single">
 		<div class="browse-main">
 			<section class="browse-panel browse-results-panel">
 				<div class="home-browse-toolbar">
