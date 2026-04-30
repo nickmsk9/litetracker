@@ -70,6 +70,23 @@ function edit_priv_enabled_permissions($row)
 	return $result;
 }
 
+function edit_priv_default_row()
+{
+	$row = array(
+		'id' => 0,
+		'NAME' => '',
+		'COLOR' => '',
+		'SIGNUP' => 0,
+		'DATE' => '',
+	);
+
+	foreach (edit_priv_permission_labels() as $key => $label) {
+		$row[$key] = 0;
+	}
+
+	return $row;
+}
+
 
 /////////////////////////////////////////////////////////////////
 //Перемещение пользователей
@@ -159,7 +176,7 @@ if($_GET['act'] == 'delete' && $_GET['id']) {
 
 		//Перемещаем торренты
 		if($location > 0) {
-			$db->query("SELECT *  FROM users WHERE class=".$location."");
+			$db->query("SELECT id FROM priv WHERE id=".$location." LIMIT 1");
 			if(!$db->num_rows() ) {
 				err($language['default_1'] , 'Данного класса , куда будем перемещать пользователей не существует' , 1);
 			}
@@ -214,6 +231,9 @@ if($_GET['act'] == 'delete' && $_GET['id']) {
 //Добавить / Редактировать класс
 /////////////////////////////////////////////////////////////////
 if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
+	$id = 0;
+	$arr = edit_priv_default_row();
+
 	if($_GET['act'] == 'edit') {
 		$id = (int)$_GET['id'];
 		$arr = $db->super_query("SELECT * FROM priv WHERE id=".$id);
@@ -235,7 +255,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		//Обрабатываем данные
 
 		//Название
-		$NAME = trim($_POST['NAME']);
+		$NAME = trim((string) ($_POST['NAME'] ?? ''));
 		if(empty($NAME) ) {
 			err($language['default_1']  , 'Введите название класса' , 1);
 		}
@@ -246,7 +266,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 
 
 		//Цвет класса
-		$COLOR = trim($_POST['COLOR']);
+		$COLOR = trim((string) ($_POST['COLOR'] ?? ''));
 		if(!empty($COLOR) && strlen($COLOR) != 6) {
 			err($language['default_1']  , 'Цвет класса может состоять из 6 символов' , 1);
 		}
@@ -256,14 +276,14 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		}
 
 		//Класс по умолчанию
-		$SIGNUP = (int)$_POST['SIGNUP'];
+		$SIGNUP = (int)($_POST['SIGNUP'] ?? 0);
 		if($arr['SIGNUP'] != $SIGNUP) {
 			$update[] = 'SIGNUP="'.$db->safesql($SIGNUP).'"';
 		}
 
 		//Перебираем в цикле
 		foreach($array AS $row) {
-			$_POST[$row] = (int)$_POST[$row];
+			$_POST[$row] = (int)($_POST[$row] ?? 0);
 			if($_POST[$row] != $arr[$row]) {
 					$update[] = $row.'='.$_POST[$row];
 			}
@@ -723,11 +743,10 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 /////////////////////////////////////////////////////////////////
 
 
-$sql = $db->query("SELECT p.*  , COUNT(u.class) AS count
-				FROM priv  AS p
-				LEFT JOIN users AS u ON u.class = p.id
+$sql = $db->query("SELECT p.*,
+					(SELECT COUNT(*) FROM users AS u WHERE u.class = p.id) AS count
+				FROM priv AS p
 				WHERE p.id > 0
-				GROUP BY p.id DESC
 				ORDER BY p.id DESC");
 if(!$db->num_rows($sql)) {
 	err($language['default_1'] , $language['edit_priv_2'] , 1);
@@ -735,49 +754,75 @@ if(!$db->num_rows($sql)) {
 
 head('Редактирование классами');
 
-if($_GET['status'] == '1') {
-	msg($language['default_9'] , 'Операция успешно выполнена');
-}elseif($_GET['status'] == '2') {
-	msg($language['default_9']  , 'Класс успешно удален');
-}elseif($_GET['status'] == '3') {
-	msg($language['default_9']  , 'Пользователи успешно перемещены');
+$notice = '';
+if (($_GET['status'] ?? '') == '1') {
+	$notice = 'Операция успешно выполнена.';
+} elseif (($_GET['status'] ?? '') == '2') {
+	$notice = 'Класс успешно удален.';
+} elseif (($_GET['status'] ?? '') == '3') {
+	$notice = 'Пользователи успешно перемещены.';
 }
+?>
+<div class="lt-admin-page">
+	<section class="lt-admin-hero">
+		<h1>Классы и права</h1>
+		<p class="lt-admin-lead">Здесь задается, что может каждый класс пользователей: загружать релизы, скачивать, модерировать, видеть админские разделы и работать с утилитами.</p>
+		<div class="lt-admin-actions">
+			<a class="lt-admin-link-button" href="edit_priv.php?act=add">Добавить класс</a>
+			<a class="lt-admin-link-button lt-admin-button-secondary" href="edit_priv.php?act=location">Переместить пользователей</a>
+			<a class="lt-admin-link-button lt-admin-button-secondary" href="edit_priv.php?id=0&amp;act=edit">Права гостей</a>
+			<a class="lt-admin-link-button lt-admin-button-secondary" href="admin.php?tab=users">Назад в админку</a>
+		</div>
+	</section>
 
-begin_frame('Редактирование классами');
+	<?php if ($notice !== '') { ?>
+	<div class="lt-admin-notice lt-admin-notice-success"><?=$notice;?></div>
+	<?php } ?>
 
-echo '<input type="button" value="Добавить класс" onClick="window.location.href=\'edit_priv.php?act=add\'">&nbsp';
-echo '<input type="button" value="Перемещение пользователей" onClick="window.location.href=\'edit_priv.php?act=location\'">&nbsp';
-echo '<input type="button" value="Права для гостей" onClick="window.location.href=\'edit_priv.php?id=0&act=edit\'">';
-echo '<table width="100%" cellpadding="3" class="tt">';
-while($arr = $db->get_row($sql) ) {
-		$enabledPermissions = edit_priv_enabled_permissions($arr);
-		$permissionsPreview = ($enabledPermissions ? implode(', ', array_slice($enabledPermissions, 0, 9)) : 'нет включенных прав');
-		if (count($enabledPermissions) > 9) {
-			$permissionsPreview .= ' и еще '.(count($enabledPermissions) - 9);
-		}
-		echo '<tr>';
-
-		echo '<td width="1%" align="center">';
-		echo '<A href="users.php?class='.$arr['id'].'"><img src="public/images/users__arrow.png" border="0" title="Перейти к списку пользователей"></a>';
-		echo '</td>';
-
-		echo '<td width="50%">';
-		echo '<A href="edit_priv.php?id='.$arr['id'].'&act=edit">'.htmlspecialchars($arr['NAME']).'</a> <div style="float:right"><small>Создана '.convent_date($arr['DATE']).'</small></div>';
-		echo '<br><small><b>Может:</b> '.htmlspecialchars($permissionsPreview, ENT_QUOTES, 'UTF-8').'</small>';
-		echo '</td>';
-
-		echo '<td width="15%">';
-		echo $arr['count'].' пользователей';
-		echo '</td>';
-
-		echo '<td align="center">';
-		echo '<input type="button" value="Редактировать" onCLick="window.location.href=\'edit_priv.php?id='.$arr['id'].'&act=edit\'">&nbsp';
-		echo '<input type="button" value="Удалить" onCLick="window.location.href=\'edit_priv.php?id='.$arr['id'].'&act=delete\'">';
-		echo '</td>';
-		echo '</tr>';
-}
-echo '</table>';
-
-end_frame();
+	<section class="lt-admin-panel">
+		<h2>Список классов</h2>
+		<p class="lt-admin-panel-text">В колонке “Может” показана короткая выжимка прав. Полный набор переключателей открывается по кнопке редактирования.</p>
+		<div class="lt-admin-table-wrap">
+			<table class="lt-admin-table">
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Класс</th>
+						<th>Пользователи</th>
+						<th>Может</th>
+						<th>Действия</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php while ($arr = $db->get_row($sql)) { ?>
+					<?php
+					$enabledPermissions = edit_priv_enabled_permissions($arr);
+					$permissionsPreview = ($enabledPermissions ? implode(', ', array_slice($enabledPermissions, 0, 10)) : 'нет включенных прав');
+					if (count($enabledPermissions) > 10) {
+						$permissionsPreview .= ' и еще '.(count($enabledPermissions) - 10);
+					}
+					?>
+					<tr>
+						<td><span class="lt-admin-code">#<?=(int) $arr['id'];?></span></td>
+						<td>
+							<a href="edit_priv.php?id=<?=(int) $arr['id'];?>&amp;act=edit"><?=htmlspecialchars($arr['NAME'], ENT_QUOTES, 'UTF-8');?></a><br>
+							<span class="lt-admin-muted">Создан: <?=(!empty($arr['DATE']) ? convent_date($arr['DATE']) : 'не указано');?></span>
+						</td>
+						<td><a href="users.php?class=<?=(int) $arr['id'];?>"><?=number_format((int) $arr['count']);?> пользователей</a></td>
+						<td><?=htmlspecialchars($permissionsPreview, ENT_QUOTES, 'UTF-8');?></td>
+						<td>
+							<div class="lt-admin-inline-actions">
+								<a href="edit_priv.php?id=<?=(int) $arr['id'];?>&amp;act=edit">Редактировать</a>
+								<a href="edit_priv.php?id=<?=(int) $arr['id'];?>&amp;act=delete">Удалить</a>
+							</div>
+						</td>
+					</tr>
+					<?php } ?>
+				</tbody>
+			</table>
+		</div>
+	</section>
+</div>
+<?php
 foot();
 ?>

@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -9,17 +9,61 @@ by Nick
 ===================================================================
 */
 
-//Подключаем главный системный файл
 require 'system/init.php';
 
-if(!$PRIV['EDIT_PRIV']) {
-	err('Ошибка' , 'У вас нет прав просматривать данную страницу');
+is_login();
+
+if (empty($PRIV['EDIT_PRIV'])) {
+	err('Ошибка', 'У вас нет прав просматривать данную страницу');
 }
 
-$act = (isset($_GET['act']) ? trim((string) $_GET['act']) : '');
-$status = (isset($_GET['status']) ? trim((string) $_GET['status']) : '');
+$act = trim((string) ($_GET['act'] ?? ''));
+$status = trim((string) ($_GET['status'] ?? ''));
 
-function blocks_json_response($ok, $message = '', $extra = array())
+function lt_blocks_positions()
+{
+	return array(
+		'l' => 'Слева',
+		'c' => 'По центру сверху',
+		'd' => 'По центру снизу',
+		'r' => 'Справа',
+	);
+}
+
+function lt_blocks_types()
+{
+	return array(
+		'all' => 'Всем',
+		'guests' => 'Гостям',
+		'users' => 'Пользователям',
+		'moderators' => 'Модераторам',
+		'administrators' => 'Администраторам',
+	);
+}
+
+function lt_blocks_notice($status)
+{
+	$messages = array(
+		'1' => 'Блок сохранен.',
+		'2' => 'Блок удален.',
+		'3' => 'Порядок блоков обновлен.',
+	);
+
+	return ($messages[$status] ?? '');
+}
+
+function lt_blocks_available_files()
+{
+	$files = array();
+	foreach ((array) glob(__DIR__.'/blocks/*.php') as $path) {
+		$files[] = basename($path);
+	}
+	sort($files);
+
+	return $files;
+}
+
+function lt_blocks_json_response($ok, $message = '', $extra = array())
 {
 	header('Content-Type: application/json; charset=UTF-8');
 
@@ -28,65 +72,20 @@ function blocks_json_response($ok, $message = '', $extra = array())
 		'message' => (string) $message,
 	);
 
-	if(!empty($extra) && is_array($extra)) {
-		foreach($extra AS $key => $value) {
-			$payload[$key] = $value;
-		}
+	foreach ((array) $extra as $key => $value) {
+		$payload[$key] = $value;
 	}
 
 	echo json_encode($payload, JSON_UNESCAPED_UNICODE);
 	die();
 }
 
-function block_position_name($position)
-{
-	switch($position) {
-		case 'l':
-			return 'Слева';
-
-		case 'c':
-			return 'По центру сверху';
-
-		case 'd':
-			return 'По центру снизу';
-
-		case 'r':
-			return 'Справа';
-
-		default:
-			return 'Неизвестно';
-	}
-}
-
-function block_type_name($type)
-{
-	switch($type) {
-		case 'all':
-			return 'Всем';
-
-		case 'guests':
-			return 'Гостям';
-
-		case 'users':
-			return 'Пользователям';
-
-		case 'moderators':
-			return 'Модераторам';
-
-		case 'administrators':
-			return 'Администраторам';
-
-		default:
-			return 'Неизвестно';
-	}
-}
-
-function block_reindex_position($position)
+function lt_blocks_reindex_position($position)
 {
 	global $db;
 
-	$allowed = array('l', 'r', 'c', 'd');
-	if(!in_array($position, $allowed)) {
+	$positions = lt_blocks_positions();
+	if (empty($positions[$position])) {
 		return;
 	}
 
@@ -94,52 +93,164 @@ function block_reindex_position($position)
 					  FROM orbital_blocks
 					  WHERE position='".$db->safesql($position)."'
 					  ORDER BY weight ASC, bid ASC");
-
 	$weight = 1;
-	while($row = $db->get_row($sql)) {
-		if((int) $row['weight'] !== $weight) {
+	while ($row = $db->get_row($sql)) {
+		if ((int) $row['weight'] !== $weight) {
 			$db->query("UPDATE orbital_blocks SET weight=".$weight." WHERE bid=".(int) $row['bid']);
 		}
-
 		$weight++;
 	}
-
 	$db->free($sql);
 }
 
-//////////////////////////////////////////////
-// AJAX-перемещение блока
-//////////////////////////////////////////////
-if($act == 'move') {
-	$bid = (isset($_POST['bid']) ? (int) $_POST['bid'] : (isset($_GET['bid']) ? (int) $_GET['bid'] : 0));
-	$direction = trim((string) (isset($_POST['direction']) ? $_POST['direction'] : (isset($_GET['direction']) ? $_GET['direction'] : '')));
-
-	if(!$bid) {
-		blocks_json_response(false, 'Не указан блок для перемещения.');
+function lt_blocks_select_options($items, $selected)
+{
+	$html = '';
+	foreach ((array) $items as $value => $label) {
+		$html .= '<option value="'.htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8').'"'.((string) $selected === (string) $value ? ' selected' : '').'>'.htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8').'</option>';
 	}
 
-	if($direction != 'up' && $direction != 'down') {
-		blocks_json_response(false, 'Неизвестное направление перемещения.');
+	return $html;
+}
+
+function lt_blocks_normalize_which($which)
+{
+	$which = trim((string) $which);
+	if ($which === '' || strtolower($which) === 'all') {
+		return 'all';
 	}
 
-	$current = $db->super_query("SELECT bid, position, weight
-							 FROM orbital_blocks
-							 WHERE bid=".$bid." LIMIT 1");
+	$pages = array();
+	foreach (explode(',', $which) as $page) {
+		$page = preg_replace('~[^a-z0-9_\-]~i', '', trim($page));
+		if ($page !== '') {
+			$pages[$page] = $page;
+		}
+	}
 
-	if(empty($current['bid'])) {
-		blocks_json_response(false, 'Блок не найден.');
+	return ($pages ? implode(',', array_values($pages)) : 'all');
+}
+
+function lt_blocks_render_which($which)
+{
+	$which = trim((string) $which);
+	if ($which === '' || $which === 'all') {
+		return 'Везде';
+	}
+
+	$links = array();
+	foreach (explode(',', $which) as $page) {
+		$page = preg_replace('~[^a-z0-9_\-]~i', '', trim($page));
+		if ($page !== '') {
+			$links[] = '<a href="'.$page.'.php" target="_blank">'.htmlspecialchars($page, ENT_QUOTES, 'UTF-8').'.php</a>';
+		}
+	}
+
+	return ($links ? implode(', ', $links) : 'Везде');
+}
+
+function lt_blocks_render_form($title, $bid, $block)
+{
+	$files = lt_blocks_available_files();
+	$currentFile = trim((string) ($block['blockfile'] ?? ''));
+	if ($currentFile !== '' && !in_array($currentFile, $files, true)) {
+		array_unshift($files, $currentFile);
+	}
+
+	head($title);
+	?>
+	<div class="lt-admin-page">
+		<section class="lt-admin-hero">
+			<h1><?=$title;?></h1>
+			<p class="lt-admin-lead">Блок подключает PHP-файл из папки <span class="lt-admin-code">blocks/</span> и показывает его в выбранной зоне сайта. Пример: блок поиска можно поставить в центр сверху только для главной страницы.</p>
+			<div class="lt-admin-actions">
+				<a class="lt-admin-link-button lt-admin-button-secondary" href="blocks.php">К списку блоков</a>
+			</div>
+		</section>
+
+		<section class="lt-admin-panel">
+			<form class="lt-admin-form" method="post" action="blocks.php?act=add<?=($bid ? '&bid='.(int) $bid : '');?>">
+				<?=lt_csrf_input('blocks_admin');?>
+				<div class="lt-admin-form-grid">
+					<div class="lt-admin-field">
+						<label class="lt-admin-label" for="block-title">Название</label>
+						<input class="lt-admin-input" id="block-title" type="text" name="title" value="<?=htmlspecialchars((string) ($block['title'] ?? ''), ENT_QUOTES, 'UTF-8');?>" maxlength="60" required>
+						<div class="lt-admin-help">Видно только в админке и заголовках блока, если сам файл его выводит.</div>
+					</div>
+					<div class="lt-admin-field">
+						<label class="lt-admin-label" for="block-file">Файл блока</label>
+						<select class="lt-admin-select" id="block-file" name="blockfile" required>
+							<option value="">Выберите файл</option>
+							<?php foreach ($files as $file) { ?>
+							<option value="<?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?>"<?=($currentFile === $file ? ' selected' : '');?>><?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?><?=(!is_file(__DIR__.'/blocks/'.$file) ? ' - файл отсутствует' : '');?></option>
+							<?php } ?>
+						</select>
+						<div class="lt-admin-help">Если файл отсутствует, блок не сможет отрисоваться. Такие блоки отмечаются в списке.</div>
+					</div>
+					<div class="lt-admin-field">
+						<label class="lt-admin-label" for="block-position">Позиция</label>
+						<select class="lt-admin-select" id="block-position" name="position" required>
+							<option value="">Выберите позицию</option>
+							<?=lt_blocks_select_options(lt_blocks_positions(), (string) ($block['position'] ?? ''));?>
+						</select>
+						<div class="lt-admin-help">Позиция задает область страницы: слева, справа или центральные зоны.</div>
+					</div>
+					<div class="lt-admin-field">
+						<label class="lt-admin-label" for="block-active">Статус</label>
+						<select class="lt-admin-select" id="block-active" name="active">
+							<option value="1"<?=(!empty($block['active']) ? ' selected' : '');?>>Активен</option>
+							<option value="0"<?=(empty($block['active']) ? ' selected' : '');?>>Выключен</option>
+						</select>
+						<div class="lt-admin-help">Выключенный блок остается в списке, но не показывается пользователям.</div>
+					</div>
+					<div class="lt-admin-field">
+						<label class="lt-admin-label" for="block-type">Кому показывать</label>
+						<select class="lt-admin-select" id="block-type" name="type">
+							<?=lt_blocks_select_options(lt_blocks_types(), (string) ($block['type'] ?? 'all'));?>
+						</select>
+						<div class="lt-admin-help">Например, рекламный блок можно оставить гостям, а служебный блок только администраторам.</div>
+					</div>
+					<div class="lt-admin-field">
+						<label class="lt-admin-label" for="block-which">Где показывать</label>
+						<input class="lt-admin-input" id="block-which" type="text" name="which" value="<?=htmlspecialchars((string) ($block['which'] ?? 'all'), ENT_QUOTES, 'UTF-8');?>">
+						<div class="lt-admin-help">Введите <span class="lt-admin-code">all</span> для всех страниц или список без .php: <span class="lt-admin-code">index,browse,details</span>.</div>
+					</div>
+				</div>
+				<div class="lt-admin-actions">
+					<button class="lt-admin-button" type="submit">Сохранить блок</button>
+					<a class="lt-admin-link-button lt-admin-button-secondary" href="blocks.php">Отмена</a>
+				</div>
+			</form>
+		</section>
+	</div>
+	<?php
+	foot();
+	die();
+}
+
+if ($act === 'move') {
+	$bid = (int) ($_POST['bid'] ?? ($_GET['bid'] ?? 0));
+	$direction = trim((string) ($_POST['direction'] ?? ($_GET['direction'] ?? '')));
+
+	if (!$bid) {
+		lt_blocks_json_response(false, 'Не указан блок для перемещения.');
+	}
+
+	if ($direction !== 'up' && $direction !== 'down') {
+		lt_blocks_json_response(false, 'Неизвестное направление перемещения.');
+	}
+
+	$current = $db->super_query("SELECT bid, position, weight FROM orbital_blocks WHERE bid=".$bid." LIMIT 1");
+	if (empty($current['bid'])) {
+		lt_blocks_json_response(false, 'Блок не найден.');
 	}
 
 	$position = $current['position'];
-	block_reindex_position($position);
+	lt_blocks_reindex_position($position);
+	$current = $db->super_query("SELECT bid, position, weight FROM orbital_blocks WHERE bid=".$bid." LIMIT 1");
 
-	$current = $db->super_query("SELECT bid, position, weight
-							 FROM orbital_blocks
-							 WHERE bid=".$bid." LIMIT 1");
-
-	$compare = ($direction == 'up' ? '<' : '>');
-	$order = ($direction == 'up' ? 'DESC' : 'ASC');
-
+	$compare = ($direction === 'up' ? '<' : '>');
+	$order = ($direction === 'up' ? 'DESC' : 'ASC');
 	$swap = $db->super_query("SELECT bid, weight
 						  FROM orbital_blocks
 						  WHERE position='".$db->safesql($position)."'
@@ -147,8 +258,8 @@ if($act == 'move') {
 						  ORDER BY weight ".$order.", bid ".$order."
 						  LIMIT 1");
 
-	if(empty($swap['bid'])) {
-		blocks_json_response(false, 'Блок уже находится на краю списка.');
+	if (empty($swap['bid'])) {
+		lt_blocks_json_response(false, 'Блок уже находится на краю списка.');
 	}
 
 	$currentBid = (int) $current['bid'];
@@ -156,60 +267,68 @@ if($act == 'move') {
 	$swapBid = (int) $swap['bid'];
 	$swapWeight = (int) $swap['weight'];
 
-	$tempWeightRow = $db->super_query("SELECT MAX(weight) AS c
-									 FROM orbital_blocks
-									 WHERE position='".$db->safesql($position)."'");
+	$tempWeightRow = $db->super_query("SELECT MAX(weight) AS c FROM orbital_blocks WHERE position='".$db->safesql($position)."'");
 	$tempWeight = ((int) $tempWeightRow['c']) + 1000;
 
 	$db->query("UPDATE orbital_blocks SET weight=".$tempWeight." WHERE bid=".$currentBid);
 	$db->query("UPDATE orbital_blocks SET weight=".$currentWeight." WHERE bid=".$swapBid);
 	$db->query("UPDATE orbital_blocks SET weight=".$swapWeight." WHERE bid=".$currentBid);
 
-	block_reindex_position($position);
+	lt_blocks_reindex_position($position);
 	$memcached->delete('block_'.$position, 0);
 
-	blocks_json_response(true, 'Порядок блоков обновлен.');
+	lt_blocks_json_response(true, 'Порядок блоков обновлен.');
 }
 
-//////////////////////////////////////////////
-//Удаление блока
-//////////////////////////////////////////////
-if($act == 'del') {
-	$bid = (int) $_GET['bid'];
-	$sql = $db->query("SELECT * FROM orbital_blocks WHERE bid=".$bid);
-	if(!$db->num_rows($sql) ) {
-		err('Ошибка' , 'Данный блок не найден' , 1);
+if ($act === 'del') {
+	$bid = (int) ($_GET['bid'] ?? 0);
+	$block = $db->super_query("SELECT * FROM orbital_blocks WHERE bid=".$bid." LIMIT 1");
+	if (empty($block['bid'])) {
+		err('Ошибка', 'Данный блок не найден', 1);
 	}
-	$arr = $db->get_row();
 
-	//Пользователь согласился , удаляем
-	if(isset($_GET['take']) && $_GET['take']) {
+	if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+		if (!lt_csrf_validate('blocks_admin')) {
+			err('Ошибка', 'Защитный токен устарел. Обновите страницу и повторите действие.', 1);
+		}
+
 		$db->query("DELETE FROM orbital_blocks WHERE bid=".$bid);
-		block_reindex_position($arr['position']);
-		$memcached->delete('block_'.$arr['position'] , 0);
-		header('Location:blocks.php?position='.$arr['position'].'&status=2');
+		lt_blocks_reindex_position($block['position']);
+		$memcached->delete('block_'.$block['position'], 0);
+
+		header('Location: blocks.php?position='.urlencode($block['position']).'&status=2');
 		die();
 	}
 
-	//Выводим предупреждение
 	head('Удаление блока');
-	begin_frame('Удаление блока');
-	msg('Внимание!' , 'Вы удаляете блок , т.е он не будет больше отображаться на сайте , так и в списке блоков<br><b>Это так ?</b> &nbsp
-	<input type="button" value="Да , точно !" onClick="window.location.href=\'blocks.php?act=del&bid='.$bid.'&take=1\'"> &nbsp
-	<input type="button" value="Нет , назад" onClick="history.go(-1);"> ');
-
-	end_frame();
+	?>
+	<div class="lt-admin-page">
+		<section class="lt-admin-hero">
+			<h1>Удаление блока</h1>
+			<p class="lt-admin-lead">Вы удаляете “<?=htmlspecialchars($block['title'], ENT_QUOTES, 'UTF-8');?>”. После удаления блок пропадет из админки и перестанет отображаться на сайте.</p>
+			<div class="lt-admin-actions">
+				<a class="lt-admin-link-button lt-admin-button-secondary" href="blocks.php">К списку блоков</a>
+			</div>
+		</section>
+		<section class="lt-admin-panel">
+			<form class="lt-admin-form" method="post" action="blocks.php?act=del&bid=<?=$bid;?>">
+				<?=lt_csrf_input('blocks_admin');?>
+				<div class="lt-admin-notice lt-admin-notice-warning">Проверьте, что этот блок не нужен в текущей теме. Файл блока не удаляется, удаляется только запись из базы.</div>
+				<div class="lt-admin-actions">
+					<button class="lt-admin-button lt-admin-danger" type="submit">Удалить блок</button>
+					<a class="lt-admin-link-button lt-admin-button-secondary" href="blocks.php">Отмена</a>
+				</div>
+			</form>
+		</section>
+	</div>
+	<?php
 	foot();
-
 	die();
 }
 
-//////////////////////////////////////////////
-//Добавление / редактирование блока
-//////////////////////////////////////////////
-if($act == 'add') {
-	$bid = (isset($_GET['bid']) ? (int) $_GET['bid'] : 0);
-	$arr = array(
+if ($act === 'add') {
+	$bid = (int) ($_GET['bid'] ?? 0);
+	$block = array(
 		'title' => '',
 		'blockfile' => '',
 		'position' => '',
@@ -218,379 +337,281 @@ if($act == 'add') {
 		'which' => 'all',
 	);
 
-	if($bid) {
-		$sql = $db->query("SELECT * FROM orbital_blocks WHERE bid=".$bid);
-		if(!$db->num_rows($sql) ) {
-			err('Ошибка' , 'Данный блок не найден' , 1);
+	if ($bid) {
+		$block = $db->super_query("SELECT * FROM orbital_blocks WHERE bid=".$bid." LIMIT 1");
+		if (empty($block['bid'])) {
+			err('Ошибка', 'Данный блок не найден', 1);
 		}
-
-		$arr = $db->get_row();
 	}
 
-	if($_POST) {
-		$update = array();
-		$positions = array('l', 'r', 'c', 'd');
-		$types = array('all', 'guests', 'users', 'moderators', 'administrators');
-
-		$title = trim((string) $_POST['title']);
-		if(empty($title) ) {
-			err('Ошибка' , 'Вы не ввели название' , 1);
+	if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+		if (!lt_csrf_validate('blocks_admin')) {
+			err('Ошибка', 'Защитный токен устарел. Обновите страницу и повторите действие.', 1);
 		}
 
-		if(strlen($title) > 60 ) {
-			err('Ошибка' , 'Название превышает 60 символов' , 1);
+		$positions = lt_blocks_positions();
+		$types = lt_blocks_types();
+
+		$title = trim((string) ($_POST['title'] ?? ''));
+		if ($title === '') {
+			err('Ошибка', 'Вы не ввели название блока', 1);
 		}
-		$update[] = 'title="'.$db->safesql($title).'"';
-
-		$blockfile = trim((string) $_POST['blockfile']);
-		if(!is_file('blocks/'.$blockfile) )  {
-			err('Ошибка' , 'Выберите файл из списка' , 1);
+		if (strlen($title) > 60) {
+			err('Ошибка', 'Название превышает 60 символов', 1);
 		}
-		$update[] = 'blockfile="'.$db->safesql($blockfile).'"';
 
-		$position = trim((string) $_POST['position']);
-		if(!in_array($position , $positions) ) {
-			err('Ошибка' , 'Данной позиции не существует' , 1);
+		$blockfile = basename(trim((string) ($_POST['blockfile'] ?? '')));
+		if ($blockfile === '' || !is_file(__DIR__.'/blocks/'.$blockfile)) {
+			err('Ошибка', 'Выберите существующий файл из папки blocks/', 1);
 		}
-		$update[] = 'position="'.$db->safesql($position).'"';
 
-		$active = ((int) $_POST['active'] == 1 ? 1 : 0);
-		$update[] = 'active="'.$active.'"';
-
-		$type = trim((string) $_POST['type']);
-		if(!in_array($type , $types) ) {
-			err('Ошибка' , 'Данного типа не существует' , 1);
+		$position = trim((string) ($_POST['position'] ?? ''));
+		if (empty($positions[$position])) {
+			err('Ошибка', 'Выберите корректную позицию блока', 1);
 		}
-		$update[] = 'type="'.$db->safesql($type).'"';
 
-		$which = trim((string) $_POST['which']);
-		if($which === '') {
-			$which = 'all';
+		$type = trim((string) ($_POST['type'] ?? 'all'));
+		if (empty($types[$type])) {
+			err('Ошибка', 'Выберите корректную аудиторию блока', 1);
 		}
-		$update[] = 'which="'.$db->safesql($which).'"';
 
-		if(!$bid) {
+		$active = ((int) ($_POST['active'] ?? 0) === 1 ? 1 : 0);
+		$which = lt_blocks_normalize_which($_POST['which'] ?? 'all');
+
+		$fields = array(
+			"title='".$db->safesql($title)."'",
+			"blockfile='".$db->safesql($blockfile)."'",
+			"position='".$db->safesql($position)."'",
+			"active=".$active,
+			"type='".$db->safesql($type)."'",
+			"which='".$db->safesql($which)."'",
+		);
+
+		if (!$bid) {
 			$weight = $db->super_query("SELECT weight AS c FROM orbital_blocks WHERE position='".$db->safesql($position)."' ORDER BY weight DESC LIMIT 1");
-			$update[] = 'weight='.(((int) $weight['c']) + 1);
-			$db->query("INSERT INTO orbital_blocks SET ".implode(' , ' , $update));
+			$fields[] = 'weight='.(((int) ($weight['c'] ?? 0)) + 1);
+			$db->query("INSERT INTO orbital_blocks SET ".implode(', ', $fields));
 		} else {
-			$oldPosition = $arr['position'];
-			if($oldPosition != $position) {
+			if ((string) $block['position'] !== $position) {
 				$weight = $db->super_query("SELECT weight AS c FROM orbital_blocks WHERE position='".$db->safesql($position)."' ORDER BY weight DESC LIMIT 1");
-				$update[] = 'weight='.(((int) $weight['c']) + 1);
+				$fields[] = 'weight='.(((int) ($weight['c'] ?? 0)) + 1);
 			}
 
-			$db->query("UPDATE orbital_blocks SET ".implode(' , ' , $update)." WHERE bid=".$bid);
+			$db->query("UPDATE orbital_blocks SET ".implode(', ', $fields)." WHERE bid=".$bid);
 		}
 
-		block_reindex_position($position);
-		$memcached->delete('block_'.$position , 0);
+		lt_blocks_reindex_position($position);
+		$memcached->delete('block_'.$position, 0);
 
-		if($bid) {
-			if($arr['position'] != $position) {
-				block_reindex_position($arr['position']);
-			}
-			$memcached->delete('block_'.$arr['position'] , 0);
+		if ($bid && (string) $block['position'] !== $position) {
+			lt_blocks_reindex_position($block['position']);
+			$memcached->delete('block_'.$block['position'], 0);
 		}
 
-		header('Location: blocks.php?status=1&position='.$position);
+		header('Location: blocks.php?status=1&position='.urlencode($position));
 		die();
 	}
 
-	$title = (!$bid ? 'Добавление блока' : 'Редактирование блока');
-	head($title);
-
-	begin_frame($title);
-	?>
-		<form action="blocks.php?act=add&bid=<?=$bid;?>" method="post">
-		<table width="40%" align="center">
-			<tr>
-				<td width="10%"><b>Название:</b></td>
-				<td><input type="text" name="title" value="<?=htmlspecialchars($arr['title']);?>" size="50"></td>
-			</tr>
-
-			<tr>
-				<td width="10%"><b>Файл:</b></td>
-				<td>
-					<select name="blockfile">
-					<option value="0">(Выберите)</option>
-					<?
-						$open = opendir('blocks');
-						while($file = readdir($open)) {
-							if($file != '.' && $file != '..' && $file != '.htaccess' && !is_dir('blocks/'.$file)) {
-								echo '<option value="'.$file.'" '.($arr['blockfile'] == $file ? 'selected' : '').'>'.$file.'</option>';
-							}
-						}
-						closedir($open);
-					?>
-					</select>
-				</td>
-			</tr>
-
-			<tr>
-				<td width="10%"><b>Позиция:</b></td>
-				<td>
-					<select name="position">
-					<option value="">(Выберите)</option>
-					<option value="l" <?=($arr['position'] == 'l' ? 'selected' : '' );?>>Левый</option>
-					<option value="c" <?=($arr['position'] == 'c' ? 'selected' : '' );?>>Центральный (вверху)</option>
-					<option value="d" <?=($arr['position'] == 'd' ? 'selected' : '' );?>>Центральный (внизу)</option>
-					<option value="r" <?=($arr['position'] == 'r' ? 'selected' : '' );?>>Справа</option>
-					</select>
-				</td>
-			</tr>
-
-			<tr>
-				<td width="10%"><b>Активен:</b></td>
-				<td>
-					<select name="active">
-					<option value="1" <?=($arr['active'] == '1' ? 'selected' : '' );?>>Да</option>
-					<option value="0" <?=($arr['active'] == '0' ? 'selected' : '' );?>>Нет</option>
-					</select>
-				</td>
-			</tr>
-
-			<tr>
-				<td width="10%"><b>Тип:</b></td>
-				<td>
-					<select name="type">
-					<option value="all" <?=($arr['type'] == 'all' ? 'selected' : '' );?>>Всем</option>
-					<option value="guests" <?=($arr['type'] == 'guests' ? 'selected' : '' );?>>Гостям</option>
-					<option value="users" <?=($arr['type'] == 'users' ? 'selected' : '' );?>>Пользователям</option>
-					<option value="moderators" <?=($arr['type'] == 'moderators' ? 'selected' : '' );?>>Модераторам</option>
-					<option value="administrators" <?=($arr['type'] == 'administrators' ? 'selected' : '' );?>>Администраторам</option>
-					</select>
-				</td>
-			</tr>
-
-			<tr>
-				<td width="10%"><b>Зона видимости:</b></td>
-				<td>
-					<input type="text" name="which" value="<?=(!$bid ? 'all' : htmlspecialchars($arr['which']) );?>"><br>
-					<small>Вводите имя файла (без .php), если хотите, чтобы блок отображался там (через запятую, например: index,login,signup). <b>all</b> - везде.</small>
-				</td>
-			</tr>
-
-			<tr>
-				<td width="10%"></td>
-				<td>
-					<input type="submit" value="Выполнить">
-				</td>
-			</tr>
-		</table>
-		</form>
-	<?
-	end_frame();
-	foot();
-	die();
+	lt_blocks_render_form(($bid ? 'Редактирование блока' : 'Добавление блока'), $bid, $block);
 }
 
-//////////////////////////////////////////////
-//Вывод блоков
-//////////////////////////////////////////////
-$position = trim((string) (isset($_GET['position']) ? $_GET['position'] : ''));
-$positions = array('l', 'c', 'd', 'r');
-if(!in_array($position, $positions)) {
-	$position = '';
+$position = trim((string) ($_GET['position'] ?? 'all'));
+$positions = lt_blocks_positions();
+if ($position !== 'all' && empty($positions[$position])) {
+	$position = 'all';
 }
 
-$sql = false;
-$blocks = array();
-
-if($position != '') {
-	block_reindex_position($position);
-	$sql = $db->query("SELECT *
-					  FROM orbital_blocks
-					  WHERE position='".$db->safesql($position)."'
-					  ORDER BY weight ASC, bid ASC");
-
-	while($row = $db->get_row($sql)) {
-		$blocks[] = $row;
+if ($position === 'all') {
+	foreach (array_keys($positions) as $positionKey) {
+		lt_blocks_reindex_position($positionKey);
 	}
+	$sql = $db->query("SELECT * FROM orbital_blocks ORDER BY FIELD(position, 'l', 'c', 'd', 'r'), weight ASC, bid ASC");
+} else {
+	lt_blocks_reindex_position($position);
+	$sql = $db->query("SELECT * FROM orbital_blocks WHERE position='".$db->safesql($position)."' ORDER BY weight ASC, bid ASC");
 }
+
+$blocks = array();
+while ($row = $db->get_row($sql)) {
+	$blocks[] = $row;
+}
+$db->free($sql);
+
+$blocksByPosition = array();
+foreach ($positions as $positionKey => $positionLabel) {
+	$blocksByPosition[$positionKey] = array();
+}
+foreach ($blocks as $block) {
+	$blockPosition = (string) ($block['position'] ?? '');
+	if (!isset($blocksByPosition[$blockPosition])) {
+		$blocksByPosition[$blockPosition] = array();
+	}
+	$blocksByPosition[$blockPosition][] = $block;
+}
+
+$notice = lt_blocks_notice($status);
 
 head('Управление блоками');
-
-switch($status) {
-	case '1':
-		msg('Успешно', 'Задание выполнено');
-	break;
-
-	case '2':
-		msg('Успешно', 'Блок удален');
-	break;
-}
-
-begin_frame('Управление блоками');
-
-if(!$config['blocks_use']) {
-	msg('Внимание!' , 'Блочная система отключена локально! Вы можете редактировать блоки, но никто их не увидит! Включить блоки можно в system/config.php.');
-}
 ?>
+<div class="lt-admin-page">
+	<section class="lt-admin-hero">
+		<h1>Блоки сайта</h1>
+		<p class="lt-admin-lead">Управление блоками теперь показывает все зоны сразу, отмечает выключенные и отсутствующие файлы, а сортировку делает понятной по выбранной позиции.</p>
+		<div class="lt-admin-actions">
+			<a class="lt-admin-link-button" href="blocks.php?act=add">Добавить блок</a>
+			<a class="lt-admin-link-button lt-admin-button-secondary" href="admin.php?tab=content">Назад в админку</a>
+		</div>
+	</section>
 
-<div style="margin-bottom:12px;">
-	<b>Позиция:</b>
-	<a href="blocks.php?position=l" style="<?=($position == 'l' ? 'font-weight:bold;text-decoration:underline;' : '');?>">Слева</a> |
-	<a href="blocks.php?position=c" style="<?=($position == 'c' ? 'font-weight:bold;text-decoration:underline;' : '');?>">По центру сверху</a> |
-	<a href="blocks.php?position=d" style="<?=($position == 'd' ? 'font-weight:bold;text-decoration:underline;' : '');?>">По центру снизу</a> |
-	<a href="blocks.php?position=r" style="<?=($position == 'r' ? 'font-weight:bold;text-decoration:underline;' : '');?>">Справа</a>
-	<span style="float:right;"><a href="blocks.php?act=add"><b>+ Добавить блок</b></a></span>
-</div>
-<div style="clear:both;"></div>
+	<?php if ($notice !== '') { ?>
+	<div class="lt-admin-notice lt-admin-notice-success"><?=$notice;?></div>
+	<?php } ?>
+	<?php if (empty($config['blocks_use'])) { ?>
+	<div class="lt-admin-notice lt-admin-notice-warning">Блочная система выключена в настройках. Редактировать блоки можно, но пользователи их не увидят до включения параметра “Использовать блоки”.</div>
+	<?php } ?>
 
-<?
-if($position == '') {
-	msg('Внимание', 'Выберите позицию блока.');
-} elseif(empty($blocks)) {
-	msg('Внимание', 'Ни одного блока не найдено.');
-} else {
-	?>
-	<div id="block-move-status" style="display:block;min-height:16px;margin-bottom:8px;color:#008000;"></div>
-	<table width="100%" cellpadding="4" cellspacing="0">
-		<tr>
-			<td width="5%"><u>#</u></td>
-			<td width="27%"><u>Блок</u></td>
-			<td width="10%"><u>Активен</u></td>
-			<td width="14%"><u>Видимость</u></td>
-			<td width="20%"><u>Где виден</u></td>
-			<td width="12%"><u>Порядок</u></td>
-			<td width="12%"><u>Действия</u></td>
-		</tr>
+	<nav class="lt-admin-tabs">
+		<a class="lt-admin-tab<?=($position === 'all' ? ' lt-admin-tab-active' : '');?>" href="blocks.php">Все позиции</a>
+		<?php foreach ($positions as $positionKey => $positionLabel) { ?>
+		<a class="lt-admin-tab<?=($position === $positionKey ? ' lt-admin-tab-active' : '');?>" href="blocks.php?position=<?=$positionKey;?>"><?=$positionLabel;?></a>
+		<?php } ?>
+	</nav>
 
-		<?
-		$total = count($blocks);
-		for($i = 0; $i < $total; $i++) {
-			$arr = $blocks[$i];
-			$isFirst = ($i == 0);
-			$isLast = ($i == ($total - 1));
-			?>
-			<tr class="js-block-row" data-bid="<?=$arr['bid'];?>">
-				<td>#<?=$arr['bid'];?></td>
-				<td>
-					<b><?=htmlspecialchars($arr['title']);?></b><br>
-					<small><?=htmlspecialchars($arr['blockfile']);?>, <?=block_position_name($arr['position']);?></small>
-				</td>
-				<td><?=($arr['active'] ? 'Да' : 'Нет');?></td>
-				<td><?=block_type_name($arr['type']);?></td>
-				<td>
-					<?
-					if($arr['which'] == 'all') {
-						echo 'Везде';
-					} elseif(!empty($arr['which'])) {
-						$which = explode(',', $arr['which']);
-						$resource = array();
-
-						foreach($which AS $row) {
-							$row = preg_replace('~[^a-z0-9_\-]~i', '', trim($row));
-							if($row == '') {
-								continue;
-							}
-
-							$resource[] = '<a href="'.$row.'.php" target="_blank">'.$row.'.php</a>';
-						}
-
-						echo (!empty($resource) ? implode(', ', $resource) : 'Неизвестно');
-					} else {
-						echo 'Неизвестно';
-					}
+	<?php if (!$blocks) { ?>
+	<section class="lt-admin-panel">
+		<div class="lt-admin-empty">В базе пока нет блоков. Нажмите “Добавить блок” и выберите файл из папки <span class="lt-admin-code">blocks/</span>.</div>
+	</section>
+	<?php } else { ?>
+	<?php foreach ($blocksByPosition as $positionKey => $positionBlocks) { ?>
+	<?php if ($position !== 'all' && $position !== $positionKey) { continue; } ?>
+	<?php if (!$positionBlocks) { continue; } ?>
+	<section class="lt-admin-panel">
+		<h2><?=htmlspecialchars($positions[$positionKey] ?? 'Неизвестная позиция', ENT_QUOTES, 'UTF-8');?></h2>
+		<p class="lt-admin-panel-text">Порядок влияет только внутри этой зоны. Для перемещения вверх или вниз откройте конкретную позицию.</p>
+		<div class="lt-admin-table-wrap">
+			<table class="lt-admin-table">
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Блок</th>
+						<th>Статус</th>
+						<th>Кому</th>
+						<th>Где</th>
+						<th>Порядок</th>
+						<th>Действия</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php $total = count($positionBlocks); ?>
+					<?php foreach ($positionBlocks as $index => $block) { ?>
+					<?php
+					$fileExists = is_file(__DIR__.'/blocks/'.(string) $block['blockfile']);
+					$isFirst = ($index === 0);
+					$isLast = ($index === $total - 1);
 					?>
-				</td>
-				<td>
-					<a href="#" class="js-block-move js-move-up" data-direction="up" style="<?=($isFirst ? 'display:none;' : '');?>">Вверх</a>
-					|
-					<a href="#" class="js-block-move js-move-down" data-direction="down" style="<?=($isLast ? 'display:none;' : '');?>">Вниз</a>
-				</td>
-				<td>
-					<a href="blocks.php?act=add&bid=<?=$arr['bid'];?>">Редактировать</a>
-					|
-					<a href="blocks.php?act=del&bid=<?=$arr['bid'];?>">Удалить</a>
-				</td>
-			</tr>
-			<?
-		}
-		?>
-	</table>
+					<tr class="js-block-row" data-bid="<?=(int) $block['bid'];?>">
+						<td><span class="lt-admin-code">#<?=(int) $block['bid'];?></span></td>
+						<td>
+							<strong><?=htmlspecialchars($block['title'], ENT_QUOTES, 'UTF-8');?></strong><br>
+							<span class="lt-admin-muted"><?=htmlspecialchars($block['blockfile'], ENT_QUOTES, 'UTF-8');?></span>
+							<?php if (!$fileExists) { ?>
+							<br><span class="lt-admin-status lt-admin-status-warning">файл отсутствует</span>
+							<?php } ?>
+						</td>
+						<td><span class="lt-admin-status <?=(!empty($block['active']) ? 'lt-admin-status-on' : 'lt-admin-status-off');?>"><?=(!empty($block['active']) ? 'Активен' : 'Выключен');?></span></td>
+						<td><?=htmlspecialchars(lt_blocks_types()[$block['type']] ?? 'Неизвестно', ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=lt_blocks_render_which($block['which']);?></td>
+						<td>
+							<?php if ($position === 'all') { ?>
+							<span class="lt-admin-muted">Выберите позицию</span>
+							<?php } else { ?>
+							<div class="lt-admin-inline-actions">
+								<a href="#" class="js-block-move js-move-up" data-direction="up" style="<?=($isFirst ? 'display:none;' : '');?>">Вверх</a>
+								<a href="#" class="js-block-move js-move-down" data-direction="down" style="<?=($isLast ? 'display:none;' : '');?>">Вниз</a>
+							</div>
+							<?php } ?>
+						</td>
+						<td>
+							<div class="lt-admin-inline-actions">
+								<a href="blocks.php?act=add&bid=<?=(int) $block['bid'];?>">Редактировать</a>
+								<a href="blocks.php?act=del&bid=<?=(int) $block['bid'];?>">Удалить</a>
+							</div>
+						</td>
+					</tr>
+					<?php } ?>
+				</tbody>
+			</table>
+		</div>
+	</section>
+	<?php } ?>
+	<?php } ?>
+</div>
 
-	<script type="text/javascript">
-	(function($){
-		if(!$) {
-			return;
-		}
+<script>
+(function ($) {
+	if (!$) {
+		return;
+	}
 
-		function refreshMoveControls() {
-			var rows = $('.js-block-row');
-			rows.find('.js-move-up, .js-move-down').show();
-			rows.first().find('.js-move-up').hide();
-			rows.last().find('.js-move-down').hide();
-		}
+	function refreshMoveControls() {
+		var rows = $('.js-block-row');
+		rows.find('.js-move-up, .js-move-down').show();
+		rows.first().find('.js-move-up').hide();
+		rows.last().find('.js-move-down').hide();
+	}
 
-		function setMoveStatus(message, isError) {
-			$('#block-move-status')
-				.css('color', (isError ? '#AA0000' : '#008000'))
-				.html(message);
-		}
+	$('.js-block-move').on('click', function () {
+		var link = $(this);
+		var row = link.closest('.js-block-row');
+		var direction = link.attr('data-direction');
 
-		$('.js-block-move').click(function(){
-			var link = $(this);
-			if(link.data('busy')) {
-				return false;
-			}
-
-			var row = link.closest('.js-block-row');
-			if(!row.length) {
-				return false;
-			}
-
-			var direction = link.attr('data-direction');
-			link.data('busy', 1);
-			setMoveStatus('Сохраняем порядок...', false);
-
-			$.ajax({
-				type: 'POST',
-				url: 'blocks.php?act=move',
-				dataType: 'json',
-				data: {
-					bid: row.attr('data-bid'),
-					direction: direction
-				},
-				success: function(response){
-					if(!response || parseInt(response.ok, 10) !== 1) {
-						setMoveStatus((response && response.message ? response.message : 'Ошибка перемещения блока.'), true);
-						return;
-					}
-
-					if(direction == 'up') {
-						var prev = row.prev('.js-block-row');
-						if(prev.length) {
-							prev.before(row);
-						}
-					} else {
-						var next = row.next('.js-block-row');
-						if(next.length) {
-							next.after(row);
-						}
-					}
-
-					refreshMoveControls();
-					setMoveStatus((response.message ? response.message : 'Порядок обновлен.'), false);
-				},
-				error: function(){
-					setMoveStatus('Сервер временно недоступен. Попробуйте еще раз.', true);
-				},
-				complete: function(){
-					link.data('busy', 0);
-				}
-			});
-
+		if (link.data('busy') || !row.length) {
 			return false;
+		}
+
+		link.data('busy', 1);
+
+		$.ajax({
+			type: 'POST',
+			url: 'blocks.php?act=move',
+			dataType: 'json',
+			data: {
+				bid: row.attr('data-bid'),
+				direction: direction
+			},
+			success: function (response) {
+				if (!response || parseInt(response.ok, 10) !== 1) {
+					alert(response && response.message ? response.message : 'Ошибка перемещения блока.');
+					return;
+				}
+
+				if (direction === 'up') {
+					var prev = row.prev('.js-block-row');
+					if (prev.length) {
+						prev.before(row);
+					}
+				} else {
+					var next = row.next('.js-block-row');
+					if (next.length) {
+						next.after(row);
+					}
+				}
+
+				refreshMoveControls();
+			},
+			error: function () {
+				alert('Сервер временно недоступен. Попробуйте еще раз.');
+			},
+			complete: function () {
+				link.data('busy', 0);
+			}
 		});
 
-		refreshMoveControls();
-	})(window.jQuery);
-	</script>
-	<?
-}
+		return false;
+	});
 
-end_frame();
+	refreshMoveControls();
+})(window.jQuery);
+</script>
+<?php
 foot();
-?>

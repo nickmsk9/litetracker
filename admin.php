@@ -108,37 +108,48 @@ function admin_dashboard_settings_schema()
 	return array(
 		'site-settings' => array(
 			'title' => 'Настройки сайта',
-			'description' => 'Главные публичные переключатели движка.',
+			'description' => 'Главные публичные переключатели движка. Эти параметры влияют на вход, регистрацию, отображение блоков и базовое имя проекта.',
 			'fields' => array(
-				array('key' => 'sitename', 'label' => 'Название сайта', 'type' => 'text', 'required' => true),
-				array('key' => 'siteonline', 'label' => 'Сайт открыт', 'type' => 'checkbox'),
-				array('key' => 'registeronline', 'label' => 'Регистрация открыта', 'type' => 'checkbox'),
-				array('key' => 'gzip', 'label' => 'Gzip-сжатие', 'type' => 'checkbox'),
-				array('key' => 'blocks_use', 'label' => 'Использовать блоки', 'type' => 'checkbox'),
+				array('key' => 'sitename', 'label' => 'Название сайта', 'type' => 'text', 'required' => true, 'description' => 'Показывается в заголовках и системных местах. Пример: LiteTracker.'),
+				array('key' => 'siteonline', 'label' => 'Сайт открыт', 'type' => 'checkbox', 'description' => 'Если выключить, обычные пользователи не смогут пользоваться сайтом во время работ.'),
+				array('key' => 'registeronline', 'label' => 'Регистрация открыта', 'type' => 'checkbox', 'description' => 'Разрешает создание новых аккаунтов через публичную форму регистрации.'),
+				array('key' => 'gzip', 'label' => 'Gzip-сжатие', 'type' => 'checkbox', 'description' => 'Сжимает HTML-ответы, если сервер и браузер это поддерживают.'),
+				array('key' => 'blocks_use', 'label' => 'Использовать блоки', 'type' => 'checkbox', 'description' => 'Глобально включает блоки из blocks.php. Если выключено, настройки блоков сохраняются, но блоки не видны.'),
+				array('key' => 'begin_money', 'label' => 'Стартовый баланс', 'type' => 'text', 'description' => 'Сколько бонусных единиц получает новый пользователь после регистрации.'),
+				array('key' => 'project_help_text', 'label' => 'Текст блока помощи проекту', 'type' => 'text', 'description' => 'Короткое описание цели сбора. Пример: “Оплата аренды сервера”.'),
+				array('key' => 'project_help_button_label', 'label' => 'Кнопка помощи проекту', 'type' => 'text', 'description' => 'Текст кнопки в блоке помощи. Пример: “Помочь проекту”.'),
+				array('key' => 'project_help_button_href', 'label' => 'Ссылка кнопки помощи', 'type' => 'text', 'description' => 'URL платежной страницы или темы форума. Оставьте пустым, если кнопка не нужна.'),
 			),
 		),
 		'tracker-settings' => array(
 			'title' => 'Настройки трекера',
-			'description' => 'Announce, retracker и тайминги torrent-части.',
+			'description' => 'Announce, retracker, cron и тайминги torrent-части. Меняйте осторожно: эти значения напрямую влияют на скачивание и обновление пиров.',
 			'fields' => array(
-				array('key' => 'announce_url', 'label' => 'Основной announce URL', 'type' => 'text', 'required' => true),
-				array('key' => 'local_retracker_url', 'label' => 'Локальный retracker URL', 'type' => 'text', 'required' => true),
-				array('key' => 'announce_interval', 'label' => 'Интервал announce, секунд', 'type' => 'int', 'required' => true, 'min' => 60),
-				array('key' => 'remote_tracker_timeout', 'label' => 'Таймаут remote tracker, секунд', 'type' => 'int', 'required' => true, 'min' => 1),
-				array('key' => 'releases_news', 'label' => 'Срок метки Новинка, дней', 'type' => 'int', 'required' => true, 'min' => 1),
+				array('key' => 'announce_url', 'label' => 'Основной announce URL', 'type' => 'text', 'required' => true, 'description' => 'Попадает в скачиваемые torrent-файлы. Пример: https://site.ru/announce.php.'),
+				array('key' => 'local_retracker_url', 'label' => 'Локальный retracker URL', 'type' => 'text', 'required' => true, 'description' => 'Дополнительный локальный retracker для клиентов. Обычно совпадает с доменом сайта.'),
+				array('key' => 'announce_interval', 'label' => 'Интервал announce, секунд', 'type' => 'int', 'required' => true, 'min' => 60, 'description' => 'Как часто клиент должен сообщать трекеру о себе. Нормально: 1800 секунд.'),
+				array('key' => 'remote_tracker_timeout', 'label' => 'Таймаут remote tracker, секунд', 'type' => 'int', 'required' => true, 'min' => 1, 'description' => 'Сколько ждать ответ внешнего трекера в мультитрекерных раздачах. Меньше значение быстрее открывает details.php.'),
+				array('key' => 'releases_news', 'label' => 'Срок метки Новинка, дней', 'type' => 'int', 'required' => true, 'min' => 1, 'description' => 'Сколько дней релиз считается новым в списках.'),
+				array('key' => 'crontab', 'label' => 'Внешний cron', 'type' => 'checkbox', 'description' => 'Если включено, автоочистку и обновление пиров должен запускать внешний планировщик.'),
+				array('key' => 'cron_token', 'label' => 'Токен cron', 'type' => 'text', 'description' => 'Секрет для вызова служебных cron URL. Оставьте пустым только для локальной разработки.'),
+				array('key' => 'announce_connectivity_probe', 'label' => 'Проверка доступности announce', 'type' => 'checkbox', 'description' => 'Включает служебную проверку доступности announce-адреса. Полезно после смены домена.'),
 			),
 		),
 		'feature-settings' => array(
 			'title' => 'Системные функции',
-			'description' => 'Переключатели поиска и защитных механизмов.',
+			'description' => 'Переключатели поиска и защитных механизмов. reCaptcha заработает только если включена сама функция и заполнены оба ключа.',
 			'fields' => array(
-				array('key' => 'search_forum', 'label' => 'Форумный вид поиска', 'type' => 'checkbox'),
-				array('key' => 'search_video', 'label' => 'Поиск по видео', 'type' => 'checkbox'),
-				array('key' => 'search_image', 'label' => 'Поиск по изображениям', 'type' => 'checkbox'),
-				array('key' => 'reCaptcha', 'label' => 'Включить reCaptcha', 'type' => 'checkbox'),
-				array('key' => 'reCaptcha_login', 'label' => 'reCaptcha на входе', 'type' => 'checkbox'),
-				array('key' => 'reCaptcha_signup', 'label' => 'reCaptcha при регистрации', 'type' => 'checkbox'),
-				array('key' => 'reCaptcha_download', 'label' => 'reCaptcha при скачивании', 'type' => 'checkbox'),
+				array('key' => 'search_forum', 'label' => 'Форумный вид поиска', 'type' => 'checkbox', 'description' => 'Меняет представление результатов поиска на форумный формат.'),
+				array('key' => 'search_video', 'label' => 'Поиск по видео', 'type' => 'checkbox', 'description' => 'Включает отдельный модуль поиска по видео-данным.'),
+				array('key' => 'search_image', 'label' => 'Поиск по изображениям', 'type' => 'checkbox', 'description' => 'Включает отдельный модуль поиска по изображениям.'),
+				array('key' => 'search_video_lenght', 'label' => 'Минимум символов для видео', 'type' => 'int', 'min' => 0, 'description' => 'С какого размера запроса показывать видео-результаты. 0 значит без ограничения.'),
+				array('key' => 'search_image_lenght', 'label' => 'Минимум символов для изображений', 'type' => 'int', 'min' => 0, 'description' => 'С какого размера запроса показывать результаты по изображениям. 0 значит без ограничения.'),
+				array('key' => 'reCaptcha', 'label' => 'Включить reCaptcha', 'type' => 'checkbox', 'description' => 'Главный переключатель защиты. Без ключей Google/Cloudflare проверки не появятся.'),
+				array('key' => 'reCaptcha_publickey', 'label' => 'Публичный ключ reCaptcha', 'type' => 'text', 'description' => 'Site key из панели reCaptcha. Он безопасно отображается на странице.'),
+				array('key' => 'reCaptcha_privatekey', 'label' => 'Секретный ключ reCaptcha', 'type' => 'text', 'description' => 'Secret key для серверной проверки ответа. Не публикуйте его вне админки.'),
+				array('key' => 'reCaptcha_login', 'label' => 'reCaptcha на входе', 'type' => 'checkbox', 'description' => 'Показывать проверку на странице авторизации.'),
+				array('key' => 'reCaptcha_signup', 'label' => 'reCaptcha при регистрации', 'type' => 'checkbox', 'description' => 'Показывать проверку при создании нового аккаунта.'),
+				array('key' => 'reCaptcha_download', 'label' => 'reCaptcha при скачивании', 'type' => 'checkbox', 'description' => 'Показывать проверку перед скачиванием torrent-файла.'),
 			),
 		),
 	);
@@ -238,12 +249,34 @@ function admin_dashboard_flush_cache()
 	return $flushed;
 }
 
+function admin_dashboard_optimize_database()
+{
+	global $db;
+
+	$tables = array();
+	$sql = $db->query('SHOW TABLES');
+	while ($row = $db->get_row($sql)) {
+		$values = array_values($row);
+		if (!empty($values[0])) {
+			$tables[] = (string) $values[0];
+		}
+	}
+	$db->free($sql);
+
+	foreach ($tables as $table) {
+		$db->query('OPTIMIZE TABLE `'.str_replace('`', '``', $table).'`');
+	}
+
+	return count($tables);
+}
+
 function admin_dashboard_notice_meta($code)
 {
 	$messages = array(
 		'sessions_cleared' => array('type' => 'success', 'text' => 'Сессии очищены.'),
 		'search_queries_cleared' => array('type' => 'success', 'text' => 'Мониторинг поиска очищен.'),
 		'cache_flushed' => array('type' => 'success', 'text' => 'Кэш очищен.'),
+		'db_optimized' => array('type' => 'success', 'text' => 'Оптимизация БД выполнена.'),
 		'setting_toggled' => array('type' => 'success', 'text' => 'Системный переключатель обновлен.'),
 		'settings_saved' => array('type' => 'success', 'text' => 'Настройки сохранены.'),
 		'no_changes' => array('type' => 'success', 'text' => 'Изменений не было.'),
@@ -301,6 +334,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			}
 
 			admin_dashboard_redirect($activeTab, (admin_dashboard_flush_cache() ? 'cache_flushed' : 'action_failed'));
+		}
+
+		if ($quickAction === 'optimize_db') {
+			if (!$roles['superadmin']) {
+				admin_dashboard_redirect($activeTab, 'action_denied');
+			}
+
+			admin_dashboard_optimize_database();
+			admin_dashboard_redirect($activeTab, 'db_optimized');
 		}
 
 		if ($quickAction === 'toggle_siteonline' || $quickAction === 'toggle_registeronline' || $quickAction === 'toggle_blocks_use') {
@@ -475,6 +517,7 @@ $quickActions = array(
 	array('id' => 'clear_sessions', 'label' => 'Очистить сессии', 'description' => 'Удалить все активные записи из таблицы сессий.', 'allowed' => !empty($PRIV['sessions_clear']), 'confirm' => 'Очистить все сессии?'),
 	array('id' => 'clear_search_queries', 'label' => 'Очистить мониторинг поиска', 'description' => 'Стереть накопленные поисковые запросы пользователей.', 'allowed' => $roles['superadmin'], 'confirm' => 'Очистить мониторинг поиска?'),
 	array('id' => 'flush_cache', 'label' => 'Очистить кэш', 'description' => 'Сбросить memcached и файловый кэш.', 'allowed' => $roles['superadmin'], 'confirm' => 'Очистить весь кэш?'),
+	array('id' => 'optimize_db', 'label' => 'Оптимизировать БД', 'description' => 'Запустить OPTIMIZE TABLE для таблиц базы. Полезно после массовых удалений и чистки логов.', 'allowed' => $roles['superadmin'], 'confirm' => 'Запустить оптимизацию таблиц базы данных?'),
 );
 
 $shortcuts = array(
@@ -536,6 +579,9 @@ if (!empty($PRIV['EDIT_PRIV'])) {
 		);
 	}
 }
+
+$configPath = __DIR__.'/system/config/config.php';
+$configWritable = is_writable($configPath);
 
 head('Админка');
 ?>
@@ -835,6 +881,13 @@ head('Админка');
 	color: #1f2a35;
 }
 
+.admin-settings-help {
+	margin: -2px 0 0;
+	font-size: 13px;
+	line-height: 1.5;
+	color: #6d7c8b;
+}
+
 .admin-settings-input,
 .admin-settings-checkbox-row {
 	border: 1px solid #d8e1e8;
@@ -874,6 +927,35 @@ head('Админка');
 	line-height: 1.5;
 	color: #748391;
 	background: #fff;
+}
+
+.admin-system-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 12px;
+	margin-top: 18px;
+}
+
+.admin-system-item {
+	padding: 14px 16px;
+	border: 1px solid #e4ebf1;
+	border-radius: 4px;
+	background: #fff;
+}
+
+.admin-system-label {
+	font-size: 12px;
+	font-weight: 700;
+	color: #7a8997;
+	text-transform: uppercase;
+}
+
+.admin-system-value {
+	margin-top: 6px;
+	font-size: 14px;
+	line-height: 1.45;
+	color: #1f2a35;
+	word-break: break-word;
 }
 
 @media (max-width: 720px) {
@@ -928,6 +1010,25 @@ head('Админка');
 		</a>
 		<?php } ?>
 	</div>
+
+	<section class='admin-card' style='margin-top:20px;'>
+		<h2 class='admin-card-title'>Состояние системы</h2>
+		<p class='admin-card-text'>Короткие технические индикаторы, чтобы было понятно, почему настройка может не сохраняться или почему блоки не видны.</p>
+		<div class='admin-system-grid'>
+			<div class='admin-system-item'>
+				<div class='admin-system-label'>Конфиг</div>
+				<div class='admin-system-value'><?=htmlspecialchars($configPath, ENT_QUOTES, 'UTF-8');?><br><?=($configWritable ? 'доступен для записи из админки' : 'недоступен для записи, проверьте права файла');?></div>
+			</div>
+			<div class='admin-system-item'>
+				<div class='admin-system-label'>Блоки</div>
+				<div class='admin-system-value'><?=(!empty($config['blocks_use']) ? 'включены' : 'выключены');?>. Управление находится в разделе “Контент”.</div>
+			</div>
+			<div class='admin-system-item'>
+				<div class='admin-system-label'>reCaptcha</div>
+				<div class='admin-system-value'><?=(!empty($config['reCaptcha']) ? 'включена' : 'выключена');?>; ключи <?=(!empty($config['reCaptcha_publickey']) && !empty($config['reCaptcha_privatekey']) ? 'заполнены' : 'не заполнены полностью');?>.</div>
+			</div>
+		</div>
+	</section>
 
 	<section class='admin-card'>
 		<h2 class='admin-card-title'>Быстрые действия</h2>
@@ -1002,6 +1103,9 @@ head('Админка');
 	<section class='admin-settings-form'>
 		<h2 class='admin-settings-title'><?=$settingsTab['title'];?></h2>
 		<p class='admin-settings-text'><?=$settingsTab['description'];?></p>
+		<?php if (!$configWritable) { ?>
+		<div class='admin-inline-message admin-inline-message-error' style='margin-top:16px;'>Файл <?=htmlspecialchars($configPath, ENT_QUOTES, 'UTF-8');?> сейчас недоступен для записи, поэтому сохранение настроек не пройдет.</div>
+		<?php } ?>
 		<form method='post' action='admin.php'>
 			<input type='hidden' name='tab' value='<?=$activeTab;?>'>
 			<input type='hidden' name='admin_action' value='save_settings'>
@@ -1015,6 +1119,9 @@ head('Админка');
 				?>
 				<div class='admin-settings-field'>
 					<label class='admin-settings-label' for='admin-setting-<?=$key;?>'><?=$field['label'];?></label>
+					<?php if (!empty($field['description'])) { ?>
+					<div class='admin-settings-help'><?=htmlspecialchars($field['description'], ENT_QUOTES, 'UTF-8');?></div>
+					<?php } ?>
 					<?php if ($field['type'] === 'checkbox') { ?>
 					<label class='admin-settings-checkbox-row' for='admin-setting-<?=$key;?>'>
 						<input id='admin-setting-<?=$key;?>' type='checkbox' name='<?=$key;?>' value='1'<?=(!empty($value) ? ' checked' : '');?> >

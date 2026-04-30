@@ -10,7 +10,7 @@ if (!defined('LITETRACKER'))
 ?>
 <tr>
 <td width="1%">
-<a href="browse.php?id_category=<?=$id;?>"><img src="public/images/categories/<?=$cat_image;?>"></a>
+<a class="release-category-chip" href="browse.php?id_category=<?=$id;?>">#<?=$id;?></a>
 </td>
 
 <td valign="top" width="50%">
@@ -26,4 +26,3 @@ if (!defined('LITETRACKER'))
 </td>
 
 </tr>
-

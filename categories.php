@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -9,527 +9,376 @@ by Nick
 ===================================================================
 */
 
-//Подключаем главный системный файл
 require 'system/init.php';
 
-//Проверка авторизации
 is_login();
 
-//Только Администраторам , Модераторам
-if(!$PRIV['cats']) {
-	err($language['default_1'] , $language['default_12']  , 1);
+if (empty($PRIV['cats'])) {
+	err($language['default_1'], $language['default_12'], 1);
 }
 
+$act = trim((string) ($_GET['act'] ?? ''));
+$status = trim((string) ($_GET['status'] ?? ''));
 
+function lt_admin_categories_template_labels()
+{
+	global $language;
 
-///////////////////////////////////////////////////////////////////////
-//Перемещение релизов
-///////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'location') {
-
-	//Обработка
-	if($_POST) {
-
-		//Из категории
-		$location_1 = (int)$_POST['location_1'];
-		if(!$location_1) {
-			err($language['default_1'] , $language['cats_1'] , 1);
-		}
-		//В категорию
-		$location_2 = (int)$_POST['location_2'];
-		if(!$location_2) {
-			err($language['default_1'] ,  $language['cats_2'] , 1);
-		}
-
-		//Выполняем перемещение, если категории не равны
-		if($location_1 != $location_2) {
-			$db->query("UPDATE torrents SET id_category=".$location_2." WHERE id_category=".$location_1);
-		}
-
-		header("Location:categories.php?status=4");
-		die();
-	}
-
-
-	//Обший вид
-	head($language['cats_35']);
-	begin_frame($language['cats_35']);
-
-	//Создаем массив с категориями
-	$db->query("SELECT * FROM categories");
-	$row = array();
-	while($get_row = $db->get_row() )
-		$row[] = $get_row;
-
-
-
-	echo msg($language['cats_3']);
-
-	echo '<form action="categories.php?&act=location" method="POST">';
-	echo '<select name="location_1">';
-	echo '<option value="0">('.$language['cats_4'].')</option>';
-	foreach($row AS $arr) {
-		echo '<option value="'.$arr['id'].'">'.htmlspecialchars($arr['name']).'</option>';
-	}
-	echo '</select>';
-
-	echo '<select name="location_2">';
-	echo '<option value="0">('.$language['cats_5'].')</option>';
-	foreach($row AS $arr) {
-		echo '<option value="'.$arr['id'].'">'.htmlspecialchars($arr['name']).'</option>';
-	}
-	echo '</select>';
-	echo '<input type="submit" value="'.$language['cats_6'].'">&nbsp';
-	echo '<input type="button" value="'.$language['default_5'].'" onClick="history.go(-1);">';
-	echo '</form>';
-
-	end_frame();
-	foot();
-	die();
-
+	return array(
+		0 => 'Без отдельного шаблона',
+		1 => ($language['cats_18'] ?? 'Шаблон 1'),
+		2 => ($language['cats_19'] ?? 'Шаблон 2'),
+		3 => ($language['cats_20'] ?? 'Шаблон 3'),
+		4 => ($language['cats_21'] ?? 'Шаблон 4'),
+		5 => ($language['cats_22'] ?? 'Шаблон 5'),
+		6 => ($language['cats_23'] ?? 'Шаблон 6'),
+	);
 }
 
+function lt_admin_categories_notice($status)
+{
+	$messages = array(
+		'1' => 'Категория добавлена.',
+		'2' => 'Категория удалена.',
+		'3' => 'Категория обновлена.',
+		'4' => 'Релизы перенесены.',
+	);
 
+	return ($messages[$status] ?? '');
+}
 
+function lt_admin_categories_options($selected = 0, $exclude = 0)
+{
+	global $db;
 
-///////////////////////////////////////////////////////////////////////
-//Редактировать категорию
-///////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'edit' && $_GET['id']) {
-	$id = (int)$_GET['id'];
-	$db->query("SELECT * FROM categories WHERE id=".$id);
-	if(!$db->num_rows()) {
-		err($language['default_1'] , $language['cats_7'] , 1);
+	$html = '';
+	$sql = $db->query("SELECT id, name FROM categories ORDER BY name ASC");
+	while ($row = $db->get_row($sql)) {
+		$id = (int) $row['id'];
+		if ($exclude && $id === (int) $exclude) {
+			continue;
+		}
+
+		$html .= '<option value="'.$id.'"'.($id === (int) $selected ? ' selected' : '').'>'.htmlspecialchars($row['name'], ENT_QUOTES, 'UTF-8').'</option>';
 	}
-	$arr = $db->get_row();
+	$db->free($sql);
 
+	return $html;
+}
 
-	//Обработка
-	if($_POST) {
-
-		$update = array();
-
-		//Название
-		$name = $_POST['name'];
-		if(empty($name) ) {
-			err($language['default_1'] , $language['cats_8'] , 1);
-		}
-		if($arr['name'] != $name) {
-			$update[] = "name='".$db->safesql($name)."'";
-		}
-
-
-		//Картинка
-		$allowed_types = array(
-			"image/gif" => "gif",
-			"image/pjpeg" => "jpg",
-			"image/jpeg" => "jpg",
-			"image/jpg" => "jpg",
-			"image/png" => "png"
-			// Add more types here if you like
-		);
-
-
-		if (!($_FILES["image"]['name'] == "")) {
-
-
-			//Лимит размера
-			$limit_size = 500 * 8 * 1024;
-
-			// Is valid filetype?
-			if (!array_key_exists($_FILES['image']['type'], $allowed_types) ) {
-				err($language['default_1'], $language['cats_9'] , 1);
-			}
-
-			if (!preg_match('/^(.+)\.(jpg|jpeg|png|gif)$/si', $_FILES['image']['name']) ) {
-				err($language['default_1'] , $language['cats_10'], 1);
-			}
-
-			// Is within allowed filesize?
-			if ($_FILES['image']['size'] > $limit_size) {
-				err($language['default_1'] , sprintf($language['cats_11'] , mksize($limit_size)) , 1);
-			}
-
-			// Where to upload?
-			// Update for your own server. Make sure the folder has chmod write permissions. Remember this director
-			$uploaddir = "public/images/categories/";
-
-			// What is the temporary file name?
-			$ifile = $_FILES['image']['tmp_name'];
-
-			// Calculate what the next torrent id will be
-			// $row = $db->super_query("SHOW TABLE STATUS LIKE 'categories'");
-			// $next_id = $row['Auto_increment'];
-
-			// By what filename should the tracker associate the image with?
-			$ifilename = $id .  substr($_FILES['image']['name'], strlen($_FILES['image']['name'])-4, 4);
-
-
-			// Upload the file
-			$copy = @copy($ifile, $uploaddir.$ifilename);
-
-			if (!$copy) {
-				err($language['default_1'] , $language['cats_12'], 1);
-			}
-
-			$update[] = "image='".$db->safesql($ifilename)."'";
-
-		}
-
-
-		//Шаблон
-		$template = (int)$_POST['template'];
-		if($arr['template'] != $template) {
-			$update[] = "template='".$template."'";
-		}
-
-		//Обновляем категорию
-		if($update) {
-			$db->query("UPDATE categories SET ".implode(',' , $update)." WHERE id=".$id);
-			$memcached->delete('upload_categories');
-		}
-		header("Location:categories.php?status=3");
-		die();
+function lt_admin_categories_template_select($selected = 0)
+{
+	$html = '';
+	foreach (lt_admin_categories_template_labels() as $id => $label) {
+		$html .= '<option value="'.(int) $id.'"'.((int) $selected === (int) $id ? ' selected' : '').'>'.htmlspecialchars($label, ENT_QUOTES, 'UTF-8').'</option>';
 	}
 
+	return $html;
+}
 
-	//Обший вид
-	head($language['cats_13']);
-	begin_frame($language['cats_13']);
+function lt_admin_categories_render_form($title, $action, $category)
+{
+	$id = (int) ($category['id'] ?? 0);
+	$name = (string) ($category['name'] ?? '');
+	$template = (int) ($category['template'] ?? 0);
 
+	head($title);
 	?>
-	<form enctype="multipart/form-data" action="categories.php?act=edit&id=<?=$id;?>" method="post">
+	<div class="lt-admin-page">
+		<section class="lt-admin-hero">
+			<h1><?=$title;?></h1>
+			<p class="lt-admin-lead">Категории теперь управляются без картинок: только название, шаблон карточки и понятные действия. Старое поле изображения в базе больше не заполняется из этой формы.</p>
+			<div class="lt-admin-actions">
+				<a class="lt-admin-link-button lt-admin-button-secondary" href="categories.php">К списку категорий</a>
+			</div>
+		</section>
 
-	<!--Файлы-->
-	<table width="80%"  cellspacing="7" cellpadding="0" border="0"  align="center">
-	<tbody>
-
-
-	<tr>
-		<td class="ta_r">
-		 <span class="grey"><?=$language['cats_14'];?>:</span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="text" name="name" style="margin: 0px;" size="25" class="inputText" value="<?=htmlspecialchars($arr['name']);?>">
-		</td><td>
-	   </td></tr>
-		<tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" ><?=$language['cats_15'];?>:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="file" name="image">
-			<br><small><?=$language['cats_16'];?></small>
-		</td><td>
-	   </td></tr>
-	   <tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" ></span>
-		</td>
-		<td style="padding: 0px;">
-			<select name="template">
-				<option  <?=($arr['template'] == '' ? 'selected' : '');?> value="">(<?=$language['cats_17'];?>)</option>
-				<option  <?=($arr['template'] == '1' ? 'selected' : '');?> value="1"><?=$language['cats_18'];?></option>
-				<option  <?=($arr['template'] == '2' ? 'selected' : '');?> value="2"><?=$language['cats_19'];?></option>
-				<option  <?=($arr['template'] == '3' ? 'selected' : '');?> value="3"><?=$language['cats_20'];?></option>
-				<option  <?=($arr['template'] == '4' ? 'selected' : '');?> value="4"><?=$language['cats_21'];?></option>
-				<option  <?=($arr['template'] == '5' ? 'selected' : '');?> value="5"><?=$language['cats_22'];?></option>
-				<option  <?=($arr['template'] == '6' ? 'selected' : '');?> value="6"><?=$language['cats_23'];?></option>
-			</select>
-		</td><td>
-	   </td></tr>
-
-	   	<tr>
-		<td class="ta_r">
-		 <span class="grey"></span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="submit" value="<?=$language['cats_24'];?>">
-		</td><td>
-	   </td></tr>
-
-
-
-
-	</tbody>
-	</table>
-
-
-	</form>
-	<?
-	end_frame();
+		<section class="lt-admin-panel">
+			<form class="lt-admin-form" method="post" action="<?=$action;?>">
+				<?=lt_csrf_input('categories_admin');?>
+				<div class="lt-admin-form-grid">
+					<div class="lt-admin-field">
+						<label class="lt-admin-label" for="category-name">Название</label>
+						<input class="lt-admin-input" id="category-name" type="text" name="name" value="<?=htmlspecialchars($name, ENT_QUOTES, 'UTF-8');?>" maxlength="120" required>
+						<div class="lt-admin-help">Например: Фильмы, Игры, Музыка. Это название увидят пользователи в каталоге.</div>
+					</div>
+					<div class="lt-admin-field">
+						<label class="lt-admin-label" for="category-template">Шаблон релиза</label>
+						<select class="lt-admin-select" id="category-template" name="template">
+							<?=lt_admin_categories_template_select($template);?>
+						</select>
+						<div class="lt-admin-help">Шаблон определяет набор полей при загрузке релиза. Если не уверены, оставьте вариант без отдельного шаблона.</div>
+					</div>
+				</div>
+				<div class="lt-admin-actions">
+					<button class="lt-admin-button" type="submit"><?=($id ? 'Сохранить категорию' : 'Добавить категорию');?></button>
+					<a class="lt-admin-link-button lt-admin-button-secondary" href="categories.php">Отмена</a>
+				</div>
+			</form>
+		</section>
+	</div>
+	<?php
 	foot();
 	die();
-
 }
 
-
-
-///////////////////////////////////////////////////////////////////////
-//Удаление категории
-///////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'del' && $_GET['id']) {
-	$id = (int)$_GET['id'];
-	$db->query("SELECT * FROM categories WHERE id=".$id);
-	if(!$db->num_rows()) {
-		err($language['default_1'], $language['cats_7'] , 1);
-	}
-
-
-	//Удаление категории
-	if($_POST) {
-		//Перемещение торрентов
-		$location = (int)$_POST['location'];
-
-		//Перемещаем торренты
-		if($location > 0) {
-			$db->query("SELECT *  FROM categories WHERE id=".$location."");
-			if(!$db->num_rows() ) {
-				err($language['default_1'] , $language['cats_25'] , 1);
-			}
-
-			//Получаем весь список торрентов
-			$db->query("UPDATE torrents SET id_category='".$location."' WHERE id_category=".$id);
-		} else {
-			//Удаление всех релизов + удаление всех комментарий
-			$db->query("DELETE FROM torrents
-						WHERE id_category=".$id."
-						");
+if ($act === 'location') {
+	if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+		if (!lt_csrf_validate('categories_admin')) {
+			err('Ошибка', 'Защитный токен устарел. Обновите страницу и повторите действие.', 1);
 		}
 
-		$db->query("DELETE FROM categories WHERE id=".$id."");
-		//Удаление картинки
-		//...
-		header("Location:categories.php?status=2");
+		$locationFrom = (int) ($_POST['location_1'] ?? 0);
+		$locationTo = (int) ($_POST['location_2'] ?? 0);
+
+		if (!$locationFrom) {
+			err($language['default_1'], $language['cats_1'], 1);
+		}
+
+		if (!$locationTo) {
+			err($language['default_1'], $language['cats_2'], 1);
+		}
+
+		if ($locationFrom !== $locationTo) {
+			$db->query("UPDATE torrents SET id_category=".$locationTo." WHERE id_category=".$locationFrom);
+		}
+
+		header('Location: categories.php?status=4');
 		die();
 	}
 
-	//Выводим предупреждение
-	head($language['cats_26']);
-	begin_frame($language['cats_26']);
-	echo $language['cats_27'].'<br> ';
-
-	echo '<form action="categories.php?id='.$id.'&act=del" method="POST">';
-	echo '<select name="location">';
-	echo '<option value="0">'.$language['cats_28'].'</option>';
-
-	$db->query("SELECT * FROM categories");
-	while($arr = $db->get_row() ) {
-		echo '<option value="'.$arr['id'].'">'.sprintf($language['cats_29'] , htmlspecialchars($arr['name'])).'</option>';
-	}
-	echo '</select>';
-	echo '<input type="submit" value="'.$language['cats_30'].'">&nbsp';
-	echo '<input type="button" value="'.$language['default_5'].'" onClick="history.go(-1);">';
-	echo '</form>';
-
-
-	end_frame();
+	head('Перенос релизов');
+	?>
+	<div class="lt-admin-page">
+		<section class="lt-admin-hero">
+			<h1>Перенос релизов</h1>
+			<p class="lt-admin-lead">Перемещает все релизы из одной категории в другую. Пример: если закрываете старую категорию “HDTV”, можно перенести все релизы в “Фильмы”.</p>
+			<div class="lt-admin-actions">
+				<a class="lt-admin-link-button lt-admin-button-secondary" href="categories.php">К списку категорий</a>
+			</div>
+		</section>
+		<section class="lt-admin-panel">
+			<form class="lt-admin-form" method="post" action="categories.php?act=location">
+				<?=lt_csrf_input('categories_admin');?>
+				<div class="lt-admin-form-grid">
+					<div class="lt-admin-field">
+						<label class="lt-admin-label" for="location-from">Откуда</label>
+						<select class="lt-admin-select" id="location-from" name="location_1" required>
+							<option value="0">Выберите исходную категорию</option>
+							<?=lt_admin_categories_options();?>
+						</select>
+					</div>
+					<div class="lt-admin-field">
+						<label class="lt-admin-label" for="location-to">Куда</label>
+						<select class="lt-admin-select" id="location-to" name="location_2" required>
+							<option value="0">Выберите новую категорию</option>
+							<?=lt_admin_categories_options();?>
+						</select>
+					</div>
+				</div>
+				<div class="lt-admin-actions">
+					<button class="lt-admin-button" type="submit">Перенести релизы</button>
+				</div>
+			</form>
+		</section>
+	</div>
+	<?php
 	foot();
 	die();
 }
 
-///////////////////////////////////////////////////////////////////////
-//Добавить категорию
-///////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'add') {
+if ($act === 'edit' && !empty($_GET['id'])) {
+	$id = (int) $_GET['id'];
+	$category = $db->super_query("SELECT * FROM categories WHERE id=".$id." LIMIT 1");
+	if (empty($category['id'])) {
+		err($language['default_1'], $language['cats_7'], 1);
+	}
 
-	//Обработка
-	if($_POST) {
-
-		//Название
-		$name = $_POST['name'];
-		if(empty($name) ) {
-			err($language['default_1'] , $language['cats_8'] , 1);
+	if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+		if (!lt_csrf_validate('categories_admin')) {
+			err('Ошибка', 'Защитный токен устарел. Обновите страницу и повторите действие.', 1);
 		}
 
-
-		//Картинка
-		$allowed_types = array(
-			"image/gif" => "gif",
-			"image/pjpeg" => "jpg",
-			"image/jpeg" => "jpg",
-			"image/jpg" => "jpg",
-			"image/png" => "png"
-			// Add more types here if you like
-		);
-
-
-		if (!($_FILES["image"]['name'] == "")) {
-
-
-			//Лимит размера
-			$limit_size = 500 * 8;
-
-			// Is valid filetype?
-			if (!array_key_exists($_FILES['image']['type'], $allowed_types) ) {
-				err($language['default_1'] , $language['cats_9'], 1);
-			}
-
-			if (!preg_match('/^(.+)\.(jpg|jpeg|png|gif)$/si', $_FILES['image']['name']) ) {
-				err($language['default_1'] , $language['cats_10'] , 1);
-			}
-
-			// Is within allowed filesize?
-			if ($_FILES['image']['size'] > $limit_size) {
-				err($language['default_1'] , sprintf($language['cats_11'] , mksize($limit_size)) , 1);
-			}
-
-			// Where to upload?
-			// Update for your own server. Make sure the folder has chmod write permissions. Remember this director
-			$uploaddir = "public/images/categories/";
-
-			// What is the temporary file name?
-			$ifile = $_FILES['image']['tmp_name'];
-
-			// Calculate what the next torrent id will be
-			$row = $db->super_query("SHOW TABLE STATUS LIKE 'categories'");
-			$next_id = $row['Auto_increment'];
-
-			// By what filename should the tracker associate the image with?
-			$ifilename = $next_id .  substr($_FILES['image']['name'], strlen($_FILES['image']['name'])-4, 4);
-
-
-			// Upload the file
-			$copy = @copy($ifile, $uploaddir.$ifilename);
-
-			if (!$copy) {
-				err($language['default_1'] , $language['cats_12'] , 1);
-			}
-
-		} else {
-			err($language['default_1'] , $language['cats_32'] , 1);
+		$name = trim((string) ($_POST['name'] ?? ''));
+		if ($name === '') {
+			err($language['default_1'], $language['cats_8'], 1);
 		}
 
+		$template = (int) ($_POST['template'] ?? 0);
+		if ($template < 0 || $template > 6) {
+			$template = 0;
+		}
 
-		//Шаблон
-		$template = (int)$_POST['template'];
-
-
-		//Добавляем категорию
-		$db->query("INSERT INTO categories(name  , image , template , date) VALUES ('".$db->safesql($name)."' , '".$db->safesql($ifilename)."' , '".$db->safesql($template)."'   , NOW() ) ");
+		$db->query("UPDATE categories SET name='".$db->safesql($name)."', template=".$template." WHERE id=".$id);
 		$memcached->delete('upload_categories');
-		header("Location:categories.php?status=1");
+
+		header('Location: categories.php?status=3');
+		die();
 	}
-	head($language['cats_33']);
-	begin_frame($language['cats_33']);
 
+	lt_admin_categories_render_form('Редактирование категории', 'categories.php?act=edit&id='.$id, $category);
+}
+
+if ($act === 'del' && !empty($_GET['id'])) {
+	$id = (int) $_GET['id'];
+	$category = $db->super_query("SELECT * FROM categories WHERE id=".$id." LIMIT 1");
+	if (empty($category['id'])) {
+		err($language['default_1'], $language['cats_7'], 1);
+	}
+
+	if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+		if (!lt_csrf_validate('categories_admin')) {
+			err('Ошибка', 'Защитный токен устарел. Обновите страницу и повторите действие.', 1);
+		}
+
+		$location = (int) ($_POST['location'] ?? 0);
+		if ($location > 0) {
+			$target = $db->super_query("SELECT id FROM categories WHERE id=".$location." LIMIT 1");
+			if (empty($target['id'])) {
+				err($language['default_1'], $language['cats_25'], 1);
+			}
+
+			$db->query("UPDATE torrents SET id_category=".$location." WHERE id_category=".$id);
+		} else {
+			$db->query("DELETE FROM torrents WHERE id_category=".$id);
+		}
+
+		$db->query("DELETE FROM categories WHERE id=".$id);
+		$memcached->delete('upload_categories');
+
+		header('Location: categories.php?status=2');
+		die();
+	}
+
+	head('Удаление категории');
 	?>
-	<form enctype="multipart/form-data" action="categories.php?act=add" method="post">
-
-	<!--Файлы-->
-	<table width="80%"  cellspacing="7" cellpadding="0" border="0"  align="center">
-	<tbody>
-
-
-	<tr>
-		<td class="ta_r">
-		 <span class="grey"><?=$language['cats_14'];?>:</span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="text" name="name" style="margin: 0px;" size="25" class="inputText" value="<?=htmlspecialchars($arr['name']);?>">
-		</td><td>
-	   </td></tr>
-		<tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" ><?=$language['cats_15'];?>:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="file" name="image">
-		</td><td>
-	   </td></tr>
-	   <tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" ></span>
-		</td>
-		<td style="padding: 0px;">
-			<select name="template">
-				<option  <?=($arr['template'] == '' ? 'selected' : '');?> value="">(<?=$language['cats_17'];?>)</option>
-				<option  <?=($arr['template'] == '1' ? 'selected' : '');?> value="1"><?=$language['cats_18'];?></option>
-				<option  <?=($arr['template'] == '2' ? 'selected' : '');?> value="2"><?=$language['cats_19'];?></option>
-				<option  <?=($arr['template'] == '3' ? 'selected' : '');?> value="3"><?=$language['cats_20'];?></option>
-				<option  <?=($arr['template'] == '4' ? 'selected' : '');?> value="4"><?=$language['cats_21'];?></option>
-				<option  <?=($arr['template'] == '5' ? 'selected' : '');?> value="5"><?=$language['cats_22'];?></option>
-				<option  <?=($arr['template'] == '6' ? 'selected' : '');?> value="6"><?=$language['cats_23'];?></option>
-			</select>
-		</td><td>
-	   </td></tr>
-
-	   	<tr>
-		<td class="ta_r">
-		 <span class="grey"></span>
-		</td>
-		<td style="padding: 0px;">
-		 <input type="submit" value="<?=$language['cats_33'];?>">
-		</td><td>
-	   </td></tr>
-
-
-
-
-	</tbody>
-	</table>
-
-
-	</form>
-	<?
-	end_frame();
+	<div class="lt-admin-page">
+		<section class="lt-admin-hero">
+			<h1>Удаление категории</h1>
+			<p class="lt-admin-lead">Вы удаляете категорию “<?=htmlspecialchars($category['name'], ENT_QUOTES, 'UTF-8');?>”. Перед удалением можно перенести релизы в другую категорию, чтобы ничего не потерять.</p>
+			<div class="lt-admin-actions">
+				<a class="lt-admin-link-button lt-admin-button-secondary" href="categories.php">К списку категорий</a>
+			</div>
+		</section>
+		<section class="lt-admin-panel">
+			<form class="lt-admin-form" method="post" action="categories.php?act=del&id=<?=$id;?>">
+				<?=lt_csrf_input('categories_admin');?>
+				<div class="lt-admin-field">
+					<label class="lt-admin-label" for="delete-location">Что сделать с релизами</label>
+					<select class="lt-admin-select" id="delete-location" name="location">
+						<option value="0">Удалить релизы вместе с категорией</option>
+						<?=lt_admin_categories_options(0, $id);?>
+					</select>
+					<div class="lt-admin-help">Безопасный вариант: выбрать новую категорию и перенести релизы туда. Удаление релизов необратимо.</div>
+				</div>
+				<div class="lt-admin-actions">
+					<button class="lt-admin-button lt-admin-danger" type="submit">Удалить категорию</button>
+					<a class="lt-admin-link-button lt-admin-button-secondary" href="categories.php">Отмена</a>
+				</div>
+			</form>
+		</section>
+	</div>
+	<?php
 	foot();
 	die();
 }
 
+if ($act === 'add') {
+	if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+		if (!lt_csrf_validate('categories_admin')) {
+			err('Ошибка', 'Защитный токен устарел. Обновите страницу и повторите действие.', 1);
+		}
 
-///////////////////////////////////////////////////////////////////////
-//Общий вид
-///////////////////////////////////////////////////////////////////////
+		$name = trim((string) ($_POST['name'] ?? ''));
+		if ($name === '') {
+			err($language['default_1'], $language['cats_8'], 1);
+		}
 
-$sql =  $db->query("SELECT c.* , (SELECT COUNT(*) FROM torrents WHERE id_category = c.id) AS count
-					FROM categories  AS c
-					ORDER BY c.date ASC
-					");
+		$template = (int) ($_POST['template'] ?? 0);
+		if ($template < 0 || $template > 6) {
+			$template = 0;
+		}
 
-if(!$db->num_rows($sql) ) {
-	err($language['default_1'] , $language['cats_34']);
+		$db->query("INSERT INTO categories(name, image, template, date) VALUES ('".$db->safesql($name)."', '', ".$template.", NOW())");
+		$memcached->delete('upload_categories');
+
+		header('Location: categories.php?status=1');
+		die();
+	}
+
+	lt_admin_categories_render_form('Добавление категории', 'categories.php?act=add', array());
 }
 
-head($language['cats_36']);
-
-if($_GET['status'] == '1') {
-	msg($language['default_9'] , $language['cats_37']);
-}elseif($_GET['status'] == '2') {
-	msg($language['default_9']  , $language['cats_38']);
-}elseif($_GET['status'] == '3') {
-	msg($language['default_9']  , $language['cats_39']);
-}elseif($_GET['status'] == '4') {
-	msg($language['default_9']  ,  $language['cats_40']);
+$categories = array();
+$sql = $db->query("SELECT c.*, (SELECT COUNT(*) FROM torrents WHERE id_category = c.id) AS releases_count
+				  FROM categories AS c
+				  ORDER BY c.date ASC, c.name ASC");
+while ($row = $db->get_row($sql)) {
+	$categories[] = $row;
 }
+$db->free($sql);
 
-begin_frame($language['cats_36']);
+head('Категории');
+$notice = lt_admin_categories_notice($status);
+?>
+<div class="lt-admin-page">
+	<section class="lt-admin-hero">
+		<h1>Категории</h1>
+		<p class="lt-admin-lead">Новый вид без картинок: список показывает название, шаблон, количество релизов и прямые действия. Это быстрее читать и проще поддерживать.</p>
+		<div class="lt-admin-actions">
+			<a class="lt-admin-link-button" href="categories.php?act=add">Добавить категорию</a>
+			<a class="lt-admin-link-button lt-admin-button-secondary" href="categories.php?act=location">Перенести релизы</a>
+			<a class="lt-admin-link-button lt-admin-button-secondary" href="admin.php?tab=content">Назад в админку</a>
+		</div>
+	</section>
 
+	<?php if ($notice !== '') { ?>
+	<div class="lt-admin-notice lt-admin-notice-success"><?=$notice;?></div>
+	<?php } ?>
 
-echo '<input type="button" value="'.$language['cats_41'].'" onClick="window.location.href=\'categories.php?act=add\'">&nbsp';
-echo '<input type="button" value="'.$language['cats_35'].'" onClick="window.location.href=\'categories.php?act=location\'">';
-echo '<table width="100%" cellpadding="3" class="tt">';
-while($arr = $db->get_row($sql) ) {
-		echo '<tr>';
-
-		echo '<td width="1%" align="center">';
-		echo '<A href="index.php?id_category='.$arr['id'].'"><img src="public/images/categories/'.$arr['image'].'" border="0" width="25px"></a>';
-		echo '</td>';
-
-		echo '<td width="50%">';
-		echo '<A href="index.php?id_category='.$arr['id'].'">'.htmlspecialchars($arr['name']).'</a> <div style="float:right"><small>'.sprintf($language['cats_42'] ,convent_date($arr['date']) ).'</small></div>';
-		echo '</td>';
-
-		echo '<td width="15%">';
-		echo sprintf($language['cats_43'] ,$arr['count'] );
-		echo '</td>';
-
-		echo '<td align="center">';
-		echo '<input type="button" value="'.$language['cats_44'].'" onCLick="window.location.href=\'categories.php?act=edit&id='.$arr['id'].'\'">&nbsp';
-		echo '<input type="button" value="'.$language['cats_45'].'" onCLick="window.location.href=\'categories.php?act=del&id='.$arr['id'].'\'">';
-		echo '</td>';
-		echo '</tr>';
-}
-echo '</table>';
-end_frame();
+	<section class="lt-admin-panel">
+		<h2>Список категорий</h2>
+		<p class="lt-admin-panel-text">Редактирование меняет название и шаблон загрузки. Если нужно объединить разделы, используйте перенос релизов.</p>
+		<?php if (!$categories) { ?>
+		<div class="lt-admin-empty" style="margin-top:14px;">Категорий пока нет.</div>
+		<?php } else { ?>
+		<div class="lt-admin-table-wrap">
+			<table class="lt-admin-table">
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Название</th>
+						<th>Шаблон</th>
+						<th>Релизы</th>
+						<th>Создана</th>
+						<th>Действия</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ($categories as $category) { ?>
+					<?php
+					$templateId = (int) ($category['template'] ?? 0);
+					$templateLabels = lt_admin_categories_template_labels();
+					?>
+					<tr>
+						<td><span class="lt-admin-code">#<?=(int) $category['id'];?></span></td>
+						<td><a href="browse.php?id_category=<?=(int) $category['id'];?>"><?=htmlspecialchars($category['name'], ENT_QUOTES, 'UTF-8');?></a></td>
+						<td><?=htmlspecialchars($templateLabels[$templateId] ?? 'Неизвестный шаблон', ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=number_format((int) ($category['releases_count'] ?? 0));?></td>
+						<td><?=(!empty($category['date']) ? convent_date($category['date']) : 'Не указана');?></td>
+						<td>
+							<div class="lt-admin-inline-actions">
+								<a href="categories.php?act=edit&id=<?=(int) $category['id'];?>">Редактировать</a>
+								<a href="categories.php?act=del&id=<?=(int) $category['id'];?>">Удалить</a>
+							</div>
+						</td>
+					</tr>
+					<?php } ?>
+				</tbody>
+			</table>
+		</div>
+		<?php } ?>
+	</section>
+</div>
+<?php
 foot();
