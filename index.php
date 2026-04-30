@@ -41,6 +41,7 @@ $sort = trim((string) ($_GET['sort'] ?? 'date'));
 $id_category = isset($_GET['id_category']) ? (int) $_GET['id_category'] : 0;
 $view = (string) ($_GET['view'] ?? 'compact');
 $view = ($view === 'full' ? 'full' : 'compact');
+$isAjaxLoad = !empty($_GET['ajax']);
 
 $sortOptions = array(
 	'date' => array(
@@ -115,6 +116,37 @@ while ($row = $db->get_row($sql)) {
 	$rows[] = $row;
 }
 
+function home_render_torrent_cards($rows, $categoriesById)
+{
+	ob_start();
+	foreach ($rows as $row) {
+		$category = (!empty($categoriesById[(int) $row['id_category']]) ? $categoriesById[(int) $row['id_category']] : array('id' => 0, 'name' => 'Без категории', 'image' => ''));
+		$user = get_user_info((int) $row['id_user']);
+		$torrentCard = lt_torrent_prepare_browse_card($row, $category, $user);
+		include __DIR__.'/templates/default/tpl.torrent.card.php';
+	}
+
+	return ob_get_clean();
+}
+
+$currentPage = isset($_GET['page']) ? max(0, (int) $_GET['page']) : 0;
+$perPage = 5;
+$pagesCount = ($countTorrent > 0 ? (int) ceil($countTorrent / $perPage) : 0);
+$nextPage = ($currentPage + 1 < $pagesCount ? $currentPage + 1 : null);
+$nextPageUrl = ($nextPage !== null ? home_build_url(array('page' => $nextPage, 'view' => $view, 'sort' => $sort, 'ajax' => 1)) : '');
+
+if ($isAjaxLoad) {
+	header('Content-Type: application/json; charset=utf-8');
+	echo json_encode(array(
+		'html' => home_render_torrent_cards($rows, $categoriesById),
+		'nextPage' => $nextPage,
+		'nextUrl' => $nextPageUrl,
+		'paginationHtml' => $pagerbottom ?: $pagertop,
+		'hasMore' => ($nextPage !== null),
+	));
+	die();
+}
+
 head('Главная');
 ?>
 <div class="home-torrents-page">
@@ -150,15 +182,7 @@ head('Главная');
 
 		<?php if ($rows) { ?>
 		<div class="browse-torrent-list home-torrent-list" data-browse-list data-view="<?=$view;?>">
-			<?php foreach ($rows as $row) { ?>
-			<?php
-			$torrentId = (int) $row['id'];
-			$category = (!empty($categoriesById[(int) $row['id_category']]) ? $categoriesById[(int) $row['id_category']] : array('id' => 0, 'name' => 'Без категории', 'image' => ''));
-			$user = get_user_info((int) $row['id_user']);
-			$torrentCard = lt_torrent_prepare_browse_card($row, $category, $user);
-			?>
-			<?php include __DIR__.'/templates/default/tpl.torrent.card.php'; ?>
-			<?php } ?>
+			<?=home_render_torrent_cards($rows, $categoriesById);?>
 		</div>
 		<?php } else { ?>
 		<div class="browse-empty-state">Торренты не найдены.</div>
@@ -166,7 +190,12 @@ head('Главная');
 	</section>
 
 	<?php if ($rows) { ?>
-	<div class="browse-pagination"><?=$pagerbottom ?: $pagertop;?></div>
+	<div class="browse-pagination" data-home-pagination>
+		<?php if ($nextPageUrl !== '') { ?>
+		<button class="home-load-more" type="button" data-home-load-more data-next-url="<?=htmlspecialchars($nextPageUrl, ENT_QUOTES, 'UTF-8');?>">Показать ещё</button>
+		<?php } ?>
+		<div data-home-pagination-html><?=$pagerbottom ?: $pagertop;?></div>
+	</div>
 	<?php } ?>
 </div>
 
@@ -174,6 +203,8 @@ head('Главная');
 document.addEventListener('DOMContentLoaded', function () {
 	var list = document.querySelector('[data-browse-list]');
 	var viewButtons = document.querySelectorAll('[data-browse-view-toggle]');
+	var loadMoreButton = document.querySelector('[data-home-load-more]');
+	var paginationHtml = document.querySelector('[data-home-pagination-html]');
 	var storageKey = 'litetrackerHomeView';
 	var initialView = list ? (list.getAttribute('data-view') || 'compact') : 'compact';
 	var storedView = '';
@@ -245,6 +276,52 @@ document.addEventListener('DOMContentLoaded', function () {
 	for (var i = 0; i < viewButtons.length; i++) {
 		viewButtons[i].addEventListener('click', function () {
 			setView(this.getAttribute('data-browse-view') || 'compact', true);
+		});
+	}
+
+	if (loadMoreButton && list) {
+		loadMoreButton.addEventListener('click', function () {
+			var button = this;
+			var nextUrl = button.getAttribute('data-next-url') || '';
+			if (!nextUrl || button.disabled) {
+				return;
+			}
+
+			button.disabled = true;
+			button.textContent = 'Загрузка...';
+
+			fetch(nextUrl, {
+				headers: {'X-Requested-With': 'XMLHttpRequest'}
+			})
+				.then(function (response) {
+					if (!response.ok) {
+						throw new Error('load failed');
+					}
+					return response.json();
+				})
+				.then(function (payload) {
+					if (payload.html) {
+						list.insertAdjacentHTML('beforeend', payload.html);
+					}
+
+					if (paginationHtml && payload.paginationHtml) {
+						paginationHtml.innerHTML = payload.paginationHtml;
+					}
+
+					if (payload.hasMore && payload.nextUrl) {
+						button.setAttribute('data-next-url', payload.nextUrl);
+						button.disabled = false;
+						button.textContent = 'Показать ещё';
+					} else {
+						button.remove();
+					}
+
+					syncViewLinks(list.getAttribute('data-view') || 'compact');
+				})
+				.catch(function () {
+					button.disabled = false;
+					button.textContent = 'Попробовать ещё раз';
+				});
 		});
 	}
 

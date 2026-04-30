@@ -4050,6 +4050,29 @@ iframe {
   padding: 0;
 }
 
+.home-load-more {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  margin: 0 0 18px;
+  border: 1px solid #8797a0;
+  border-radius: 4px;
+  background: #8ea0aa;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.home-load-more:hover {
+  background: #7f919b;
+  border-color: #7f919b;
+}
+
+.home-load-more:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
 .browse-torrent-list {
   display: flex;
   flex-direction: column;
@@ -4462,6 +4485,117 @@ iframe {
 
 .home-torrent-list {
   padding-top: 20px;
+}
+
+.feedback-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.feedback-modal[hidden] {
+  display: none;
+}
+
+.feedback-modal-open {
+  overflow: hidden;
+}
+
+.feedback-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.58);
+}
+
+.feedback-modal-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 392px);
+  max-height: calc(100vh - 8px);
+}
+
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 8px);
+  overflow: hidden;
+  border-radius: 3px;
+  background: #ffffff;
+  color: #050505;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.4);
+}
+
+.feedback-form-body {
+  padding: 20px 20px 18px;
+  overflow: auto;
+}
+
+.feedback-title {
+  margin: 0 0 20px;
+  font-size: 29px;
+  line-height: 1.15;
+  font-weight: 400;
+  color: #050505;
+}
+
+.feedback-field {
+  display: block;
+  margin: 0 0 20px;
+}
+
+.feedback-label {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #050505;
+}
+
+.feedback-field select,
+.feedback-field textarea {
+  width: 100%;
+  border-radius: 4px;
+  border-color: #c9d5df;
+  background: #ffffff;
+  color: #050505;
+}
+
+.feedback-field textarea {
+  min-height: 150px;
+}
+
+.feedback-form-footer {
+  padding: 20px;
+  border-top: 1px solid #d5dde5;
+  background: #ffffff;
+}
+
+.feedback-submit {
+  min-width: 111px;
+  min-height: 39px;
+  border-radius: 4px;
+  background: #438bd0;
+  border-color: #438bd0;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.feedback-message {
+  margin-top: -4px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: #edf8ef;
+  color: #235c33;
+  font-size: 13px;
+}
+
+.feedback-message-error {
+  background: #fff1f1;
+  color: #7a2b2b;
 }
 
 .browse-empty-state-filtered {
