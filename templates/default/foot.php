@@ -71,7 +71,7 @@ $showBottomBlocks = empty($GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS']);
 				<label class="feedback-field">
 					<span class="feedback-label">Тема</span>
 					<select name="topic" required>
-						<option value=""></option>
+						<option value="" selected disabled>Выберите тему</option>
 						<option value="auth">Проблемы с авторизацией и регистрацией</option>
 						<option value="ideas">Предложения и пожелания</option>
 						<option value="bugs">Ошибки на сайте</option>
@@ -82,7 +82,7 @@ $showBottomBlocks = empty($GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS']);
 
 				<label class="feedback-field">
 					<span class="feedback-label">Сообщение</span>
-					<textarea name="message" required></textarea>
+					<textarea name="message" required placeholder="Опишите вопрос или проблему"></textarea>
 				</label>
 
 				<div class="feedback-message" data-feedback-message hidden></div>

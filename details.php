@@ -278,6 +278,61 @@ function lt_details_rating_table_ready()
 	return $ready;
 }
 
+function lt_details_views_table_ready()
+{
+	global $db;
+	static $ready = null;
+
+	if ($ready !== null) {
+		return $ready;
+	}
+
+	$tableName = 'torrent_views';
+	if (lt_table_exists($tableName)) {
+		$ready = true;
+		return true;
+	}
+
+	$db->query(
+		"CREATE TABLE IF NOT EXISTS `".$tableName."` (
+			`id` int unsigned NOT NULL AUTO_INCREMENT,
+			`torrent_id` int unsigned NOT NULL,
+			`user_id` int unsigned NOT NULL DEFAULT '0',
+			`visitor_hash` char(40) NOT NULL DEFAULT '',
+			`date` datetime NOT NULL,
+			PRIMARY KEY (`id`),
+			UNIQUE KEY `torrent_visitor` (`torrent_id`, `visitor_hash`),
+			KEY `torrent_id` (`torrent_id`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3"
+	);
+
+	$row = $db->super_query("SHOW TABLES LIKE '".$db->safesql($tableName)."'");
+	$ready = !empty($row);
+	return $ready;
+}
+
+function lt_details_register_view($torrentId)
+{
+	global $db, $USER;
+
+	$torrentId = (int) $torrentId;
+	if ($torrentId <= 0 || !lt_details_views_table_ready()) {
+		return 0;
+	}
+
+	$userId = (!empty($USER['id']) ? (int) $USER['id'] : 0);
+	$visitorKey = ($userId > 0 ? 'user:'.$userId : 'guest:'.getip().'|'.($_SERVER['HTTP_USER_AGENT'] ?? ''));
+	$visitorHash = sha1($visitorKey.'|'.COOKIE_SALT);
+
+	$db->query(
+		"INSERT IGNORE INTO torrent_views (torrent_id, user_id, visitor_hash, date)
+		VALUES (".$torrentId.", ".$userId.", '".$db->safesql($visitorHash)."', NOW())"
+	);
+
+	$row = $db->super_query("SELECT COUNT(*) AS cnt FROM torrent_views WHERE torrent_id = ".$torrentId);
+	return (int) ($row['cnt'] ?? 0);
+}
+
 
 if(!empty($USER) && !$PRIV['details_view']) {
 	err($language['default_1'] , $language['details_29'] , 1);
@@ -643,16 +698,7 @@ if (!empty($USER['id']) && (int) ($arr['num_files'] ?? 0) > 0) {
 	}
 }
 
-$details_views_count = 0;
-foreach (array('views', 'num_views', 'view') as $viewsColumn) {
-	if (isset($arr[$viewsColumn])) {
-		$details_views_count = (int) $arr[$viewsColumn];
-		break;
-	}
-}
-if ($details_views_count <= 0) {
-	$details_views_count = (int) $arr['downloaded'];
-}
+$details_views_count = lt_details_register_view((int) $id);
 
 $details_rating_votes = 0;
 $details_rating_score = 0;

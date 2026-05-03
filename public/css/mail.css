@@ -107,10 +107,11 @@
 	inset: 0;
 	z-index: 4000;
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	justify-content: center;
-	padding: 86px 20px 40px;
+	padding: 88px 20px 32px;
 	background: rgba(24, 29, 35, 0.62);
+	overflow: auto;
 }
 
 .mail-overlay-close {
@@ -133,7 +134,7 @@
 .mail-modal {
 	width: 100%;
 	max-width: 560px;
-	margin-top: 140px;
+	max-height: calc(100vh - 120px);
 	background: #ffffff;
 	border-radius: 4px;
 	box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
@@ -178,7 +179,8 @@
 }
 
 .mail-modal-stream {
-	max-height: 300px;
+	max-height: calc(100vh - 260px);
+	min-height: 140px;
 	overflow-y: auto;
 	border: 1px solid #d7e2ed;
 	border-radius: 4px;
@@ -324,7 +326,11 @@
 	}
 
 	.mail-modal {
-		margin-top: 70px;
 		max-width: 100%;
+		max-height: calc(100vh - 80px);
+	}
+
+	.mail-modal-stream {
+		max-height: calc(100vh - 220px);
 	}
 }

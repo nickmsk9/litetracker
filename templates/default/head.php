@@ -32,7 +32,12 @@ if ($USER) {
     }
 }
 
-$messagesCount = (!empty($USER['num_messages']) ? (int) $USER['num_messages'] : 0);
+$messagesCount = 0;
+if ($USER) {
+	$messagesRow = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = ".(int) $USER['id']." AND delete_in = 0 AND reading = 0");
+	$messagesCount = (int) ($messagesRow['c'] ?? 0);
+	$USER['num_messages'] = $messagesCount;
+}
 $openWallReportsCount = 0;
 if ($USER && user_wall_reports_can_moderate()) {
 	user_wall_reports_ensure_table();
