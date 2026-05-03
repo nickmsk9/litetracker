@@ -102,6 +102,18 @@
 	color: #ffffff;
 }
 
+.mail-button-secondary {
+	min-width: 92px;
+	border-color: #d2dee9;
+	background: #f4f7fa;
+	color: #476178;
+}
+
+.mail-button-secondary:hover {
+	background: #e8eef4;
+	color: #314b62;
+}
+
 .mail-overlay {
 	position: fixed;
 	inset: 0;

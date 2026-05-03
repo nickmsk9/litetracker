@@ -44,10 +44,10 @@ if ($USER && user_wall_reports_can_moderate()) {
 	$openWallReportsRow = $db->super_query("SELECT COUNT(*) AS c FROM `".user_wall_reports_table_name()."` WHERE status = 'open'");
 	$openWallReportsCount = (int) ($openWallReportsRow['c'] ?? 0);
 }
-$alertCount = ($openWallReportsCount > 0 ? $openWallReportsCount : $messagesCount);
+$alertCount = $messagesCount;
 $alertBadge = ($alertCount > 99 ? '99+' : (string) $alertCount);
-$alertHref = ($openWallReportsCount > 0 ? user_wall_reports_href() : 'my.mail.php?act=conversation&system=1');
-$alertLabel = ($openWallReportsCount > 0 ? 'Жалобы: '.$alertBadge : 'Оповещения'.($alertCount > 0 ? ': '.$alertBadge : ''));
+$alertHref = 'my.mail.php?act=conversation&system=1';
+$alertLabel = 'Оповещения'.($alertCount > 0 ? ': '.$alertBadge : '');
 $requestUri = ltrim((string) ($_SERVER['REQUEST_URI'] ?? ''), '/');
 $loginHref = 'login.php';
 if ($requestUri !== '' && strpos($requestUri, 'login.php') !== 0) {

@@ -52,6 +52,32 @@ function signup_error_response($title, $message, $goBack = 1)
 	return false;
 }
 
+function signup_admin_class_id()
+{
+	global $db;
+
+	$class = $db->super_query("SELECT id FROM priv WHERE EDIT_PRIV = 1 ORDER BY id DESC LIMIT 1");
+	if (!empty($class['id'])) {
+		return (int) $class['id'];
+	}
+
+	$class = $db->super_query("SELECT id FROM priv WHERE id > 0 ORDER BY id DESC LIMIT 1");
+	return (int) ($class['id'] ?? 0);
+}
+
+function signup_default_class_id()
+{
+	global $db;
+
+	$class = $db->super_query("SELECT id FROM priv WHERE SIGNUP = 1 ORDER BY id ASC LIMIT 1");
+	if (!empty($class['id'])) {
+		return (int) $class['id'];
+	}
+
+	$class = $db->super_query("SELECT id FROM priv WHERE id > 0 ORDER BY id ASC LIMIT 1");
+	return (int) ($class['id'] ?? 0);
+}
+
 $signupModalError = '';
 $signupBlockedMessage = '';
 
@@ -156,12 +182,15 @@ if($_POST && $signupBlockedMessage === '') {
 		$passwordHash = lt_password_hash_value($password);
 
 		$countUsers = $db->super_query("SELECT COUNT(*) AS c FROM users");
-		$class = $db->super_query("SELECT id FROM priv WHERE ".($countUsers['c'] > 0 ? 'SIGNUP=1' : 'EDIT_PRIV=1')." LIMIT 1");
-		$classId = (int) ($class['id'] ?? 0);
+		$classId = ((int) ($countUsers['c'] ?? 0) > 0 ? signup_default_class_id() : signup_admin_class_id());
 
 		$db->query("INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$signupBonusColumn.", sex, birthday_date, profile_text, website, icq, last_chat, num_messages, num_friends, confirm) VALUES ('".$db->safesql($name)."', '', '".$db->safesql($email)."', '".$db->safesql($passwordHash)."', '', '".ip2long_db(getip())."', '".$classId."', NOW(), NOW(), '', '0', '0', '0', '300', '1', '".$db->safesql($birthdayDate)."', '', '', '', '0', '0', '0', '1')");
 
 		$id = (int) $db->insert_id();
+		if ($id === 1) {
+			$classId = signup_admin_class_id();
+			$db->query("UPDATE users SET class = ".$classId." WHERE id = 1");
+		}
 
 		login_cookie($id, $passwordHash);
 

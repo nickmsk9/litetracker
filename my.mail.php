@@ -131,6 +131,31 @@ function mail_load_message($messageId, $currentUserId)
 	return $db->super_query("SELECT * FROM mail WHERE id = {$messageId} AND (id_user_in = {$currentUserId} OR id_user_out = {$currentUserId}) LIMIT 1");
 }
 
+function mail_mark_system_read($currentUserId)
+{
+	global $db, $USER, $memcached;
+
+	$currentUserId = (int) $currentUserId;
+	if ($currentUserId <= 0) {
+		return 0;
+	}
+
+	$unread = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out = 0 AND delete_in = 0 AND reading = 0");
+	$unreadCount = (int) ($unread['c'] ?? 0);
+
+	if ($unreadCount > 0) {
+		$db->query("UPDATE mail SET reading = '1' WHERE id_user_in = {$currentUserId} AND id_user_out = 0 AND delete_in = 0 AND reading = 0");
+	}
+
+	$totalUnread = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND delete_in = 0 AND reading = 0");
+	$totalUnreadCount = (int) ($totalUnread['c'] ?? 0);
+	$db->query("UPDATE users SET num_messages = {$totalUnreadCount} WHERE id = {$currentUserId}");
+	$USER['num_messages'] = $totalUnreadCount;
+	$memcached->delete('user_'.$currentUserId, 0);
+
+	return $unreadCount;
+}
+
 function mail_render_message_html($row, $currentUserId, $currentUserName)
 {
 	$row = (array) $row;
@@ -171,6 +196,12 @@ if ($act === 'in_message' || $act === 'out_message') {
 
 if ($act === 'send') {
 	$act = 'conversation';
+}
+
+if ($act === 'read_system') {
+	mail_mark_system_read($currentUserId);
+	header('Location: '.mail_build_href('conversation', 0, true, array('status' => 5)));
+	die();
 }
 
 if ($act === 'view' && $messageId > 0) {
@@ -336,15 +367,7 @@ if ($act === 'conversation') {
 	}
 
 	if ($systemConversation) {
-		$unread = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out = 0 AND delete_in = 0 AND reading = 0");
-		$unreadCount = (int) ($unread['c'] ?? 0);
-
-		if ($unreadCount > 0) {
-			$db->query("UPDATE mail SET reading = '1' WHERE id_user_in = {$currentUserId} AND id_user_out = 0 AND delete_in = 0 AND reading = 0");
-			$db->query("UPDATE users SET num_messages = GREATEST(num_messages - {$unreadCount}, 0) WHERE id = {$currentUserId}");
-			$USER['num_messages'] = max(0, (int) $USER['num_messages'] - $unreadCount);
-			$memcached->delete('user_'.$currentUserId, 0);
-		}
+		mail_mark_system_read($currentUserId);
 	} else {
 		$unread = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out = {$targetUserId} AND delete_in = 0 AND reading = 0");
 		$unreadCount = (int) ($unread['c'] ?? 0);
@@ -411,6 +434,8 @@ if($status === '1') {
 	msg('Успешно', 'Сообщение скрыто из списка. <a href="'.$restoreLink.'">Восстановить</a>');
 } elseif($status === '4') {
 	msg('Успешно', 'Сообщение восстановлено.');
+} elseif($status === '5') {
+	msg('Успешно', 'Системные сообщения отмечены прочитанными.');
 }
 
 $conversations = array();
@@ -498,6 +523,9 @@ while($conversation = $db->get_row($conversationsSql)) {
 					<div class="mail-modal-title" id="mail-modal-title"><?=htmlspecialchars($conversationTitle, ENT_QUOTES, 'UTF-8');?></div>
 					<div class="mail-modal-subtitle"><?=$conversationSubtitle;?></div>
 				</div>
+				<?php if ($systemConversation) { ?>
+				<a class="mail-button mail-button-secondary" href="<?=mail_build_href('read_system');?>">Прочитано</a>
+				<?php } ?>
 			</div>
 
 			<div class="mail-modal-body">
