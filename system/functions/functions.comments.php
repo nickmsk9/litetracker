@@ -277,6 +277,26 @@ function comments_build_tree_branch($parentId, $comments, $childrenMap)
     return $result;
 }
 
+function comments_user_can_edit($commentUserId, $commentDate, $type = '')
+{
+    global $USER, $PRIV;
+
+    if (empty($USER['id'])) {
+        return false;
+    }
+
+    if (!empty($PRIV['comments_edit'])) {
+        return true;
+    }
+
+    if ((int) $USER['id'] !== (int) $commentUserId) {
+        return false;
+    }
+
+    $commentTs = strtotime((string) $commentDate);
+    return ($commentTs && $commentTs >= (time() - 3600));
+}
+
 function comments_render_node($node, $type, $objectId, $file, $level = 0)
 {
     global $USER, $PRIV, $language;
@@ -312,11 +332,14 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0)
         : cleanhtml($commentTextRaw));
     $children = (!empty($node['children']) && is_array($node['children']) ? $node['children'] : array());
     $commentCanReply = (!empty($USER['id']) && !$commentDeleted);
-    $commentCanEdit = (!empty($USER['id']) && !$commentDeleted && (!empty($PRIV['comments_edit']) || ($type !== 'users' && (int) $USER['id'] === $commentUserId)));
+    $commentCanEdit = (!empty($USER['id']) && !$commentDeleted && comments_user_can_edit($commentUserId, (string) ($node['date'] ?? ''), $type));
     $commentCanDelete = (!empty($USER['id']) && !$commentDeleted && (!empty($PRIV['comments_delete']) || ($type !== 'users' && (int) $USER['id'] === $commentUserId)));
     $commentCanReport = (!empty($USER['id']) && (int) $USER['id'] !== $commentUserId && !$commentDeleted);
     $commentHasSideActions = ($commentCanEdit || $commentCanDelete || $commentCanReport);
     $csrfToken = rawurlencode(lt_csrf_token('comments_'.$type.'_'.$objectId));
+    $reactionObjectType = 'comment_'.$type;
+    $reactionStats = lt_reaction_stats($reactionObjectType, $commentId, (int) ($USER['id'] ?? 0));
+    $commentCanReact = (!empty($USER['id']) && !$commentDeleted && lt_user_has_plus($USER));
 
     echo '<article class="wall-comment comment-entry'.($children ? ' wall-comment-has-children' : '').($commentDeleted ? ' comment-entry-deleted' : '').'" id="wall-comment-'.$commentId.'" data-comment-id="'.$commentId.'" data-comment-type="'.htmlspecialchars($type, ENT_QUOTES, 'UTF-8').'" data-comment-object-id="'.$objectId.'" data-wall-level="'.$level.'">';
     echo '<a class="wall-comment-avatar comment-entry-avatar" href="'.$commentProfileHref.'">';
@@ -356,6 +379,17 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0)
     if ($commentCanReply) {
         echo '<div class="wall-comment-actions comment-entry-actions">';
         echo '<button class="wall-comment-button comment-reply-button" type="button" data-comment-reply="1" data-wall-reply="1" data-comment-id="'.$commentId.'" data-author-name="'.$commentUserNameSafe.'">Ответить</button>';
+        echo '<span class="plus-reactions">';
+        if ($commentCanReact) {
+            echo '<a class="plus-reaction-button'.($reactionStats['user'] === 'like' ? ' plus-reaction-button-active' : '').'" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=react&amp;reaction=like&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'">Нравится '.$reactionStats['like'].'</a>';
+            echo '<a class="plus-reaction-button'.($reactionStats['user'] === 'dislike' ? ' plus-reaction-button-active' : '').'" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=react&amp;reaction=dislike&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'">Не нравится '.$reactionStats['dislike'].'</a>';
+        } else {
+            echo '<span class="plus-reaction-count">Нравится '.$reactionStats['like'].'</span>';
+            echo '<span class="plus-reaction-count">Не нравится '.$reactionStats['dislike'].'</span>';
+        }
+        $reactionListHref = 'comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=reaction_list&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8');
+        echo '<a class="plus-reaction-list-link" href="'.$reactionListHref.'">Кто оценил</a>';
+        echo '</span>';
         echo '</div>';
     }
 

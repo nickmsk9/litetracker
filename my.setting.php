@@ -35,6 +35,10 @@ if (!$arr) {
 
 $settingsView = 'general';
 $canManageProfileClass = ((!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) && (int) $id !== (int) $USER['id']);
+$canManagePlus = ((!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) && (int) $id !== (int) $USER['id']);
+$targetHasPlus = lt_user_has_plus($arr);
+$plusBadgeOptions = lt_plus_badge_options();
+$plusStatusLabel = lt_plus_expiration_label($arr);
 $profileClassOptions = array();
 if ($canManageProfileClass) {
 	foreach (get_classes_list() as $classRow) {

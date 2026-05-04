@@ -108,6 +108,8 @@ $rewrite = new rewrite;
 require_once __DIR__ . '/bootstrap/cache.php';
 $memcached = lt_cache_bind_globals();
 
+lt_plus_ensure_schema();
+
 //Cron system
 if (false === ($CRON = $memcached->get('CRON'))) {
 	$sql = $db->query("SELECT * FROM cron");

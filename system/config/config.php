@@ -126,6 +126,7 @@ $config  = array(
 // бонусы начисляются за активное присутствие на сайте; за 1 час пользователь получает {bonus_price} бонусов
 'bonus_price' => 100 , //Количество бонусов, получаемых пользователем за час
 'voice_price' => 100 , //Совместимость со старым конфигом
+'plus_bonus_price' => 10000 , //Стоимость месяца подписки Plus в бонусах
 
 //reCaptcha
 'reCaptcha' => lt_env_bool('LITETRACKER_RECAPTCHA_ENABLED', ($ltRecaptchaPublicKey !== '' && $ltRecaptchaPrivateKey !== '' ? 1 : 0)) , //Использовать reCaptcha

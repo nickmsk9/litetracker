@@ -22,7 +22,7 @@ if (!defined('LITETRACKER')) {
 				</div>
 
 				<div class="profile-card-main">
-					<h1 class="profile-card-name"><?=get_user_color((int) ($arr['class'] ?? 0), $profileName);?></h1>
+					<h1 class="profile-card-name"><?=get_user_color((int) ($arr['class'] ?? 0), $profileName, $arr);?></h1>
 					<div class="profile-status <?=$profileStatusClass;?>"><?=$profileStatusLabel;?></div>
 
 					<?php if ($isOwnProfile && $profileAbout !== '') { ?>
@@ -116,6 +116,18 @@ if (!defined('LITETRACKER')) {
 			</section>
 			<?php } elseif ($profileView === 'bonus') { ?>
 			<section class="profile-panel profile-bonus-panel">
+				<div class="profile-plus-shop-card">
+					<div>
+						<div class="profile-plus-shop-title">Подписка Plus</div>
+						<div class="profile-plus-shop-text">Бейдж у имени, без рекламы, реакции, красивый никнейм, GIF-аватарка и дополнительные функции.</div>
+						<div class="profile-plus-shop-status">Статус: <strong><?=htmlspecialchars($profileStats['plus'], ENT_QUOTES, 'UTF-8');?></strong></div>
+					</div>
+					<form method="post" action="<?=profile_href($id, 'bonus');?>">
+						<input type="hidden" name="act" value="buy_plus">
+						<button class="profile-card-button" type="submit">Купить за <?=template_format_number(lt_plus_month_bonus_price());?> бонусов</button>
+					</form>
+				</div>
+
 				<form class="profile-bonus-form" method="post" action="<?=profile_href($id, 'bonus');?>">
 					<?php foreach ($bonusOptions as $bonusOption) { ?>
 					<label class="profile-bonus-option">
@@ -156,6 +168,7 @@ if (!defined('LITETRACKER')) {
 			<section class="profile-sidebar-card">
 				<h2 class="profile-sidebar-stats-title">Статистика</h2>
 				<div class="profile-sidebar-stat-bonus">Бонус: <strong><?=template_format_number($profileStats['bonus']);?></strong></div>
+				<div class="profile-sidebar-stat-bonus">Plus: <strong><?=htmlspecialchars($profileStats['plus'], ENT_QUOTES, 'UTF-8');?></strong></div>
 
 				<div class="profile-sidebar-stat-peers">
 					<span class="profile-sidebar-stat-peer"><img src="public/images/up.png" alt="" width="10" height="10"> <?=$profileStats['seeders'];?></span>

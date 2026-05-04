@@ -101,6 +101,45 @@ $settingsActiveTab = ((string) ($_GET['tab'] ?? '') === 'password' ? 'password' 
 						</div>
 					</section>
 
+					<?php if (!empty($targetHasPlus) || !empty($canManagePlus)) { ?>
+					<section class="settings-section settings-plus-section">
+						<h2 class="settings-section-title">Подписка Plus</h2>
+						<div class="settings-inline-note">Статус: <strong><?=htmlspecialchars($plusStatusLabel, ENT_QUOTES, 'UTF-8');?></strong></div>
+
+						<?php if (!empty($targetHasPlus)) { ?>
+						<div class="settings-grid">
+							<div class="settings-field">
+								<label class="settings-field-label" for="settings_plus_badge">Бейдж у имени</label>
+								<select id="settings_plus_badge" name="plus_badge">
+									<?php foreach ($plusBadgeOptions as $badgeKey => $badgeMeta) { ?>
+									<option value="<?=htmlspecialchars($badgeKey, ENT_QUOTES, 'UTF-8');?>"<?=((string) ($arr['plus_badge'] ?? 'star') === (string) $badgeKey ? ' selected' : '');?>><?=htmlspecialchars($badgeMeta['label'], ENT_QUOTES, 'UTF-8');?></option>
+									<?php } ?>
+								</select>
+							</div>
+
+							<div class="settings-field">
+								<label class="settings-field-label" for="settings_profile_slug">Красивый никнейм</label>
+								<input id="settings_profile_slug" type="text" name="profile_slug" value="<?=htmlspecialchars((string) ($arr['profile_slug'] ?? ''), ENT_QUOTES, 'UTF-8');?>" maxlength="64" placeholder="nickname">
+								<div class="settings-inline-note">Ссылка профиля будет без ID: <?=(!empty($arr['profile_slug']) ? htmlspecialchars(profile_href($arr), ENT_QUOTES, 'UTF-8') : 'после сохранения');?></div>
+							</div>
+						</div>
+						<?php } ?>
+
+						<?php if (!empty($canManagePlus)) { ?>
+						<div class="settings-field settings-field-full">
+							<label class="settings-field-label">Ручная выдача Plus</label>
+							<div class="settings-radio-group">
+								<label class="settings-radio"><input type="radio" name="plus_grant_mode" value="keep" checked> Не менять</label>
+								<label class="settings-radio"><input type="radio" name="plus_grant_mode" value="until"> До даты</label>
+								<label class="settings-radio"><input type="radio" name="plus_grant_mode" value="forever"> Навсегда</label>
+								<label class="settings-radio"><input type="radio" name="plus_grant_mode" value="disable"> Отключить ручной Plus</label>
+							</div>
+							<input type="date" name="plus_manual_until" value="<?=(!empty($arr['plus_until']) && $arr['plus_until'] !== '0000-00-00 00:00:00' ? htmlspecialchars(substr((string) $arr['plus_until'], 0, 10), ENT_QUOTES, 'UTF-8') : '');?>">
+						</div>
+						<?php } ?>
+					</section>
+					<?php } ?>
+
 					<?php if (!empty($canManageProfileClass) && !empty($profileClassOptions)) { ?>
 					<section class="settings-section">
 						<h2 class="settings-section-title">Администрирование</h2>

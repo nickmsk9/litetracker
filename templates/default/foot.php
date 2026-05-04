@@ -97,6 +97,16 @@ $showBottomBlocks = empty($GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS']);
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+	var plusPromoClose = document.querySelector('[data-plus-promo-close]');
+	if (plusPromoClose) {
+		plusPromoClose.addEventListener('click', function () {
+			var panel = plusPromoClose.closest('.plus-promo-panel');
+			if (panel) {
+				panel.hidden = true;
+			}
+		});
+	}
+
 	var modal = document.querySelector('[data-feedback-modal]');
 	var openers = document.querySelectorAll('[data-feedback-open]');
 	var closers = document.querySelectorAll('[data-feedback-close]');

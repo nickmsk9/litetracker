@@ -178,9 +178,50 @@
     });
   }
 
+  function initPostTts() {
+    var button = document.querySelector('[data-details-tts]');
+    var source = document.querySelector('[data-details-tts-text]');
+
+    if (!button || !source || !('speechSynthesis' in window) || typeof window.SpeechSynthesisUtterance !== 'function') {
+      if (button) {
+        button.hidden = true;
+      }
+      return;
+    }
+
+    button.addEventListener('click', function () {
+      var text = (source.textContent || '').trim();
+      var utterance;
+
+      if (!text) {
+        return;
+      }
+
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        button.textContent = 'Озвучить пост';
+        return;
+      }
+
+      utterance = new window.SpeechSynthesisUtterance(text);
+      utterance.lang = 'ru-RU';
+      utterance.rate = 1;
+      utterance.onend = function () {
+        button.textContent = 'Озвучить пост';
+      };
+      utterance.onerror = function () {
+        button.textContent = 'Озвучить пост';
+      };
+
+      button.textContent = 'Остановить';
+      window.speechSynthesis.speak(utterance);
+    });
+  }
+
   onReady(function () {
     initScreenshotZoom();
     initBookmarkButton();
     initTrackerRefreshButton();
+    initPostTts();
   });
 })();

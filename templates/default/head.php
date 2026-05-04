@@ -106,7 +106,7 @@ if (lt_is_mobile_request()) {
 				<details class="site-user-dropdown">
 					<summary class="site-user-summary">
 						<span class="site-user-avatar"><img src="<?=$avatar;?>" alt="<?=htmlspecialchars($USER['name'], ENT_QUOTES, 'UTF-8');?>" width="38" height="38"></span>
-						<span class="site-user-name"><?=get_user_color((int) ($USER['class'] ?? 0), htmlspecialchars((string) $USER['name'], ENT_QUOTES, 'UTF-8'));?></span>
+						<span class="site-user-name"><?=get_user_color((int) ($USER['class'] ?? 0), htmlspecialchars((string) $USER['name'], ENT_QUOTES, 'UTF-8'), $USER);?></span>
 						<span class="site-user-arrow">
 							<svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true">
 								<path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

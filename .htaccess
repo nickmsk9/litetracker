@@ -6,3 +6,5 @@ RewriteRule ^ - [L]
 
 RewriteRule ^user/([a-f0-9]{24})/?$ profile.php?uid=$1 [L,QSA,NC]
 RewriteRule ^user/([a-f0-9]{24})/(torrents|bonus)/?$ profile.php?uid=$1&view=$2 [L,QSA,NC]
+RewriteRule ^u/([A-Za-z0-9_-]{3,64})/?$ profile.php?slug=$1 [L,QSA,NC]
+RewriteRule ^u/([A-Za-z0-9_-]{3,64})/(torrents|bonus)/?$ profile.php?slug=$1&view=$2 [L,QSA,NC]

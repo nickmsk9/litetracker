@@ -63,7 +63,7 @@ function lt_column_exists($tableName, $columnName)
 	}
 
 	$key = $tableName.'.'.$columnName;
-	if (array_key_exists($key, $cache)) {
+	if (array_key_exists($key, $cache) && $cache[$key] !== false) {
 		return $cache[$key];
 	}
 
@@ -76,6 +76,405 @@ function lt_column_exists($tableName, $columnName)
 	$cache[$key] = !empty($row['Field']);
 
 	return $cache[$key];
+}
+
+function lt_plus_ensure_schema()
+{
+	global $db;
+	static $ready = false;
+
+	if ($ready) {
+		return true;
+	}
+
+	if (lt_table_exists('users')) {
+		$columns = array(
+			'plus_until' => "ALTER TABLE `users` ADD COLUMN `plus_until` datetime DEFAULT NULL AFTER `theme_dark`",
+			'plus_permanent' => "ALTER TABLE `users` ADD COLUMN `plus_permanent` tinyint NOT NULL DEFAULT '0' AFTER `plus_until`",
+			'plus_source' => "ALTER TABLE `users` ADD COLUMN `plus_source` varchar(32) NOT NULL DEFAULT '' AFTER `plus_permanent`",
+			'plus_badge' => "ALTER TABLE `users` ADD COLUMN `plus_badge` varchar(32) NOT NULL DEFAULT 'star' AFTER `plus_source`",
+			'profile_slug' => "ALTER TABLE `users` ADD COLUMN `profile_slug` varchar(64) NOT NULL DEFAULT '' AFTER `plus_badge`",
+		);
+
+		foreach ($columns as $column => $sql) {
+			if (!lt_column_exists('users', $column)) {
+				$db->query($sql);
+			}
+		}
+
+	}
+
+	$db->query(
+		"CREATE TABLE IF NOT EXISTS `plus_ads` (
+			`id` int unsigned NOT NULL AUTO_INCREMENT,
+			`title` varchar(120) NOT NULL DEFAULT '',
+			`body` text NOT NULL,
+			`href` varchar(255) NOT NULL DEFAULT '',
+			`placement` varchar(32) NOT NULL DEFAULT 'sidebar',
+			`enabled` tinyint NOT NULL DEFAULT '1',
+			`sort_order` int NOT NULL DEFAULT '0',
+			`created_at` datetime NOT NULL,
+			`updated_at` datetime DEFAULT NULL,
+			PRIMARY KEY (`id`),
+			KEY `placement_enabled_sort` (`placement`, `enabled`, `sort_order`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin"
+	);
+
+	$db->query(
+		"CREATE TABLE IF NOT EXISTS `plus_reactions` (
+			`id` int unsigned NOT NULL AUTO_INCREMENT,
+			`object_type` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+			`object_id` int unsigned NOT NULL,
+			`user_id` int unsigned NOT NULL,
+			`reaction` enum('like','dislike') NOT NULL,
+			`created_at` datetime NOT NULL,
+			PRIMARY KEY (`id`),
+			UNIQUE KEY `object_user` (`object_type`, `object_id`, `user_id`),
+			KEY `object_reaction` (`object_type`, `object_id`, `reaction`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin"
+	);
+
+	$ready = true;
+	return true;
+}
+
+function lt_plus_vip_class_ids()
+{
+	global $db;
+	static $ids = null;
+
+	if ($ids !== null) {
+		return $ids;
+	}
+
+	$ids = array();
+	if (lt_table_exists('priv')) {
+		$sql = $db->query("SELECT id, NAME FROM priv");
+		while ($row = $db->get_row($sql)) {
+			$name = function_exists('mb_strtolower') ? mb_strtolower((string) $row['NAME'], 'UTF-8') : strtolower((string) $row['NAME']);
+			if ($name === 'vip' || $name === 'вип') {
+				$ids[] = (int) $row['id'];
+			}
+		}
+		$db->free($sql);
+	}
+
+	if (!$ids) {
+		$ids[] = 2;
+	}
+
+	return array_unique($ids);
+}
+
+function lt_user_has_plus($user = null)
+{
+	if ($user === null) {
+		$user = ($GLOBALS['USER'] ?? null);
+	}
+
+	if (!is_array($user) || empty($user['id'])) {
+		return false;
+	}
+
+	$userId = (int) $user['id'];
+	if ($userId === 1) {
+		return true;
+	}
+
+	if (in_array((int) ($user['class'] ?? 0), lt_plus_vip_class_ids(), true)) {
+		return true;
+	}
+
+	if (!empty($user['plus_permanent'])) {
+		return true;
+	}
+
+	$until = trim((string) ($user['plus_until'] ?? ''));
+	if ($until !== '' && $until !== '0000-00-00 00:00:00') {
+		$untilTs = strtotime($until);
+		if ($untilTs && $untilTs >= time()) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+function lt_plus_expiration_label($user)
+{
+	if (!is_array($user) || empty($user['id'])) {
+		return 'нет';
+	}
+
+	if ((int) $user['id'] === 1) {
+		return 'навсегда, создатель';
+	}
+
+	if (in_array((int) ($user['class'] ?? 0), lt_plus_vip_class_ids(), true)) {
+		return 'активна автоматически для VIP';
+	}
+
+	if (!empty($user['plus_permanent'])) {
+		return 'навсегда';
+	}
+
+	$until = trim((string) ($user['plus_until'] ?? ''));
+	if ($until !== '' && $until !== '0000-00-00 00:00:00' && strtotime($until)) {
+		return (strtotime($until) >= time() ? 'до '.convent_date($until) : 'истекла '.convent_date($until));
+	}
+
+	return 'нет';
+}
+
+function lt_plus_month_bonus_price()
+{
+	global $config;
+	return max(1, (int) ($config['plus_bonus_price'] ?? 10000));
+}
+
+function lt_plus_extend_subscription($userId, $months = 1, $source = 'bonus_shop')
+{
+	global $db, $memcached;
+
+	$userId = (int) $userId;
+	$months = max(1, (int) $months);
+	$source = preg_replace('~[^a-z0-9_-]~i', '', (string) $source);
+
+	if ($userId <= 0) {
+		return false;
+	}
+
+	$db->query(
+		"UPDATE users
+		 SET plus_until = DATE_ADD(IF(plus_until IS NOT NULL AND plus_until > NOW(), plus_until, NOW()), INTERVAL ".$months." MONTH),
+		     plus_permanent = 0,
+		     plus_source = '".$db->safesql($source)."'
+		 WHERE id = ".$userId
+	);
+	$memcached->delete('user_'.$userId, 0);
+
+	return true;
+}
+
+function lt_plus_badge_options()
+{
+	return array(
+		'star' => array('label' => 'Звезда', 'html' => '&#9733;'),
+		'diamond' => array('label' => 'Бриллиант', 'html' => '&#9670;'),
+		'bolt' => array('label' => 'Молния', 'html' => '&#9889;'),
+		'heart' => array('label' => 'Сердце', 'html' => '&#9829;'),
+	);
+}
+
+function lt_plus_badge_html($user)
+{
+	if (!lt_user_has_plus($user)) {
+		return '';
+	}
+
+	$options = lt_plus_badge_options();
+	$key = trim((string) ($user['plus_badge'] ?? 'star'));
+	if (empty($options[$key])) {
+		$key = 'star';
+	}
+
+	return '<span class="plus-name-badge" title="Подписка Plus" aria-label="Подписка Plus">'.$options[$key]['html'].'</span>';
+}
+
+function lt_profile_slug_normalize($slug)
+{
+	$slug = trim((string) $slug);
+	$slug = function_exists('mb_strtolower') ? mb_strtolower($slug, 'UTF-8') : strtolower($slug);
+	$slug = preg_replace('~\s+~u', '-', $slug);
+	$slug = preg_replace('~[^a-z0-9_-]+~iu', '', $slug);
+	$slug = trim($slug, '-_');
+
+	return substr($slug, 0, 64);
+}
+
+function lt_profile_slug_is_reserved($slug)
+{
+	$reserved = array('admin', 'ajax', 'api', 'assets', 'bonus', 'browse', 'details', 'download', 'index', 'login', 'news', 'profile', 'shop', 'signup', 'static', 'user', 'users', 'u');
+
+	return in_array(lt_profile_slug_normalize($slug), $reserved, true);
+}
+
+function lt_profile_slug_user_id($slug)
+{
+	global $db;
+
+	$slug = lt_profile_slug_normalize($slug);
+	if ($slug === '' || !lt_table_exists('users') || !lt_column_exists('users', 'profile_slug')) {
+		return 0;
+	}
+
+	$row = $db->super_query("SELECT id FROM users WHERE profile_slug = '".$db->safesql($slug)."' LIMIT 1");
+
+	return (int) ($row['id'] ?? 0);
+}
+
+function lt_reaction_normalize($reaction)
+{
+	$reaction = trim((string) $reaction);
+	return ($reaction === 'dislike' ? 'dislike' : 'like');
+}
+
+function lt_reaction_object_type($type)
+{
+	$type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+	return ($type !== '' ? $type : '');
+}
+
+function lt_reaction_set($objectType, $objectId, $reaction, $userId = 0)
+{
+	global $db;
+
+	lt_plus_ensure_schema();
+	$objectType = lt_reaction_object_type($objectType);
+	$objectId = (int) $objectId;
+	$userId = (int) ($userId ?: ($GLOBALS['USER']['id'] ?? 0));
+	$reaction = lt_reaction_normalize($reaction);
+
+	if ($objectType === '' || $objectId <= 0 || $userId <= 0) {
+		return false;
+	}
+
+	$db->query(
+		"INSERT INTO plus_reactions (object_type, object_id, user_id, reaction, created_at)
+		 VALUES ('".$db->safesql($objectType)."', ".$objectId.", ".$userId.", '".$reaction."', NOW())
+		 ON DUPLICATE KEY UPDATE reaction = VALUES(reaction), created_at = NOW()"
+	);
+
+	return true;
+}
+
+function lt_reaction_stats($objectType, $objectId, $userId = 0)
+{
+	global $db;
+
+	lt_plus_ensure_schema();
+	$objectType = lt_reaction_object_type($objectType);
+	$objectId = (int) $objectId;
+	$userId = (int) $userId;
+	$result = array('like' => 0, 'dislike' => 0, 'user' => '');
+
+	if ($objectType === '' || $objectId <= 0) {
+		return $result;
+	}
+
+	$sql = $db->query(
+		"SELECT reaction, COUNT(*) AS cnt
+		 FROM plus_reactions
+		 WHERE object_type = '".$db->safesql($objectType)."' AND object_id = ".$objectId."
+		 GROUP BY reaction"
+	);
+	while ($row = $db->get_row($sql)) {
+		$key = lt_reaction_normalize($row['reaction'] ?? 'like');
+		$result[$key] = (int) ($row['cnt'] ?? 0);
+	}
+	$db->free($sql);
+
+	if ($userId > 0) {
+		$row = $db->super_query(
+			"SELECT reaction
+			 FROM plus_reactions
+			 WHERE object_type = '".$db->safesql($objectType)."'
+			   AND object_id = ".$objectId."
+			   AND user_id = ".$userId."
+			 LIMIT 1"
+		);
+		$result['user'] = (string) ($row['reaction'] ?? '');
+	}
+
+	return $result;
+}
+
+function lt_reaction_users($objectType, $objectId)
+{
+	global $db;
+
+	lt_plus_ensure_schema();
+	$objectType = lt_reaction_object_type($objectType);
+	$objectId = (int) $objectId;
+	$rows = array();
+
+	if ($objectType === '' || $objectId <= 0) {
+		return $rows;
+	}
+
+	$sql = $db->query(
+		"SELECT r.reaction, r.created_at, u.id, u.name, u.class, u.plus_until, u.plus_permanent, u.plus_badge, u.profile_slug
+		 FROM plus_reactions AS r
+		 INNER JOIN users AS u ON u.id = r.user_id
+		 WHERE r.object_type = '".$db->safesql($objectType)."' AND r.object_id = ".$objectId."
+		 ORDER BY r.created_at DESC, r.id DESC"
+	);
+	while ($row = $db->get_row($sql)) {
+		$rows[] = $row;
+	}
+	$db->free($sql);
+
+	return $rows;
+}
+
+function lt_ads_fetch($placement = 'sidebar', $limit = 3)
+{
+	global $db;
+
+	lt_plus_ensure_schema();
+	$placement = preg_replace('~[^a-z0-9_-]~i', '', (string) $placement);
+	$limit = max(1, (int) $limit);
+
+	if ($placement === '') {
+		$placement = 'sidebar';
+	}
+
+	$sql = $db->query(
+		"SELECT *
+		 FROM plus_ads
+		 WHERE enabled = 1 AND placement = '".$db->safesql($placement)."'
+		 ORDER BY sort_order ASC, id DESC
+		 LIMIT ".$limit
+	);
+	$rows = array();
+	while ($row = $db->get_row($sql)) {
+		$rows[] = $row;
+	}
+	$db->free($sql);
+
+	return $rows;
+}
+
+function lt_ads_render($placement = 'sidebar')
+{
+	$user = ($GLOBALS['USER'] ?? null);
+	if (lt_user_has_plus($user)) {
+		return '';
+	}
+
+	$ads = lt_ads_fetch($placement, 3);
+	if (!$ads) {
+		return '';
+	}
+
+	ob_start();
+	foreach ($ads as $ad) {
+		$title = htmlspecialchars((string) ($ad['title'] ?? 'Реклама'), ENT_QUOTES, 'UTF-8');
+		$body = nl2br(htmlspecialchars((string) ($ad['body'] ?? ''), ENT_QUOTES, 'UTF-8'));
+		$href = trim((string) ($ad['href'] ?? ''));
+		echo '<section class="sidebar-panel ad-sidebar-panel">';
+		echo '<div class="ad-sidebar-label">Реклама</div>';
+		echo '<h2 class="sidebar-panel-title">'.$title.'</h2>';
+		if ($body !== '') {
+			echo '<div class="ad-sidebar-body">'.$body.'</div>';
+		}
+		if ($href !== '') {
+			echo '<a class="ad-sidebar-link" href="'.htmlspecialchars($href, ENT_QUOTES, 'UTF-8').'" target="_blank" rel="nofollow noopener">Подробнее</a>';
+		}
+		echo '</section>';
+	}
+
+	return ob_get_clean();
 }
 
 function profile_public_mask()
@@ -123,10 +522,14 @@ function profile_user_id_from_public($publicId)
 
 function profile_href($user, $view = 'profile', $params = array())
 {
+	global $config;
+
 	$userId = 0;
+	$userRow = array();
 
 	if (is_array($user)) {
 		$userId = (int) ($user['id'] ?? 0);
+		$userRow = $user;
 	} else {
 		$userId = (int) $user;
 	}
@@ -142,6 +545,39 @@ function profile_href($user, $view = 'profile', $params = array())
 	}
 
 	$extraParams = (is_array($params) ? $params : array());
+
+	if (!$userRow) {
+		$userRow = get_user_info($userId);
+	}
+
+	if (
+		!empty($userRow['profile_slug']) &&
+		lt_user_has_plus($userRow) &&
+		function_exists('lt_profile_slug_normalize') &&
+		lt_profile_slug_normalize($userRow['profile_slug']) === (string) $userRow['profile_slug']
+	) {
+		$slug = rawurlencode((string) $userRow['profile_slug']);
+		if (!empty($config['rewrite'])) {
+			$path = 'u/'.$slug;
+			if ($view !== 'profile') {
+				$path .= '/'.$view;
+			}
+			$query = http_build_query($extraParams);
+			return $path.($query !== '' ? '?'.$query : '');
+		}
+
+		$params = array('slug' => (string) $userRow['profile_slug']);
+		if ($view !== 'profile') {
+			$params['view'] = $view;
+		}
+		if ($extraParams) {
+			$params = array_merge($params, $extraParams);
+		}
+
+		$query = http_build_query($params);
+		return 'profile.php'.($query !== '' ? '?'.$query : '');
+	}
+
 	$params = array('id' => $userId);
 
 	if ($view !== 'profile') {
@@ -572,9 +1008,30 @@ function gmtime() {
 }
 
 //Цвет и ник пользователя
-function get_user_color($class, $username) {
+function get_user_color($class, $username, $user = null) {
+	global $db;
+	static $plusUserCache = array();
+
 	$priv = get_priv_info($class);
-	return "<font  title=\"".htmlspecialchars($priv['NAME'])."\" style=\"color:#".htmlspecialchars($priv['COLOR'])."\">" . $username . "</font>";
+	$userRow = (is_array($user) ? $user : array());
+
+	if (!$userRow && lt_table_exists('users')) {
+		$nameKey = trim(strip_tags(html_entity_decode((string) $username, ENT_QUOTES, 'UTF-8')));
+		$cacheKey = (int) $class.':'.$nameKey;
+		if ($nameKey !== '') {
+			if (!array_key_exists($cacheKey, $plusUserCache)) {
+				$plusUserCache[$cacheKey] = $db->super_query(
+					"SELECT id, class, plus_until, plus_permanent, plus_badge, profile_slug
+					 FROM users
+					 WHERE name = '".$db->safesql($nameKey)."' AND class = ".(int) $class."
+					 LIMIT 1"
+				);
+			}
+			$userRow = (array) $plusUserCache[$cacheKey];
+		}
+	}
+
+	return "<font title=\"".htmlspecialchars($priv['NAME'])."\" style=\"color:#".htmlspecialchars($priv['COLOR'])."\">" . $username . "</font>".lt_plus_badge_html($userRow);
 }
 
 

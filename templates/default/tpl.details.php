@@ -117,7 +117,7 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 						<span class="details-meta-icon" aria-hidden="true">
 							<svg viewBox="0 0 16 16"><path d="M8 8a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 1.4c-2.7 0-5 1.4-5 3.1V14h10v-1.5c0-1.7-2.3-3.1-5-3.1Z" fill="currentColor"/></svg>
 						</span>
-						<span><a class="details-user-link" href="<?=profile_href($id_user);?>"><?=htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8');?></a></span>
+						<span><a class="details-user-link" href="<?=profile_href($user);?>"><?=get_user_color((int) $user_class, htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8'), $user);?></a></span>
 					</span>
 					<span class="details-meta-item">
 						<span class="details-meta-icon" aria-hidden="true">
@@ -137,6 +137,17 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 					<span><span class="details-date-label">Обновлён:</span> <?=$details_updated_label;?></span>
 					<span class="details-date-separator">|</span>
 					<span><span class="details-date-label">Создан:</span> <?=$details_created_label;?></span>
+				</div>
+
+				<div class="plus-reactions plus-reactions-details" id="details-plus-reactions">
+					<?php if (!empty($USER['id']) && lt_user_has_plus($USER)) { ?>
+					<a class="plus-reaction-button<?=($details_plus_reaction_stats['user'] === 'like' ? ' plus-reaction-button-active' : '');?>" href="details.php?id=<?=(int) $id;?>&amp;plus_reaction=like&amp;<?=$details_plus_reaction_csrf;?>">Лайк <?=$details_plus_reaction_stats['like'];?></a>
+					<a class="plus-reaction-button<?=($details_plus_reaction_stats['user'] === 'dislike' ? ' plus-reaction-button-active' : '');?>" href="details.php?id=<?=(int) $id;?>&amp;plus_reaction=dislike&amp;<?=$details_plus_reaction_csrf;?>">Дизлайк <?=$details_plus_reaction_stats['dislike'];?></a>
+					<?php } else { ?>
+					<span class="plus-reaction-count">Лайк <?=$details_plus_reaction_stats['like'];?></span>
+					<span class="plus-reaction-count">Дизлайк <?=$details_plus_reaction_stats['dislike'];?></span>
+					<?php } ?>
+					<a class="plus-reaction-list-link" href="details.php?id=<?=(int) $id;?>&amp;reaction_list=1">Кто оценил</a>
 				</div>
 			</section>
 
@@ -204,6 +215,18 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 
 					<?php if ($detailsDescriptionHtml !== '') { ?>
 					<div class="details-copy-block"><?=$detailsDescriptionHtml;?></div>
+					<?php } ?>
+
+					<?php if ($details_summary_text !== '') { ?>
+					<div class="details-summary-box">
+						<div class="details-summary-title">Краткое содержание</div>
+						<div class="details-summary-text"><?=htmlspecialchars($details_summary_text, ENT_QUOTES, 'UTF-8');?></div>
+					</div>
+					<?php } ?>
+
+					<?php if (!empty($USER['id']) && lt_user_has_plus($USER) && ($details_summary_text !== '' || $detailsDescriptionHtml !== '')) { ?>
+					<button class="details-tts-button" type="button" data-details-tts>Озвучить пост</button>
+					<div data-details-tts-text hidden><?=htmlspecialchars($details_summary_text !== '' ? $details_summary_text : strip_tags($detailsDescriptionHtml), ENT_QUOTES, 'UTF-8');?></div>
 					<?php } ?>
 				</div>
 

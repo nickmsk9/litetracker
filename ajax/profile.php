@@ -110,7 +110,7 @@ if ($action === 'wall_edit') {
 		profile_ajax_response(false, 'Комментарий не найден.');
 	}
 
-	if (empty($PRIV['comments_edit'])) {
+	if (!comments_user_can_edit((int) ($comment['id_user'] ?? 0), (string) ($comment['date'] ?? ''), 'users')) {
 		profile_ajax_response(false, 'У вас недостаточно прав для редактирования.');
 	}
 

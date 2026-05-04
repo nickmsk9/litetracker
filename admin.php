@@ -74,6 +74,7 @@ function admin_dashboard_role_map($user, $priv)
 		'users' => $users,
 		'moderation' => $moderation,
 		'monitoring' => $monitoring,
+		'ads' => $superadmin,
 		'site-settings' => $superadmin,
 		'tracker-settings' => $superadmin,
 		'feature-settings' => $superadmin,
@@ -119,6 +120,7 @@ function admin_dashboard_settings_schema()
 				array('key' => 'project_help_text', 'label' => 'Текст блока помощи проекту', 'type' => 'text', 'description' => 'Короткое описание цели сбора. Пример: “Оплата аренды сервера”.'),
 				array('key' => 'project_help_button_label', 'label' => 'Кнопка помощи проекту', 'type' => 'text', 'description' => 'Текст кнопки в блоке помощи. Пример: “Помочь проекту”.'),
 				array('key' => 'project_help_button_href', 'label' => 'Ссылка кнопки помощи', 'type' => 'text', 'description' => 'URL платежной страницы или темы форума. Оставьте пустым, если кнопка не нужна.'),
+				array('key' => 'plus_bonus_price', 'label' => 'Цена Plus за месяц', 'type' => 'int', 'required' => true, 'min' => 1, 'description' => 'Стоимость подписки Plus в бонусах. По умолчанию: 10000.'),
 			),
 		),
 		'tracker-settings' => array(
@@ -279,6 +281,8 @@ function admin_dashboard_notice_meta($code)
 		'db_optimized' => array('type' => 'success', 'text' => 'Оптимизация БД выполнена.'),
 		'setting_toggled' => array('type' => 'success', 'text' => 'Системный переключатель обновлен.'),
 		'settings_saved' => array('type' => 'success', 'text' => 'Настройки сохранены.'),
+		'ad_saved' => array('type' => 'success', 'text' => 'Рекламный блок сохранен.'),
+		'ad_deleted' => array('type' => 'success', 'text' => 'Рекламный блок удален.'),
 		'no_changes' => array('type' => 'success', 'text' => 'Изменений не было.'),
 		'action_denied' => array('type' => 'error', 'text' => 'У вас нет прав на это действие.'),
 		'action_failed' => array('type' => 'error', 'text' => 'Операция не выполнена.'),
@@ -429,6 +433,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			}
 		}
 	}
+
+	if ($action === 'save_ad') {
+		if (!$roles['superadmin']) {
+			admin_dashboard_redirect($activeTab, 'action_denied');
+		}
+
+		$adId = (int) ($_POST['ad_id'] ?? 0);
+		$title = trim((string) ($_POST['ad_title'] ?? ''));
+		$body = trim((string) ($_POST['ad_body'] ?? ''));
+		$href = trim((string) ($_POST['ad_href'] ?? ''));
+		$placement = trim((string) ($_POST['ad_placement'] ?? 'sidebar'));
+		$placement = preg_replace('~[^a-z0-9_-]~i', '', $placement);
+		$enabled = (!empty($_POST['ad_enabled']) ? 1 : 0);
+		$sortOrder = (int) ($_POST['ad_sort_order'] ?? 0);
+
+		if ($title === '' || $body === '') {
+			$flashMessage = array('type' => 'error', 'text' => 'Заполните заголовок и текст рекламного блока.');
+		} else {
+			if ($placement === '') {
+				$placement = 'sidebar';
+			}
+
+			if ($adId > 0) {
+				$db->query(
+					"UPDATE plus_ads
+					 SET title = '".$db->safesql($title)."',
+					     body = '".$db->safesql($body)."',
+					     href = '".$db->safesql($href)."',
+					     placement = '".$db->safesql($placement)."',
+					     enabled = ".$enabled.",
+					     sort_order = ".$sortOrder.",
+					     updated_at = NOW()
+					 WHERE id = ".$adId
+				);
+			} else {
+				$db->query(
+					"INSERT INTO plus_ads (title, body, href, placement, enabled, sort_order, created_at)
+					 VALUES (
+						'".$db->safesql($title)."',
+						'".$db->safesql($body)."',
+						'".$db->safesql($href)."',
+						'".$db->safesql($placement)."',
+						".$enabled.",
+						".$sortOrder.",
+						NOW()
+					 )"
+				);
+			}
+
+			admin_dashboard_redirect('ads', 'ad_saved');
+		}
+	}
+
+	if ($action === 'delete_ad') {
+		if (!$roles['superadmin']) {
+			admin_dashboard_redirect($activeTab, 'action_denied');
+		}
+
+		$adId = (int) ($_POST['ad_id'] ?? 0);
+		if ($adId > 0) {
+			$db->query("DELETE FROM plus_ads WHERE id = ".$adId);
+		}
+
+		admin_dashboard_redirect('ads', 'ad_deleted');
+	}
 }
 
 $openWallReportsCount = 0;
@@ -460,6 +529,7 @@ $tabs = array(
 	'users' => array('label' => 'Пользователи', 'allowed' => $roles['users']),
 	'moderation' => array('label' => 'Модерация', 'allowed' => $roles['moderation']),
 	'monitoring' => array('label' => 'Мониторинг', 'allowed' => $roles['monitoring']),
+	'ads' => array('label' => 'Реклама', 'allowed' => $roles['ads']),
 	'site-settings' => array('label' => 'Сайт', 'allowed' => $roles['site-settings']),
 	'tracker-settings' => array('label' => 'Трекер', 'allowed' => $roles['tracker-settings']),
 	'feature-settings' => array('label' => 'Функции', 'allowed' => $roles['feature-settings']),
@@ -582,6 +652,14 @@ if (!empty($PRIV['EDIT_PRIV'])) {
 
 $configPath = __DIR__.'/system/config/config.php';
 $configWritable = is_writable($configPath);
+$adRows = array();
+if ($roles['superadmin']) {
+	$adSql = $db->query("SELECT * FROM plus_ads ORDER BY sort_order ASC, id DESC");
+	while ($adRow = $db->get_row($adSql)) {
+		$adRows[] = $adRow;
+	}
+	$db->free($adSql);
+}
 
 head('Админка');
 ?>
@@ -1098,6 +1176,97 @@ head('Админка');
 		</div>
 	</section>
 	<?php } ?>
+	<?php } elseif ($activeTab === 'ads' && !empty($roles['ads'])) { ?>
+	<section class='admin-card'>
+		<h2 class='admin-card-title'>Рекламные блоки</h2>
+		<p class='admin-card-text'>Эти блоки показываются обычным пользователям в правой колонке. У пользователей с Plus, VIP и у создателя они скрыты автоматически.</p>
+		<form class='admin-settings-form' method='post' action='admin.php' style='margin-top:18px;'>
+			<input type='hidden' name='tab' value='ads'>
+			<input type='hidden' name='admin_action' value='save_ad'>
+			<?=lt_csrf_input('admin_dashboard');?>
+			<div class='admin-settings-grid'>
+				<div class='admin-settings-field'>
+					<label class='admin-settings-label' for='ad_title_new'>Заголовок</label>
+					<input class='admin-settings-input' id='ad_title_new' type='text' name='ad_title' value=''>
+				</div>
+				<div class='admin-settings-field'>
+					<label class='admin-settings-label' for='ad_href_new'>Ссылка</label>
+					<input class='admin-settings-input' id='ad_href_new' type='text' name='ad_href' value=''>
+				</div>
+				<div class='admin-settings-field'>
+					<label class='admin-settings-label' for='ad_sort_new'>Сортировка</label>
+					<input class='admin-settings-input' id='ad_sort_new' type='number' name='ad_sort_order' value='0'>
+				</div>
+				<div class='admin-settings-field'>
+					<label class='admin-settings-label' for='ad_placement_new'>Место</label>
+					<input class='admin-settings-input' id='ad_placement_new' type='text' name='ad_placement' value='sidebar'>
+				</div>
+				<div class='admin-settings-field' style='grid-column:1/-1;'>
+					<label class='admin-settings-label' for='ad_body_new'>Текст</label>
+					<textarea class='admin-settings-input' id='ad_body_new' name='ad_body' style='height:96px;padding-top:10px;'></textarea>
+				</div>
+				<label class='admin-settings-checkbox-row'>
+					<input type='checkbox' name='ad_enabled' value='1' checked> Включен
+				</label>
+			</div>
+			<div class='admin-settings-footer'><button class='admin-settings-submit' type='submit'>Добавить блок</button></div>
+		</form>
+	</section>
+
+	<section class='admin-card'>
+		<h2 class='admin-card-title'>Существующие блоки</h2>
+		<?php if ($adRows) { ?>
+		<div class='admin-grid' style='margin-top:18px;'>
+			<?php foreach ($adRows as $adRow) { ?>
+			<div class='admin-link-card'>
+				<form method='post' action='admin.php'>
+					<input type='hidden' name='tab' value='ads'>
+					<input type='hidden' name='admin_action' value='save_ad'>
+					<input type='hidden' name='ad_id' value='<?=(int) $adRow['id'];?>'>
+					<?=lt_csrf_input('admin_dashboard');?>
+					<div class='admin-settings-field'>
+						<label class='admin-settings-label'>Заголовок</label>
+						<input class='admin-settings-input' type='text' name='ad_title' value='<?=htmlspecialchars((string) $adRow['title'], ENT_QUOTES, 'UTF-8');?>'>
+					</div>
+					<div class='admin-settings-field' style='margin-top:10px;'>
+						<label class='admin-settings-label'>Текст</label>
+						<textarea class='admin-settings-input' name='ad_body' style='height:84px;padding-top:10px;'><?=htmlspecialchars((string) $adRow['body'], ENT_QUOTES, 'UTF-8');?></textarea>
+					</div>
+					<div class='admin-settings-field' style='margin-top:10px;'>
+						<label class='admin-settings-label'>Ссылка</label>
+						<input class='admin-settings-input' type='text' name='ad_href' value='<?=htmlspecialchars((string) $adRow['href'], ENT_QUOTES, 'UTF-8');?>'>
+					</div>
+					<div class='admin-settings-grid' style='grid-template-columns:1fr 1fr;margin-top:10px;'>
+						<div class='admin-settings-field'>
+							<label class='admin-settings-label'>Место</label>
+							<input class='admin-settings-input' type='text' name='ad_placement' value='<?=htmlspecialchars((string) $adRow['placement'], ENT_QUOTES, 'UTF-8');?>'>
+						</div>
+						<div class='admin-settings-field'>
+							<label class='admin-settings-label'>Сортировка</label>
+							<input class='admin-settings-input' type='number' name='ad_sort_order' value='<?=(int) $adRow['sort_order'];?>'>
+						</div>
+					</div>
+					<label class='admin-settings-checkbox-row' style='margin-top:10px;'>
+						<input type='checkbox' name='ad_enabled' value='1'<?=(!empty($adRow['enabled']) ? ' checked' : '');?>> Включен
+					</label>
+					<div class='admin-settings-footer' style='gap:10px;'>
+						<button class='admin-settings-submit' type='submit'>Сохранить</button>
+					</div>
+				</form>
+				<form method='post' action='admin.php' data-admin-confirm='Удалить рекламный блок?' style='margin-top:10px;'>
+					<input type='hidden' name='tab' value='ads'>
+					<input type='hidden' name='admin_action' value='delete_ad'>
+					<input type='hidden' name='ad_id' value='<?=(int) $adRow['id'];?>'>
+					<?=lt_csrf_input('admin_dashboard');?>
+					<button class='admin-action-button' type='submit' style='background:#b85050;'>Удалить</button>
+				</form>
+			</div>
+			<?php } ?>
+		</div>
+		<?php } else { ?>
+		<div class='admin-empty' style='margin-top:18px;'>Рекламных блоков пока нет.</div>
+		<?php } ?>
+	</section>
 	<?php } elseif (!empty($settingsSchema[$activeTab]) && !empty($roles[$activeTab])) { ?>
 	<?php $settingsTab = $settingsSchema[$activeTab]; ?>
 	<section class='admin-settings-form'>
