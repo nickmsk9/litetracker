@@ -1,3 +1,13 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/nickmsk9/litetracker/main/templates/default/images/litetracker.png" width="400"/>
+</p>
+
+<h1 align="center">LiteTracker Engine</h1>
+
+<p align="center">
+  Docker-ready BitTorrent tracker на PHP + Memcached
+</p>
+
 # LiteTracker Engine
 
 LiteTracker Engine is a Docker-ready PHP BitTorrent tracker with a classic web interface, torrent announce/scrape endpoints, user profiles, comments, ratings, bookmarks, chat, moderation tools, and a seeded demo database.
