@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/nickmsk9/litetracker/main/templates/default/images/litetracker.png" width="400"/>
+  <img src="https://raw.githubusercontent.com/nickmsk9/litetracker/main/templates/default/images/forgithub.png" width="400"/>
 </p>
 
 <h1 align="center">LiteTracker Engine</h1>
