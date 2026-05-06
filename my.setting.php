@@ -36,6 +36,7 @@ if (!$arr) {
 $settingsView = 'general';
 $canManageProfileClass = ((!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) && (int) $id !== (int) $USER['id']);
 $canManagePlus = ((!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) && (int) $id !== (int) $USER['id']);
+$canModerateProfile = ((!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) && (int) $id !== (int) $USER['id']);
 $targetHasPlus = lt_user_has_plus($arr);
 $plusBadgeOptions = lt_plus_badge_options();
 $plusStatusLabel = lt_plus_expiration_label($arr);
@@ -47,6 +48,15 @@ if ($canManageProfileClass) {
 			$profileClassOptions[] = $classRow;
 		}
 	}
+}
+
+$moderationHistory = array();
+if ($canModerateProfile && lt_table_exists('user_admin_notes')) {
+	$historySql = $db->query("SELECT id, note, created_at, admin_id FROM user_admin_notes WHERE user_id = ".(int) $id." ORDER BY id DESC LIMIT 10");
+	while ($historyRow = $db->get_row($historySql)) {
+		$moderationHistory[] = $historyRow;
+	}
+	$db->free($historySql);
 }
 
 $avatarPath = 'public/images/default_avatar.gif';

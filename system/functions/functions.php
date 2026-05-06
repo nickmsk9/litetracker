@@ -752,6 +752,8 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 	';
 	$header .= '<script type="text/javascript" src="public/js/main.js"></script>
 	';
+	$header .= '<script type="text/javascript" src="public/js/plus.features.js"></script>
+	';
 	$header .=	'<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 	';
 	$header .=	'<title>'.$sitename.' » '.$title.'</title>
@@ -1031,7 +1033,10 @@ function get_user_color($class, $username, $user = null) {
 		}
 	}
 
-	return "<font title=\"".htmlspecialchars($priv['NAME'])."\" style=\"color:#".htmlspecialchars($priv['COLOR'])."\">" . $username . "</font>".lt_plus_badge_html($userRow);
+	$isEmojiName = (!empty($priv['EDIT_PRIV']) || in_array((int) $class, lt_plus_vip_class_ids(), true));
+	$nameHtml = ($isEmojiName ? '<span class="lt-emoji-font">'.$username.'</span>' : $username);
+
+	return "<font title=\"".htmlspecialchars($priv['NAME'])."\" style=\"color:#".htmlspecialchars($priv['COLOR'])."\">" . $nameHtml . "</font>".lt_plus_badge_html($userRow);
 }
 
 
