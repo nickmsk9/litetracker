@@ -14,9 +14,9 @@ $language = array(
 
  //0.4.1
 
- 'captcha_2' => 'Вы ввели не верный код'  ,
- 'captcha_prompt' => 'Введите символы проверки' ,
- 'captcha_code_label' => 'Код проверки' ,
+ 'captcha_2' => 'Вы ввели не верный код',
+ 'captcha_prompt' => 'Введите символы проверки',
+ 'captcha_code_label' => 'Код проверки',
 
  //0.3.3
 

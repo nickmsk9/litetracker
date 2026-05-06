@@ -14,7 +14,7 @@ class ReCaptchaResponse {
 if (!function_exists('lt_captcha_random_string')) {
 	function lt_captcha_random_string($length = LT_CAPTCHA_LENGTH)
 	{
-		// Исключаем визуально похожие символы 0 (ноль), O, I, L и 1, чтобы снизить ошибки ввода.
+		// Используем только цифры и латиницу в верхнем регистре; исключаем 0 (ноль), O, I, L и 1 для снижения ошибок ввода.
 		$alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 		$alphabetLength = strlen($alphabet);
 		$result = '';
@@ -99,7 +99,7 @@ if (!function_exists('lt_captcha_get_html')) {
 		$html .= '<div id="'.$valueId.'" class="lt-captcha-value" aria-label="'.htmlspecialchars($captchaCodeLabel, ENT_QUOTES, 'UTF-8').' '.$captchaValue.'">'.$captchaValue.'</div>';
 		$html .= '<input type="hidden" name="'.LT_CAPTCHA_FIELD_ID.'" value="'.$captchaId.'">';
 		$html .= '<div id="'.$hintId.'" class="lt-captcha-label"><label for="'.$inputId.'">'.$captchaLabel.'</label></div>';
-		$html .= '<input id="'.$inputId.'" type="text" name="'.LT_CAPTCHA_FIELD_ANSWER.'" value="" maxlength="'.(int) LT_CAPTCHA_LENGTH.'" autocomplete="off" aria-describedby="'.$hintId.' '.$valueId.'" required>';
+		$html .= '<input id="'.$inputId.'" type="text" name="'.LT_CAPTCHA_FIELD_ANSWER.'" value="" maxlength="'.(int) LT_CAPTCHA_LENGTH.'" autocomplete="off" aria-label="'.htmlspecialchars($captchaLabel, ENT_QUOTES, 'UTF-8').'" aria-describedby="'.$hintId.' '.$valueId.'" required>';
 		$html .= '</div>';
 
 		return $html;
