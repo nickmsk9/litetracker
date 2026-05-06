@@ -42,13 +42,10 @@ if(!$arr['infohash']) {
 /////////////////////////////////////////////////
 //Защитный код
 /////////////////////////////////////////////////
-if($config['reCaptcha'] && $config['reCaptcha_download']) {
+if(!empty($config['captcha']) && $config['reCaptcha_download']) {
 	//Обрабока
 	if($_POST) {
-		$resp = recaptcha_check_answer ($config['reCaptcha_privatekey'],
-									$_SERVER["REMOTE_ADDR"],
-									$_POST["recaptcha_challenge_field"] ?? '',
-									$_POST["recaptcha_response_field"] ?? '');
+		$resp = lt_captcha_check_answer();
 
 		if (!$resp->is_valid) {
 			// What happens when the CAPTCHA was entered incorrectly
@@ -65,7 +62,7 @@ if($config['reCaptcha'] && $config['reCaptcha_download']) {
 		echo '<form method="post">';
 		echo '<table cellpadding="3">';
 		echo '<tr><td>';
-		echo recaptcha_get_html($config['reCaptcha_publickey']);
+		echo lt_captcha_get_html('download');
 		echo '</td></tr>';
 		echo '<tr><td>';
 		echo '<input type="submit" value="'.$language['download_11'].'"> ';

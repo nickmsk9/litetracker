@@ -41,7 +41,7 @@ LiteTracker Engine - это PHP-движок BitTorrent-трекера с лок
 - Модерация комментариев и жалоб на стену профиля.
 - Автоочистка, обновление пиров и проверка внешних трекеров.
 - Кэширование через Memcached или файловый кэш.
-- Настройки reCAPTCHA, почты, часового пояса и публичных URL через переменные окружения.
+- Настройки локальной CAPTCHA, почты, часового пояса и публичных URL через переменные окружения.
 
 ### Технологии
 
@@ -190,9 +190,10 @@ docker compose exec -T db mysql -uroot < database/litetracker.sql
 | `LITETRACKER_CRON_TOKEN` | Токен для защищенных cron-запросов | `litetracker-local-cron-token` |
 | `LITETRACKER_SQL_DEBUG` | Логирование SQL-ошибок | `0` |
 | `LITETRACKER_TIMEZONE` | Часовой пояс приложения | `Europe/Moscow` |
-| `LITETRACKER_RECAPTCHA_ENABLED` | Включить reCAPTCHA | `0` |
-| `LITETRACKER_RECAPTCHA_PUBLICKEY` | Public key reCAPTCHA | пусто |
-| `LITETRACKER_RECAPTCHA_PRIVATEKEY` | Private key reCAPTCHA | пусто |
+| `LITETRACKER_CAPTCHA_ENABLED` | Включить локальную CAPTCHA | `0` |
+| `LITETRACKER_CAPTCHA_SIGNUP` | CAPTCHA при регистрации | `1` |
+| `LITETRACKER_CAPTCHA_LOGIN` | CAPTCHA при входе | `0` |
+| `LITETRACKER_CAPTCHA_DOWNLOAD` | CAPTCHA при скачивании | `0` |
 | `LITETRACKER_MAIL_FROM` | From-адрес для писем | `admin@localhost` |
 | `LITETRACKER_MAIL_LOGIN` | Логин SMTP | пусто |
 | `LITETRACKER_MAIL_PASSWORD` | Пароль SMTP | пусто |
@@ -263,7 +264,7 @@ LITETRACKER_ANNOUNCE_URL=https://example.com/announce.php
 - Отключите SQL debug в production: `LITETRACKER_SQL_DEBUG=0`.
 - Настройте настоящий TLS-сертификат через reverse proxy или инфраструктуру хостинга.
 - Проверьте права на директории `public/downloads/`, `system/cache/`, `logs/`.
-- Включите reCAPTCHA, если регистрация открыта для интернета.
+- Включите локальную CAPTCHA, если регистрация открыта для интернета.
 - Ограничьте доступ к phpMyAdmin или не запускайте его в production.
 - Проверьте сторонние JavaScript/PHP-библиотеки и их лицензии.
 
@@ -297,7 +298,7 @@ The repository includes an SQL dump with demo data, so the application can be st
 - Comment moderation and profile wall report moderation.
 - Autoclean, peer updates, and remote tracker checks.
 - Memcached or file-based cache.
-- Environment-based configuration for reCAPTCHA, mail, timezone, and public URLs.
+- Environment-based configuration for local CAPTCHA, mail, timezone, and public URLs.
 
 ### Stack
 
@@ -446,9 +447,10 @@ The main environment variables are configured in `docker-compose.yml` or passed 
 | `LITETRACKER_CRON_TOKEN` | Token for protected cron requests | `litetracker-local-cron-token` |
 | `LITETRACKER_SQL_DEBUG` | SQL error logging | `0` |
 | `LITETRACKER_TIMEZONE` | Application timezone | `Europe/Moscow` |
-| `LITETRACKER_RECAPTCHA_ENABLED` | Enable reCAPTCHA | `0` |
-| `LITETRACKER_RECAPTCHA_PUBLICKEY` | reCAPTCHA public key | empty |
-| `LITETRACKER_RECAPTCHA_PRIVATEKEY` | reCAPTCHA private key | empty |
+| `LITETRACKER_CAPTCHA_ENABLED` | Enable local CAPTCHA | `0` |
+| `LITETRACKER_CAPTCHA_SIGNUP` | CAPTCHA on signup | `1` |
+| `LITETRACKER_CAPTCHA_LOGIN` | CAPTCHA on login | `0` |
+| `LITETRACKER_CAPTCHA_DOWNLOAD` | CAPTCHA on download | `0` |
 | `LITETRACKER_MAIL_FROM` | Mail sender address | `admin@localhost` |
 | `LITETRACKER_MAIL_LOGIN` | SMTP login | empty |
 | `LITETRACKER_MAIL_PASSWORD` | SMTP password | empty |
@@ -519,7 +521,7 @@ Before publishing this project on GitHub, and especially before running it in pr
 - Disable SQL debug in production: `LITETRACKER_SQL_DEBUG=0`.
 - Configure a real TLS certificate through a reverse proxy or hosting infrastructure.
 - Check permissions for `public/downloads/`, `system/cache/`, and `logs/`.
-- Enable reCAPTCHA if public registration is open.
+- Enable local CAPTCHA if public registration is open.
 - Restrict access to phpMyAdmin or do not run it in production.
 - Review third-party JavaScript/PHP libraries and their licenses.
 
