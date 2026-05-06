@@ -51,8 +51,10 @@ if ($ltTimezone === '' || @date_default_timezone_set($ltTimezone) === false) {
 }
 $ltMysqlTimezoneOffset = (new DateTime('now', new DateTimeZone($ltTimezone)))->format('P');
 $ltCronToken = trim((string) lt_env_value('LITETRACKER_CRON_TOKEN', ''));
-$ltRecaptchaPublicKey = trim((string) lt_env_value('LITETRACKER_RECAPTCHA_PUBLICKEY', ''));
-$ltRecaptchaPrivateKey = trim((string) lt_env_value('LITETRACKER_RECAPTCHA_PRIVATEKEY', ''));
+$ltCaptchaEnabled = lt_env_bool('LITETRACKER_CAPTCHA_ENABLED', lt_env_bool('LITETRACKER_RECAPTCHA_ENABLED', 0));
+$ltCaptchaLogin = lt_env_bool('LITETRACKER_CAPTCHA_LOGIN', lt_env_bool('LITETRACKER_RECAPTCHA_LOGIN', 0));
+$ltCaptchaSignup = lt_env_bool('LITETRACKER_CAPTCHA_SIGNUP', lt_env_bool('LITETRACKER_RECAPTCHA_SIGNUP', 0));
+$ltCaptchaDownload = lt_env_bool('LITETRACKER_CAPTCHA_DOWNLOAD', lt_env_bool('LITETRACKER_RECAPTCHA_DOWNLOAD', 0));
 $ltMailFrom = trim((string) lt_env_value('LITETRACKER_MAIL_FROM', 'admin@localhost'));
 $ltMailLogin = trim((string) lt_env_value('LITETRACKER_MAIL_LOGIN', ''));
 $ltMailPassword = trim((string) lt_env_value('LITETRACKER_MAIL_PASSWORD', ''));
@@ -128,15 +130,16 @@ $config  = array(
 'voice_price' => 100 , //Совместимость со старым конфигом
 'plus_bonus_price' => 10000 , //Стоимость месяца подписки Plus в бонусах
 
-//reCaptcha
-'reCaptcha' => lt_env_bool('LITETRACKER_RECAPTCHA_ENABLED', ($ltRecaptchaPublicKey !== '' && $ltRecaptchaPrivateKey !== '' ? 1 : 0)) , //Использовать reCaptcha
-'reCaptcha_publickey' => $ltRecaptchaPublicKey , //Ваш publickey
-'reCaptcha_privatekey' => $ltRecaptchaPrivateKey , //Ваш privatekey
+//Локальная CAPTCHA
+'captcha' => $ltCaptchaEnabled , //Использовать локальную CAPTCHA
+'reCaptcha' => $ltCaptchaEnabled , //Совместимость со старым ключом (план удаления: v1.0, после миграции админ-настроек на всех установках)
+'reCaptcha_publickey' => '' , //Устаревший ключ; оставлен только для совместимости (см. план удаления выше)
+'reCaptcha_privatekey' => '' , //Устаревший ключ; оставлен только для совместимости (см. план удаления выше)
 
-//reCaptcha for LiteTracker
-'reCaptcha_login' => 0 , //Использовать для входа
-'reCaptcha_signup' => 0 , //Использовать для регистрации
-'reCaptcha_download' => 0 , //Использовать для скачивания
+//CAPTCHA for LiteTracker
+'reCaptcha_login' => $ltCaptchaLogin , //Использовать для входа
+'reCaptcha_signup' => $ltCaptchaSignup , //Использовать для регистрации
+'reCaptcha_download' => $ltCaptchaDownload , //Использовать для скачивания
 
 
 //Настройка отправки писем

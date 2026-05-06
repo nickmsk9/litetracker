@@ -139,19 +139,17 @@ function admin_dashboard_settings_schema()
 		),
 		'feature-settings' => array(
 			'title' => 'Системные функции',
-			'description' => 'Переключатели поиска и защитных механизмов. reCaptcha заработает только если включена сама функция и заполнены оба ключа.',
+			'description' => 'Переключатели поиска и защитных механизмов, включая локальную CAPTCHA для форм сайта.',
 			'fields' => array(
 				array('key' => 'search_forum', 'label' => 'Форумный вид поиска', 'type' => 'checkbox', 'description' => 'Меняет представление результатов поиска на форумный формат.'),
 				array('key' => 'search_video', 'label' => 'Поиск по видео', 'type' => 'checkbox', 'description' => 'Включает отдельный модуль поиска по видео-данным.'),
 				array('key' => 'search_image', 'label' => 'Поиск по изображениям', 'type' => 'checkbox', 'description' => 'Включает отдельный модуль поиска по изображениям.'),
 				array('key' => 'search_video_lenght', 'label' => 'Минимум символов для видео', 'type' => 'int', 'min' => 0, 'description' => 'С какого размера запроса показывать видео-результаты. 0 значит без ограничения.'),
 				array('key' => 'search_image_lenght', 'label' => 'Минимум символов для изображений', 'type' => 'int', 'min' => 0, 'description' => 'С какого размера запроса показывать результаты по изображениям. 0 значит без ограничения.'),
-				array('key' => 'reCaptcha', 'label' => 'Включить reCaptcha', 'type' => 'checkbox', 'description' => 'Главный переключатель защиты. Без ключей Google/Cloudflare проверки не появятся.'),
-				array('key' => 'reCaptcha_publickey', 'label' => 'Публичный ключ reCaptcha', 'type' => 'text', 'description' => 'Site key из панели reCaptcha. Он безопасно отображается на странице.'),
-				array('key' => 'reCaptcha_privatekey', 'label' => 'Секретный ключ reCaptcha', 'type' => 'text', 'description' => 'Secret key для серверной проверки ответа. Не публикуйте его вне админки.'),
-				array('key' => 'reCaptcha_login', 'label' => 'reCaptcha на входе', 'type' => 'checkbox', 'description' => 'Показывать проверку на странице авторизации.'),
-				array('key' => 'reCaptcha_signup', 'label' => 'reCaptcha при регистрации', 'type' => 'checkbox', 'description' => 'Показывать проверку при создании нового аккаунта.'),
-				array('key' => 'reCaptcha_download', 'label' => 'reCaptcha при скачивании', 'type' => 'checkbox', 'description' => 'Показывать проверку перед скачиванием torrent-файла.'),
+				array('key' => 'captcha', 'label' => 'Включить локальную CAPTCHA', 'type' => 'checkbox', 'description' => 'Главный переключатель локальной проверки без внешних сервисов.'),
+				array('key' => 'reCaptcha_login', 'label' => 'CAPTCHA на входе', 'type' => 'checkbox', 'description' => 'Показывать проверку на странице авторизации.'),
+				array('key' => 'reCaptcha_signup', 'label' => 'CAPTCHA при регистрации', 'type' => 'checkbox', 'description' => 'Показывать проверку при создании нового аккаунта.'),
+				array('key' => 'reCaptcha_download', 'label' => 'CAPTCHA при скачивании', 'type' => 'checkbox', 'description' => 'Показывать проверку перед скачиванием torrent-файла.'),
 			),
 		),
 	);
@@ -1102,8 +1100,8 @@ head('Админка');
 				<div class='admin-system-value'><?=(!empty($config['blocks_use']) ? 'включены' : 'выключены');?>. Управление находится в разделе “Контент”.</div>
 			</div>
 			<div class='admin-system-item'>
-				<div class='admin-system-label'>reCaptcha</div>
-				<div class='admin-system-value'><?=(!empty($config['reCaptcha']) ? 'включена' : 'выключена');?>; ключи <?=(!empty($config['reCaptcha_publickey']) && !empty($config['reCaptcha_privatekey']) ? 'заполнены' : 'не заполнены полностью');?>.</div>
+				<div class='admin-system-label'>CAPTCHA</div>
+				<div class='admin-system-value'><?=(!empty($config['captcha']) ? 'включена' : 'выключена');?>; режим: локальная встроенная проверка.</div>
 			</div>
 		</div>
 	</section>

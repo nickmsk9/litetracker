@@ -378,11 +378,8 @@ if($_POST) {
 
 
 	//Защитный код
-	if($loginModalError === '' && $config['reCaptcha'] && $config['reCaptcha_login']) {
-		$resp = recaptcha_check_answer ($config['reCaptcha_privatekey'],
-									$_SERVER["REMOTE_ADDR"],
-									$_POST["recaptcha_challenge_field"] ?? '',
-									$_POST["recaptcha_response_field"] ?? '');
+	if($loginModalError === '' && !empty($config['captcha']) && $config['reCaptcha_login']) {
+		$resp = lt_captcha_check_answer();
 
 		if (!$resp->is_valid) {
 			// What happens when the CAPTCHA was entered incorrectly
@@ -454,9 +451,9 @@ login_render_start($language['login_1']);
 					<input id="login-password" type="password" name="password" value="" autocomplete="current-password">
 				</div>
 
-				<?php if($config['reCaptcha'] && $config['reCaptcha_login']) { ?>
+				<?php if(!empty($config['captcha']) && $config['reCaptcha_login']) { ?>
 				<div class="auth-captcha-row login-captcha-row">
-					<?=recaptcha_get_html($config['reCaptcha_publickey']);?>
+					<?=lt_captcha_get_html('login');?>
 				</div>
 				<?php } ?>
 			</div>

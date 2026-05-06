@@ -6047,6 +6047,21 @@ body.fluid .wrapper {
   border: 0;
 }
 
+.lt-captcha-value {
+  display: inline-block;
+  padding: 8px 12px;
+  border: 1px dashed #7f8c8d;
+  border-radius: 6px;
+  letter-spacing: 3px;
+  font-weight: 700;
+  font-size: 20px;
+  user-select: none;
+}
+
+.lt-captcha-label {
+  margin-top: 8px;
+}
+
 .auth-consent {
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr);

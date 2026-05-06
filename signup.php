@@ -165,13 +165,8 @@ if($_POST && $signupBlockedMessage === '') {
 		signup_error_response($language['default_1'], 'Подтвердите, что вам исполнилось 14 лет и вы принимаете пользовательское соглашение.', 1);
 	}
 
-	if($signupModalError === '' && $config['reCaptcha'] && $config['reCaptcha_signup']) {
-		$resp = recaptcha_check_answer(
-			$config['reCaptcha_privatekey'],
-			$_SERVER['REMOTE_ADDR'] ?? '',
-			$_POST['recaptcha_challenge_field'] ?? '',
-			$_POST['recaptcha_response_field'] ?? ''
-		);
+	if($signupModalError === '' && !empty($config['captcha']) && $config['reCaptcha_signup']) {
+		$resp = lt_captcha_check_answer();
 
 		if (!$resp->is_valid) {
 			signup_error_response($language['default_1'], $language['captcha_2'], 1);
@@ -279,9 +274,9 @@ $signupFormAction = 'signup.php'.($isModalView ? '?modal=1' : '');
 					</div>
 				</div>
 
-				<?php if($config['reCaptcha'] && $config['reCaptcha_signup']) { ?>
+				<?php if(!empty($config['captcha']) && $config['reCaptcha_signup']) { ?>
 				<div class="auth-captcha-row signup-captcha-row">
-					<?=recaptcha_get_html($config['reCaptcha_publickey']);?>
+					<?=lt_captcha_get_html('signup');?>
 				</div>
 				<?php } ?>
 
