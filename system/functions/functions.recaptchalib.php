@@ -4,6 +4,7 @@ define('LT_CAPTCHA_FIELD_ID', 'lt_captcha_id');
 define('LT_CAPTCHA_FIELD_ANSWER', 'lt_captcha_answer');
 define('LT_CAPTCHA_TTL', 10 * 60);
 define('LT_CAPTCHA_LENGTH', 5);
+define('LT_CAPTCHA_DEFAULT_PROMPT', 'Введите символы проверки');
 
 class ReCaptchaResponse {
 	var $is_valid;
@@ -13,7 +14,7 @@ class ReCaptchaResponse {
 if (!function_exists('lt_captcha_random_string')) {
 	function lt_captcha_random_string($length = LT_CAPTCHA_LENGTH)
 	{
-		// Исключаем визуально похожие символы (0/O, 1/I), чтобы снизить ошибки ввода.
+		// Исключаем визуально похожие символы 0, O и 1, чтобы снизить ошибки ввода.
 		$alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 		$alphabetLength = strlen($alphabet);
 		$result = '';
@@ -82,18 +83,18 @@ if (!function_exists('lt_captcha_get_html')) {
 		$captcha = lt_captcha_create();
 		$captchaId = htmlspecialchars((string) $captcha['id'], ENT_QUOTES, 'UTF-8');
 		$captchaValue = htmlspecialchars((string) $captcha['value'], ENT_QUOTES, 'UTF-8');
-		$captchaLabel = trim((string) ($language['captcha_prompt'] ?? 'Введите символы проверки'));
+		$captchaLabel = trim((string) ($language['captcha_prompt'] ?? LT_CAPTCHA_DEFAULT_PROMPT));
 		if ($captchaLabel === '') {
-			$captchaLabel = 'Введите символы проверки';
+			$captchaLabel = LT_CAPTCHA_DEFAULT_PROMPT;
 		}
 		$hintId = 'lt-captcha-hint-'.$captchaId;
 		$valueId = 'lt-captcha-value-'.$captchaId;
 		$inputId = 'lt-captcha-answer-'.$captchaId;
 
 		$html = '<div class="lt-captcha" role="group" aria-label="CAPTCHA">';
-		$html .= '<div id="'.$valueId.'" class="lt-captcha-value" aria-label="Код проверки '.$captchaValue.'" style="display:inline-block;padding:8px 12px;border:1px dashed #7f8c8d;border-radius:6px;letter-spacing:3px;font-weight:700;font-size:20px;user-select:none;">'.$captchaValue.'</div>';
+		$html .= '<div id="'.$valueId.'" class="lt-captcha-value" aria-label="Код проверки '.$captchaValue.'">'.$captchaValue.'</div>';
 		$html .= '<input type="hidden" name="'.LT_CAPTCHA_FIELD_ID.'" value="'.$captchaId.'">';
-		$html .= '<div id="'.$hintId.'" style="margin-top:8px;"><label for="'.$inputId.'">'.$captchaLabel.'</label></div>';
+		$html .= '<div id="'.$hintId.'" class="lt-captcha-label"><label for="'.$inputId.'">'.$captchaLabel.'</label></div>';
 		$html .= '<input id="'.$inputId.'" type="text" name="'.LT_CAPTCHA_FIELD_ANSWER.'" value="" maxlength="'.(int) LT_CAPTCHA_LENGTH.'" autocomplete="off" aria-describedby="'.$hintId.' '.$valueId.'" required>';
 		$html .= '</div>';
 
