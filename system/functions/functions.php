@@ -1843,6 +1843,7 @@ function get_certain_time($time) {
 function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {
 	global $memcached , $db;
 
+	$user_in = (int) $user_in;
 	if(!$user_in) {
 		return 0;
 	}
@@ -1854,8 +1855,11 @@ function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {
 	if(empty($text) ) {
 		return 0;
 	}
+	$user_out = (int) $user_out;
 	$db->query("INSERT INTO mail(name , text , id_user_in , id_user_out , date , delete_in , delete_out ) VALUES ('".$db->safesql($name)."' , '".$db->safesql($text)."' , ".$user_in." , ".$user_out." , NOW() , 0 , 0 )");
-	$db->query("UPDATE users SET num_messages=(num_messages+1) WHERE id=".$user_in);
+	if ($user_out > 0) {
+		$db->query("UPDATE users SET num_messages=(num_messages+1) WHERE id=".$user_in);
+	}
 	$memcached->delete("user_".$user_in);
 	return 1;
 }

@@ -117,6 +117,7 @@ if($USER) {
 //Забыли пароль
 /////////////////////////////////////////////////////////////////////
 if($op == 'forgot') {
+	$forgotCaptchaEnabled = (!empty($config['captcha']) && !empty($config['reCaptcha_login']));
 
 	//Если не включена функция отправки писем , завершаем работу
 	if(!$config['mail']['use'])  {
@@ -234,6 +235,13 @@ if($op == 'forgot') {
 				login_error_response($language['default_1']  , 'E-mail введен не верно' , 1);
 			}
 
+			if ($loginModalError === '' && $forgotCaptchaEnabled) {
+				$resp = lt_captcha_check_answer();
+				if (!$resp->is_valid) {
+					login_error_response($language['default_1'], $language['captcha_2'], 1);
+				}
+			}
+
 			//Проверяем email на уникальность
 			if ($loginModalError === '') {
 				$sql = $db->query("SELECT * FROM users WHERE email='".$db->safesql($email)."'");
@@ -291,13 +299,14 @@ if($op == 'forgot') {
 		/////////////////////////////////////////////////
 		//Вывод формы
 		/////////////////////////////////////////////////
-		login_render_start('Восстановление пароля');
+		login_render_start('Восстановление доступа');
 		?>
 		<div class="auth-page login-page">
 			<div class="auth-layout auth-layout-single login-layout">
 				<section class="auth-card auth-card-compact login-card">
-					<h1 class="auth-title login-title">Восстановление пароля</h1>
-					<div class="auth-copy auth-copy-lead">После ввода E-mail вам должно прийти письмо с инструкцией по смене пароля.</div>
+					<h1 class="auth-title login-title">Восстановление доступа</h1>
+					<div class="auth-copy auth-copy-lead"><strong>Для восстановления доступа к аккаунту укажите e-mail, на который он был зарегистрирован.</strong> Мы отправим вам письмо с инструкциями по сбросу пароля.</div>
+					<div class="auth-copy">Если вы утратили доступ к электронной почте, напишите в техподдержку сайта, четко описав свою проблему и уже предпринятые действия для её решения.</div>
 					<?php if ($loginModalNotice !== '') { ?>
 					<div class="auth-alert auth-alert-success"><?=htmlspecialchars($loginModalNotice, ENT_QUOTES, 'UTF-8');?></div>
 					<?php } elseif ($loginModalError !== '') { ?>
@@ -309,7 +318,15 @@ if($op == 'forgot') {
 								<label class="auth-label login-label" for="forgot-email">E-mail</label>
 								<input id="forgot-email" type="email" name="email" value="<?=htmlspecialchars((string) ($_POST['email'] ?? ''), ENT_QUOTES, 'UTF-8');?>" autocomplete="email">
 							</div>
-					</div>
+							<?php if ($forgotCaptchaEnabled) { ?>
+							<div class="auth-field login-field">
+								<label class="auth-label login-label">Введите код</label>
+								<div class="auth-captcha-row login-captcha-row">
+									<?=lt_captcha_get_html('login');?>
+								</div>
+							</div>
+							<?php } ?>
+						</div>
 
 						<div class="auth-footer login-footer">
 							<button type="submit">Отправить письмо</button>
