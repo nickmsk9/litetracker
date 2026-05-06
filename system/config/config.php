@@ -133,8 +133,8 @@ $config  = array(
 //Локальная CAPTCHA
 'captcha' => $ltCaptchaEnabled , //Использовать локальную CAPTCHA
 'reCaptcha' => $ltCaptchaEnabled , //Совместимость со старым ключом (план удаления: после миграции админ-настроек на всех установках)
-'reCaptcha_publickey' => '' , //Устаревший ключ; оставлен только для совместимости
-'reCaptcha_privatekey' => '' , //Устаревший ключ; оставлен только для совместимости
+'reCaptcha_publickey' => '' , //Устаревший ключ; оставлен только для совместимости (см. план удаления выше)
+'reCaptcha_privatekey' => '' , //Устаревший ключ; оставлен только для совместимости (см. план удаления выше)
 
 //CAPTCHA for LiteTracker
 'reCaptcha_login' => $ltCaptchaLogin , //Использовать для входа

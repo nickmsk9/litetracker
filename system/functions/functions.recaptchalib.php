@@ -14,7 +14,7 @@ class ReCaptchaResponse {
 if (!function_exists('lt_captcha_random_string')) {
 	function lt_captcha_random_string($length = LT_CAPTCHA_LENGTH)
 	{
-		// Исключаем визуально похожие символы 0, O и 1, чтобы снизить ошибки ввода.
+		// Исключаем визуально похожие символы 0 (ноль), O, I, L и 1, чтобы снизить ошибки ввода.
 		$alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 		$alphabetLength = strlen($alphabet);
 		$result = '';
@@ -87,12 +87,16 @@ if (!function_exists('lt_captcha_get_html')) {
 		if ($captchaLabel === '') {
 			$captchaLabel = LT_CAPTCHA_DEFAULT_PROMPT;
 		}
+		$captchaCodeLabel = trim((string) ($language['captcha_code_label'] ?? 'Verification code'));
+		if ($captchaCodeLabel === '') {
+			$captchaCodeLabel = 'Verification code';
+		}
 		$hintId = 'lt-captcha-hint-'.$captchaId;
 		$valueId = 'lt-captcha-value-'.$captchaId;
 		$inputId = 'lt-captcha-answer-'.$captchaId;
 
 		$html = '<div class="lt-captcha" role="group" aria-label="CAPTCHA">';
-		$html .= '<div id="'.$valueId.'" class="lt-captcha-value" aria-label="Код проверки '.$captchaValue.'">'.$captchaValue.'</div>';
+		$html .= '<div id="'.$valueId.'" class="lt-captcha-value" aria-label="'.htmlspecialchars($captchaCodeLabel, ENT_QUOTES, 'UTF-8').' '.$captchaValue.'">'.$captchaValue.'</div>';
 		$html .= '<input type="hidden" name="'.LT_CAPTCHA_FIELD_ID.'" value="'.$captchaId.'">';
 		$html .= '<div id="'.$hintId.'" class="lt-captcha-label"><label for="'.$inputId.'">'.$captchaLabel.'</label></div>';
 		$html .= '<input id="'.$inputId.'" type="text" name="'.LT_CAPTCHA_FIELD_ANSWER.'" value="" maxlength="'.(int) LT_CAPTCHA_LENGTH.'" autocomplete="off" aria-describedby="'.$hintId.' '.$valueId.'" required>';
