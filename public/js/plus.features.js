@@ -90,7 +90,7 @@
       paragraphToggle.type = 'button';
       paragraphToggle.className = 'wall-comment-button lt-paragraph-toggle';
       paragraphToggle.setAttribute('data-paragraph-toggle', '1');
-      paragraphToggle.textContent = 'Paragraph';
+      paragraphToggle.textContent = 'Абзац';
       controls.insertBefore(paragraphToggle, toggle.nextSibling);
 
       var panel = document.createElement('div');
@@ -142,7 +142,7 @@
       wrap.className = 'lt-upload-paragraph-wrap';
       var toolbar = document.createElement('div');
       toolbar.className = 'lt-upload-paragraph-toolbar';
-      toolbar.innerHTML = '<button type="button" class="wall-comment-button lt-upload-paragraph-button">Paragraph редактор</button>';
+      toolbar.innerHTML = '<button type="button" class="wall-comment-button lt-upload-paragraph-button">Редактор абзацев</button>';
       var editor = document.createElement('div');
       editor.className = 'lt-paragraph-editor';
       editor.hidden = true;

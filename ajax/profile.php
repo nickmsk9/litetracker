@@ -388,11 +388,11 @@ if ($action === 'moderate_profile') {
 	$downloadedMb = (int) ($_POST['downloaded_mb'] ?? 0);
 	if ($uploadedMb !== 0) {
 		$delta = (int) ($uploadedMb * 1024 * 1024);
-		$updates[] = "uploaded=GREATEST(uploaded + (".$delta."), 0)";
+		$updates[] = "uploaded=IF((uploaded + (".$delta.")) < 0, 0, (uploaded + (".$delta.")))";
 	}
 	if ($downloadedMb !== 0) {
 		$delta = (int) ($downloadedMb * 1024 * 1024);
-		$updates[] = "downloaded=GREATEST(downloaded + (".$delta."), 0)";
+		$updates[] = "downloaded=IF((downloaded + (".$delta.")) < 0, 0, (downloaded + (".$delta.")))";
 	}
 
 	if (!empty($_POST['reset_passkey'])) {
@@ -402,9 +402,10 @@ if ($action === 'moderate_profile') {
 	$note = trim((string) ($_POST['note'] ?? ''));
 	$deleteUser = !empty($_POST['delete_user']);
 	if ($deleteUser) {
-		$db->query("DELETE FROM users WHERE id = ".$userId." LIMIT 1");
+		$deletedName = substr('del'.$userId, 0, 12);
+		$db->query("UPDATE users SET name = '".$db->safesql($deletedName)."', banned = 1, confirm = 0, profile_text = '' WHERE id = ".$userId." LIMIT 1");
 		$memcached->delete('user_'.$userId, 0);
-		profile_ajax_response(true, 'Пользователь удалён.', array('reload' => 1));
+		profile_ajax_response(true, 'Пользователь деактивирован.', array('reload' => 1));
 	}
 
 	if ($updates) {
