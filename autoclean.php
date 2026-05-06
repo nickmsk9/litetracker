@@ -83,6 +83,50 @@ if ($bonus_per_cleanup > 0) {
 	}
 }
 
+///////////////////////////////////////////////////////////////////
+//Автопоздравления с днем рождения + бонусы
+///////////////////////////////////////////////////////////////////
+$birthdayBonusAmount = (float) ($config['birthday_bonus_amount'] ?? 150);
+if ($birthdayBonusAmount > 0) {
+	$db->query(
+		"CREATE TABLE IF NOT EXISTS `birthday_rewards` (
+			`id` int NOT NULL AUTO_INCREMENT,
+			`user_id` int NOT NULL,
+			`reward_year` int NOT NULL,
+			`created_at` datetime NOT NULL,
+			PRIMARY KEY (`id`),
+			UNIQUE KEY `user_year` (`user_id`, `reward_year`),
+			KEY `reward_year` (`reward_year`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin"
+	);
+
+	$currentYear = (int) date('Y');
+	$todayMonthDay = date('m-d');
+	$birthdayUsers = $db->query(
+		"SELECT id, name
+		 FROM users
+		 WHERE birthday_date IS NOT NULL
+		   AND birthday_date <> '0000-00-00'
+		   AND DATE_FORMAT(birthday_date, '%m-%d') = '".$db->safesql($todayMonthDay)."'"
+	);
+	while ($birthdayUser = $db->get_row($birthdayUsers)) {
+		$userId = (int) ($birthdayUser['id'] ?? 0);
+		if ($userId <= 0) {
+			continue;
+		}
+
+		$alreadyRewarded = $db->super_query("SELECT id FROM birthday_rewards WHERE user_id = ".$userId." AND reward_year = ".$currentYear." LIMIT 1");
+		if (!empty($alreadyRewarded['id'])) {
+			continue;
+		}
+
+		$db->query("UPDATE users SET {$bonusColumn} = ({$bonusColumn} + ".$birthdayBonusAmount.") WHERE id = ".$userId);
+		$db->query("INSERT INTO birthday_rewards (user_id, reward_year, created_at) VALUES (".$userId.", ".$currentYear.", NOW())");
+		send_msg('С днём рождения!', 'Поздравляем с днём рождения! Начислено бонусов: [b]'.number_format($birthdayBonusAmount, 0, '.', ' ').'[/b].', $userId, 0);
+		$memcached->delete('user_'.$userId);
+	}
+}
+
 
 ///////////////////////////////////////////////////////////////////
 //Удаление просроченный кодов "Забыли пароль?"

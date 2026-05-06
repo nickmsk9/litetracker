@@ -19,15 +19,13 @@ function render_blocks($blockfile) {
 		return null;
 	}
 
-	if ($blockfile === 'block-poll.php') {
+	if ($blockfile === 'block-poll.php' || $blockfile === 'block-vkontakte.php') {
 		return null;
 	}
 
 	//Проверяем файл , существует ли он
 	if (file_exists ('blocks/'.$blockfile) and $blockfile != '') {
 		require ('blocks/'.$blockfile);
-	} else {
-		echo "<center><b>[#".$blockfile."]</b>Ошибка загрузки блока</center>";
 	}
 
 	//Возвращаем null

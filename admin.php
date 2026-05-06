@@ -590,7 +590,10 @@ $quickActions = array(
 
 $shortcuts = array(
 	array('label' => 'Добавить пользователя', 'href' => 'user_add.php', 'allowed' => !empty($PRIV['user_add'])),
-	array('label' => 'Открыть новости', 'href' => 'news.php', 'allowed' => !empty($PRIV['news_add']) || !empty($PRIV['edit_news'])),
+	array('label' => 'Добавить новость', 'href' => 'news.php?act=add', 'allowed' => !empty($PRIV['news_add']) || !empty($PRIV['edit_news'])),
+	array('label' => 'Редактировать новости', 'href' => 'news.php', 'allowed' => !empty($PRIV['news_add']) || !empty($PRIV['edit_news'])),
+	array('label' => 'Добавить опрос', 'href' => 'blocks.php?act=add', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
+	array('label' => 'Редактировать опросы', 'href' => 'blocks.php', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
 	array('label' => 'Открыть классы и права', 'href' => 'edit_priv.php', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
 	array('label' => 'Открыть блоки сайта', 'href' => 'blocks.php', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
 	array('label' => 'Открыть жалобы', 'href' => user_wall_reports_href(), 'allowed' => user_wall_reports_can_moderate()),

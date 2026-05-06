@@ -147,7 +147,7 @@ function mail_mark_system_read($currentUserId)
 		$db->query("UPDATE mail SET reading = '1' WHERE id_user_in = {$currentUserId} AND id_user_out = 0 AND delete_in = 0 AND reading = 0");
 	}
 
-	$totalUnread = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND delete_in = 0 AND reading = 0");
+	$totalUnread = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out > 0 AND delete_in = 0 AND reading = 0");
 	$totalUnreadCount = (int) ($totalUnread['c'] ?? 0);
 	$db->query("UPDATE users SET num_messages = {$totalUnreadCount} WHERE id = {$currentUserId}");
 	$USER['num_messages'] = $totalUnreadCount;
@@ -161,7 +161,7 @@ function mail_render_message_html($row, $currentUserId, $currentUserName)
 	$row = (array) $row;
 	$currentUserId = (int) $currentUserId;
 	$isOutgoing = ((int) ($row['id_user_out'] ?? 0) === $currentUserId);
-	$messageAuthor = ($isOutgoing ? ($currentUserName !== '' ? $currentUserName : 'Вы') : (!empty($row['sender_name']) ? $row['sender_name'] : 'System'));
+	$messageAuthor = ($isOutgoing ? ($currentUserName !== '' ? $currentUserName : 'Вы') : (!empty($row['sender_name']) ? $row['sender_name'] : 'SYSTEM'));
 
 	ob_start();
 	?>
@@ -178,6 +178,13 @@ function mail_render_message_html($row, $currentUserId, $currentUserName)
 }
 
 $currentUserId = (int) $USER['id'];
+$privateUnreadRow = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out > 0 AND delete_in = 0 AND reading = 0");
+$privateUnreadCount = (int) ($privateUnreadRow['c'] ?? 0);
+if ((int) ($USER['num_messages'] ?? 0) !== $privateUnreadCount) {
+	$db->query("UPDATE users SET num_messages = {$privateUnreadCount} WHERE id = {$currentUserId}");
+	$USER['num_messages'] = $privateUnreadCount;
+	$memcached->delete('user_'.$currentUserId, 0);
+}
 $act = trim((string) ($_GET['act'] ?? 'list'));
 $messageId = (int) ($_GET['id'] ?? 0);
 $targetUserId = (int) ($_GET['id_user'] ?? 0);
@@ -259,7 +266,7 @@ if ($act === 'del' && $messageId > 0) {
 		$db->query("UPDATE mail SET delete_in = '1' WHERE id = ".$message['id']);
 		$deleteIn = 1;
 
-		if (!(int) $message['reading'] && (int) $USER['num_messages'] > 0) {
+		if ((int) $message['id_user_out'] > 0 && !(int) $message['reading'] && (int) $USER['num_messages'] > 0) {
 			$db->query("UPDATE users SET num_messages = GREATEST(num_messages - 1, 0) WHERE id = ".$currentUserId);
 			$USER['num_messages'] = max(0, (int) $USER['num_messages'] - 1);
 			$memcached->delete('user_'.$currentUserId, 0);
@@ -296,7 +303,7 @@ if ($act === 'conversation') {
 	if ($systemConversation) {
 		$participant = array(
 			'id' => 0,
-			'name' => 'System',
+			'name' => 'SYSTEM',
 			'avatar' => '',
 			'class' => 0,
 			'last_access' => '',
@@ -448,7 +455,7 @@ while($conversation = $db->get_row($conversationsSql)) {
 	if ($isSystem) {
 		$partner = array(
 			'id' => 0,
-			'name' => 'System',
+			'name' => 'SYSTEM',
 			'avatar' => '',
 			'class' => 0,
 			'last_access' => '',
@@ -535,7 +542,7 @@ while($conversation = $db->get_row($conversationsSql)) {
 					<?php } ?>
 
 					<?php if (!$messages) { ?>
-					<div class="mail-empty-state mail-empty-state-compact">Сообщений пока нет. Можно начать диалог прямо сейчас.</div>
+					<div class="mail-empty-state mail-empty-state-compact"><?=($systemConversation ? 'Системных сообщений пока нет.' : 'Сообщений пока нет. Можно начать диалог прямо сейчас.');?></div>
 					<?php } ?>
 
 					<?php foreach($messages as $row) { ?>

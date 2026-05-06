@@ -24,6 +24,7 @@ if (!defined('LITETRACKER')) {
 				<div class="profile-card-main">
 					<h1 class="profile-card-name"><?=get_user_color((int) ($arr['class'] ?? 0), $profileName, $arr);?></h1>
 					<div class="profile-status <?=$profileStatusClass;?>"><?=$profileStatusLabel;?></div>
+					<div class="profile-rank-line">Класс: <strong><?=htmlspecialchars(get_user_class_name((int) ($arr['class'] ?? 0)), ENT_QUOTES, 'UTF-8');?></strong></div>
 
 					<?php if ($isOwnProfile && $profileAbout !== '') { ?>
 					<div class="profile-card-text"><?=$profileAbout;?></div>

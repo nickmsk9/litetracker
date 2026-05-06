@@ -81,6 +81,67 @@ function signup_default_class_id()
 $signupModalError = '';
 $signupBlockedMessage = '';
 
+if ($act === 'validate') {
+	header('Content-Type: application/json; charset=UTF-8');
+
+	$name = trim((string) ($_REQUEST['name'] ?? ''));
+	$email = trim((string) ($_REQUEST['email'] ?? ''));
+	$password = trim((string) ($_REQUEST['password'] ?? ''));
+
+	$response = array(
+		'ok' => 1,
+		'fields' => array(
+			'name' => array('valid' => 0, 'message' => ''),
+			'email' => array('valid' => 0, 'message' => ''),
+			'password' => array('valid' => 0, 'message' => ''),
+		),
+	);
+
+	if ($name === '') {
+		$response['fields']['name']['message'] = 'Введите логин.';
+	} elseif (!validusername($name)) {
+		$response['fields']['name']['message'] = $language['signup_11'];
+	} elseif (strlen($name) > 12) {
+		$response['fields']['name']['message'] = $language['signup_12'];
+	} else {
+		$nameCheck = $db->query("SELECT id FROM users WHERE name='".$db->safesql($name)."' LIMIT 1");
+		if ($db->num_rows($nameCheck) > 0) {
+			$response['fields']['name']['message'] = $language['signup_17'];
+		} else {
+			$response['fields']['name']['valid'] = 1;
+			$response['fields']['name']['message'] = 'Логин доступен.';
+		}
+	}
+
+	if ($email === '') {
+		$response['fields']['email']['message'] = 'Введите E-mail.';
+	} elseif (!validemail($email)) {
+		$response['fields']['email']['message'] = 'Введите корректный E-mail адрес.';
+	} else {
+		$emailCheck = $db->query("SELECT id FROM users WHERE email='".$db->safesql($email)."' LIMIT 1");
+		if ($db->num_rows($emailCheck) > 0) {
+			$response['fields']['email']['message'] = $language['signup_16'];
+		} else {
+			$response['fields']['email']['valid'] = 1;
+			$response['fields']['email']['message'] = 'E-mail доступен.';
+		}
+	}
+
+	if ($password === '') {
+		$response['fields']['password']['message'] = 'Введите пароль.';
+	} elseif (strlen($password) < 6) {
+		$response['fields']['password']['message'] = $language['signup_13'];
+	} elseif (strlen($password) > 40) {
+		$response['fields']['password']['message'] = $language['signup_14'];
+	} else {
+		$response['fields']['password']['valid'] = 1;
+		$response['fields']['password']['message'] = 'Пароль подходит.';
+	}
+
+	echo json_encode($response, JSON_UNESCAPED_UNICODE);
+	die();
+}
+
 if(!$config['registeronline'] || $USER) {
 	signup_error_response($language['signup_1'] , $language['signup_2']);
 	$signupBlockedMessage = $language['signup_2'];
@@ -177,7 +238,8 @@ if($_POST && $signupBlockedMessage === '') {
 		$passwordHash = lt_password_hash_value($password);
 
 		$countUsers = $db->super_query("SELECT COUNT(*) AS c FROM users");
-		$classId = ((int) ($countUsers['c'] ?? 0) > 0 ? signup_default_class_id() : signup_admin_class_id());
+		$isDirectorSignup = ((int) ($countUsers['c'] ?? 0) <= 0);
+		$classId = (!$isDirectorSignup ? signup_default_class_id() : signup_admin_class_id());
 
 		$db->query("INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$signupBonusColumn.", sex, birthday_date, profile_text, website, icq, last_chat, num_messages, num_friends, confirm) VALUES ('".$db->safesql($name)."', '', '".$db->safesql($email)."', '".$db->safesql($passwordHash)."', '', '".ip2long_db(getip())."', '".$classId."', NOW(), NOW(), '', '0', '0', '0', '300', '1', '".$db->safesql($birthdayDate)."', '', '', '', '0', '0', '0', '1')");
 
@@ -188,6 +250,14 @@ if($_POST && $signupBlockedMessage === '') {
 		}
 
 		login_cookie($id, $passwordHash);
+
+		if ($isDirectorSignup) {
+			send_msg('Добро пожаловать, директор', 'Это первый аккаунт на сайте. Вам автоматически выданы расширенные права администратора. Проверьте настройки и правила проекта.', $id, 0);
+			$_SESSION['lt_welcome_banner'] = 'Добро пожаловать! Вы зарегистрировали первый аккаунт и получили роль директора.';
+		} else {
+			send_msg('Добро пожаловать!', 'Спасибо за регистрацию на LiteTracker! Заполните профиль, ознакомьтесь с правилами и начинайте пользоваться сайтом.', $id, 0);
+			$_SESSION['lt_welcome_banner'] = 'Добро пожаловать на сайт! Регистрация прошла успешно.';
+		}
 
 		if ($isModalView) {
 			echo '<!doctype html><html><head><meta charset="'.$language['charset'].'"></head><body><script>if(window.parent&&window.parent!==window){window.parent.location.reload();}else{window.location.href="index.php";}</script></body></html>';
@@ -233,6 +303,7 @@ $signupFormAction = 'signup.php'.($isModalView ? '?modal=1' : '');
 						<div class="signup-input-wrap signup-input-wrap-login">
 							<input id="signup-name" type="text" name="name" value="<?=htmlspecialchars($signupName, ENT_QUOTES, 'UTF-8');?>" autocomplete="username">
 						</div>
+						<div class="signup-live-hint" id="signup-name-hint"></div>
 					</div>
 
 					<div class="auth-field signup-field">
@@ -240,6 +311,7 @@ $signupFormAction = 'signup.php'.($isModalView ? '?modal=1' : '');
 						<div class="signup-input-wrap">
 							<input id="signup-email" type="email" name="email" value="<?=htmlspecialchars($signupEmail, ENT_QUOTES, 'UTF-8');?>" autocomplete="email">
 						</div>
+						<div class="signup-live-hint" id="signup-email-hint"></div>
 					</div>
 
 					<div class="auth-field signup-field">
@@ -247,6 +319,7 @@ $signupFormAction = 'signup.php'.($isModalView ? '?modal=1' : '');
 						<div class="signup-input-wrap">
 							<input id="signup-password" type="password" name="password" value="" autocomplete="new-password">
 						</div>
+						<div class="signup-live-hint" id="signup-password-hint"></div>
 					</div>
 
 					<div class="auth-field signup-field">
@@ -305,10 +378,87 @@ $signupFormAction = 'signup.php'.($isModalView ? '?modal=1' : '');
 </div>
 
 <?php
-if ($isModalView) {
-	echo '<script>(function(){if(window.parent===window){return;}var sendSize=function(){var d=document.documentElement;var b=document.body;var h=Math.max(d?d.scrollHeight:0,b?b.scrollHeight:0,d?d.offsetHeight:0,b?b.offsetHeight:0);window.parent.postMessage({type:"lt-auth-modal-size",height:h},window.location.origin);};window.addEventListener("load",sendSize);window.addEventListener("resize",sendSize);document.addEventListener("input",sendSize,true);document.addEventListener("change",sendSize,true);setTimeout(sendSize,0);})();</script>';
-	echo '</body></html>';
-} else {
-	foot(true);
-}
+$signupValidateUrl = 'signup.php?act=validate'.($isModalView ? '&modal=1' : '');
 ?>
+<script>
+(function(){
+	var form = document.getElementById('signupPage');
+	var nameInput = document.getElementById('signup-name');
+	var emailInput = document.getElementById('signup-email');
+	var passwordInput = document.getElementById('signup-password');
+	var hints = {
+		name: document.getElementById('signup-name-hint'),
+		email: document.getElementById('signup-email-hint'),
+		password: document.getElementById('signup-password-hint')
+	};
+
+	<?php if ($isModalView) { ?>
+	if (window.parent !== window) {
+		var sendSize = function () {
+			var d = document.documentElement;
+			var b = document.body;
+			var h = Math.max(d ? d.scrollHeight : 0, b ? b.scrollHeight : 0, d ? d.offsetHeight : 0, b ? b.offsetHeight : 0);
+			window.parent.postMessage({ type: 'lt-auth-modal-size', height: h }, window.location.origin);
+		};
+		window.addEventListener('load', sendSize);
+		window.addEventListener('resize', sendSize);
+		document.addEventListener('input', sendSize, true);
+		document.addEventListener('change', sendSize, true);
+		setTimeout(sendSize, 0);
+	}
+	<?php } ?>
+
+	if (!form || !nameInput || !emailInput || !passwordInput) {
+		return;
+	}
+
+	var timer = 0;
+	var validateUrl = <?=json_encode($signupValidateUrl, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
+
+	var setHint = function (field, meta) {
+		var node = hints[field];
+		if (!node) {
+			return;
+		}
+		node.className = 'signup-live-hint' + (meta && meta.valid ? ' signup-live-hint-ok' : ' signup-live-hint-error');
+		node.textContent = (meta && meta.message ? meta.message : '');
+	};
+
+	var runValidation = function () {
+		window.clearTimeout(timer);
+		timer = window.setTimeout(function () {
+			var params = new URLSearchParams();
+			params.set('name', nameInput.value || '');
+			params.set('email', emailInput.value || '');
+			params.set('password', passwordInput.value || '');
+
+			fetch(validateUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body: params.toString()
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (payload) {
+					if (!payload || !payload.fields) {
+						return;
+					}
+					setHint('name', payload.fields.name || {});
+					setHint('email', payload.fields.email || {});
+					setHint('password', payload.fields.password || {});
+				})
+				.catch(function () {});
+		}, 180);
+	};
+
+	nameInput.addEventListener('input', runValidation);
+	emailInput.addEventListener('input', runValidation);
+	passwordInput.addEventListener('input', runValidation);
+	runValidation();
+})();
+</script>
+<?php if ($isModalView) { ?>
+</body></html>
+<?php } else { ?>
+<?php foot(true); ?>
+<?php } ?>

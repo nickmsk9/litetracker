@@ -34,9 +34,7 @@ if ($USER) {
 
 $messagesCount = 0;
 if ($USER) {
-	$messagesRow = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = ".(int) $USER['id']." AND delete_in = 0 AND reading = 0");
-	$messagesCount = (int) ($messagesRow['c'] ?? 0);
-	$USER['num_messages'] = $messagesCount;
+	$messagesCount = max(0, (int) ($USER['num_messages'] ?? 0));
 }
 $openWallReportsCount = 0;
 if ($USER && user_wall_reports_can_moderate()) {
@@ -46,8 +44,8 @@ if ($USER && user_wall_reports_can_moderate()) {
 }
 $alertCount = $messagesCount;
 $alertBadge = ($alertCount > 99 ? '99+' : (string) $alertCount);
-$alertHref = 'my.mail.php?act=conversation&system=1';
-$alertLabel = 'Оповещения'.($alertCount > 0 ? ': '.$alertBadge : '');
+$alertHref = 'my.mail.php';
+$alertLabel = 'Личные сообщения'.($alertCount > 0 ? ': '.$alertBadge : '');
 $requestUri = ltrim((string) ($_SERVER['REQUEST_URI'] ?? ''), '/');
 $loginHref = 'login.php';
 if ($requestUri !== '' && strpos($requestUri, 'login.php') !== 0) {
@@ -60,6 +58,11 @@ if (!empty($USER['theme_dark'])) {
 if (lt_is_mobile_request()) {
     $bodyClasses[] = 'is-mobile';
 }
+$welcomeBanner = '';
+if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
+	$welcomeBanner = trim((string) $_SESSION['lt_welcome_banner']);
+	unset($_SESSION['lt_welcome_banner']);
+}
 ?>
 <!doctype html>
 <html lang="ru">
@@ -71,6 +74,7 @@ if (lt_is_mobile_request()) {
 </head>
 <body<?=($bodyClasses ? ' class="'.htmlspecialchars(implode(' ', $bodyClasses), ENT_QUOTES, 'UTF-8').'"' : '');?>>
 <div class="site-wrapper">
+	<button class="site-scroll-toggle" id="site-scroll-toggle" type="button" aria-label="Прокрутить вниз">↓</button>
 	<div class="site-content">
 <div class="site-header-band">
 	<div class="site-shell site-shell-band">
@@ -222,7 +226,7 @@ if (lt_is_mobile_request()) {
 			title = 'Регистрация';
 			kind = 'signup';
 		} else if (/login\.php$/i.test(url.pathname)) {
-			title = (url.searchParams.get('op') === 'forgot' ? 'Восстановление пароля' : 'Вход');
+			title = (url.searchParams.get('op') === 'forgot' ? 'Восстановление доступа' : 'Вход');
 			kind = (url.searchParams.get('op') === 'forgot' ? 'forgot' : 'login');
 		} else {
 			return null;
@@ -331,10 +335,70 @@ if (lt_is_mobile_request()) {
 </script>
 <?php } ?>
 
+<?php if ($USER) { ?>
+<script>
+(function(){
+	var dropdown = document.querySelector('.site-user-dropdown');
+	if (!dropdown) {
+		return;
+	}
+
+	document.addEventListener('click', function(event){
+		if (!dropdown.hasAttribute('open')) {
+			return;
+		}
+		if (event.target.closest('.site-user-dropdown')) {
+			return;
+		}
+		dropdown.removeAttribute('open');
+	});
+
+	document.addEventListener('keydown', function(event){
+		if (event.key === 'Escape' && dropdown.hasAttribute('open')) {
+			dropdown.removeAttribute('open');
+		}
+	});
+})();
+</script>
+<?php } ?>
+<script>
+(function(){
+	var button = document.getElementById('site-scroll-toggle');
+	if (!button) {
+		return;
+	}
+
+	var threshold = 260;
+	var updateState = function () {
+		var scrolled = (window.pageYOffset || document.documentElement.scrollTop || 0);
+		var toTop = scrolled > threshold;
+		button.textContent = (toTop ? '↑' : '↓');
+		button.setAttribute('aria-label', (toTop ? 'Прокрутить вверх' : 'Прокрутить вниз'));
+		button.classList.toggle('site-scroll-toggle-up', toTop);
+	};
+
+	button.addEventListener('click', function () {
+		var scrolled = (window.pageYOffset || document.documentElement.scrollTop || 0);
+		var toTop = scrolled > threshold;
+		window.scrollTo({
+			top: (toTop ? 0 : Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)),
+			behavior: 'smooth'
+		});
+	});
+
+	window.addEventListener('scroll', updateState, { passive: true });
+	window.addEventListener('resize', updateState);
+	updateState();
+})();
+</script>
+
 
 
 
 <div class="site-shell site-shell-content">
+	<?php if ($welcomeBanner !== '') { ?>
+	<div class="site-welcome-banner"><?=htmlspecialchars($welcomeBanner, ENT_QUOTES, 'UTF-8');?></div>
+	<?php } ?>
 	<div class="site-layout">
 		<main class="site-main">
 			<div class="blockContent">
