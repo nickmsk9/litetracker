@@ -388,7 +388,7 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0)
             echo '<span class="plus-reaction-count">Не нравится '.$reactionStats['dislike'].'</span>';
         }
         $reactionListHref = 'comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=reaction_list&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8');
-        echo '<a class="plus-reaction-list-link" href="'.$reactionListHref.'">Кто оценил</a>';
+        echo '<a class="plus-reaction-list-link" href="'.$reactionListHref.'" data-plus-reaction-list="1" data-reaction-object-type="'.htmlspecialchars($reactionObjectType, ENT_QUOTES, 'UTF-8').'" data-reaction-object-id="'.$commentId.'">Кто оценил</a>';
         echo '</span>';
         echo '</div>';
     }

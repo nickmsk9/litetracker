@@ -754,7 +754,8 @@ hr {
 
 .plus-promo-panel {
   position: relative;
-  background: #f7fbff;
+  background: #fff;
+  font-family: inherit;
 }
 
 .plus-promo-close {
@@ -789,7 +790,7 @@ hr {
 .plus-promo-copy {
   margin: 12px 0 0;
   color: var(--text);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -813,6 +814,157 @@ hr {
 .ad-sidebar-link:hover {
   background: #1554b8;
   color: #fff;
+}
+
+.lt-emoji-font {
+  font-family: "Noto Color Emoji", "Noto Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+}
+
+.lt-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+}
+
+.lt-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 24, 32, .48);
+}
+
+.lt-modal-dialog {
+  position: relative;
+  width: min(540px, calc(100vw - 24px));
+  margin: 6vh auto 0;
+  border-radius: 10px;
+  border: 1px solid #d5e1ee;
+  background: #fff;
+  box-shadow: 0 20px 48px rgba(11, 35, 62, .26);
+}
+
+.lt-modal-dialog-compact {
+  width: min(420px, calc(100vw - 24px));
+}
+
+.lt-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lt-modal-title {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.lt-modal-close {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: #eef4fa;
+  color: #546273;
+  font-size: 22px;
+  line-height: 26px;
+}
+
+.lt-modal-body {
+  max-height: min(68vh, 620px);
+  overflow: auto;
+  padding: 14px 16px 16px;
+}
+
+.plus-benefits-list {
+  margin: 0;
+  padding: 0 0 0 18px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.62;
+}
+
+.plus-benefits-list li + li {
+  margin-top: 3px;
+}
+
+.lt-modal-open {
+  overflow: hidden;
+}
+
+.lt-emoji-toggle,
+.lt-paragraph-toggle {
+  min-width: 34px;
+  padding: 0 10px;
+}
+
+.lt-paragraph-toggle-active {
+  border-color: #1c64d8;
+  color: #1c64d8;
+}
+
+.lt-emoji-panel {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.lt-emoji-item {
+  height: 28px;
+  border: 1px solid #e4edf6;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.lt-emoji-item:hover {
+  background: #f3f8ff;
+}
+
+.lt-paragraph-editor {
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.lt-paragraph-editor-note {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.lt-paragraph-editor-box {
+  min-height: 70px;
+  padding: 8px;
+  border: 1px solid #dbe6f1;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.lt-upload-paragraph-wrap {
+  margin-bottom: 8px;
+}
+
+.lt-upload-paragraph-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
 }
 
 .ad-sidebar-panel {
@@ -2551,6 +2703,33 @@ body.profile-modal-open {
   background: var(--surface-solid);
   color: var(--text);
   resize: vertical;
+}
+
+.settings-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.settings-history-item {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-muted);
+}
+
+.settings-history-meta {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.settings-history-text {
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.52;
 }
 
 .settings-inline-note {

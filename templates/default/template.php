@@ -133,8 +133,8 @@ function render_standard_sidebar()
 				<span class="plus-promo-gem"></span>
 			</div>
 			<h2 class="sidebar-panel-title">Подписка Plus</h2>
-			<p class="plus-promo-copy">Без рекламы, бот ChatGPT, бейджи, реакции и другие преимущества.</p>
-			<a class="plus-promo-button" href="<?=($USER ? profile_href((int) $USER['id'], 'bonus') : 'login.php?referer='.rawurlencode('profile.php?view=bonus'));?>">От <?=template_format_number(lt_plus_month_bonus_price());?> бонусов в месяц</a>
+			<p class="plus-promo-copy">Без рекламы, реакции, красивый никнейм, видеоаватарка и другие функции Plus.</p>
+			<button class="plus-promo-button" type="button" data-plus-benefits-open="1">От <?=template_format_number(lt_plus_month_bonus_price());?> бонусов в месяц</button>
 		</section>
 		<?php } ?>
 

@@ -3,7 +3,13 @@ if (!defined('LITETRACKER')) {
 	die('Direct access denied.');
 }
 
-$settingsActiveTab = ((string) ($_GET['tab'] ?? '') === 'password' ? 'password' : 'profile');
+$settingsActiveTabRaw = (string) ($_GET['tab'] ?? '');
+$settingsActiveTab = 'profile';
+if ($settingsActiveTabRaw === 'password') {
+	$settingsActiveTab = 'password';
+} elseif ($settingsActiveTabRaw === 'moderation' && !empty($canModerateProfile)) {
+	$settingsActiveTab = 'moderation';
+}
 ?>
 <div class="settings-page">
 	<div class="settings-layout">
@@ -11,6 +17,9 @@ $settingsActiveTab = ((string) ($_GET['tab'] ?? '') === 'password' ? 'password' 
 			<div class="settings-nav-card">
 				<a class="settings-nav-link" href="my.setting.php?id=<?=$id;?>&amp;tab=profile" data-settings-tab="profile">Общие</a>
 				<a class="settings-nav-link" href="my.setting.php?id=<?=$id;?>&amp;tab=password" data-settings-tab="password">Сменить пароль</a>
+				<?php if (!empty($canModerateProfile)) { ?>
+				<a class="settings-nav-link" href="my.setting.php?id=<?=$id;?>&amp;tab=moderation" data-settings-tab="moderation">Модерирование</a>
+				<?php } ?>
 			</div>
 		</nav>
 
@@ -186,6 +195,113 @@ $settingsActiveTab = ((string) ($_GET['tab'] ?? '') === 'password' ? 'password' 
 					</div>
 				</form>
 			</div>
+
+			<?php if (!empty($canModerateProfile)) { ?>
+			<div class="settings-tab-pane" id="settings-tab-moderation">
+				<h1 class="settings-title">Модерирование профиля</h1>
+				<div class="profile-inline-message" id="moderation-ajax-message" hidden></div>
+
+				<form class="settings-form" id="settings-moderation-form">
+					<section class="settings-section">
+						<div class="settings-grid">
+							<div class="settings-field">
+								<label class="settings-field-label" for="moderation_name">Ник</label>
+								<input id="moderation_name" type="text" name="name" value="<?=htmlspecialchars((string) ($arr['name'] ?? ''), ENT_QUOTES, 'UTF-8');?>" maxlength="12">
+							</div>
+							<div class="settings-field">
+								<label class="settings-field-label" for="moderation_class">Класс</label>
+								<select id="moderation_class" name="class">
+									<?php foreach (get_classes_list() as $classRow) { ?>
+									<option value="<?=(int) $classRow['id'];?>"<?=((int) ($arr['class'] ?? 0) === (int) $classRow['id'] ? ' selected' : '');?>><?=htmlspecialchars((string) $classRow['NAME'], ENT_QUOTES, 'UTF-8');?></option>
+									<?php } ?>
+								</select>
+							</div>
+							<div class="settings-field">
+								<label class="settings-field-label" for="moderation_enabled">Включен</label>
+								<select id="moderation_enabled" name="enabled">
+									<option value="1"<?=((int) ($arr['banned'] ?? 0) === 0 ? ' selected' : '');?>>Да</option>
+									<option value="0"<?=((int) ($arr['banned'] ?? 0) !== 0 ? ' selected' : '');?>>Нет</option>
+								</select>
+							</div>
+							<div class="settings-field">
+								<label class="settings-field-label" for="moderation_support_enabled">Поддержка</label>
+								<select id="moderation_support_enabled" name="support_enabled">
+									<option value="0"<?=((int) ($arr['support_enabled'] ?? 0) === 0 ? ' selected' : '');?>>Нет</option>
+									<option value="1"<?=((int) ($arr['support_enabled'] ?? 0) === 1 ? ' selected' : '');?>>Да</option>
+								</select>
+							</div>
+							<div class="settings-field">
+								<label class="settings-field-label" for="moderation_support_until">Поддержка для</label>
+								<input id="moderation_support_until" type="date" name="support_until" value="<?=(!empty($arr['support_until']) && $arr['support_until'] !== '0000-00-00 00:00:00' ? htmlspecialchars(substr((string) $arr['support_until'], 0, 10), ENT_QUOTES, 'UTF-8') : '');?>">
+							</div>
+							<div class="settings-field">
+								<label class="settings-field-label" for="moderation_warning_until">Предупредить до</label>
+								<input id="moderation_warning_until" type="date" name="warning_until" value="<?=(!empty($arr['warning_until']) && $arr['warning_until'] !== '0000-00-00 00:00:00' ? htmlspecialchars(substr((string) $arr['warning_until'], 0, 10), ENT_QUOTES, 'UTF-8') : '');?>">
+							</div>
+						</div>
+					</section>
+
+					<section class="settings-section">
+						<div class="settings-grid">
+							<div class="settings-field">
+								<label class="settings-checkbox"><input type="checkbox" name="reset_birthday" value="1"> Сбросить день рождения</label>
+								<label class="settings-checkbox"><input type="checkbox" name="reset_rating" value="1"> Убрать рейтинг</label>
+								<label class="settings-checkbox"><input type="checkbox" name="reset_passkey" value="1"> Сбросить passkey</label>
+							</div>
+							<div class="settings-field">
+								<label class="settings-field-label" for="moderation_uploaded_mb">Изменить раздачу (MB)</label>
+								<input id="moderation_uploaded_mb" type="number" name="uploaded_mb" value="0" min="-1000000" max="1000000">
+								<label class="settings-field-label" for="moderation_downloaded_mb">Изменить скачку (MB)</label>
+								<input id="moderation_downloaded_mb" type="number" name="downloaded_mb" value="0" min="-1000000" max="1000000">
+							</div>
+							<div class="settings-field">
+								<label class="settings-field-label" for="moderation_chat_ban">Чат бан</label>
+								<select id="moderation_chat_ban" name="chat_ban">
+									<option value="0"<?=((int) ($arr['chat_ban'] ?? 0) === 0 ? ' selected' : '');?>>Нет</option>
+									<option value="1"<?=((int) ($arr['chat_ban'] ?? 0) === 1 ? ' selected' : '');?>>Да</option>
+								</select>
+								<label class="settings-field-label" for="moderation_in_group">В группе</label>
+								<select id="moderation_in_group" name="in_group">
+									<option value="0"<?=((int) ($arr['in_group'] ?? 0) === 0 ? ' selected' : '');?>>Нет</option>
+									<option value="1"<?=((int) ($arr['in_group'] ?? 0) === 1 ? ' selected' : '');?>>Да</option>
+								</select>
+							</div>
+						</div>
+					</section>
+
+					<section class="settings-section">
+						<div class="settings-field settings-field-full">
+							<label class="settings-field-label" for="moderation_note">Добавить заметку / Комментарий в ЛС</label>
+							<textarea class="settings-textarea" id="moderation_note" name="note" placeholder="Комментарий для истории и уведомления пользователю"></textarea>
+						</div>
+						<div class="settings-field settings-field-full">
+							<label class="settings-checkbox"><input type="checkbox" name="delete_user" value="1"> Удалить пользователя (безвозвратно)</label>
+						</div>
+					</section>
+
+					<div class="settings-actions">
+						<button class="settings-submit" type="submit">Сохранить через AJAX</button>
+					</div>
+					<input type="hidden" name="user_id" value="<?=(int) $id;?>">
+				</form>
+
+				<section class="settings-section">
+					<h2 class="settings-section-title">История пользователя</h2>
+					<?php if (!empty($moderationHistory)) { ?>
+					<div class="settings-history-list">
+						<?php foreach ($moderationHistory as $historyItem) { ?>
+						<div class="settings-history-item">
+							<div class="settings-history-meta"><?=convent_date((string) ($historyItem['created_at'] ?? ''));?> · admin #<?=(int) ($historyItem['admin_id'] ?? 0);?></div>
+							<div class="settings-history-text"><?=nl2br(htmlspecialchars((string) ($historyItem['note'] ?? ''), ENT_QUOTES, 'UTF-8'));?></div>
+						</div>
+						<?php } ?>
+					</div>
+					<?php } else { ?>
+					<div class="profile-empty-state">Записей пока нет.</div>
+					<?php } ?>
+				</section>
+			</div>
+			<?php } ?>
 		</div>
 	</div>
 </div>
@@ -195,7 +311,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	var navLinks = document.querySelectorAll('.settings-nav-link[data-settings-tab]');
 	var panes = {
 		profile: document.getElementById('settings-tab-profile'),
-		password: document.getElementById('settings-tab-password')
+		password: document.getElementById('settings-tab-password'),
+		moderation: document.getElementById('settings-tab-moderation')
 	};
 
 	function openSettingsTab(tab) {
@@ -237,5 +354,43 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 
 	openSettingsTab('<?=$settingsActiveTab;?>');
+
+	var moderationForm = document.getElementById('settings-moderation-form');
+	var moderationMessage = document.getElementById('moderation-ajax-message');
+	if (moderationForm) {
+		moderationForm.addEventListener('submit', function (event) {
+			event.preventDefault();
+			var formData = new FormData(moderationForm);
+			formData.append('action', 'moderate_profile');
+			fetch('ajax/profile.php', {
+				method: 'POST',
+				body: formData,
+				headers: {
+					'X-Requested-With': 'XMLHttpRequest',
+					'Accept': 'application/json'
+				}
+			})
+				.then(function (response) { return response.json(); })
+				.then(function (payload) {
+					if (!moderationMessage) {
+						return;
+					}
+					moderationMessage.hidden = false;
+					moderationMessage.textContent = payload.message || (payload.ok ? 'Сохранено.' : 'Ошибка');
+					moderationMessage.className = 'profile-inline-message profile-inline-message-' + (payload.ok ? 'success' : 'error');
+					if (payload.ok && payload.reload) {
+						window.location.reload();
+					}
+				})
+				.catch(function () {
+					if (!moderationMessage) {
+						return;
+					}
+					moderationMessage.hidden = false;
+					moderationMessage.textContent = 'Не удалось сохранить изменения.';
+					moderationMessage.className = 'profile-inline-message profile-inline-message-error';
+				});
+		});
+	}
 });
 </script>

@@ -147,7 +147,7 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 					<span class="plus-reaction-count">Лайк <?=$details_plus_reaction_stats['like'];?></span>
 					<span class="plus-reaction-count">Дизлайк <?=$details_plus_reaction_stats['dislike'];?></span>
 					<?php } ?>
-					<a class="plus-reaction-list-link" href="details.php?id=<?=(int) $id;?>&amp;reaction_list=1">Кто оценил</a>
+					<a class="plus-reaction-list-link" href="details.php?id=<?=(int) $id;?>&amp;reaction_list=1" data-plus-reaction-list="1" data-reaction-object-type="torrent" data-reaction-object-id="<?=(int) $id;?>">Кто оценил</a>
 				</div>
 			</section>
 
