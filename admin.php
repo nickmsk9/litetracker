@@ -595,7 +595,6 @@ $shortcuts = array(
 	array('label' => 'Добавить опрос', 'href' => 'blocks.php?act=add', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
 	array('label' => 'Редактировать опросы', 'href' => 'blocks.php', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
 	array('label' => 'Открыть классы и права', 'href' => 'edit_priv.php', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
-	array('label' => 'Открыть блоки сайта', 'href' => 'blocks.php', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
 	array('label' => 'Открыть жалобы', 'href' => user_wall_reports_href(), 'allowed' => user_wall_reports_can_moderate()),
 );
 

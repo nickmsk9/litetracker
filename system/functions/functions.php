@@ -1843,6 +1843,7 @@ function get_certain_time($time) {
 function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {
 	global $memcached , $db;
 
+	$user_in = (int) $user_in;
 	if(!$user_in) {
 		return 0;
 	}

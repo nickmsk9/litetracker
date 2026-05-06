@@ -80,6 +80,21 @@ function signup_default_class_id()
 
 $signupModalError = '';
 $signupBlockedMessage = '';
+$signupLiveMessages = array(
+	'name_empty' => 'Введите логин.',
+	'name_available' => 'Логин доступен.',
+	'email_empty' => 'Введите E-mail.',
+	'email_invalid' => 'Введите корректный E-mail адрес.',
+	'email_available' => 'E-mail доступен.',
+	'password_empty' => 'Введите пароль.',
+	'password_ok' => 'Пароль подходит.',
+	'welcome_director' => 'Добро пожаловать! Вы зарегистрировали первый аккаунт и получили роль директора.',
+	'welcome_user' => 'Добро пожаловать на сайт! Регистрация прошла успешно.',
+	'welcome_director_mail_subject' => 'Добро пожаловать, директор',
+	'welcome_director_mail_text' => 'Это первый аккаунт на сайте. Вам автоматически выданы расширенные права администратора. Проверьте настройки и правила проекта.',
+	'welcome_user_mail_subject' => 'Добро пожаловать!',
+	'welcome_user_mail_text' => 'Спасибо за регистрацию на LiteTracker! Заполните профиль, ознакомьтесь с правилами и начинайте пользоваться сайтом.',
+);
 
 if ($act === 'validate') {
 	header('Content-Type: application/json; charset=UTF-8');
@@ -98,7 +113,7 @@ if ($act === 'validate') {
 	);
 
 	if ($name === '') {
-		$response['fields']['name']['message'] = 'Введите логин.';
+		$response['fields']['name']['message'] = $signupLiveMessages['name_empty'];
 	} elseif (!validusername($name)) {
 		$response['fields']['name']['message'] = $language['signup_11'];
 	} elseif (strlen($name) > 12) {
@@ -109,33 +124,33 @@ if ($act === 'validate') {
 			$response['fields']['name']['message'] = $language['signup_17'];
 		} else {
 			$response['fields']['name']['valid'] = 1;
-			$response['fields']['name']['message'] = 'Логин доступен.';
+			$response['fields']['name']['message'] = $signupLiveMessages['name_available'];
 		}
 	}
 
 	if ($email === '') {
-		$response['fields']['email']['message'] = 'Введите E-mail.';
+		$response['fields']['email']['message'] = $signupLiveMessages['email_empty'];
 	} elseif (!validemail($email)) {
-		$response['fields']['email']['message'] = 'Введите корректный E-mail адрес.';
+		$response['fields']['email']['message'] = $signupLiveMessages['email_invalid'];
 	} else {
 		$emailCheck = $db->query("SELECT id FROM users WHERE email='".$db->safesql($email)."' LIMIT 1");
 		if ($db->num_rows($emailCheck) > 0) {
 			$response['fields']['email']['message'] = $language['signup_16'];
 		} else {
 			$response['fields']['email']['valid'] = 1;
-			$response['fields']['email']['message'] = 'E-mail доступен.';
+			$response['fields']['email']['message'] = $signupLiveMessages['email_available'];
 		}
 	}
 
 	if ($password === '') {
-		$response['fields']['password']['message'] = 'Введите пароль.';
+		$response['fields']['password']['message'] = $signupLiveMessages['password_empty'];
 	} elseif (strlen($password) < 6) {
 		$response['fields']['password']['message'] = $language['signup_13'];
 	} elseif (strlen($password) > 40) {
 		$response['fields']['password']['message'] = $language['signup_14'];
 	} else {
 		$response['fields']['password']['valid'] = 1;
-		$response['fields']['password']['message'] = 'Пароль подходит.';
+		$response['fields']['password']['message'] = $signupLiveMessages['password_ok'];
 	}
 
 	echo json_encode($response, JSON_UNESCAPED_UNICODE);
@@ -238,7 +253,7 @@ if($_POST && $signupBlockedMessage === '') {
 		$passwordHash = lt_password_hash_value($password);
 
 		$countUsers = $db->super_query("SELECT COUNT(*) AS c FROM users");
-		$isDirectorSignup = ((int) ($countUsers['c'] ?? 0) <= 0);
+		$isDirectorSignup = ((int) ($countUsers['c'] ?? 0) === 0);
 		$classId = (!$isDirectorSignup ? signup_default_class_id() : signup_admin_class_id());
 
 		$db->query("INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$signupBonusColumn.", sex, birthday_date, profile_text, website, icq, last_chat, num_messages, num_friends, confirm) VALUES ('".$db->safesql($name)."', '', '".$db->safesql($email)."', '".$db->safesql($passwordHash)."', '', '".ip2long_db(getip())."', '".$classId."', NOW(), NOW(), '', '0', '0', '0', '300', '1', '".$db->safesql($birthdayDate)."', '', '', '', '0', '0', '0', '1')");
@@ -252,11 +267,11 @@ if($_POST && $signupBlockedMessage === '') {
 		login_cookie($id, $passwordHash);
 
 		if ($isDirectorSignup) {
-			send_msg('Добро пожаловать, директор', 'Это первый аккаунт на сайте. Вам автоматически выданы расширенные права администратора. Проверьте настройки и правила проекта.', $id, 0);
-			$_SESSION['lt_welcome_banner'] = 'Добро пожаловать! Вы зарегистрировали первый аккаунт и получили роль директора.';
+			send_msg($signupLiveMessages['welcome_director_mail_subject'], $signupLiveMessages['welcome_director_mail_text'], $id, 0);
+			$_SESSION['lt_welcome_banner'] = $signupLiveMessages['welcome_director'];
 		} else {
-			send_msg('Добро пожаловать!', 'Спасибо за регистрацию на LiteTracker! Заполните профиль, ознакомьтесь с правилами и начинайте пользоваться сайтом.', $id, 0);
-			$_SESSION['lt_welcome_banner'] = 'Добро пожаловать на сайт! Регистрация прошла успешно.';
+			send_msg($signupLiveMessages['welcome_user_mail_subject'], $signupLiveMessages['welcome_user_mail_text'], $id, 0);
+			$_SESSION['lt_welcome_banner'] = $signupLiveMessages['welcome_user'];
 		}
 
 		if ($isModalView) {
@@ -414,6 +429,7 @@ $signupValidateUrl = 'signup.php?act=validate'.($isModalView ? '&modal=1' : '');
 
 	var timer = 0;
 	var validateUrl = <?=json_encode($signupValidateUrl, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
+	var VALIDATION_DEBOUNCE_MS = 180;
 
 	var setHint = function (field, meta) {
 		var node = hints[field];
@@ -448,7 +464,7 @@ $signupValidateUrl = 'signup.php?act=validate'.($isModalView ? '&modal=1' : '');
 					setHint('password', payload.fields.password || {});
 				})
 				.catch(function () {});
-		}, 180);
+		}, VALIDATION_DEBOUNCE_MS);
 	};
 
 	nameInput.addEventListener('input', runValidation);

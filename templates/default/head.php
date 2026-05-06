@@ -44,8 +44,8 @@ if ($USER && user_wall_reports_can_moderate()) {
 }
 $alertCount = $messagesCount;
 $alertBadge = ($alertCount > 99 ? '99+' : (string) $alertCount);
-$alertHref = 'my.mail.php';
-$alertLabel = 'Личные сообщения'.($alertCount > 0 ? ': '.$alertBadge : '');
+$messagesHref = 'my.mail.php';
+$messagesLabel = 'Личные сообщения'.($alertCount > 0 ? ': '.$alertBadge : '');
 $requestUri = ltrim((string) ($_SERVER['REQUEST_URI'] ?? ''), '/');
 $loginHref = 'login.php';
 if ($requestUri !== '' && strpos($requestUri, 'login.php') !== 0) {
@@ -98,7 +98,7 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 
 			<div class="site-header-tools<?=($USER ? ' site-header-tools-auth' : '');?>">
 				<?php if ($USER) { ?>
-				<a class="site-alert-button<?=($alertCount > 0 ? ' site-alert-button-active' : '');?>" href="<?=$alertHref;?>" aria-label="<?=htmlspecialchars($alertLabel, ENT_QUOTES, 'UTF-8');?>">
+				<a class="site-alert-button<?=($alertCount > 0 ? ' site-alert-button-active' : '');?>" href="<?=$messagesHref;?>" aria-label="<?=htmlspecialchars($messagesLabel, ENT_QUOTES, 'UTF-8');?>">
 					<svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M12 3a5 5 0 0 0-5 5v2.42c0 .8-.32 1.56-.88 2.12L4.3 14.36a1 1 0 0 0 .7 1.71h14a1 1 0 0 0 .7-1.71l-1.82-1.82A3 3 0 0 1 17 10.42V8a5 5 0 0 0-5-5Zm0 18a3 3 0 0 0 2.82-2H9.18A3 3 0 0 0 12 21Z" fill="currentColor"/>
 					</svg>
@@ -368,10 +368,10 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 		return;
 	}
 
-	var threshold = 260;
+	var SCROLL_THRESHOLD = 260;
 	var updateState = function () {
 		var scrolled = (window.pageYOffset || document.documentElement.scrollTop || 0);
-		var toTop = scrolled > threshold;
+		var toTop = scrolled > SCROLL_THRESHOLD;
 		button.textContent = (toTop ? '↑' : '↓');
 		button.setAttribute('aria-label', (toTop ? 'Прокрутить вверх' : 'Прокрутить вниз'));
 		button.classList.toggle('site-scroll-toggle-up', toTop);
@@ -379,7 +379,7 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 
 	button.addEventListener('click', function () {
 		var scrolled = (window.pageYOffset || document.documentElement.scrollTop || 0);
-		var toTop = scrolled > threshold;
+		var toTop = scrolled > SCROLL_THRESHOLD;
 		window.scrollTo({
 			top: (toTop ? 0 : Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)),
 			behavior: 'smooth'

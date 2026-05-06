@@ -9,4 +9,3 @@ echo json_encode(array(
 	'message' => 'Опросы временно отключены.',
 ), JSON_UNESCAPED_UNICODE);
 die();
-?>
