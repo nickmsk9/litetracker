@@ -387,11 +387,11 @@ if ($action === 'moderate_profile') {
 	$uploadedMb = (int) ($_POST['uploaded_mb'] ?? 0);
 	$downloadedMb = (int) ($_POST['downloaded_mb'] ?? 0);
 	if ($uploadedMb !== 0) {
-		$delta = $uploadedMb * 1024 * 1024;
+		$delta = (int) ($uploadedMb * 1024 * 1024);
 		$updates[] = "uploaded=GREATEST(uploaded + (".$delta."), 0)";
 	}
 	if ($downloadedMb !== 0) {
-		$delta = $downloadedMb * 1024 * 1024;
+		$delta = (int) ($downloadedMb * 1024 * 1024);
 		$updates[] = "downloaded=GREATEST(downloaded + (".$delta."), 0)";
 	}
 
