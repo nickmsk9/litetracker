@@ -70,12 +70,12 @@ function chat_render_message(array $msg, $currentUserId, $canDelete)
 	$html .= '<table width="100%" cellpadding="0"><tr>';
 	$html .= '<td width="7%">';
 	if ($canDelete) {
-		$html .= '<small><a href="javascript:void(0);" onclick="chatDelete(\'' . $id . '\')"><img src="public/images/broom.png" border="0" title="' . htmlspecialchars($language['chat_8'], ENT_QUOTES, 'UTF-8') . '"/></a></small>&nbsp;';
+		$html .= '<small><a href="javascript:void(0);" data-chat-delete="' . $id . '"><img src="public/images/broom.png" border="0" title="' . htmlspecialchars($language['chat_8'], ENT_QUOTES, 'UTF-8') . '"/></a></small>&nbsp;';
 	}
 	$html .= '<small><a href="' . profile_href($msgUserId) . '"><img src="public/images/users.png" border="0" title="' . htmlspecialchars($language['chat_9'], ENT_QUOTES, 'UTF-8') . '"/></a></small>&nbsp;';
 	$html .= '</td>';
 	$html .= '<td width="12%">';
-	$html .= '<a href="javascript:void(0);" onclick="chatMention(\'' . addslashes($username) . '\')">' . get_user_color($userclass, $username) . '</a>:';
+	$html .= '<a href="javascript:void(0);" data-chat-mention="' . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . '">' . get_user_color($userclass, $username) . '</a>:';
 	if ($isPrivate) {
 		$html .= ' <em class="chat-private-label">приват</em>';
 	}
@@ -164,7 +164,7 @@ if ($type === 'send') {
 			$privateToName = trim(substr($pmBody, 0, $spacePos));
 			$pmText = trim(substr($pmBody, $spacePos + 1));
 			if ($privateToName !== '' && $pmText !== '') {
-				$pmUser = $db->super_query("SELECT id FROM users WHERE name = '" . $db->safesql($privateToName) . "' LIMIT 1");
+				$pmUser = $db->super_query("SELECT id FROM users WHERE LOWER(name) = LOWER('" . $db->safesql($privateToName) . "') LIMIT 1");
 				if (!empty($pmUser['id'])) {
 					$privateToId = (int) $pmUser['id'];
 					$text = $pmText;
@@ -194,8 +194,10 @@ if ($type === 'send') {
 	$rateTtl = max(1, (int) ($config['chat_limit'] ?? 5));
 	$memcached->set($rateKey, 1, 0, $rateTtl);
 
-	// Update last_chat timestamp in users table (non-critical)
-	@$db->query("UPDATE users SET last_chat = " . time() . " WHERE id = " . $currentUserId);
+	// Update last_chat timestamp in users table (non-critical, column may not exist)
+	if (isset($db)) {
+		$db->query("UPDATE users SET last_chat = " . time() . " WHERE id = " . $currentUserId, 0);
+	}
 
 	echo '';
 	die();

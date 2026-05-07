@@ -38,16 +38,6 @@ $btn.prop('disabled', false);
 return false;
 }
 
-function chatDelete(id) {
-if (!confirm('Удалить сообщение?')) {
-return false;
-}
-$.post(CHAT_AJAX_URL, { type: 'delete', id: id }, function () {
-$('#msg_' + id).fadeOut(200, function () { $(this).remove(); });
-}, 'html');
-return false;
-}
-
 function chatClear() {
 if (!confirm('Очистить чат?')) {
 return false;
@@ -58,12 +48,29 @@ $('#result_chat').html(response);
 return false;
 }
 
-function chatMention(username) {
-var $input = $('#text_chat');
-var val = $input.val();
-$input.val('[b]' + username + '[/b]: ' + val);
-$input.focus();
+// Event delegation for delete and mention actions
+$(document).on('click', '[data-chat-delete]', function (e) {
+e.preventDefault();
+var id = $(this).attr('data-chat-delete') || '';
+if (!id || !confirm('Удалить сообщение?')) {
+return;
 }
+$.post(CHAT_AJAX_URL, { type: 'delete', id: id }, function () {
+var $msg = $('#msg_' + $.escapeSelector(id));
+$msg.fadeOut(200, function () { $(this).remove(); });
+}, 'html');
+});
+
+$(document).on('click', '[data-chat-mention]', function (e) {
+e.preventDefault();
+var username = $(this).attr('data-chat-mention') || '';
+if (!username) {
+return;
+}
+var $input = $('#text_chat');
+$input.val('[b]' + username + '[/b]: ' + $input.val());
+$input.focus();
+});
 
 // Send on Enter key
 $(document).on('keydown', '#text_chat', function (e) {

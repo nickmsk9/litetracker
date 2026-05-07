@@ -7182,7 +7182,7 @@ body.is-mobile .details-bookmark-button {
 .lt-bb-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: #eef5ff;
+  background: var(--success-bg);
 }
 
 /* YouTube-style like/dislike buttons */
@@ -7218,8 +7218,8 @@ a.yt-reaction-btn:hover {
 }
 
 .yt-reaction-active {
-  background: #e8f0fe;
-  color: #1c64d8;
+  background: var(--success-bg);
+  color: var(--accent);
 }
 
 .yt-reaction-sep {
@@ -7293,7 +7293,7 @@ a.yt-reaction-btn:hover {
 }
 
 .chat-clear-link:hover {
-  color: #c0392b;
+  color: var(--text);
   text-decoration: underline;
 }
 
@@ -7358,14 +7358,14 @@ a.yt-reaction-btn:hover {
 }
 
 .chat-message-private {
-  background: #f0f4ff;
+  background: var(--success-bg);
   border-radius: 4px;
   padding: 3px 6px;
 }
 
 .chat-private-label {
   font-size: 10px;
-  color: #7b8fa6;
+  color: var(--muted);
   font-style: italic;
 }
 
