@@ -37,13 +37,21 @@ function lt_comment_prepare_storage_text($text)
                 return '&#' . mb_ord($matches[0], 'UTF-8') . ';';
             }
 
-            $encoded = @iconv('UTF-8', 'UCS-4BE', $matches[0]);
+            if (!function_exists('iconv')) {
+                return '';
+            }
+
+            $encoded = iconv('UTF-8', 'UCS-4BE', $matches[0]);
             if ($encoded === false || strlen($encoded) !== 4) {
                 return '';
             }
 
             $codepoint = unpack('N', $encoded);
-            return '&#' . (int) ($codepoint[1] ?? 0) . ';';
+            if (empty($codepoint[1])) {
+                return '';
+            }
+
+            return '&#' . (int) $codepoint[1] . ';';
         },
         $text
     );

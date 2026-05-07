@@ -121,7 +121,7 @@ if ($settingsActiveTabRaw === 'password') {
 								<label class="settings-field-label" for="settings_plus_badge">Бейдж у имени</label>
 								<select id="settings_plus_badge" name="plus_badge">
 									<?php foreach ($plusBadgeOptions as $badgeKey => $badgeMeta) { ?>
-									<option value="<?=htmlspecialchars($badgeKey, ENT_QUOTES, 'UTF-8');?>"<?=((string) ($arr['plus_badge'] ?? 'star') === (string) $badgeKey ? ' selected' : '');?>><?=htmlspecialchars(html_entity_decode((string) ($badgeMeta['html'] ?? ''), ENT_QUOTES, 'UTF-8').' '.$badgeMeta['label'], ENT_QUOTES, 'UTF-8');?></option>
+									<option value="<?=htmlspecialchars($badgeKey, ENT_QUOTES, 'UTF-8');?>"<?=((string) ($arr['plus_badge'] ?? 'star') === (string) $badgeKey ? ' selected' : '');?>><?=$badgeMeta['html'];?> <?=htmlspecialchars($badgeMeta['label'], ENT_QUOTES, 'UTF-8');?></option>
 									<?php } ?>
 								</select>
 								<div class="settings-inline-note">Пример около имени: Nick<?=lt_plus_badge_html($arr);?></div>

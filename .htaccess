@@ -9,6 +9,4 @@ RewriteRule ^user/([a-f0-9]{24})/(torrents|bonus)/?$ profile.php?uid=$1&view=$2 
 RewriteRule ^u/([A-Za-z0-9_-]{3,64})/?$ profile.php?slug=$1 [L,QSA,NC]
 RewriteRule ^u/([A-Za-z0-9_-]{3,64})/(torrents|bonus)/?$ profile.php?slug=$1&view=$2 [L,QSA,NC]
 RewriteCond %{REQUEST_URI} !^/(?:admin|ajax|announce|api|assets|avatars|bonus|browse|categories|check_release|complaint|copyright|details|disclaimer|donate|download|edit|edit_priv|exit|faq|feedback|index|language|login|messages|multitracker_accounts|news|notify|profile|rating|rules|scrape|search_query|sessions|shop|signup|static|upload|user|user_add|users|wall_reports)(?:/|$) [NC]
-RewriteRule ^([A-Za-z0-9_-]{3,64})/?$ profile.php?slug=$1 [L,QSA,NC]
-RewriteCond %{REQUEST_URI} !^/(?:admin|ajax|announce|api|assets|avatars|bonus|browse|categories|check_release|complaint|copyright|details|disclaimer|donate|download|edit|edit_priv|exit|faq|feedback|index|language|login|messages|multitracker_accounts|news|notify|profile|rating|rules|scrape|search_query|sessions|shop|signup|static|upload|user|user_add|users|wall_reports)(?:/|$) [NC]
-RewriteRule ^([A-Za-z0-9_-]{3,64})/(torrents|bonus)/?$ profile.php?slug=$1&view=$2 [L,QSA,NC]
+RewriteRule ^([A-Za-z0-9_-]{3,64})(?:/(torrents|bonus))?/?$ profile.php?slug=$1&view=$2 [L,QSA,NC]
