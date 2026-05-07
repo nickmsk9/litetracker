@@ -141,9 +141,7 @@ if ($act === 'add') {
     }
 
     $insertFields = array('id_user', $object_name, 'date', 'text', 'id_user_edit', 'date_edit');
-    $insertText = $text;
-    $insertTextSql = $db->safesql($insertText);
-    $insertValues = array($user_id, $object_id, 'NOW()', "'{$insertTextSql}'", $user_id, 'NOW()');
+    $insertValues = array($user_id, $object_id, 'NOW()', "'" . $db->safesql($text) . "'", $user_id, 'NOW()');
 
     if ($supportsThreads) {
         $insertFields[] = 'parent_id';
@@ -156,9 +154,8 @@ if ($act === 'add') {
     $insert_ok = ($db->query($insert_sql, 0) !== false);
     if (!$insert_ok) {
         $fallbackText = lt_comment_prepare_storage_text($text);
-        if ($fallbackText !== $insertText) {
-            $insertText = $fallbackText;
-            $insertValues[3] = "'" . $db->safesql($insertText) . "'";
+        if ($fallbackText !== $text) {
+            $insertValues[3] = "'" . $db->safesql($fallbackText) . "'";
             $insert_sql = "INSERT INTO `{$table_name}` (`".implode('`,`', $insertFields)."`)
                    VALUES (".implode(', ', $insertValues).")";
             $insert_ok = ($db->query($insert_sql, 0) !== false);
@@ -374,8 +371,7 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
                 err($language['default_1'], $language['comments_9'], 1);
             }
 
-            $updateText = $text;
-            $update[] = 'text="' . $db->safesql($updateText) . '"';
+            $update[] = 'text="' . $db->safesql($text) . '"';
             $update[] = 'id_user_edit=' . (int) $USER['id'];
             $update[] = 'date_edit=NOW()';
         }
@@ -383,9 +379,9 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
         if (count($update)) {
             $update_sql = "UPDATE `{$table_name}` SET " . implode(',', $update) . " WHERE id = {$id_comment}";
             $updated = ($db->query($update_sql, 0) !== false);
-            if (!$updated && isset($updateText)) {
-                $fallbackText = lt_comment_prepare_storage_text($updateText);
-                if ($fallbackText !== $updateText) {
+            if (!$updated) {
+                $fallbackText = lt_comment_prepare_storage_text($text);
+                if ($fallbackText !== $text) {
                     $update[0] = 'text="' . $db->safesql($fallbackText) . '"';
                     $update_sql = "UPDATE `{$table_name}` SET " . implode(',', $update) . " WHERE id = {$id_comment}";
                     $updated = ($db->query($update_sql, 0) !== false);

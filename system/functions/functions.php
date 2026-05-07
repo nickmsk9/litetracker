@@ -281,6 +281,17 @@ function lt_plus_badge_html($user)
 	return '<span class="plus-name-badge" title="Подписка Plus" aria-label="Подписка Plus">'.$options[$key]['html'].'</span>';
 }
 
+function lt_plus_badge_option_text($key)
+{
+	$options = lt_plus_badge_options();
+	$key = trim((string) $key);
+	if (empty($options[$key])) {
+		$key = 'star';
+	}
+
+	return trim(strip_tags(html_entity_decode((string) ($options[$key]['html'] ?? ''), ENT_QUOTES, 'UTF-8'))).' '.(string) ($options[$key]['label'] ?? '');
+}
+
 function lt_profile_slug_normalize($slug)
 {
 	$slug = trim((string) $slug);
