@@ -281,6 +281,17 @@ function lt_plus_badge_html($user)
 	return '<span class="plus-name-badge" title="Подписка Plus" aria-label="Подписка Plus">'.$options[$key]['html'].'</span>';
 }
 
+function lt_plus_badge_option_text($key)
+{
+	$options = lt_plus_badge_options();
+	$key = trim((string) $key);
+	if (empty($options[$key])) {
+		$key = 'star';
+	}
+
+	return trim(strip_tags(html_entity_decode((string) ($options[$key]['html'] ?? ''), ENT_QUOTES, 'UTF-8'))).' '.(string) ($options[$key]['label'] ?? '');
+}
+
 function lt_profile_slug_normalize($slug)
 {
 	$slug = trim((string) $slug);
@@ -294,7 +305,14 @@ function lt_profile_slug_normalize($slug)
 
 function lt_profile_slug_is_reserved($slug)
 {
-	$reserved = array('admin', 'ajax', 'api', 'assets', 'bonus', 'browse', 'details', 'download', 'index', 'login', 'news', 'profile', 'shop', 'signup', 'static', 'user', 'users', 'u');
+	$reserved = array(
+		'admin', 'ajax', 'announce', 'api', 'assets', 'avatars', 'bonus', 'browse', 'categories',
+		'check_release', 'complaint', 'copyright', 'details', 'disclaimer', 'donate', 'download',
+		'edit', 'edit_priv', 'exit', 'faq', 'feedback', 'index', 'language', 'login', 'messages',
+		'multitracker_accounts', 'news', 'notify', 'profile', 'rating', 'rules', 'scrape',
+		'search_query', 'sessions', 'shop', 'signup', 'static', 'upload', 'user', 'user_add',
+		'users', 'u', 'wall_reports',
+	);
 
 	return in_array(lt_profile_slug_normalize($slug), $reserved, true);
 }
@@ -557,25 +575,12 @@ function profile_href($user, $view = 'profile', $params = array())
 		lt_profile_slug_normalize($userRow['profile_slug']) === (string) $userRow['profile_slug']
 	) {
 		$slug = rawurlencode((string) $userRow['profile_slug']);
-		if (!empty($config['rewrite'])) {
-			$path = 'u/'.$slug;
-			if ($view !== 'profile') {
-				$path .= '/'.$view;
-			}
-			$query = http_build_query($extraParams);
-			return $path.($query !== '' ? '?'.$query : '');
-		}
-
-		$params = array('slug' => (string) $userRow['profile_slug']);
+		$path = '/'.$slug;
 		if ($view !== 'profile') {
-			$params['view'] = $view;
+			$path .= '/'.$view;
 		}
-		if ($extraParams) {
-			$params = array_merge($params, $extraParams);
-		}
-
-		$query = http_build_query($params);
-		return 'profile.php'.($query !== '' ? '?'.$query : '');
+		$query = http_build_query($extraParams);
+		return $path.($query !== '' ? '?'.$query : '');
 	}
 
 	$params = array('id' => $userId);

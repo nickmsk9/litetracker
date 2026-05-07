@@ -22,6 +22,41 @@ $file = isset($_REQUEST['file']) ? trim((string) $_REQUEST['file']) : '';
 $file_explode = explode('?', $file, 2);
 $file_name = isset($file_explode[0]) ? trim((string) $file_explode[0]) : '';
 
+function lt_comment_prepare_storage_text($text)
+{
+    $text = (string) $text;
+
+    return preg_replace_callback(
+        '/[\x{10000}-\x{10FFFF}]/u',
+        function ($matches) {
+            if (!isset($matches[0]) || $matches[0] === '') {
+                return '';
+            }
+
+            if (function_exists('mb_ord')) {
+                return '&#' . mb_ord($matches[0], 'UTF-8') . ';';
+            }
+
+            if (!function_exists('iconv')) {
+                return '';
+            }
+
+            $encoded = iconv('UTF-8', 'UCS-4BE', $matches[0]);
+            if ($encoded === false || strlen($encoded) !== 4) {
+                return '';
+            }
+
+            $codepoint = unpack('N', $encoded);
+            if (empty($codepoint[1])) {
+                return '';
+            }
+
+            return '&#' . (int) $codepoint[1] . ';';
+        },
+        $text
+    );
+}
+
 function comment_return_url($file, $objectId, $suffix = '')
 {
     $file = trim((string) $file);
@@ -94,7 +129,6 @@ if ($act === 'add') {
         err($language['default_1'], $language['comments_9'], 1);
     }
 
-    $text_sql = $db->safesql($text);
     $user_id = (int) $USER['id'];
     $supportsThreads = comments_supports_threads($type);
     $parentId = ($supportsThreads ? (int) ($_REQUEST['parent_id'] ?? 0) : 0);
@@ -107,7 +141,7 @@ if ($act === 'add') {
     }
 
     $insertFields = array('id_user', $object_name, 'date', 'text', 'id_user_edit', 'date_edit');
-    $insertValues = array($user_id, $object_id, 'NOW()', "'{$text_sql}'", $user_id, 'NOW()');
+    $insertValues = array($user_id, $object_id, 'NOW()', "'" . $db->safesql($text) . "'", $user_id, 'NOW()');
 
     if ($supportsThreads) {
         $insertFields[] = 'parent_id';
@@ -117,15 +151,19 @@ if ($act === 'add') {
     $insert_sql = "INSERT INTO `{$table_name}` (`".implode('`,`', $insertFields)."`)
                    VALUES (".implode(', ', $insertValues).")";
 
-    $insert_ok = false;
-    try {
-        $db->query($insert_sql, 0);
-        $insert_ok = true;
-    } catch (Throwable $e) {
+    $insert_ok = ($db->query($insert_sql, 0) !== false);
+    if (!$insert_ok) {
+        $fallbackText = lt_comment_prepare_storage_text($text);
+        if ($fallbackText !== $text) {
+            $insertValues[3] = "'" . $db->safesql($fallbackText) . "'";
+            $insert_sql = "INSERT INTO `{$table_name}` (`".implode('`,`', $insertFields)."`)
+                   VALUES (".implode(', ', $insertValues).")";
+            $insert_ok = ($db->query($insert_sql, 0) !== false);
+        }
     }
 
     if (!$insert_ok) {
-        err($language['default_1'], 'Не удалось добавить комментарий. Попробуйте еще раз позже.', 1);
+        err($language['default_1'], $language['comments_15'], 1);
     }
 
     if ($type === 'users' && $USER['id'] != $object_id) {
@@ -340,7 +378,19 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
 
         if (count($update)) {
             $update_sql = "UPDATE `{$table_name}` SET " . implode(',', $update) . " WHERE id = {$id_comment}";
-            $db->query($update_sql, 0);
+            $updated = ($db->query($update_sql, 0) !== false);
+            if (!$updated) {
+                $fallbackText = lt_comment_prepare_storage_text($text);
+                if ($fallbackText !== $text) {
+                    $update[0] = 'text="' . $db->safesql($fallbackText) . '"';
+                    $update_sql = "UPDATE `{$table_name}` SET " . implode(',', $update) . " WHERE id = {$id_comment}";
+                    $updated = ($db->query($update_sql, 0) !== false);
+                }
+            }
+
+            if (!$updated) {
+                err($language['default_1'], $language['comments_16'], 1);
+            }
         }
 
         header('Location:' . comment_return_url($file, $object_id, 'status=2'));

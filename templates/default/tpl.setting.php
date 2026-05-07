@@ -121,15 +121,16 @@ if ($settingsActiveTabRaw === 'password') {
 								<label class="settings-field-label" for="settings_plus_badge">Бейдж у имени</label>
 								<select id="settings_plus_badge" name="plus_badge">
 									<?php foreach ($plusBadgeOptions as $badgeKey => $badgeMeta) { ?>
-									<option value="<?=htmlspecialchars($badgeKey, ENT_QUOTES, 'UTF-8');?>"<?=((string) ($arr['plus_badge'] ?? 'star') === (string) $badgeKey ? ' selected' : '');?>><?=htmlspecialchars($badgeMeta['label'], ENT_QUOTES, 'UTF-8');?></option>
+									<option value="<?=htmlspecialchars($badgeKey, ENT_QUOTES, 'UTF-8');?>"<?=((string) ($arr['plus_badge'] ?? 'star') === (string) $badgeKey ? ' selected' : '');?>><?=htmlspecialchars(lt_plus_badge_option_text($badgeKey), ENT_QUOTES, 'UTF-8');?></option>
 									<?php } ?>
 								</select>
+								<div class="settings-inline-note">Пример около имени: <?=htmlspecialchars('Nick '.lt_plus_badge_option_text((string) ($arr['plus_badge'] ?? 'star')), ENT_QUOTES, 'UTF-8');?></div>
 							</div>
 
 							<div class="settings-field">
 								<label class="settings-field-label" for="settings_profile_slug">Красивый никнейм</label>
 								<input id="settings_profile_slug" type="text" name="profile_slug" value="<?=htmlspecialchars((string) ($arr['profile_slug'] ?? ''), ENT_QUOTES, 'UTF-8');?>" maxlength="64" placeholder="nickname">
-								<div class="settings-inline-note">Ссылка профиля будет без ID: <?=(!empty($arr['profile_slug']) ? htmlspecialchars(profile_href($arr), ENT_QUOTES, 'UTF-8') : 'после сохранения');?></div>
+								<div class="settings-inline-note">Ссылка профиля будет без ID: <?=(!empty($arr['profile_slug']) ? htmlspecialchars('/'.rawurlencode((string) $arr['profile_slug']), ENT_QUOTES, 'UTF-8') : '/nickname');?></div>
 							</div>
 						</div>
 						<?php } ?>

@@ -313,39 +313,38 @@ if($status == '1') {
 }
 
 $db->query("SELECT id, name, text, date FROM news ORDER BY date DESC");
-if(!$db->num_rows() ) {
-	msg($language['default_8'] , $language['news_13']);
-
-}else {
-	?>
-	<div class="news-archive-page">
-		<div class="news-archive-head">
-			<h1 class="news-archive-page-title">Новости</h1>
-			<?php if (!empty($PRIV['news_add'])) { ?>
-			<a class="news-archive-manage-link" href="news.php?act=add"><?=$language['news_9'];?></a>
-			<?php } ?>
-		</div>
-
-		<div class="news-archive-list">
-			<?php while($arr = $db->get_row() ) { ?>
-			<?php
-			$title = htmlspecialchars(lt_fix_utf8_mojibake((string) $arr['name']), ENT_QUOTES, 'UTF-8');
-			$excerpt = trim(preg_replace('~\s+~u', ' ', strip_tags(cleanhtml(lt_fix_utf8_mojibake((string) $arr['text'])))));
-			?>
-			<article class="news-archive-item">
-				<a class="news-archive-link" href="news.php?id=<?=(int) $arr['id'];?>">
-					<h2 class="news-archive-title"><?=$title;?></h2>
-					<div class="news-archive-date"><?=convent_date($arr['date']);?></div>
-					<?php if ($excerpt !== '') { ?>
-					<p class="news-archive-excerpt"><?=htmlspecialchars($excerpt, ENT_QUOTES, 'UTF-8');?></p>
-					<?php } ?>
-				</a>
-			</article>
-			<?php } ?>
-		</div>
+?>
+<div class="news-archive-page">
+	<div class="news-archive-head">
+		<h1 class="news-archive-page-title">Новости</h1>
+		<?php if (!empty($PRIV['news_add'])) { ?>
+		<a class="news-archive-manage-link" href="news.php?act=add"><?=$language['news_9'];?></a>
+		<?php } ?>
 	</div>
-	<?php
-}
+
+	<?php if(!$db->num_rows() ) { ?>
+	<div class="profile-empty-state"><?=$language['news_13'];?></div>
+	<?php } else { ?>
+	<div class="news-archive-list">
+		<?php while($arr = $db->get_row() ) { ?>
+		<?php
+		$title = htmlspecialchars(lt_fix_utf8_mojibake((string) $arr['name']), ENT_QUOTES, 'UTF-8');
+		$excerpt = trim(preg_replace('~\s+~u', ' ', strip_tags(cleanhtml(lt_fix_utf8_mojibake((string) $arr['text'])))));
+		?>
+		<article class="news-archive-item">
+			<a class="news-archive-link" href="news.php?id=<?=(int) $arr['id'];?>">
+				<h2 class="news-archive-title"><?=$title;?></h2>
+				<div class="news-archive-date"><?=convent_date($arr['date']);?></div>
+				<?php if ($excerpt !== '') { ?>
+				<p class="news-archive-excerpt"><?=htmlspecialchars($excerpt, ENT_QUOTES, 'UTF-8');?></p>
+				<?php } ?>
+			</a>
+		</article>
+		<?php } ?>
+	</div>
+	<?php } ?>
+</div>
+<?php
 
 //Подвал
 stdfoot();

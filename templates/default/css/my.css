@@ -785,11 +785,16 @@ body.theme-dark .project-help-button:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: 4px;
+  margin-left: 6px;
   color: #1d65d8;
-  font-size: 12px;
+  font-size: 16px;
+  font-weight: 700;
   line-height: 1;
-  vertical-align: 12%;
+  vertical-align: -4%;
+}
+
+.site-user-name .plus-name-badge {
+  font-size: 18px;
 }
 
 .plus-promo-panel {
@@ -936,15 +941,9 @@ body.theme-dark .project-help-button:hover {
   overflow: hidden;
 }
 
-.lt-emoji-toggle,
-.lt-paragraph-toggle {
+.lt-emoji-toggle {
   min-width: 34px;
   padding: 0 10px;
-}
-
-.lt-paragraph-toggle-active {
-  border-color: #1c64d8;
-  color: #1c64d8;
 }
 
 .lt-emoji-panel {
@@ -969,42 +968,6 @@ body.theme-dark .project-help-button:hover {
 
 .lt-emoji-item:hover {
   background: #f3f8ff;
-}
-
-.lt-paragraph-editor {
-  margin-top: 8px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f8fbff;
-}
-
-.lt-paragraph-editor-note {
-  margin-bottom: 6px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.lt-paragraph-editor-box {
-  min-height: 70px;
-  padding: 8px;
-  border: 1px solid #dbe6f1;
-  border-radius: 6px;
-  background: #fff;
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-
-.lt-upload-paragraph-wrap {
-  margin-bottom: 8px;
-}
-
-.lt-upload-paragraph-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 6px;
 }
 
 .ad-sidebar-panel {
@@ -1096,7 +1059,7 @@ body.theme-dark .project-help-button:hover {
   padding: 8px 14px;
   border: 1px solid var(--line-strong);
   border-radius: 4px;
-  background: #ffffff;
+  background: var(--surface);
   color: var(--text);
   font-size: 13px;
   font-weight: 500;
@@ -1104,7 +1067,7 @@ body.theme-dark .project-help-button:hover {
 }
 
 .donate-button:hover {
-  background: var(--surface-muted);
+  background: var(--surface-alt);
   color: var(--text);
 }
 
@@ -3705,13 +3668,13 @@ body.theme-dark .details-bookmark-button-active {
 .details-summary-box {
   margin-top: 18px;
   padding: 14px 16px;
-  border: 1px solid #dce8f5;
+  border: 1px solid var(--line-strong);
   border-radius: 4px;
-  background: #f7fbff;
+  background: var(--surface-alt);
 }
 
 .details-summary-title {
-  color: #111;
+  color: var(--text);
   font-size: 15px;
   font-weight: 700;
   line-height: 1.35;
