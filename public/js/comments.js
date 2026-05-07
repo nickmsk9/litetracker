@@ -1,5 +1,8 @@
 (function () {
-  var AJAX_URL = 'ajax/comments.php';
+  var AJAX_URL = '/ajax/comments.php';
+
+  // WeakMap to track auto-hide timers per notice element
+  var noticeTimers = typeof WeakMap === 'function' ? new WeakMap() : null;
 
   function ready(fn) {
     if (document.readyState === 'loading') {
@@ -25,7 +28,7 @@
         payload = JSON.parse(xhr.responseText || '{}');
       } catch (e) {
         if (typeof onError === 'function') {
-          onError('Не удалось обработать ответ сервера.');
+          onError('Не удалось обработать ответ сервера. Попробуйте обновить страницу.');
         }
         return;
       }
@@ -80,10 +83,17 @@
     notice.hidden = !message;
 
     if (message) {
-      clearTimeout(notice._hideTimer);
-      notice._hideTimer = setTimeout(function () {
-        notice.hidden = true;
-      }, 5000);
+      if (noticeTimers) {
+        clearTimeout(noticeTimers.get(notice));
+        noticeTimers.set(notice, setTimeout(function () {
+          notice.hidden = true;
+        }, 5000));
+      } else {
+        clearTimeout(notice._hideTimer);
+        notice._hideTimer = setTimeout(function () {
+          notice.hidden = true;
+        }, 5000);
+      }
     }
   }
 

@@ -55,11 +55,6 @@ if (!lt_table_exists($tableName)) {
     ajax_cm_response(0, 'Тип комментариев не найден.');
 }
 
-$objectExists = $db->super_query("SELECT id FROM `{$type}` WHERE id = {$objectId} LIMIT 1");
-if (empty($objectExists['id'])) {
-    ajax_cm_response(0, 'Объект не найден.');
-}
-
 comments_ensure_thread_support($type);
 
 // Helper: render fresh comment stream HTML
@@ -114,9 +109,9 @@ if ($action === 'add') {
     $insertOk  = ($db->query($insertSql, 0) !== false);
 
     if (!$insertOk) {
-        // Retry with emoji fallback (same approach as comments.take.php)
-        $fallback = function_exists('mb_ord') || function_exists('iconv');
-        if ($fallback) {
+        // Retry with emoji-to-entity fallback for wide-char characters
+        $canFallback = function_exists('mb_ord') || function_exists('iconv');
+        if ($canFallback) {
             $textSafe = preg_replace_callback(
                 '/[\x{10000}-\x{10FFFF}]/u',
                 function ($m) {
