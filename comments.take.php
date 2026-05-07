@@ -158,7 +158,7 @@ if ($act === 'add') {
     }
 
     if (!$insert_ok) {
-        err($language['default_1'], 'Не удалось добавить комментарий. Попробуйте еще раз позже.', 1);
+        err($language['default_1'], $language['comments_15'], 1);
     }
 
     if ($type === 'users' && $USER['id'] != $object_id) {
@@ -385,7 +385,7 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
             }
 
             if (!$updated) {
-                err($language['default_1'], 'Не удалось обновить комментарий. Попробуйте еще раз позже.', 1);
+                err($language['default_1'], $language['comments_16'], 1);
             }
         }
 
