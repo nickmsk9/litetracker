@@ -222,7 +222,7 @@ if ($event === 'stopped') {
 			$probeCacheKey = 'announce:connectable:'.md5($ip.':'.$port);
 			$cachedConnectable = lt_cache_get($probeCacheKey, 'announce');
 			if ($cachedConnectable === null) {
-				$sockres = @fsockopen($ip, $port, $errno, $errstr, 2);
+				$sockres = fsockopen($ip, $port, $errno, $errstr, 2);
 				$cachedConnectable = ($sockres ? '1' : '0');
 				if ($sockres) {
 					fclose($sockres);

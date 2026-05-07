@@ -12,13 +12,13 @@ by Nick
 require_once __DIR__ . '/bootstrap/php_compat.php';
 
 lt_session_bootstrap();
-@ob_start ();
-@ob_implicit_flush ( 0 );
+ob_start();
+ob_implicit_flush(false);
 
-@error_reporting ( E_ALL ^ E_NOTICE );
-@ini_set ( 'display_errors', false );
-@ini_set ( 'html_errors', false );
-@ini_set ( 'error_reporting', E_ALL ^ E_NOTICE );
+error_reporting(E_ALL ^ E_NOTICE);
+ini_set('display_errors', '0');
+ini_set('html_errors', '0');
+ini_set('error_reporting', (string)(E_ALL ^ E_NOTICE));
 
 
 define ( 'CMS', true );

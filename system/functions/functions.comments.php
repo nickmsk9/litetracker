@@ -446,8 +446,6 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
 
     comments_ensure_thread_support($type);
 
-    echo '<script src="/public/js/comments.js"></script>';
-
     $tableName = comments_table_name($type);
     $objectColumn = comments_object_column($type);
     $countRow = $db->super_query("SELECT COUNT(*) AS cnt FROM `{$tableName}` WHERE `{$objectColumn}` = {$object_id}");

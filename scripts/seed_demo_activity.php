@@ -110,14 +110,15 @@ function demo_seed_ensure_directory($path)
 		return true;
 	}
 
-	return @mkdir($path, 0777, true);
+	$created = mkdir($path, 0777, true);
+	return $created || is_dir($path);
 }
 
 function demo_seed_remove_asset_variants($baseDir, $pattern)
 {
 	foreach (glob(rtrim($baseDir, '/').'/'.$pattern) ?: array() as $filePath) {
 		if (is_file($filePath)) {
-			@unlink($filePath);
+			unlink($filePath);
 		}
 	}
 }
@@ -145,7 +146,7 @@ function demo_seed_copy_category_asset($categoryImage, $targetBaseName, $targetD
 
 	$targetName = $targetBaseName.'.'.$extension;
 	$targetPath = rtrim($targetDir, '/').'/'.$targetName;
-	@copy($sourcePath, $targetPath);
+	copy($sourcePath, $targetPath);
 
 	return $targetName;
 }
@@ -196,7 +197,8 @@ function demo_seed_cleanup($db)
 		foreach ($demoTorrentIds as $torrentId) {
 			demo_seed_remove_asset_variants(dirname(__DIR__).'/public/downloads/images', $torrentId.'.*');
 			demo_seed_remove_asset_variants(dirname(__DIR__).'/public/downloads/screens', $torrentId.'_*.*');
-			@unlink(dirname(__DIR__).'/public/downloads/torrents/'.$torrentId.'.torrent');
+			$_p = dirname(__DIR__).'/public/downloads/torrents/'.$torrentId.'.torrent';
+			if (is_file($_p)) { unlink($_p); }
 		}
 	}
 

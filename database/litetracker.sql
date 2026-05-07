@@ -32,6 +32,24 @@ LOCK TABLES `bans` WRITE;
 /*!40000 ALTER TABLE `bans` DISABLE KEYS */;
 /*!40000 ALTER TABLE `bans` ENABLE KEYS */;
 UNLOCK TABLES;
+DROP TABLE IF EXISTS `birthday_rewards`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `birthday_rewards` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `reward_year` int NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_year` (`user_id`,`reward_year`),
+  KEY `reward_year` (`reward_year`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `birthday_rewards` WRITE;
+/*!40000 ALTER TABLE `birthday_rewards` DISABLE KEYS */;
+/*!40000 ALTER TABLE `birthday_rewards` ENABLE KEYS */;
+UNLOCK TABLES;
 DROP TABLE IF EXISTS `books`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -161,11 +179,12 @@ CREATE TABLE `comments_users` (
   `date_edit` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_users_parent` (`id_users`,`parent_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `comments_users` WRITE;
 /*!40000 ALTER TABLE `comments_users` DISABLE KEYS */;
+INSERT INTO `comments_users` VALUES (1,1,1,'2026-05-07 18:50:59','давайте тут будут комментарии',0,0,NULL),(2,1,1,'2026-05-07 18:51:09','&#128513;',0,0,NULL),(3,1,1,'2026-05-07 18:51:14','давайте!',1,0,NULL);
 /*!40000 ALTER TABLE `comments_users` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `comments_users_reports`;
@@ -223,7 +242,7 @@ CREATE TABLE `cron` (
 
 LOCK TABLES `cron` WRITE;
 /*!40000 ALTER TABLE `cron` DISABLE KEYS */;
-INSERT INTO `cron` VALUES ('autoclean_interval',1000),('autoclean_last',1777907575),('multi_remote',1),('remotecheck_interval',600),('remote_torrents',30),('remotepeers_cleantime',10800),('remote_lastchecked',0),('in_remotecheck',0),('num_checked',332),('last_remotecheck',1777907411),('multi_timeout',100);
+INSERT INTO `cron` VALUES ('autoclean_interval',1000),('autoclean_last',1777907575),('multi_remote',1),('remotecheck_interval',600),('remote_torrents',30),('remotepeers_cleantime',10800),('remote_lastchecked',0),('in_remotecheck',0),('num_checked',341),('last_remotecheck',1778173831),('multi_timeout',100);
 /*!40000 ALTER TABLE `cron` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `faq`;
@@ -327,11 +346,12 @@ CREATE TABLE `news` (
   `id_user` int NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_news_date` (`date`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `news` WRITE;
 /*!40000 ALTER TABLE `news` DISABLE KEYS */;
+INSERT INTO `news` VALUES (1,'что','[b]кукусики[/b]','2026-05-07 18:51:40',1);
 /*!40000 ALTER TABLE `news` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `orbital_blocks`;
@@ -400,10 +420,10 @@ DROP TABLE IF EXISTS `plus_ads`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `plus_ads` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `title` varchar(120) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
-  `body` text COLLATE utf8mb3_bin NOT NULL,
-  `href` varchar(255) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
-  `placement` varchar(32) COLLATE utf8mb3_bin NOT NULL DEFAULT 'sidebar',
+  `title` varchar(120) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `body` text CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
+  `href` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `placement` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL DEFAULT 'sidebar',
   `enabled` tinyint NOT NULL DEFAULT '1',
   `sort_order` int NOT NULL DEFAULT '0',
   `created_at` datetime NOT NULL,
@@ -425,7 +445,7 @@ CREATE TABLE `plus_reactions` (
   `object_type` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   `object_id` int unsigned NOT NULL,
   `user_id` int unsigned NOT NULL,
-  `reaction` enum('like','dislike') COLLATE utf8mb3_bin NOT NULL,
+  `reaction` enum('like','dislike') CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `created_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `object_user` (`object_type`,`object_id`,`user_id`),
@@ -586,12 +606,12 @@ CREATE TABLE `sessions` (
   UNIQUE KEY `session_id` (`session_id`),
   KEY `idx_sessions_user_access` (`user_id`,`last_access`),
   KEY `idx_sessions_last_access` (`last_access`)
-) ENGINE=MyISAM AUTO_INCREMENT=8 DEFAULT CHARSET=cp1251;
+) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=cp1251;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `sessions` WRITE;
 /*!40000 ALTER TABLE `sessions` DISABLE KEYS */;
-INSERT INTO `sessions` VALUES (1,'cfeb7f7a71e2924e22bc498b5fa3ac55',-1,'2026-05-03 13:21:35',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(2,'477ad948299b8fc08c1edae2b8accea1',1,'2026-05-04 18:14:43',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(3,'4419cd46a2c17e5b261d3fa4b79c831e',-1,'2026-05-04 18:12:34',-1062715135,'curl/8.7.1','/index.php'),(4,'6d2a1e1d9e1277da15506290d80c99ef',-1,'2026-05-04 18:12:42',2130706433,'','/profile.php'),(5,'c1d890cd0410ff2a9bb87e3f0b710c51',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/shop.php'),(6,'af21a6b3223d81458ef7f3784f1cf86b',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/index.php'),(7,'870f06414b12fdfd5e1352db79df33a7',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/profile.php');
+INSERT INTO `sessions` VALUES (1,'cfeb7f7a71e2924e22bc498b5fa3ac55',-1,'2026-05-03 13:21:35',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(2,'477ad948299b8fc08c1edae2b8accea1',1,'2026-05-04 18:14:43',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(3,'4419cd46a2c17e5b261d3fa4b79c831e',-1,'2026-05-04 18:12:34',-1062715135,'curl/8.7.1','/index.php'),(4,'6d2a1e1d9e1277da15506290d80c99ef',-1,'2026-05-04 18:12:42',2130706433,'','/profile.php'),(5,'c1d890cd0410ff2a9bb87e3f0b710c51',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/shop.php'),(6,'af21a6b3223d81458ef7f3784f1cf86b',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/index.php'),(7,'870f06414b12fdfd5e1352db79df33a7',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/profile.php'),(8,'38d500d2c5ab1f31d23dd07215e01cb9',1,'2026-05-07 20:14:49',-1185611747,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php');
 /*!40000 ALTER TABLE `sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `shop`;
@@ -787,9 +807,9 @@ CREATE TABLE `users` (
   `theme_dark` tinyint NOT NULL DEFAULT '0',
   `plus_until` datetime DEFAULT NULL,
   `plus_permanent` tinyint NOT NULL DEFAULT '0',
-  `plus_source` varchar(32) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
-  `plus_badge` varchar(32) COLLATE utf8mb3_bin NOT NULL DEFAULT 'star',
-  `profile_slug` varchar(64) COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `plus_source` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL DEFAULT '',
+  `plus_badge` varchar(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL DEFAULT 'star',
+  `profile_slug` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL DEFAULT '',
   `website` text CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `icq` varchar(12) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `banned` smallint NOT NULL DEFAULT '0',
@@ -807,7 +827,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','','admin@admin.com','$2y$12$3ImCq59OZWwh3exrrcbtYOzvSD6sSoGU6WULEyr09QtgMPbJ8HiwW','',-1062715135,6,'2026-05-04 18:14:43','2026-05-04 18:14:43','ec932acf7c4e32b1f8f26ea1911bc30a',0,0,0,0,300,1,'2009-04-04','',0,1,0,NULL,0,'','star','','','',0,0,0,0,0,1);
+INSERT INTO `users` VALUES (1,'admin','1_1778169081_0c7d3930.jpg','admin@admin.com','$2y$12$3ImCq59OZWwh3exrrcbtYOzvSD6sSoGU6WULEyr09QtgMPbJ8HiwW','',-1185611747,6,'2026-05-07 20:06:31','2026-05-04 18:14:43','ec932acf7c4e32b1f8f26ea1911bc30a',0,0,0,0,2272.38,1,'2009-04-04','',0,1,0,NULL,0,'','star','','','',0,0,0,0,0,1);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `users_blacklist`;

@@ -35,7 +35,7 @@ class Filecache {
 
 	function ensureDirectory() {
 		if (!is_dir($this->dir)) {
-			@mkdir($this->dir, 0777, true);
+			mkdir($this->dir, 0777, true);
 		}
 
 		return is_dir($this->dir);
@@ -75,12 +75,12 @@ class Filecache {
 			return false;
 		}
 
-		$content = @file_get_contents($shell);
+		$content = file_get_contents($shell);
 		if ($content === false || $content === '') {
 			return false;
 		}
 
-		$payload = @unserialize($content);
+		$payload = unserialize($content, ['allowed_classes' => false]);
 		if (is_array($payload) && array_key_exists('expires_at', $payload) && array_key_exists('value', $payload)) {
 			if ((int) $payload['expires_at'] < time()) {
 				$this->delete($file);
@@ -91,7 +91,7 @@ class Filecache {
 			return $payload['value'];
 		}
 
-		if ((time() - $this->getDefaultTtl()) < @filemtime($shell)) {
+		if ((time() - $this->getDefaultTtl()) < filemtime($shell)) {
 			$this->memory[$shell] = $payload;
 			return $payload;
 		}
@@ -112,19 +112,19 @@ class Filecache {
 			'value' => $data,
 		));
 
-		$fh = @fopen($shell, 'c');
+		$fh = fopen($shell, 'c');
 		if (!$fh) {
 			return false;
 		}
 
 		$result = false;
-		if (@flock($fh, LOCK_EX)) {
-			@ftruncate($fh, 0);
-			$result = (@fwrite($fh, $payload) !== false);
-			@fflush($fh);
-			@flock($fh, LOCK_UN);
+		if (flock($fh, LOCK_EX)) {
+			ftruncate($fh, 0);
+			$result = (fwrite($fh, $payload) !== false);
+			fflush($fh);
+			flock($fh, LOCK_UN);
 		}
-		@fclose($fh);
+		fclose($fh);
 
 		if ($result) {
 			$this->memory[$shell] = $data;
@@ -139,7 +139,7 @@ class Filecache {
 		unset($this->memory[$shell]);
 
 		if (file_exists($shell)) {
-			return @unlink($shell);
+			return unlink($shell);
 		}
 
 		return false;

@@ -395,8 +395,8 @@ function getip() {
 }
 
 function gzip() {
-	if (@extension_loaded('zlib') && @ini_get('zlib.output_compression') != '1' && @ini_get('output_handler') != 'ob_gzhandler') {
-		@ob_start('ob_gzhandler');
+	if (extension_loaded('zlib') && ini_get('zlib.output_compression') != '1' && ini_get('output_handler') != 'ob_gzhandler') {
+		ob_start('ob_gzhandler');
 	}
 	return;
 }

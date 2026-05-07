@@ -20,7 +20,7 @@ if (!function_exists('lt_session_bootstrap')) {
 if (!function_exists('lt_session_resume')) {
 	function lt_session_resume() {
 		if (session_status() !== PHP_SESSION_ACTIVE) {
-			@session_start();
+			session_start();
 		}
 	}
 }
@@ -28,7 +28,7 @@ if (!function_exists('lt_session_resume')) {
 if (!function_exists('lt_session_commit')) {
 	function lt_session_commit() {
 		if (session_status() === PHP_SESSION_ACTIVE) {
-			@session_write_close();
+			session_write_close();
 		}
 	}
 }
@@ -38,7 +38,7 @@ if (!function_exists('lt_lock_dir')) {
 		$dir = dirname(__DIR__).'/cache/locks';
 
 		if (!is_dir($dir)) {
-			@mkdir($dir, 0777, true);
+			mkdir($dir, 0777, true);
 		}
 
 		return $dir;
@@ -53,19 +53,19 @@ if (!function_exists('lt_lock_acquire')) {
 		}
 
 		$path = lt_lock_dir().'/'.$name.'.lock';
-		$handle = @fopen($path, 'c');
+		$handle = fopen($path, 'c');
 		if (!is_resource($handle)) {
 			return false;
 		}
 
-		if (!@flock($handle, LOCK_EX | LOCK_NB)) {
-			@fclose($handle);
+		if (!flock($handle, LOCK_EX | LOCK_NB)) {
+			fclose($handle);
 			return false;
 		}
 
-		@ftruncate($handle, 0);
-		@fwrite($handle, (string) getmypid());
-		@fflush($handle);
+		ftruncate($handle, 0);
+		fwrite($handle, (string) getmypid());
+		fflush($handle);
 
 		return $handle;
 	}
@@ -77,8 +77,8 @@ if (!function_exists('lt_lock_release')) {
 			return;
 		}
 
-		@flock($handle, LOCK_UN);
-		@fclose($handle);
+		flock($handle, LOCK_UN);
+		fclose($handle);
 	}
 }
 
@@ -179,7 +179,7 @@ if (!function_exists('mysql_connect')) {
 			return false;
 		}
 
-		$connected = @mysqli_real_connect(
+		$connected = mysqli_real_connect(
 			$link,
 			$host,
 			(string) $username,

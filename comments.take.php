@@ -141,24 +141,21 @@ if ($act === 'add') {
     }
 
     $insertFields = array('id_user', $object_name, 'date', 'text', 'id_user_edit', 'date_edit');
-    $insertValues = array($user_id, $object_id, 'NOW()', "'" . $db->safesql($text) . "'", $user_id, 'NOW()');
+    $insertPlaceholders = array($user_id, $object_id, 'NOW()', '?', $user_id, 'NOW()');
 
     if ($supportsThreads) {
         $insertFields[] = 'parent_id';
-        $insertValues[] = $parentId;
+        $insertPlaceholders[] = $parentId;
     }
 
     $insert_sql = "INSERT INTO `{$table_name}` (`".implode('`,`', $insertFields)."`)
-                   VALUES (".implode(', ', $insertValues).")";
+                   VALUES (".implode(', ', $insertPlaceholders).")";
 
-    $insert_ok = ($db->query($insert_sql, 0) !== false);
+    $insert_ok = ($db->pquery($insert_sql, 's', [$text], 0) !== false);
     if (!$insert_ok) {
         $fallbackText = lt_comment_prepare_storage_text($text);
         if ($fallbackText !== $text) {
-            $insertValues[3] = "'" . $db->safesql($fallbackText) . "'";
-            $insert_sql = "INSERT INTO `{$table_name}` (`".implode('`,`', $insertFields)."`)
-                   VALUES (".implode(', ', $insertValues).")";
-            $insert_ok = ($db->query($insert_sql, 0) !== false);
+            $insert_ok = ($db->pquery($insert_sql, 's', [$fallbackText], 0) !== false);
         }
     }
 
@@ -252,14 +249,14 @@ if ($act === 'report' && !empty($_REQUEST['id_comment'])) {
 
     comments_reports_ensure_table();
     $reportsTable = comments_reports_table_name();
-    $existingReport = $db->super_query(
-        "SELECT id
-         FROM `".$reportsTable."`
-         WHERE comment_type = '".$db->safesql($type)."'
+    $existingReport = $db->psuper_query(
+        "SELECT id FROM `".$reportsTable."`
+         WHERE comment_type = ?
            AND comment_id = {$id_comment}
            AND reporter_user_id = ".(int) $USER['id']."
            AND status = 'open'
-         LIMIT 1"
+         LIMIT 1",
+        's', [$type]
     );
 
     if (empty($existingReport['id'])) {
@@ -268,18 +265,10 @@ if ($act === 'report' && !empty($_REQUEST['id_comment'])) {
             err($language['default_1'], 'Слишком много жалоб за короткое время. Повторите попытку позже.', 1);
         }
 
-        $db->query(
+        $db->pquery(
             "INSERT INTO `".$reportsTable."` (`comment_type`, `comment_id`, `object_id`, `comment_user_id`, `reporter_user_id`, `comment_text_snapshot`, `status`, `created_at`)
-             VALUES (
-                '".$db->safesql($type)."',
-                {$id_comment},
-                {$object_id},
-                ".(int) $arr['id_user'].",
-                ".(int) $USER['id'].",
-                '".$db->safesql((string) ($arr['text'] ?? ''))."',
-                'open',
-                NOW()
-             )"
+             VALUES (?, {$id_comment}, {$object_id}, ".(int) $arr['id_user'].", ".(int) $USER['id'].", ?, 'open', NOW())",
+            'ss', [$type, (string) ($arr['text'] ?? '')]
         );
     }
 
@@ -319,9 +308,8 @@ if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
     }
 
     $deletedByAdmin = (!empty($PRIV['comments_delete']) && ((int) $USER['id'] !== (int) $arr['id_user'] || $type === 'users'));
-    $deletedText = $db->safesql(lt_comment_deleted_placeholder($deletedByAdmin));
-    $delete_sql = "UPDATE `{$table_name}` SET text = '{$deletedText}', id_user_edit = ".(int) $USER['id'].", date_edit = NOW() WHERE id = {$id_comment} AND `{$object_name}` = {$object_id}";
-    $db->query($delete_sql, 0);
+    $deletedText = lt_comment_deleted_placeholder($deletedByAdmin);
+    $db->pquery("UPDATE `{$table_name}` SET text = ?, id_user_edit = ".(int) $USER['id'].", date_edit = NOW() WHERE id = {$id_comment} AND `{$object_name}` = {$object_id}", 's', [$deletedText], 0);
 
     header('Location:' . comment_return_url($file, $object_id, 'status=3'));
     die();
@@ -371,20 +359,18 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
                 err($language['default_1'], $language['comments_9'], 1);
             }
 
-            $update[] = 'text="' . $db->safesql($text) . '"';
+            $update[] = 'text=?';
             $update[] = 'id_user_edit=' . (int) $USER['id'];
             $update[] = 'date_edit=NOW()';
         }
 
         if (count($update)) {
             $update_sql = "UPDATE `{$table_name}` SET " . implode(',', $update) . " WHERE id = {$id_comment}";
-            $updated = ($db->query($update_sql, 0) !== false);
+            $updated = ($db->pquery($update_sql, 's', [$text], 0) !== false);
             if (!$updated) {
                 $fallbackText = lt_comment_prepare_storage_text($text);
                 if ($fallbackText !== $text) {
-                    $update[0] = 'text="' . $db->safesql($fallbackText) . '"';
-                    $update_sql = "UPDATE `{$table_name}` SET " . implode(',', $update) . " WHERE id = {$id_comment}";
-                    $updated = ($db->query($update_sql, 0) !== false);
+                    $updated = ($db->pquery($update_sql, 's', [$fallbackText], 0) !== false);
                 }
             }
 

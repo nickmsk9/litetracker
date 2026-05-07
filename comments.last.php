@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -9,69 +9,76 @@ by Nick
 ===================================================================
 */
 
-//Подключаем главный системный файл
 require 'system/init.php';
 is_login();
 
-//Постраничная навигация
-$res = $db->query("SELECT * FROM comments_torrents");
+$res = $db->query("SELECT COUNT(*) AS cnt FROM comments_torrents");
+$countRow = $db->get_row($res);
+$count = (int) ($countRow['cnt'] ?? 0);
 
-$count = $db->num_rows($res);
-list($pagertop, $pagerbottom, $limit) = pager('20', $count, 'comments.last.php?'); //Делим на страницы
+list($pagertop, $pagerbottom, $limit) = pager('20', $count, 'comments.last.php?');
 
-//Query to database
-$query  = "SELECT comments_torrents.* , comments_torrents.id AS comment_id  , torrents.name AS torrent_name , torrents.id AS torrent_id
-		   FROM comments_torrents
-		   LEFT JOIN torrents ON torrents.id =  comments_torrents.id_torrents
-		   ORDER BY  comments_torrents.date DESC
-		   ".$limit."
-		   ";
-$sql = $db->query($query);
+$sql = $db->query(
+    "SELECT ct.*, ct.id AS comment_id, ct.id_user AS comment_user_id,
+            t.name AS torrent_name, t.id AS torrent_id
+     FROM comments_torrents ct
+     LEFT JOIN torrents t ON t.id = ct.id_torrents
+     ORDER BY ct.date DESC
+     " . $limit
+);
 
-//Если нету записей
-if(!$db->num_rows($sql) ) {
-	err('Ошибка' , 'Последних отзывов не было найдено' , 1);
+if (!$db->num_rows($sql)) {
+    head('Последние комментарии');
+    begin_frame('Последние комментарии');
+    msg('Ошибка', 'Последних отзывов не было найдено', 1);
+    end_frame();
+    foot();
+    die();
 }
 
-
-
-//Заголовок
-head('Последние отзывы');
-
-begin_frame('Последние отзывы');
-
-//Проверка, существуют ли комментарии
-
+head('Последние комментарии');
+begin_frame('Последние комментарии');
 echo $pagertop;
-//Выводим в цикле комментарии
-while($arr  = $db->get_row($sql) )
-{
-	$id = $arr['comment_id']; //Номер комментария
-	$text = cleanhtml($arr['text']); //Текст комментария
 
+echo '<div class="last-comments-list">';
+while ($arr = $db->get_row($sql)) {
+    $user       = get_user_info((int) $arr['comment_user_id']);
+    $userId     = (int) $user['id'];
+    $userName   = htmlspecialchars((string) $user['name'], ENT_QUOTES, 'UTF-8');
+    $userClass  = (int) $user['class'];
+    $commentDate = convent_date($arr['date']);
+    $editDate   = ($arr['date_edit'] !== '0000-00-00 00:00:00')
+                  ? htmlspecialchars($language['comments_3'] . ' ' . convent_date($arr['date_edit']), ENT_QUOTES, 'UTF-8')
+                  : '';
+    $dateLabel  = ($editDate ?: $commentDate);
 
-	$user = get_user_info($arr['id_user']);
-	$user_id = $user['id']; //Номер пользователя
-	$avatar = ($user['avatar'] == "" ? '<center><img src="public/images/default_avatar.gif" border="0" width="80"></center>' : '<center><img src="public/avatars/'.$user['avatar'].'" border="0" width="80"></center>'); //Фотография пользователя
+    $avatarSrc  = (!empty($user['avatar']) && is_file('public/avatars/small/' . $user['avatar']))
+                  ? 'public/avatars/small/' . $user['avatar']
+                  : 'public/images/default_avatar.gif';
 
-	$user_name = $user['name']; //Имя пользователя
-	$user_class = $user['class']; //Класс пользователя
-	$date = convent_date($arr['date']);
+    $textHtml   = cleanhtml((string) $arr['text']);
 
-	$append_edit = ($arr['date_edit'] != '0000-00-00 00:00:00' ?   $language['comments_3'].' '.convent_date($arr['date_edit']) : ''); //Дата правки комментария
+    $torrentId   = (int) $arr['torrent_id'];
+    $torrentName = htmlspecialchars((string) $arr['torrent_name'], ENT_QUOTES, 'UTF-8');
 
-	$torrent_name = htmlspecialchars($arr['torrent_name']);
-	$torrent_id = $arr['torrent_id'];
-
-	require 'templates/'.$config['template'].'/tpl.comments.php';
+    echo '<article class="last-comment-item">';
+    echo '<a class="last-comment-avatar" href="' . profile_href($userId) . '">'
+       . '<img src="' . htmlspecialchars($avatarSrc, ENT_QUOTES, 'UTF-8') . '" alt="' . $userName . '" width="40" height="40">'
+       . '</a>';
+    echo '<div class="last-comment-body">';
+    echo '<div class="last-comment-meta">';
+    echo '<a class="last-comment-author" href="' . profile_href($userId) . '">'
+       . get_user_color($userClass, $userName) . '</a>';
+    echo '<span class="last-comment-sep">→</span>';
+    echo '<a class="last-comment-torrent" href="details.php?id=' . $torrentId . '">' . $torrentName . '</a>';
+    echo '<span class="last-comment-date">' . htmlspecialchars($dateLabel, ENT_QUOTES, 'UTF-8') . '</span>';
+    echo '</div>';
+    echo '<div class="last-comment-text">' . $textHtml . '</div>';
+    echo '</div>';
+    echo '</article>';
 }
+echo '</div>';
 
 echo $pagerbottom;
-
 end_frame();
-
-//Подвал
 foot();
-
-
-?>

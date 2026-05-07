@@ -141,10 +141,8 @@ function admin_dashboard_settings_schema()
 			'title' => 'Системные функции',
 			'description' => 'Переключатели поиска и защитных механизмов, включая локальную CAPTCHA для форм сайта.',
 			'fields' => array(
-				array('key' => 'search_forum', 'label' => 'Форумный вид поиска', 'type' => 'checkbox', 'description' => 'Меняет представление результатов поиска на форумный формат.'),
-				array('key' => 'search_video', 'label' => 'Поиск по видео', 'type' => 'checkbox', 'description' => 'Включает отдельный модуль поиска по видео-данным.'),
+				array('key' => 'search_forum', 'label' => 'Форумный вид поиска', 'type' => 'checkbox', 'description' => 'Показывает список категорий на странице browse.php?act=all.'),
 				array('key' => 'search_image', 'label' => 'Поиск по изображениям', 'type' => 'checkbox', 'description' => 'Включает отдельный модуль поиска по изображениям.'),
-				array('key' => 'search_video_lenght', 'label' => 'Минимум символов для видео', 'type' => 'int', 'min' => 0, 'description' => 'С какого размера запроса показывать видео-результаты. 0 значит без ограничения.'),
 				array('key' => 'search_image_lenght', 'label' => 'Минимум символов для изображений', 'type' => 'int', 'min' => 0, 'description' => 'С какого размера запроса показывать результаты по изображениям. 0 значит без ограничения.'),
 				array('key' => 'captcha', 'label' => 'Включить локальную CAPTCHA', 'type' => 'checkbox', 'description' => 'Главный переключатель локальной проверки без внешних сервисов.'),
 				array('key' => 'reCaptcha_login', 'label' => 'CAPTCHA на входе', 'type' => 'checkbox', 'description' => 'Показывать проверку на странице авторизации.'),
@@ -180,7 +178,7 @@ function admin_dashboard_php_literal($value, $type)
 function admin_dashboard_update_config_values($updates, $fieldMap)
 {
 	$configPath = __DIR__.'/system/config/config.php';
-	$content = @file_get_contents($configPath);
+	$content = file_get_contents($configPath);
 
 	if ($content === false) {
 		return 'Не удалось прочитать system/config/config.php.';
@@ -210,7 +208,7 @@ function admin_dashboard_update_config_values($updates, $fieldMap)
 		}
 	}
 
-	if (@file_put_contents($configPath, $content) === false) {
+	if (file_put_contents($configPath, $content) === false) {
 		return 'Не удалось записать изменения в system/config/config.php.';
 	}
 
@@ -225,10 +223,10 @@ function admin_dashboard_flush_cache()
 
 	if (is_object($memcached)) {
 		if (isset($memcached->client) && is_object($memcached->client) && method_exists($memcached->client, 'flush')) {
-			@$memcached->client->flush();
+			$memcached->client->flush();
 			$flushed = true;
 		} elseif (method_exists($memcached, 'flush')) {
-			@$memcached->flush();
+			$memcached->flush();
 			$flushed = true;
 		}
 	}
@@ -239,7 +237,7 @@ function admin_dashboard_flush_cache()
 		if (is_array($files)) {
 			foreach ($files as $file) {
 				if (is_file($file)) {
-					@unlink($file);
+					unlink($file);
 				}
 			}
 		}

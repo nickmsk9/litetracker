@@ -79,6 +79,8 @@ if($act == 'edit' && $id) {
 	//Обработка новости
 	if(count($_POST) ) {
 		$update = array();
+		$updateParams = array();
+		$updateTypes = '';
 
 		//Название
 		$name = lt_fix_utf8_mojibake(trim((string) ($_POST['name'] ?? '')));
@@ -86,7 +88,7 @@ if($act == 'edit' && $id) {
 			if(empty($name) ) {
 				err($language['default_1'] , $language['news_2'] , 1);
 			}
-			$update[] = "name='".$db->safesql($name)."'";
+			$update[] = 'name=?'; $updateParams[] = $name; $updateTypes .= 's';
 		}
 
 
@@ -96,7 +98,7 @@ if($act == 'edit' && $id) {
 			if(empty($text) ) {
 				err($language['default_1'] , $language['news_3'] , 1);
 			}
-			$update[] = "text='".$db->safesql($text)."'";
+			$update[] = 'text=?'; $updateParams[] = $text; $updateTypes .= 's';
 		}
 
 		//Поднятие новости
@@ -106,7 +108,8 @@ if($act == 'edit' && $id) {
 		}
 		//Обновляем новость
 		if(count($update)) {
-			$db->query("UPDATE news SET ".implode(',' , $update)." WHERE id=".$id."");
+			$updateParams[] = (int) $id; $updateTypes .= 'i';
+			$db->pquery("UPDATE news SET ".implode(',' , $update)." WHERE id=?", $updateTypes, $updateParams);
 		}
 
 		//Удаляем старый кеш
@@ -175,7 +178,7 @@ if($act == 'add') {
 		}
 
 		//Добавляем новость
-		$db->query("INSERT INTO news (name , text , id_user , date) VALUES ('".$db->safesql($name)."' , '".$db->safesql($text)."' , '".$USER['id']."' , NOW())");
+		$db->pquery("INSERT INTO news (name , text , id_user , date) VALUES (?, ?, ?, NOW())", 'ssi', [$name, $text, (int) $USER['id']]);
 		$id = $db->insert_id();
 
 

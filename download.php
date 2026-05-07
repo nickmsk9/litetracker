@@ -93,7 +93,7 @@ $useLocalRetracker = (!$USER || !isset($USER['download_local_retracker']) || !em
 $announce_urls_list = lt_torrent_site_announce_urls($USER ?: null, $useLocalRetracker);
 
 //Учитываем , что пользователь скачал данный релиз
-$db->query('UPDATE torrents SET downloaded = (downloaded + 1) WHERE id="'.$db->safesql($id).'"');
+$db->pquery('UPDATE torrents SET downloaded = (downloaded + 1) WHERE id=?', 'i', [$id]);
 
 //Magnet
 if($magnet) {

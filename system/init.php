@@ -12,13 +12,13 @@ by Nick
 require_once __DIR__ . '/bootstrap/php_compat.php';
 
 lt_session_bootstrap();
-@ob_start ();
-@ob_implicit_flush ( 0 );
+ob_start();
+ob_implicit_flush(false);
 
-@error_reporting ( E_ALL ^ E_NOTICE );
-@ini_set ( 'display_errors', false );
-@ini_set ( 'html_errors', false );
-@ini_set ( 'error_reporting', E_ALL ^ E_NOTICE );
+error_reporting(E_ALL ^ E_NOTICE);
+ini_set('display_errors', '0');
+ini_set('html_errors', '0');
+ini_set('error_reporting', (string)(E_ALL ^ E_NOTICE));
 
 
 define ( 'CMS', true );
@@ -98,7 +98,7 @@ gzip();
 $db = new db;
 $db->connect($mysql['user'] , $mysql['password'] , $mysql['db'] ,  $mysql['host']);
 if (!empty($config['mysql_timezone_offset'])) {
-	$db->query("SET time_zone = '".$db->safesql($config['mysql_timezone_offset'])."'", 0);
+	$db->pquery("SET time_zone = ?", 's', [$config['mysql_timezone_offset']], 0);
 }
 
 //Запускаем мод ЧПУ

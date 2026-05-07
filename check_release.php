@@ -134,17 +134,26 @@ if($_POST['act'] == 'delete') {
 		$arr = $db->get_row();
 
 		//Удаляем торрент - файл
-		@unlink('public/downloads/torrents/'.$id.'.torrent');
+		$torrentPath = 'public/downloads/torrents/'.$id.'.torrent';
+		if (is_file($torrentPath)) {
+			unlink($torrentPath);
+		}
 
 		//Удаляем картинку
 		if($arr['image']) {
-				@unlink('public/downloads/images/'.$arr['image']);
+			$imagePath = 'public/downloads/images/'.$arr['image'];
+			if (is_file($imagePath)) {
+				unlink($imagePath);
+			}
 		}
 
 		//Удаляем скринщоты
 		for($z = 1 ; $z <= 4 ; $z++) {
 			if(!empty($arr['screen_'.$z])) {
-				@unlink('public/downloads/images/'.$arr['screen_'.$z]);
+				$screenPath = 'public/downloads/images/'.$arr['screen_'.$z];
+				if (is_file($screenPath)) {
+					unlink($screenPath);
+				}
 			}
 		}
 

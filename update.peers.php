@@ -62,8 +62,8 @@ function update_peers_finish($lock = null, array $payload = array())
 	exit;
 }
 
-@ignore_user_abort(true);
-@set_time_limit(0);
+ignore_user_abort(true);
+set_time_limit(0);
 
 //Подключаем главный системный файл
 require DIRNAME.'/system/init.autoclean.php';

@@ -45,7 +45,7 @@ $ltAnnounceHost = trim((string) lt_env_value('LITETRACKER_ANNOUNCE_HOST', 'bt.lo
 $ltAnnouncePath = trim((string) lt_env_value('LITETRACKER_ANNOUNCE_PATH', '/announce.php'));
 $ltCookieSalt = trim((string) lt_env_value('LITETRACKER_COOKIE_SALT', sha1($ltRootDir.'|'.$ltPublicHost)));
 $ltTimezone = trim((string) lt_env_value('LITETRACKER_TIMEZONE', 'Europe/Moscow'));
-if ($ltTimezone === '' || @date_default_timezone_set($ltTimezone) === false) {
+if ($ltTimezone === '' || date_default_timezone_set($ltTimezone) === false) {
 	$ltTimezone = 'Europe/Moscow';
 	date_default_timezone_set($ltTimezone);
 }
@@ -109,11 +109,9 @@ $config  = array(
 
 
 //Модули поиска
-'search_forum' => 0 , //Включить форумно-видовой вывод
-'search_video' => 0 , //Включить модуль "Видео" в поиске
-'search_image' => 0 , //Включить модуль "Картинки" в поиске
-'search_video_lenght' => 0 , //Количество символов , при котором будут выводится видео
-'search_image_lenght' => 0 , //Количество символов , при котором будут выводится видео
+'search_forum' => 0 , //Включить форумный вид (список категорий) на главной поиска
+'search_image' => 0 , //Включить модуль «Картинки» в поиске
+'search_image_lenght' => 0 , //Количество символов, при котором выводятся картинки
 
 
 

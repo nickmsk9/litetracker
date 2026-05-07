@@ -75,7 +75,11 @@ function lt_upload_ensure_directory($path)
 		return true;
 	}
 
-	return @mkdir($path, 0777, true);
+	$created = mkdir($path, 0777, true);
+	if (!$created && !is_dir($path)) {
+		return false;
+	}
+	return true;
 }
 
 function lt_upload_image_extension($filename)
@@ -107,7 +111,7 @@ function lt_upload_validate_image($file, $label)
 		err($language['default_1'], $label.' превышает допустимый размер '.mksize($config['max_size_image']).'.', 1);
 	}
 
-	$imageInfo = @getimagesize($tmp);
+	$imageInfo = getimagesize($tmp);
 	if (!$imageInfo || empty($imageInfo[2]) || !in_array((int) $imageInfo[2], array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG), true)) {
 		err($language['default_1'], $label.' не похож на изображение.', 1);
 	}
@@ -123,7 +127,7 @@ function lt_upload_move_uploaded_image($file, $directory, $targetName, $label)
 		err($language['default_1'], 'Не удалось подготовить каталог для загрузки файлов.', 1);
 	}
 
-	if (!@move_uploaded_file((string) $file['tmp_name'], $directory.$targetName)) {
+	if (!move_uploaded_file((string) $file['tmp_name'], $directory.$targetName)) {
 		err($language['default_1'], 'Не удалось сохранить '.$label.'.', 1);
 	}
 
@@ -143,7 +147,7 @@ function lt_upload_retarget_asset($directory, $oldName, $newName)
 		return $oldName;
 	}
 
-	if (@rename($oldPath, $newPath)) {
+	if (rename($oldPath, $newPath)) {
 		return $newName;
 	}
 
@@ -213,11 +217,11 @@ function lt_upload_save_tags($catid, $tags)
 	foreach ($tagList as $tag) {
 		$key = (function_exists('mb_strtolower') ? mb_strtolower($tag, 'UTF-8') : strtolower($tag));
 		if (isset($existing[$key])) {
-			$db->query("UPDATE tags SET howmuch = (howmuch + 1) WHERE category = ".(int) $catid." AND name = '".$db->safesql($existing[$key])."'");
+			$db->pquery("UPDATE tags SET howmuch = (howmuch + 1) WHERE category = ".(int) $catid." AND name = ?", 's', [$existing[$key]]);
 			continue;
 		}
 
-		$db->query("INSERT INTO tags (category, name, howmuch) VALUES (".(int) $catid.", '".$db->safesql($tag)."', 1)");
+		$db->pquery("INSERT INTO tags (category, name, howmuch) VALUES (".(int) $catid.", ?, 1)", 's', [$tag]);
 		$existing[$key] = $tag;
 	}
 }
@@ -309,7 +313,7 @@ function lt_upload_parse_torrent()
 	}
 
 	$infohash = sha1($info['string']);
-	$exists = $db->super_query("SELECT id FROM torrents WHERE infohash = '".$db->safesql($infohash)."' LIMIT 1");
+	$exists = $db->psuper_query("SELECT id FROM torrents WHERE infohash = ? LIMIT 1", 's', [$infohash]);
 	if (!empty($exists['id'])) {
 		err($language['default_1'], 'Данный релиз уже есть', 1);
 	}
@@ -430,16 +434,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	$externalTrackers = lt_torrent_external_trackers($torrent['trackers']);
 	$isMultitracker = ($externalTrackers ? 1 : 0);
 
-	$insert = $db->query("INSERT INTO torrents
+	$insert = $db->pquery(
+		"INSERT INTO torrents
 		(name, filename, num_files, type, size, descr, infohash, tags, id_category, id_user, added, image, multi, downloaded, completed, last_action, screen_1, screen_2, screen_3, screen_4, video_vkontakte, news, content_type, subtitles, languages, genres, meta_info, countries)
 		VALUES
-		('".$db->safesql($form['name'])."', '".$db->safesql($torrent['filename'])."', ".count($torrent['filelist']).", '".$db->safesql($torrent['type'])."', '".$torrent['total_length']."', '".$db->safesql($form['descr'])."', '".$db->safesql($torrent['infohash'])."', '".$db->safesql($tags)."', ".(int) $form['catid'].", ".(int) $USER['id'].", NOW(), '".$db->safesql($coverName)."', '".$isMultitracker."', 0, 0, NOW(), '".$db->safesql($screenshots[0])."', '".$db->safesql($screenshots[1])."', '".$db->safesql($screenshots[2])."', '".$db->safesql($screenshots[3])."', '', 0, '".$db->safesql($contentType)."', '".$db->safesql($metadataValues['subtitles'])."', '".$db->safesql($metadataValues['language'])."', '".$db->safesql($metadataValues['genre'])."', '".$db->safesql($metadataValues['info'])."', '".$db->safesql($metadataValues['country'])."')", 0);
+		(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, 0, 0, NOW(), ?, ?, ?, ?, '', 0, ?, ?, ?, ?, ?, ?)",
+		'ssssisssiisissssssssss',
+		[
+			$form['name'], $torrent['filename'], count($torrent['filelist']), $torrent['type'],
+			(int) $torrent['total_length'], $form['descr'], $torrent['infohash'], $tags,
+			(int) $form['catid'], (int) $USER['id'], $coverName, (string) $isMultitracker,
+			$screenshots[0], $screenshots[1], $screenshots[2], $screenshots[3],
+			$contentType, $metadataValues['subtitles'], $metadataValues['language'],
+			$metadataValues['genre'], $metadataValues['info'], $metadataValues['country'],
+		],
+		0
+	);
 
 	if (!$insert) {
-		@unlink('public/downloads/images/'.$coverName);
+		$coverPath = 'public/downloads/images/'.$coverName;
+		if (is_file($coverPath)) {
+			unlink($coverPath);
+		}
 		foreach ($screenshots as $screen) {
 			if ($screen !== '') {
-				@unlink('public/downloads/screens/'.$screen);
+				$screenPath = 'public/downloads/screens/'.$screen;
+				if (is_file($screenPath)) {
+					unlink($screenPath);
+				}
 			}
 		}
 		err($language['default_1'], $language['upload_37'], 1);
@@ -466,11 +488,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	$screenshots[2] = ($screenshots[2] ?? '');
 	$screenshots[3] = ($screenshots[3] ?? '');
 
-	$db->query("UPDATE torrents SET image = '".$db->safesql($coverName)."', screen_1 = '".$db->safesql($screenshots[0])."', screen_2 = '".$db->safesql($screenshots[1])."', screen_3 = '".$db->safesql($screenshots[2])."', screen_4 = '".$db->safesql($screenshots[3])."' WHERE id = ".$id);
+	$db->pquery(
+		"UPDATE torrents SET image=?, screen_1=?, screen_2=?, screen_3=?, screen_4=? WHERE id=?",
+		'sssssi',
+		[$coverName, $screenshots[0], $screenshots[1], $screenshots[2], $screenshots[3], $id]
+	);
 
 	$db->query("DELETE FROM files WHERE id_torrent = ".$id);
 	foreach ($torrent['filelist'] as $fileRow) {
-		$db->query("INSERT INTO files (id_torrent, filename, size) VALUES (".$id.", '".$db->safesql($fileRow[0])."', '".(int) $fileRow[1]."')");
+		$db->pquery("INSERT INTO files (id_torrent, filename, size) VALUES (?, ?, ?)", 'isi', [$id, $fileRow[0], (int) $fileRow[1]]);
 	}
 
 	lt_torrent_store_trackers($id, $externalTrackers);
@@ -481,7 +507,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		err('Ошибка', 'Не удалось подготовить каталог для torrent-файлов.', 1);
 	}
 
-	if (!@move_uploaded_file($torrent['tmp_name'], 'public/downloads/torrents/'.$id.'.torrent')) {
+	if (!move_uploaded_file($torrent['tmp_name'], 'public/downloads/torrents/'.$id.'.torrent')) {
 		err('Ошибка', 'Релиз добавлен, но torrent-файл не удалось сохранить на сервер.', 1);
 	}
 

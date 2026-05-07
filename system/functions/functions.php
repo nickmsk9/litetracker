@@ -244,12 +244,13 @@ function lt_plus_extend_subscription($userId, $months = 1, $source = 'bonus_shop
 		return false;
 	}
 
-	$db->query(
+	$db->pquery(
 		"UPDATE users
 		 SET plus_until = DATE_ADD(IF(plus_until IS NOT NULL AND plus_until > NOW(), plus_until, NOW()), INTERVAL ".$months." MONTH),
 		     plus_permanent = 0,
-		     plus_source = '".$db->safesql($source)."'
-		 WHERE id = ".$userId
+		     plus_source = ?
+		 WHERE id = ".$userId,
+		's', [$source]
 	);
 	$memcached->delete('user_'.$userId, 0);
 
@@ -326,7 +327,7 @@ function lt_profile_slug_user_id($slug)
 		return 0;
 	}
 
-	$row = $db->super_query("SELECT id FROM users WHERE profile_slug = '".$db->safesql($slug)."' LIMIT 1");
+	$row = $db->psuper_query("SELECT id FROM users WHERE profile_slug = ? LIMIT 1", 's', [$slug]);
 
 	return (int) ($row['id'] ?? 0);
 }
@@ -357,10 +358,11 @@ function lt_reaction_set($objectType, $objectId, $reaction, $userId = 0)
 		return false;
 	}
 
-	$db->query(
+	$db->pquery(
 		"INSERT INTO plus_reactions (object_type, object_id, user_id, reaction, created_at)
-		 VALUES ('".$db->safesql($objectType)."', ".$objectId.", ".$userId.", '".$reaction."', NOW())
-		 ON DUPLICATE KEY UPDATE reaction = VALUES(reaction), created_at = NOW()"
+		 VALUES (?, ".$objectId.", ".$userId.", '".$reaction."', NOW())
+		 ON DUPLICATE KEY UPDATE reaction = VALUES(reaction), created_at = NOW()",
+		's', [$objectType]
 	);
 
 	return true;
@@ -380,11 +382,12 @@ function lt_reaction_stats($objectType, $objectId, $userId = 0)
 		return $result;
 	}
 
-	$sql = $db->query(
+	$sql = $db->pquery(
 		"SELECT reaction, COUNT(*) AS cnt
 		 FROM plus_reactions
-		 WHERE object_type = '".$db->safesql($objectType)."' AND object_id = ".$objectId."
-		 GROUP BY reaction"
+		 WHERE object_type = ? AND object_id = ".$objectId."
+		 GROUP BY reaction",
+		's', [$objectType]
 	);
 	while ($row = $db->get_row($sql)) {
 		$key = lt_reaction_normalize($row['reaction'] ?? 'like');
@@ -393,13 +396,14 @@ function lt_reaction_stats($objectType, $objectId, $userId = 0)
 	$db->free($sql);
 
 	if ($userId > 0) {
-		$row = $db->super_query(
+		$row = $db->psuper_query(
 			"SELECT reaction
 			 FROM plus_reactions
-			 WHERE object_type = '".$db->safesql($objectType)."'
+			 WHERE object_type = ?
 			   AND object_id = ".$objectId."
 			   AND user_id = ".$userId."
-			 LIMIT 1"
+			 LIMIT 1",
+			's', [$objectType]
 		);
 		$result['user'] = (string) ($row['reaction'] ?? '');
 	}
@@ -420,12 +424,13 @@ function lt_reaction_users($objectType, $objectId)
 		return $rows;
 	}
 
-	$sql = $db->query(
+	$sql = $db->pquery(
 		"SELECT r.reaction, r.created_at, u.id, u.name, u.class, u.plus_until, u.plus_permanent, u.plus_badge, u.profile_slug
 		 FROM plus_reactions AS r
 		 INNER JOIN users AS u ON u.id = r.user_id
-		 WHERE r.object_type = '".$db->safesql($objectType)."' AND r.object_id = ".$objectId."
-		 ORDER BY r.created_at DESC, r.id DESC"
+		 WHERE r.object_type = ? AND r.object_id = ".$objectId."
+		 ORDER BY r.created_at DESC, r.id DESC",
+		's', [$objectType]
 	);
 	while ($row = $db->get_row($sql)) {
 		$rows[] = $row;
@@ -447,12 +452,13 @@ function lt_ads_fetch($placement = 'sidebar', $limit = 3)
 		$placement = 'sidebar';
 	}
 
-	$sql = $db->query(
+	$sql = $db->pquery(
 		"SELECT *
 		 FROM plus_ads
-		 WHERE enabled = 1 AND placement = '".$db->safesql($placement)."'
+		 WHERE enabled = 1 AND placement = ?
 		 ORDER BY sort_order ASC, id DESC
-		 LIMIT ".$limit
+		 LIMIT ".$limit,
+		's', [$placement]
 	);
 	$rows = array();
 	while ($row = $db->get_row($sql)) {
@@ -615,8 +621,8 @@ function user_is_online($userId, $thresholdMinutes = 15)
 		return $cache[$cacheKey];
 	}
 
-	$onlineFrom = $db->safesql(get_date_time(gmtime() - ($thresholdMinutes * 60)));
-	$row = $db->super_query("SELECT user_id FROM sessions WHERE user_id = ".$userId." AND last_access >= '".$onlineFrom."' LIMIT 1");
+	$onlineFrom = get_date_time(gmtime() - ($thresholdMinutes * 60));
+	$row = $db->psuper_query("SELECT user_id FROM sessions WHERE user_id = ".$userId." AND last_access >= ? LIMIT 1", 's', [$onlineFrom]);
 	$cache[$cacheKey] = !empty($row['user_id']);
 
 	return $cache[$cacheKey];
@@ -734,6 +740,26 @@ function gzip() {
 	$already_loaded = true;
 }
 
+// Resolves a Vite entry-point to a hashed output URL.
+// Falls back to the source path if the manifest doesn't exist yet.
+function lt_asset_url($entry) {
+    static $manifest = null;
+    if ($manifest === null) {
+        $manifestPath = dirname(__DIR__, 2) . '/public/dist/manifest.json';
+        if (is_file($manifestPath)) {
+            $decoded  = json_decode(file_get_contents($manifestPath), true);
+            $manifest = is_array($decoded) ? $decoded : [];
+        } else {
+            $manifest = [];
+        }
+    }
+    $key = ltrim($entry, '/');
+    if (!empty($manifest[$key]['file'])) {
+        return 'public/dist/' . $manifest[$key]['file'];
+    }
+    return $entry;
+}
+
 //Head голова сайта
 function head($title = '' , $light = false , $description = '' , $keywords = '' ) {
 	global $config , $language , $USER , $db , $memcached, $PRIV , $rewrite;
@@ -753,12 +779,9 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 
 
 	//Формируем header
-	$header .= '<script type="text/javascript" src="public/js/jquery.js"></script>
-	';
-	$header .= '<script type="text/javascript" src="public/js/main.js"></script>
-	';
-	$header .= '<script type="text/javascript" src="public/js/plus.features.js"></script>
-	';
+	$header .= '<script type="text/javascript" src="public/js/jquery.js"></script>' . "\n";
+	$appBundle = lt_asset_url('src/app.js');
+	$header .= '<script type="module" src="' . htmlspecialchars($appBundle, ENT_QUOTES, 'UTF-8') . '"></script>' . "\n";
 	$header .=	'<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 	';
 	$header .=	'<title>'.$sitename.' » '.$title.'</title>
@@ -900,7 +923,7 @@ function user_check() {
 
 	//Обновляем время, если оно изменилось
     if (strtotime($row['last_access']) <= strtotime(get_date_time(gmtime() - (10*60)) ) ) {
-       $updateset[] = 'last_access = "' . $db->safesql(get_date_time()).'"';
+       $updateset[] = 'last_access = "' . get_date_time() . '"';
 	}
 
 	//Если что-нибудь требует обновлению - обновляем :D
@@ -921,56 +944,35 @@ function user_check() {
 	user_session();
 }
 
-//Определяем сессию
 function user_session()
 {
 	global $USER , $config , $memcached ,$db;
 
-	$update = array();
-
 	//Определяем session_id
 	$session_id = session_id();
-	$update[] = 'session_id="'.$db->safesql($session_id).'"';
-
-	//Определяем id пользователя
-	if($USER) {
-		$user_id = $USER['id'];
-	}
-	else {
-		$user_id = '-1';
-	}
-	$update[] = 'user_id="'.$db->safesql($user_id).'"';
-
-
-	//Определяем время последнее вермя посещения сайта
+	$user_id    = ($USER ? $USER['id'] : '-1');
 	$last_access = get_date_time(time());
-	$update[] = 'last_access="'.$last_access.'"';
-
-	//Определяем ip
-	$ip = ip2long_db($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
-	$update[] = 'ip="'.$ip.'"';
-
-
-	//Определяем user_agent
-	$user_agent =  $_SERVER["HTTP_USER_AGENT"] ?? '';
-	$update[] = 'user_agent="'.$db->safesql($user_agent).'"';
-
-	//Определяем php_self
-	$php_self = $_SERVER['PHP_SELF'] ?? '';
-	$update[] = 'php_self="'.$db->safesql($php_self).'"';
+	$ip          = ip2long_db($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+	$user_agent  = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+	$php_self    = (string) ($_SERVER['PHP_SELF'] ?? '');
 
 	$throttleKey = 'session_touch_'.md5($session_id.'|'.$user_id);
-	$shouldWrite = true;
 	if (is_object($memcached) && false !== $memcached->get($throttleKey)) {
-		$shouldWrite = false;
+		return;
 	}
 
-	if (sizeof($update) && $shouldWrite) {
-			$sql = $db->query("INSERT INTO sessions (session_id, user_id, last_access, ip , user_agent, php_self) VALUES ('{$session_id}', '{$user_id}', '{$last_access}', '{$ip}' , '{$user_agent}', '{$php_self}') ON DUPLICATE KEY UPDATE ".implode(", ", $update));
-			// $db->free($sql);
-			if (is_object($memcached)) {
-				$memcached->set($throttleKey, "1", 0, 60);
-			}
+	$db->pquery(
+		"INSERT INTO sessions (session_id, user_id, last_access, ip, user_agent, php_self)
+		 VALUES (?, ?, ?, ?, ?, ?)
+		 ON DUPLICATE KEY UPDATE
+		   user_id=VALUES(user_id), last_access=VALUES(last_access),
+		   ip=VALUES(ip), user_agent=VALUES(user_agent), php_self=VALUES(php_self)",
+		'ssssss',
+		[$session_id, (string) $user_id, $last_access, (string) $ip, $user_agent, $php_self]
+	);
+
+	if (is_object($memcached)) {
+		$memcached->set($throttleKey, '1', 0, 60);
 	}
 
 	return;
@@ -1027,11 +1029,12 @@ function get_user_color($class, $username, $user = null) {
 		$cacheKey = (int) $class.':'.$nameKey;
 		if ($nameKey !== '') {
 			if (!array_key_exists($cacheKey, $plusUserCache)) {
-				$plusUserCache[$cacheKey] = $db->super_query(
+				$plusUserCache[$cacheKey] = $db->psuper_query(
 					"SELECT id, class, plus_until, plus_permanent, plus_badge, profile_slug
 					 FROM users
-					 WHERE name = '".$db->safesql($nameKey)."' AND class = ".(int) $class."
-					 LIMIT 1"
+					 WHERE name = ? AND class = ".(int) $class."
+					 LIMIT 1",
+					's', [$nameKey]
 				);
 			}
 			$userRow = (array) $plusUserCache[$cacheKey];
@@ -1270,12 +1273,12 @@ function lt_fix_utf8_mojibake($value)
 		return $value;
 	}
 
-	$reencoded = @mb_convert_encoding($value, 'Windows-1252', 'UTF-8');
+	$reencoded = mb_convert_encoding($value, 'Windows-1252', 'UTF-8');
 	if (!is_string($reencoded) || ($reencoded === '' && $value !== '')) {
 		return $value;
 	}
 
-	$fixed = @mb_convert_encoding($reencoded, 'UTF-8', 'UTF-8');
+	$fixed = mb_convert_encoding($reencoded, 'UTF-8', 'UTF-8');
 	if (!is_string($fixed) || $fixed === '') {
 		return $value;
 	}
@@ -1438,7 +1441,7 @@ function taggenrelist($cat) {
 	if (false === ($ret = $memcached->get("taggenrelist_".$cat)))
 	{
 		$cache = array();
-		$res = $db->query("SELECT id, name, howmuch FROM tags WHERE category=".$db->safesql($cat)." ORDER BY name ASC") or sqlerr(__FILE__ , __LINE__);
+		$res = $db->query("SELECT id, name, howmuch FROM tags WHERE category=".(int)$cat." ORDER BY name ASC") or sqlerr(__FILE__ , __LINE__);
 		while ($row = $db->get_row() )
 			$cache[] = $row;
 
@@ -1801,8 +1804,8 @@ function get_server_load() {
 	global  $phpver;
 	if (strtolower(substr(PHP_OS, 0, 3)) === 'win') {
 		return 0;
-	} elseif (@file_exists("/proc/loadavg")) {
-		$load = @file_get_contents("/proc/loadavg");
+	} elseif (file_exists("/proc/loadavg")) {
+		$load = file_get_contents("/proc/loadavg");
 		$serverload = explode(" ", $load);
 		$serverload['0'] = round($serverload['0'], 4);
 		if(!$serverload) {
@@ -1860,7 +1863,7 @@ function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {
 		return 0;
 	}
 	$user_out = (int) $user_out;
-	$db->query("INSERT INTO mail(name , text , id_user_in , id_user_out , date , delete_in , delete_out ) VALUES ('".$db->safesql($name)."' , '".$db->safesql($text)."' , ".$user_in." , ".$user_out." , NOW() , 0 , 0 )");
+	$db->pquery("INSERT INTO mail(name, text, id_user_in, id_user_out, date, delete_in, delete_out) VALUES (?, ?, ".$user_in.", ".$user_out.", NOW(), 0, 0)", 'ss', [$name, $text]);
 	if ($user_out > 0) {
 		$db->query("UPDATE users SET num_messages=(num_messages+1) WHERE id=".$user_in);
 	}

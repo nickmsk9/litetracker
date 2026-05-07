@@ -32,35 +32,15 @@ if ($search !== '') {
 //////////////////////////////////////////////////////////////////
 if($act == 'all' && $config['search_forum']) {
 	$cache_categories = categories_array();
-	?>
-	<link href="public/css/torrenttable.css" rel="StyleSheet" type="text/css">
-	<table width="95%" class="tt" align="center">
-            <tr><td class="tt" style="width:45px;" align="center"></td>
-                <td class="tt"><font color=white>Название</font></td>
-                <td class="tt"><font color=white>Статистика</font></td>
-				</td></tr>
-	<?
+	echo '<div class="categories-grid">';
 	foreach($cache_categories AS $arr) {
-		//Название категории
-		$name = htmlspecialchars($arr['name']);
-
-		//Номер категории
-		$id = $arr['id'];
-
-		//Картинка
-		$cat_image = $arr['image'];
-
-		//Количество релизов
-		$count  = number_format($arr['count']);
-
-		//Общий размер
-		$size  = mksize($arr['size']);
-
-		//Подключаем шаблон
+		$name     = htmlspecialchars($arr['name'], ENT_QUOTES, 'UTF-8');
+		$id       = (int) $arr['id'];
+		$count    = number_format((int) $arr['count']);
+		$size     = mksize($arr['size']);
 		require 'templates/'.$config['template'].'/tpl.releases.categories.php';
 	}
-	echo '</table>';
-
+	echo '</div>';
 }
 
 

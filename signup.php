@@ -119,7 +119,7 @@ if ($act === 'validate') {
 	} elseif (strlen($name) > 12) {
 		$response['fields']['name']['message'] = $language['signup_12'];
 	} else {
-		$nameCheck = $db->query("SELECT id FROM users WHERE name='".$db->safesql($name)."' LIMIT 1");
+		$nameCheck = $db->pquery("SELECT id FROM users WHERE name=? LIMIT 1", 's', [$name]);
 		if ($db->num_rows($nameCheck) > 0) {
 			$response['fields']['name']['message'] = $language['signup_17'];
 		} else {
@@ -133,7 +133,7 @@ if ($act === 'validate') {
 	} elseif (!validemail($email)) {
 		$response['fields']['email']['message'] = $signupLiveMessages['email_invalid'];
 	} else {
-		$emailCheck = $db->query("SELECT id FROM users WHERE email='".$db->safesql($email)."' LIMIT 1");
+		$emailCheck = $db->pquery("SELECT id FROM users WHERE email=? LIMIT 1", 's', [$email]);
 		if ($db->num_rows($emailCheck) > 0) {
 			$response['fields']['email']['message'] = $language['signup_16'];
 		} else {
@@ -216,14 +216,14 @@ if($_POST && $signupBlockedMessage === '') {
 	}
 
 	if ($signupModalError === '') {
-		$nameCheck = $db->query("SELECT * FROM users WHERE name='".$db->safesql($name)."'");
-		if($db->num_rows() >= 1) {
+		$nameCheck = $db->pquery("SELECT id FROM users WHERE name=? LIMIT 1", 's', [$signupName]);
+		if($db->num_rows($nameCheck) >= 1) {
 			signup_error_response($language['default_1'], $language['signup_17'], 1);
 		}
 	}
 
 	if ($signupModalError === '') {
-		$emailCheck = $db->query("SELECT * FROM users WHERE email='".$db->safesql($email)."'");
+		$emailCheck = $db->pquery("SELECT id FROM users WHERE email=? LIMIT 1", 's', [$signupEmail]);
 		if($db->num_rows($emailCheck) >= 1) {
 			signup_error_response($language['default_1'], $language['signup_16'], 1);
 		}
@@ -256,7 +256,11 @@ if($_POST && $signupBlockedMessage === '') {
 		$isDirectorSignup = ((int) ($countUsers['c'] ?? 0) === 0);
 		$classId = (!$isDirectorSignup ? signup_default_class_id() : signup_admin_class_id());
 
-		$db->query("INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$signupBonusColumn.", sex, birthday_date, profile_text, website, icq, last_chat, num_messages, num_friends, confirm) VALUES ('".$db->safesql($name)."', '', '".$db->safesql($email)."', '".$db->safesql($passwordHash)."', '', '".ip2long_db(getip())."', '".$classId."', NOW(), NOW(), '', '0', '0', '0', '300', '1', '".$db->safesql($birthdayDate)."', '', '', '', '0', '0', '0', '1')");
+		$db->pquery(
+			"INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$signupBonusColumn.", sex, birthday_date, profile_text, website, icq, last_chat, num_messages, num_friends, confirm) VALUES (?, '', ?, ?, '', ?, ?, NOW(), NOW(), '', '0', '0', '0', '300', '1', ?, '', '', '', '0', '0', '0', '1')",
+			'sssiss',
+			[$signupName, $signupEmail, $passwordHash, ip2long_db(getip()), $classId, $birthdayDate]
+		);
 
 		$id = (int) $db->insert_id();
 		if ($id === 1) {

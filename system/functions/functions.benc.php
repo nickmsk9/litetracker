@@ -240,7 +240,7 @@ function lt_torrent_decode_file($path) {
 		return;
 	}
 
-	$size = (int) @filesize($path);
+	$size = (int) filesize($path);
 	$readBytes = max(1024 * 1024, $size + 1);
 
 	return bdec_file($path, $readBytes);
@@ -351,7 +351,7 @@ function lt_tracker_url_key($url, $includeQuery = true) {
 		return '';
 	}
 
-	$parts = @parse_url($url);
+	$parts = parse_url($url);
 	if (!$parts || empty($parts['host'])) {
 		return rtrim($url, '/');
 	}
@@ -444,7 +444,7 @@ function lt_torrent_external_trackers($trackers) {
 			continue;
 		}
 
-		$parts = @parse_url($tracker);
+		$parts = parse_url($tracker);
 		$scheme = strtolower((string) ($parts['scheme'] ?? ''));
 		if (!in_array($scheme, array('http', 'https', 'udp'), true)) {
 			continue;
@@ -521,7 +521,7 @@ function lt_torrent_rewrite_file_announces($path, $announceUrls = null) {
 		return false;
 	}
 
-	return (@file_put_contents($path, benc($dict), LOCK_EX) !== false);
+	return (file_put_contents($path, benc($dict), LOCK_EX) !== false);
 }
 
 function get_announce_urls($dict){
@@ -658,7 +658,7 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
 	}
 
 
-	$urlInfo = @parse_url($url);
+	$urlInfo = parse_url($url);
 	$scheme = strtolower((string) ($urlInfo['scheme'] ?? 'http'));
 	if (!in_array($scheme, array('http', 'https'), true)) {
 		return array('tracker' => (string) ($urlInfo['host'] ?? $url), 'seeders' => 0, 'leechers' => 0, 'state' => 'skipped:unsupported_scheme_'.$scheme);
@@ -689,7 +689,7 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
 	// Params gathering complete
 
 	// Creating params
-	$http_params = @http_build_query(@array_merge($new_get_request_params, $get_params));
+	$http_params = http_build_query(array_merge($new_get_request_params, $get_params));
 
 	$opts = array('http' =>
 	array(
@@ -708,8 +708,8 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
 		);
 	}
 
-	$context = @stream_context_create($opts);
-	$result = @file_get_contents($scheme.'://'.$http_host.$http_port.$http_path.($http_params ? '?'.$http_params : ''), false, $context);
+	$context = stream_context_create($opts);
+	$result = file_get_contents($scheme.'://'.$http_host.$http_port.$http_path.($http_params ? '?'.$http_params : ''), false, $context);
 	// $result = true;
 	if (!$result)
 	{
@@ -722,7 +722,7 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
 
 	//var_dump($method);
 	$resulttemp=$result;
-	$result = @bdec($result);
+	$result = bdec($result);
 
 	if (!is_array($result)) return array('tracker' => $http_host, 'state' => 'failed:unable_to_bdec:'.$resulttemp.'_'.$method);
 	unset($resulttemp);
@@ -730,7 +730,7 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
 	if ($method == 'scrape') {
 
 		if ($result['value']['files']['value']) {
-			$peersarray = @array_shift($result['value']['files']['value']);
+			$peersarray = array_shift($result['value']['files']['value']);
 			return array('tracker' => $http_host, 'seeders' => $peersarray['value']['complete']['value'], 'leechers' => $peersarray['value']['incomplete']['value'], 'state' => check_fail($result).$method);
 		} else return get_remote_peers($urlorig, $info_hash, "announce");
 	}

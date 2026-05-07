@@ -134,22 +134,21 @@ if($op == 'forgot') {
 		}
 
 
-		$check_code = $db->query("SELECT * FROM forgot WHERE code='".$db->safesql($code)."'");
+		$check_code = $db->pquery("SELECT * FROM forgot WHERE code=?", 's', [$code]);
 		if(!$db->num_rows($check_code) ) {
 			err('Ошибка' , 'Данный код не найден , или он уже просрочен' , 1);
 		}
 		$row = $db->get_row($check_code);
 
 		//Информация о пользователе
-		$sql = $db->query("SELECT * FROM users WHERE email='".$db->safesql($row['email'])."'");
-		$arr = $db->get_row($sql);
+		$arr = $db->psuper_query("SELECT * FROM users WHERE email=?", 's', [$row['email']]);
 
 		//Генерируем новый пароль
 		$password = mksecret(15);
 		$password_hash = lt_password_hash_value($password);
 
 		//Перезаписываем пароль
-		$db->query("UPDATE users SET password='".$db->safesql($password_hash)."' , password_code='' WHERE id=".$arr['id']);
+		$db->pquery("UPDATE users SET password=?, password_code='' WHERE id=?", 'si', [$password_hash, (int) $arr['id']]);
 
 		//Удаляем кеш
 		$memcached->delete('user_'.$arr['id'] , 0);
@@ -186,7 +185,7 @@ if($op == 'forgot') {
 		$mail->Send(); // send message
 
 		//Удаляем запись
-		$db->query("DELETE FROM forgot WHERE code='".$db->safesql($code)."'");
+		$db->pquery("DELETE FROM forgot WHERE code=?", 's', [$code]);
 
 		//Переадресация
 		header('Location: index.php');
@@ -244,30 +243,25 @@ if($op == 'forgot') {
 
 			//Проверяем email на уникальность
 			if ($loginModalError === '') {
-				$sql = $db->query("SELECT * FROM users WHERE email='".$db->safesql($email)."'");
-				if(!$db->num_rows($sql)) {
+				$arr = $db->psuper_query("SELECT * FROM users WHERE email=?", 's', [$email]);
+				if(!$arr) {
 					login_error_response($language['default_1']   , 'Пользователь с таким E-mail адресом не найден'  , 1);
 				}
 			}
 
 			//Проверяем запись forgot
 			if ($loginModalError === '') {
-				$check_forgot = $db->query("SELECT * FROM forgot WHERE email='".$db->safesql($email)."'");
+				$check_forgot = $db->pquery("SELECT id FROM forgot WHERE email=?", 's', [$email]);
 				if($db->num_rows($check_forgot) ) {
 					login_error_response('Ошибка' , 'Вы уже подавали заявку на восстановление , проверьте свой email' , 1);
 				}
-			}
-
-			//Массив с данными
-			if ($loginModalError === '') {
-				$arr =  $db->get_row($sql);
 			}
 
 
 			//Отправляем письмо
 			if ($loginModalError === '') {
 				$code = md5(time().'LiteTracker'.rand()); //Код активации
-				$db->query("INSERT INTO forgot (code , date , email) VALUES ('".$code."' , NOW() , '".$db->safesql($email)."')");
+				$db->pquery("INSERT INTO forgot (code, date, email) VALUES (?, NOW(), ?)", 'ss', [$code, $email]);
 
 				//Заголовок
 				$body = '';
@@ -370,7 +364,7 @@ if($_POST) {
 
 	//Выполняем запрос к базе данных
 	if ($loginModalError === '') {
-		$arr = $db->super_query("SELECT * FROM users WHERE email = '" . $db->safesql($login) . "' OR name = '" . $db->safesql($login) ."'" ) ;
+		$arr = $db->psuper_query("SELECT * FROM users WHERE email = ? OR name = ?", 'ss', [$login, $login]);
 		if(!$arr) {
 			login_error_response($language['default_1'] , $language['login_8'] , 1);
 		}
@@ -412,7 +406,7 @@ if($_POST) {
 	if ($loginModalError === '') {
 		if (!empty($passwordNeedsRehash)) {
 			$password_hash = lt_password_hash_value($password);
-			$db->query("UPDATE users SET password='".$db->safesql($password_hash)."', password_code='' WHERE id=".(int) $arr['id']);
+			$db->pquery("UPDATE users SET password=?, password_code='' WHERE id=?", 'si', [$password_hash, (int) $arr['id']]);
 			$arr['password'] = $password_hash;
 		}
 

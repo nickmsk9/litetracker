@@ -1,0 +1,26 @@
+/var/www/html/logs/*.log {
+    daily
+    rotate 30
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 www-data www-data
+    sharedscripts
+    postrotate
+        /bin/kill -USR1 $(cat /var/run/apache2/apache2.pid 2>/dev/null) 2>/dev/null || true
+    endscript
+}
+
+/var/log/apache2/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+        /bin/kill -USR1 $(cat /var/run/apache2/apache2.pid 2>/dev/null) 2>/dev/null || true
+    endscript
+}

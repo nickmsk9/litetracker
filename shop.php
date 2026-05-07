@@ -151,7 +151,7 @@ if($_GET['act'] == 'edit') {
 
 
 			// Upload the file
-			$copy = @copy($ifile, $uploaddir.$ifilename);
+			$copy = copy($ifile, $uploaddir.$ifilename);
 
 			if (!$copy) {
 				err($language['default_1'] , $language['cats_12'], 1);

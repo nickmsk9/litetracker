@@ -35,7 +35,7 @@ function prepare_user_avatar_upload($fieldName, $userId, $userRow)
 		err($language['default_1'], 'Файл загружен некорректно.', 1);
 	}
 
-	$imageInfo = @getimagesize($_FILES[$fieldName]['tmp_name']);
+	$imageInfo = getimagesize($_FILES[$fieldName]['tmp_name']);
 	if (!$imageInfo || empty($imageInfo[2])) {
 		err($language['default_1'], 'Можно загружать только изображения JPG, PNG или GIF.', 1);
 	}
@@ -60,15 +60,15 @@ function prepare_user_avatar_upload($fieldName, $userId, $userRow)
 	$dirDest = 'public/avatars/';
 	$dirDestSmall = 'public/avatars/small/';
 
-	if (!is_dir($dirDest) && !@mkdir($dirDest, 0777, true)) {
+	if (!is_dir($dirDest) && !mkdir($dirDest, 0777, true)) {
 		err('Ошибка', 'Не удалось создать папку для аватаров.', 1);
 	}
 
-	if (!is_dir($dirDestSmall) && !@mkdir($dirDestSmall, 0777, true)) {
+	if (!is_dir($dirDestSmall) && !mkdir($dirDestSmall, 0777, true)) {
 		err('Ошибка', 'Не удалось создать папку для миниатюр аватаров.', 1);
 	}
 
-	$imageBinary = @file_get_contents($_FILES[$fieldName]['tmp_name']);
+	$imageBinary = file_get_contents($_FILES[$fieldName]['tmp_name']);
 	if ($imageBinary === false || $imageBinary === '') {
 		err('Ошибка', 'Не удалось прочитать загруженное изображение.', 1);
 	}
@@ -79,23 +79,23 @@ function prepare_user_avatar_upload($fieldName, $userId, $userRow)
 		$smallPath = $dirDestSmall . $fileName;
 
 		if (!empty($userRow['avatar'])) {
-			@unlink($dirDest.$userRow['avatar']);
-			@unlink($dirDestSmall.$userRow['avatar']);
+			$_p = $dirDest.$userRow['avatar']; if (is_file($_p)) { unlink($_p); }
+			$_p = $dirDestSmall.$userRow['avatar']; if (is_file($_p)) { unlink($_p); }
 		}
 
-		if (!@copy($_FILES[$fieldName]['tmp_name'], $mainPath) || !@copy($_FILES[$fieldName]['tmp_name'], $smallPath)) {
-			@unlink($mainPath);
-			@unlink($smallPath);
+		if (!copy($_FILES[$fieldName]['tmp_name'], $mainPath) || !copy($_FILES[$fieldName]['tmp_name'], $smallPath)) {
+			if (is_file($mainPath)) { unlink($mainPath); }
+			if (is_file($smallPath)) { unlink($smallPath); }
 			err('Ошибка', 'Не удалось сохранить GIF-аватар.', 1);
 		}
 
-		@chmod($mainPath, 0666);
-		@chmod($smallPath, 0666);
+		chmod($mainPath, 0666);
+		chmod($smallPath, 0666);
 
 		return $fileName;
 	}
 
-	$sourceImage = @imagecreatefromstring($imageBinary);
+	$sourceImage = imagecreatefromstring($imageBinary);
 	if (!$sourceImage) {
 		err('Ошибка', 'Не удалось обработать изображение.', 1);
 	}
@@ -112,8 +112,8 @@ function prepare_user_avatar_upload($fieldName, $userId, $userRow)
 	$smallPath = $dirDestSmall . $fileName;
 
 	if (!empty($userRow['avatar'])) {
-		@unlink($dirDest.$userRow['avatar']);
-		@unlink($dirDestSmall.$userRow['avatar']);
+		$_p = $dirDest.$userRow['avatar']; if (is_file($_p)) { unlink($_p); }
+		$_p = $dirDestSmall.$userRow['avatar']; if (is_file($_p)) { unlink($_p); }
 	}
 
 	$saveResizedJpeg = function ($srcImage, $srcWidth, $srcHeight, $targetPath, $maxWidth, $maxHeight) {
@@ -145,13 +145,13 @@ function prepare_user_avatar_upload($fieldName, $userId, $userRow)
 	imagedestroy($sourceImage);
 
 	if (!$mainSaved || !$smallSaved) {
-		@unlink($mainPath);
-		@unlink($smallPath);
+		if (is_file($mainPath)) { unlink($mainPath); }
+		if (is_file($smallPath)) { unlink($smallPath); }
 		err('Ошибка', 'Не удалось сохранить аватар.', 1);
 	}
 
-	@chmod($mainPath, 0666);
-	@chmod($smallPath, 0666);
+	chmod($mainPath, 0666);
+	chmod($smallPath, 0666);
 
 	return $fileName;
 }
@@ -223,8 +223,8 @@ if($act == 'foto_delete') {
 		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
 	}
 
-	@unlink('public/avatars/'.$arr['avatar']);
-	@unlink('public/avatars/small/'.$arr['avatar']);
+	$_p = 'public/avatars/'.$arr['avatar']; if (is_file($_p)) { unlink($_p); }
+	$_p = 'public/avatars/small/'.$arr['avatar']; if (is_file($_p)) { unlink($_p); }
 	$db->query("UPDATE users SET avatar='' WHERE id='".$id."'");
 	$memcached->delete('user_'.$id, 0);
 	header('Location:my.setting.php?id='.$id);
@@ -258,7 +258,7 @@ if($act == 'password') {
 
 	$passwordHash = lt_password_hash_value($newPassword);
 
-	$db->query("UPDATE users SET password='".$db->safesql($passwordHash)."' , password_code='' WHERE id='".$id."'");
+	$db->pquery("UPDATE users SET password=?, password_code='' WHERE id=?", 'si', [$passwordHash, (int) $id]);
 	$memcached->delete('user_'.$id, 0);
 
 	if ((int) $USER['id'] === (int) $id) {
@@ -275,6 +275,8 @@ if (!lt_csrf_validate($settingsProfileScope)) {
 }
 
 $update = array();
+$updateParams = array();
+$updateTypes = '';
 
 $sex = ((int) ($_POST['sex'] ?? 1) == 1 ? '1' : '0');
 if($arr['sex'] != $sex) {
@@ -298,12 +300,20 @@ if ($birthdayDay === '' && $birthdayMonth === '' && $birthdayYear === '') {
 
 $currentBirthday = (!empty($arr['birthday_date']) && $arr['birthday_date'] !== '0000-00-00' ? $arr['birthday_date'] : null);
 if ($currentBirthday !== $birthdayDate) {
-	$update[] = ($birthdayDate === null ? "birthday_date=NULL" : "birthday_date='".$db->safesql($birthdayDate)."'");
+	if ($birthdayDate === null) {
+		$update[] = "birthday_date=NULL";
+	} else {
+		$update[] = "birthday_date=?";
+		$updateParams[] = $birthdayDate;
+		$updateTypes .= 's';
+	}
 }
 
 $profileText = trim((string) ($_POST['profile_text'] ?? ''));
 if ((string) $arr['profile_text'] !== $profileText) {
-	$update[] = "profile_text='".$db->safesql($profileText)."'";
+	$update[] = "profile_text=?";
+	$updateParams[] = $profileText;
+	$updateTypes .= 's';
 }
 
 $notifyComments = (!empty($_POST['notify_comments']) ? 1 : 0);
@@ -329,7 +339,9 @@ if ($targetHasPlus) {
 		$badge = 'star';
 	}
 	if ((string) ($arr['plus_badge'] ?? 'star') !== $badge) {
-		$update[] = "plus_badge='".$db->safesql($badge)."'";
+		$update[] = "plus_badge=?";
+		$updateParams[] = $badge;
+		$updateTypes .= 's';
 	}
 
 	$profileSlug = lt_profile_slug_normalize($_POST['profile_slug'] ?? '');
@@ -346,7 +358,9 @@ if ($targetHasPlus) {
 		}
 	}
 	if ((string) ($arr['profile_slug'] ?? '') !== $profileSlug) {
-		$update[] = "profile_slug='".$db->safesql($profileSlug)."'";
+		$update[] = "profile_slug=?";
+		$updateParams[] = $profileSlug;
+		$updateTypes .= 's';
 	}
 } elseif (!empty($arr['profile_slug'])) {
 	$update[] = "profile_slug=''";
@@ -354,7 +368,9 @@ if ($targetHasPlus) {
 
 $avatarFileName = prepare_user_avatar_upload('avatar_upload', $id, $arr);
 if ($avatarFileName !== false) {
-	$update[] = "avatar='".$db->safesql($avatarFileName)."'";
+	$update[] = "avatar=?";
+	$updateParams[] = $avatarFileName;
+	$updateTypes .= 's';
 }
 
 if(!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) {
@@ -416,14 +432,18 @@ if(!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) {
 				err($language['default_1'], 'Укажите корректную дату окончания Plus.', 1);
 			}
 			$update[] = "plus_permanent='0'";
-			$update[] = "plus_until='".$db->safesql($manualUntil.' 23:59:59')."'";
+			$update[] = "plus_until=?";
+			$updateParams[] = $manualUntil.' 23:59:59';
+			$updateTypes .= 's';
 			$update[] = "plus_source='manual'";
 		}
 	}
 }
 
 if(count($update)) {
-	$db->query("UPDATE users SET ".implode(',', $update)." WHERE id='".$id."'");
+	$updateParams[] = (int) $id;
+	$updateTypes .= 'i';
+	$db->pquery("UPDATE users SET ".implode(',', $update)." WHERE id=?", $updateTypes, $updateParams);
 }
 
 $memcached->delete('user_'.$id, 0);

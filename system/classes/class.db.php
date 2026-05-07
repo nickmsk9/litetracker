@@ -24,7 +24,7 @@ class db
 
 	function connect($db_user, $db_pass, $db_name, $db_location = 'localhost', $show_error=1)
 	{
-		$this->db_id = @mysqli_connect($db_location, $db_user, $db_pass, $db_name);
+		$this->db_id = mysqli_connect($db_location, $db_user, $db_pass, $db_name);
 		if(!$this->db_id) {
 			if($show_error == 1) {
 				$this->display_error(mysqli_connect_error(), mysqli_connect_errno());
@@ -41,8 +41,8 @@ class db
 		}
 
 		if (version_compare($this->mysql_version, '4.1', ">=")) {
-			@mysqli_set_charset($this->db_id, COLLATE);
-			@mysqli_query($this->db_id, "/*!40101 SET NAMES '" . $this->safesql(COLLATE) . "' */");
+			mysqli_set_charset($this->db_id, COLLATE);
+			mysqli_query($this->db_id, "/*!40101 SET NAMES '" . $this->safesql(COLLATE) . "' */");
 		}
 
 		$GLOBALS['mysql_compat_default_link'] = $this->db_id;
@@ -160,20 +160,116 @@ class db
 		else return addslashes((string) $source);
 	}
 
+	/**
+	 * Execute a prepared statement with positional ? placeholders.
+	 *
+	 * @param string $sql    SQL with ? placeholders
+	 * @param string $types  MySQLi type string: 's'=string, 'i'=integer, 'd'=double, 'b'=blob.
+	 *                       Pass '' to auto-bind everything as string.
+	 * @param array  $params Values for each placeholder
+	 * @param bool   $show_error  Whether to halt on error
+	 * @return mysqli_result|true|false
+	 */
+	function pquery($sql, $types = '', array $params = array(), $show_error = true)
+	{
+		$time_before = $this->get_real_time();
+
+		if (!$this->connected) $this->connect(DBUSER, DBPASS, DBNAME, DBHOST);
+
+		$stmt = mysqli_prepare($this->db_id, $sql);
+		if (!$stmt) {
+			$this->mysql_error     = mysqli_error($this->db_id);
+			$this->mysql_error_num = mysqli_errno($this->db_id);
+			if ($show_error) {
+				$this->display_error($this->mysql_error, $this->mysql_error_num, $sql);
+			}
+			return false;
+		}
+
+		if ($params) {
+			if ($types === '') {
+				$types = str_repeat('s', count($params));
+			}
+			mysqli_stmt_bind_param($stmt, $types, ...$params);
+		}
+
+		if (!mysqli_stmt_execute($stmt)) {
+			$this->mysql_error     = mysqli_stmt_error($stmt);
+			$this->mysql_error_num = mysqli_stmt_errno($stmt);
+			mysqli_stmt_close($stmt);
+			if ($show_error) {
+				$this->display_error($this->mysql_error, $this->mysql_error_num, $sql);
+			}
+			return false;
+		}
+
+		$elapsed = $this->get_real_time() - $time_before;
+		$this->MySQL_time_taken += $elapsed;
+		$this->query_num++;
+
+		if (defined('DEGUB_SQL') && (DEGUB_SQL || (function_exists('admin_dashboard_can_access') && admin_dashboard_can_access(($GLOBALS['USER'] ?? null), ($GLOBALS['PRIV'] ?? null))))) {
+			$idx = 0;
+			$debugSql = preg_replace_callback('/\?/', function ($m) use ($params, &$idx) {
+				$val = ($params[$idx] ?? '?');
+				$idx++;
+				return (is_string($val) ? "'".str_replace("'", "\\'", $val)."'" : (string) $val);
+			}, $sql);
+			$this->query_list[] = array('time' => $elapsed, 'query' => $debugSql, 'num' => (count($this->query_list) + 1));
+		}
+
+		$result = mysqli_stmt_get_result($stmt);
+		mysqli_stmt_close($stmt);
+
+		if ($result instanceof mysqli_result) {
+			$this->query_id = $result;
+			return $result;
+		}
+
+		// DML statement: insert_id() and affected_rows() read from $this->db_id and still work
+		return true;
+	}
+
+	/**
+	 * Like super_query() but uses a prepared statement.
+	 *
+	 * @param string $sql
+	 * @param string $types
+	 * @param array  $params
+	 * @param bool   $multi   true = return all rows, false = return first row
+	 * @return array|null
+	 */
+	function psuper_query($sql, $types = '', array $params = array(), $multi = false)
+	{
+		$this->pquery($sql, $types, $params);
+
+		if (!$multi) {
+			$data = $this->get_row();
+			$this->free();
+			return $data;
+		}
+
+		$rows = array();
+		while ($row = $this->get_row()) {
+			$rows[] = $row;
+		}
+		$this->free();
+		return $rows;
+	}
+
 	function free( $query_id = '' )
 	{
 
 		if ($query_id == '') $query_id = $this->query_id;
 
 		if ($query_id instanceof mysqli_result) {
-			@mysqli_free_result($query_id);
+			mysqli_free_result($query_id);
 		}
 	}
 
 	function close()
 	{
 		if ($this->db_id instanceof mysqli) {
-			@mysqli_close($this->db_id);
+			mysqli_close($this->db_id);
 		}
 	}
 
@@ -202,10 +298,10 @@ class db
 		$_error_string .= "\n URL:".($_SERVER['REQUEST_URI'] ?? 'CLI');
 		$_error_string .= "\n Username: ".($USER['name'] ?? 'guest')."[".($USER['id'] ?? 0)."]";
 
-		if ( $FH = @fopen( $config['sql_log_file'], 'a' ) )
+		if ( $FH = fopen( $config['sql_log_file'], 'a' ) )
 		{
-			@fwrite( $FH, $_error_string );
-			@fclose( $FH );
+			fwrite( $FH, $_error_string );
+			fclose( $FH );
 		}
 
 

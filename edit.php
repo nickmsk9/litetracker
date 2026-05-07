@@ -211,7 +211,8 @@ function lt_edit_ensure_directory($path)
 		return true;
 	}
 
-	return @mkdir($path, 0777, true);
+	$created = mkdir($path, 0777, true);
+	return $created || is_dir($path);
 }
 
 function lt_edit_image_extension($filename)
@@ -244,7 +245,7 @@ function lt_edit_validate_image($file, $label)
 		err($language['default_1'], $label.' превышает допустимый размер '.mksize($config['max_size_image']).'.', 1);
 	}
 
-	$imageInfo = @getimagesize($tmp);
+	$imageInfo = getimagesize($tmp);
 	if (!$imageInfo || empty($imageInfo[2]) || !in_array((int) $imageInfo[2], array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG), true)) {
 		err($language['default_1'], $label.' не похож на изображение.', 1);
 	}
@@ -260,7 +261,7 @@ function lt_edit_move_uploaded_image($file, $directory, $targetName, $label)
 		err($language['default_1'], 'Не удалось подготовить каталог для загрузки файлов.', 1);
 	}
 
-	if (!@move_uploaded_file((string) ($file['tmp_name'] ?? ''), $directory.$targetName)) {
+	if (!move_uploaded_file((string) ($file['tmp_name'] ?? ''), $directory.$targetName)) {
 		err($language['default_1'], 'Не удалось сохранить '.$label.'.', 1);
 	}
 
@@ -287,7 +288,8 @@ if ($arr['id_user'] != $USER['id'] && !$PRIV['edit_release']) {
 if ($act == 'delete_image') {
 	if (!empty($arr['image'])) {
 		$db->query('UPDATE torrents SET image="" WHERE id='.(int) $id);
-		@unlink('public/downloads/images/'.$arr['image']);
+		$_p = 'public/downloads/images/'.$arr['image'];
+		if (is_file($_p)) { unlink($_p); }
 	}
 
 	lt_edit_redirect_to_details($id);
@@ -300,7 +302,8 @@ if ($act == 'delete_screen') {
 
 	if (!empty($arr['screen_'.$screen])) {
 		$db->query('UPDATE torrents SET screen_'.$screen.'="" WHERE id='.(int) $id);
-		@unlink('public/downloads/screens/'.$arr['screen_'.$screen]);
+		$_p = 'public/downloads/screens/'.$arr['screen_'.$screen];
+		if (is_file($_p)) { unlink($_p); }
 	}
 
 	lt_edit_redirect_to_details($id);
@@ -308,6 +311,8 @@ if ($act == 'delete_screen') {
 
 if ($act == 'take') {
 	$update = array();
+	$updateParams = array();
+	$updateTypes = '';
 	$filelist = array();
 	$trackers = array();
 	$fname = '';
@@ -407,8 +412,8 @@ if ($act == 'take') {
 		}
 
 		$infohash = sha1($info['string']);
-		$update[] = 'infohash="'.$db->safesql($infohash).'"';
-		$update[] = 'filename="'.$db->safesql($fname).'"';
+		$update[] = 'infohash=?'; $updateParams[] = $infohash; $updateTypes .= 's';
+		$update[] = 'filename=?'; $updateParams[] = $fname;   $updateTypes .= 's';
 		$update[] = 'size="'.$totallen.'"';
 		$update[] = 'multi="'.$multi.'"';
 		$update[] = 'num_files="'.count($filelist).'"';
@@ -424,12 +429,12 @@ if ($act == 'take') {
 		err($language['default_1'], $language['upload_25'], 1);
 	}
 	if ((string) $arr['name'] !== $name) {
-		$update[] = 'name="'.$db->safesql($name).'"';
+		$update[] = 'name=?'; $updateParams[] = $name; $updateTypes .= 's';
 	}
 
 	$tags = lt_torrent_tags_to_string((string) ($_POST['tags'] ?? ''));
 	if ((string) $arr['tags'] !== $tags) {
-		$update[] = 'tags="'.$db->safesql($tags).'"';
+		$update[] = 'tags=?'; $updateParams[] = $tags; $updateTypes .= 's';
 	}
 
 	$typeOptions = lt_torrent_metadata_type_options_for_category($categoryName);
@@ -441,7 +446,7 @@ if ($act == 'take') {
 		$contentType = trim((string) ($arr['content_type'] ?? 'movie'));
 	}
 	if ((string) ($arr['content_type'] ?? '') !== $contentType) {
-		$update[] = 'content_type="'.$db->safesql($contentType).'"';
+		$update[] = 'content_type=?'; $updateParams[] = $contentType; $updateTypes .= 's';
 	}
 
 	$metadataSchema = lt_torrent_metadata_schema();
@@ -455,7 +460,7 @@ if ($act == 'take') {
 		$csv = lt_torrent_metadata_csv($group, $_POST[$group] ?? array());
 		$metadataCsv[$group] = $csv;
 		if ((string) ($arr[$column] ?? '') !== $csv) {
-			$update[] = $column.'="'.$db->safesql($csv).'"';
+			$update[] = $column.'=?'; $updateParams[] = $csv; $updateTypes .= 's';
 		}
 	}
 
@@ -477,7 +482,7 @@ if ($act == 'take') {
 		err($language['default_1'], $language['upload_26'], 1);
 	}
 	if ((string) $arr['descr'] !== $descr) {
-		$update[] = 'descr="'.$db->safesql($descr).'"';
+		$update[] = 'descr=?'; $updateParams[] = $descr; $updateTypes .= 's';
 	}
 
 	if (!empty($_FILES['image']['name'])) {
@@ -486,10 +491,11 @@ if ($act == 'take') {
 		lt_edit_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $coverName, 'обложку');
 
 		if (!empty($arr['image']) && $arr['image'] !== $coverName) {
-			@unlink('public/downloads/images/'.$arr['image']);
+			$_p = 'public/downloads/images/'.$arr['image'];
+			if (is_file($_p)) { unlink($_p); }
 		}
 
-		$update[] = 'image="'.$db->safesql($coverName).'"';
+		$update[] = 'image=?'; $updateParams[] = $coverName; $updateTypes .= 's';
 	}
 
 	$screenFiles = (isset($_FILES['screenshot']) && is_array($_FILES['screenshot']) ? $_FILES['screenshot'] : array());
@@ -512,10 +518,11 @@ if ($act == 'take') {
 		lt_edit_move_uploaded_image($screenFile, 'public/downloads/screens/', $screenStoredName, 'скриншот '.$slot);
 
 		if (!empty($arr['screen_'.$slot]) && $arr['screen_'.$slot] !== $screenStoredName) {
-			@unlink('public/downloads/screens/'.$arr['screen_'.$slot]);
+			$_p = 'public/downloads/screens/'.$arr['screen_'.$slot];
+			if (is_file($_p)) { unlink($_p); }
 		}
 
-		$update[] = 'screen_'.$slot.'="'.$db->safesql($screenStoredName).'"';
+		$update[] = 'screen_'.$slot.'=?'; $updateParams[] = $screenStoredName; $updateTypes .= 's';
 	}
 
 	if ($PRIV['edit_news']) {
@@ -529,7 +536,9 @@ if ($act == 'take') {
 	}
 
 	if ($update) {
-		$result = $db->query('UPDATE torrents SET '.implode(',', $update).' WHERE id='.(int) $id, 1);
+		$finalParams = array_merge($updateParams, [(int) $id]);
+		$finalTypes = $updateTypes . 'i';
+		$result = $db->pquery('UPDATE torrents SET '.implode(',', $update).' WHERE id=?', $finalTypes, $finalParams, 1);
 		if (!$result) {
 			err($language['default_1'], $language['upload_37'], 1);
 		}
@@ -538,7 +547,7 @@ if ($act == 'take') {
 	if ($fname !== '') {
 		$db->query('DELETE FROM files WHERE id_torrent='.(int) $id);
 		foreach ($filelist as $fileRow) {
-			$db->query('INSERT INTO files (id_torrent, filename, size) VALUES ('.(int) $id.', "'.$db->safesql($fileRow[0]).'", "'.$fileRow[1].'")');
+			$db->pquery('INSERT INTO files (id_torrent, filename, size) VALUES (?, ?, ?)', 'isi', [(int) $id, $fileRow[0], (int) $fileRow[1]]);
 		}
 
 		move_uploaded_file($tmpname, 'public/downloads/torrents/'.(int) $id.'.torrent');
@@ -565,7 +574,7 @@ if ($act == 'take') {
 				continue;
 			}
 
-			$db->query('UPDATE tags SET howmuch=howmuch+1 WHERE name LIKE "'.$db->safesql($tag).'"');
+			$db->pquery('UPDATE tags SET howmuch=howmuch+1 WHERE name LIKE ?', 's', [$tag]);
 		}
 
 		foreach ($missing as $tag) {
@@ -574,7 +583,7 @@ if ($act == 'take') {
 				continue;
 			}
 
-			$db->query('INSERT INTO tags (category, name, howmuch) VALUES ("'.(int) $category.'", "'.$db->safesql($tag).'", 1)');
+			$db->pquery('INSERT INTO tags (category, name, howmuch) VALUES (?, ?, 1)', 'is', [(int) $category, $tag]);
 		}
 	}
 
@@ -588,12 +597,12 @@ if ($act == 'delete') {
 		$db->query('DELETE FROM trackers WHERE torrent='.(int) $id);
 		$db->query('DELETE FROM peers WHERE torrent='.(int) $id);
 		$db->query('DELETE FROM snatched WHERE torrent='.(int) $id);
-		@unlink('public/downloads/images/'.$arr['image']);
-		@unlink('public/downloads/torrents/'.(int) $id.'.torrent');
-		@unlink('public/downloads/screens/'.$arr['screen_1']);
-		@unlink('public/downloads/screens/'.$arr['screen_2']);
-		@unlink('public/downloads/screens/'.$arr['screen_3']);
-		@unlink('public/downloads/screens/'.$arr['screen_4']);
+		$_p = 'public/downloads/images/'.$arr['image']; if (is_file($_p)) { unlink($_p); }
+		$_p = 'public/downloads/torrents/'.(int) $id.'.torrent'; if (is_file($_p)) { unlink($_p); }
+		$_p = 'public/downloads/screens/'.$arr['screen_1']; if (is_file($_p)) { unlink($_p); }
+		$_p = 'public/downloads/screens/'.$arr['screen_2']; if (is_file($_p)) { unlink($_p); }
+		$_p = 'public/downloads/screens/'.$arr['screen_3']; if (is_file($_p)) { unlink($_p); }
+		$_p = 'public/downloads/screens/'.$arr['screen_4']; if (is_file($_p)) { unlink($_p); }
 		header('Location:index.php');
 		die();
 	}
