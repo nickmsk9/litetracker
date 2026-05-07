@@ -7045,3 +7045,105 @@ body.is-mobile .details-bookmark-button {
     width: 100%;
   }
 }
+
+/* ─── AJAX comment system ─────────────────────────────────────── */
+
+/* Новый комментарий — плавное появление снизу */
+@keyframes lt-comment-appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.comment-entry-new {
+  animation: lt-comment-appear 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Подсветка обновлённого комментария */
+@keyframes lt-comment-highlight {
+  0%   { background-color: transparent; }
+  25%  { background-color: rgba(59, 130, 246, 0.08); }
+  100% { background-color: transparent; }
+}
+
+.comment-entry-highlight {
+  animation: lt-comment-highlight 1.6s ease both;
+  border-radius: 6px;
+}
+
+/* Уведомление внутри секции комментариев */
+.comment-ajax-notice {
+  padding: 8px 14px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  transition: opacity 0.2s ease;
+}
+
+.comment-ajax-notice-success {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.comment-ajax-notice-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Тёмная тема */
+.theme-dark .comment-ajax-notice-success {
+  background: rgba(34, 197, 94, 0.1);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.theme-dark .comment-ajax-notice-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.18);
+}
+
+/* Инлайн-редактор (общий, используется и в profile.js) */
+.wall-inline-editor {
+  margin-top: 8px;
+}
+
+.wall-inline-editor-textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+  background: var(--color-bg-input, #fff);
+  color: inherit;
+}
+
+.wall-inline-editor-textarea:focus {
+  outline: none;
+  border-color: var(--color-accent, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.wall-inline-editor-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Кнопка отправки в состоянии загрузки */
+.wall-form-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

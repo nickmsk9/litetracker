@@ -336,7 +336,9 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0)
     $commentCanDelete = (!empty($USER['id']) && !$commentDeleted && (!empty($PRIV['comments_delete']) || ($type !== 'users' && (int) $USER['id'] === $commentUserId)));
     $commentCanReport = (!empty($USER['id']) && (int) $USER['id'] !== $commentUserId && !$commentDeleted);
     $commentHasSideActions = ($commentCanEdit || $commentCanDelete || $commentCanReport);
-    $csrfToken = rawurlencode(lt_csrf_token('comments_'.$type.'_'.$objectId));
+    $csrfTokenRaw = lt_csrf_token('comments_'.$type.'_'.$objectId);
+    $csrfToken = rawurlencode($csrfTokenRaw);
+    $csrfTokenSafe = htmlspecialchars($csrfTokenRaw, ENT_QUOTES, 'UTF-8');
     $reactionObjectType = 'comment_'.$type;
     $reactionStats = lt_reaction_stats($reactionObjectType, $commentId, (int) ($USER['id'] ?? 0));
     $commentCanReact = (!empty($USER['id']) && !$commentDeleted && lt_user_has_plus($USER));
@@ -355,18 +357,18 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0)
         echo '<div class="comment-side-actions">';
 
         if ($commentCanReport) {
-            echo '<a class="comment-side-button comment-side-button-report wall-comment-report" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=report&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" title="Пожаловаться" aria-label="Пожаловаться" data-wall-report="1" data-comment-id="'.$commentId.'">';
+            echo '<a class="comment-side-button comment-side-button-report wall-comment-report" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=report&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" title="Пожаловаться" aria-label="Пожаловаться" data-wall-report="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">';
             echo '<span class="wall-comment-report-icon">&#9888;</span>';
             echo '<span class="wall-comment-report-label">Пожаловаться</span>';
             echo '</a>';
         }
 
         if ($commentCanEdit) {
-            echo '<a class="comment-side-button comment-side-button-edit" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=edit&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-edit="1" data-comment-id="'.$commentId.'">'.htmlspecialchars((string) ($language['comments_4'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8').'</a>';
+            echo '<a class="comment-side-button comment-side-button-edit" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=edit&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-edit="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">'.htmlspecialchars((string) ($language['comments_4'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8').'</a>';
         }
 
         if ($commentCanDelete) {
-            echo '<a class="comment-side-button comment-side-button-delete" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=delete&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-delete="1" data-comment-id="'.$commentId.'">'.htmlspecialchars((string) ($language['comments_5'] ?? 'Удалить'), ENT_QUOTES, 'UTF-8').'</a>';
+            echo '<a class="comment-side-button comment-side-button-delete" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=delete&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-delete="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">'.htmlspecialchars((string) ($language['comments_5'] ?? 'Удалить'), ENT_QUOTES, 'UTF-8').'</a>';
         }
 
         echo '</div>';
@@ -381,11 +383,11 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0)
         echo '<button class="wall-comment-button comment-reply-button" type="button" data-comment-reply="1" data-wall-reply="1" data-comment-id="'.$commentId.'" data-author-name="'.$commentUserNameSafe.'">Ответить</button>';
         echo '<span class="plus-reactions">';
         if ($commentCanReact) {
-            echo '<a class="plus-reaction-button'.($reactionStats['user'] === 'like' ? ' plus-reaction-button-active' : '').'" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=react&amp;reaction=like&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'">Нравится '.$reactionStats['like'].'</a>';
-            echo '<a class="plus-reaction-button'.($reactionStats['user'] === 'dislike' ? ' plus-reaction-button-active' : '').'" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=react&amp;reaction=dislike&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'">Не нравится '.$reactionStats['dislike'].'</a>';
+            echo '<a class="plus-reaction-button'.($reactionStats['user'] === 'like' ? ' plus-reaction-button-active' : '').'" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=react&amp;reaction=like&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-react="like" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">Нравится <span data-reaction-count="like">'.$reactionStats['like'].'</span></a>';
+            echo '<a class="plus-reaction-button'.($reactionStats['user'] === 'dislike' ? ' plus-reaction-button-active' : '').'" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=react&amp;reaction=dislike&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-react="dislike" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">Не нравится <span data-reaction-count="dislike">'.$reactionStats['dislike'].'</span></a>';
         } else {
-            echo '<span class="plus-reaction-count">Нравится '.$reactionStats['like'].'</span>';
-            echo '<span class="plus-reaction-count">Не нравится '.$reactionStats['dislike'].'</span>';
+            echo '<span class="plus-reaction-count">Нравится <span data-reaction-count="like">'.$reactionStats['like'].'</span></span>';
+            echo '<span class="plus-reaction-count">Не нравится <span data-reaction-count="dislike">'.$reactionStats['dislike'].'</span></span>';
         }
         $reactionListHref = 'comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=reaction_list&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8');
         echo '<a class="plus-reaction-list-link" href="'.$reactionListHref.'" data-plus-reaction-list="1" data-reaction-object-type="'.htmlspecialchars($reactionObjectType, ENT_QUOTES, 'UTF-8').'" data-reaction-object-id="'.$commentId.'">Кто оценил</a>';
@@ -413,7 +415,7 @@ function comments_render_list_html($type, $objectId, $file = '', $desc = 0, $lim
     $tree = comments_build_tree($rows);
 
     ob_start();
-    echo '<div class="comment-stream'.($type === 'users' ? ' wall-comments-list' : ' torrent-comments-list').'">';
+    echo '<div class="comment-stream'.($type === 'users' ? ' wall-comments-list' : ' torrent-comments-list').'" data-comment-stream="1">';
 
     if (!$tree) {
         echo '<div class="'.($type === 'users' ? 'wall-comment-empty' : 'torrent-comment-empty').'">'.($type === 'users' ? 'На стене пока нет комментариев.' : 'Комментариев пока нет.').'</div>';
@@ -461,7 +463,9 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
         $showPager = ($count > 20);
     }
 
-    echo '<div class="comment-thread-root" data-comment-thread="1" data-comment-type="'.htmlspecialchars($type, ENT_QUOTES, 'UTF-8').'" data-object-id="'.$object_id.'">';
+    $fileSafe = htmlspecialchars($file, ENT_QUOTES, 'UTF-8');
+    echo '<div class="comment-thread-root" data-comment-thread="1" data-comment-type="'.htmlspecialchars($type, ENT_QUOTES, 'UTF-8').'" data-object-id="'.$object_id.'" data-file="'.$fileSafe.'">';
+    echo '<div class="comment-ajax-notice" data-comment-notice="1" hidden></div>';
 
     if ($showPager) {
         echo $pagertop;
