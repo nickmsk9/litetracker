@@ -5,6 +5,11 @@
 var chatUpdateTimer = null;
 var CHAT_AJAX_URL = 'ajax/chat.php';
 
+// Escape special characters for jQuery selectors (fallback for jQuery < 3.0)
+function chatEscapeSelector(value) {
+return value.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&');
+}
+
 function chatUpdate() {
 $.post(CHAT_AJAX_URL, { type: 'update' }, function (response) {
 $('#result_chat').html(response);
@@ -56,8 +61,7 @@ if (!id || !confirm('Удалить сообщение?')) {
 return;
 }
 $.post(CHAT_AJAX_URL, { type: 'delete', id: id }, function () {
-var $msg = $('#msg_' + $.escapeSelector(id));
-$msg.fadeOut(200, function () { $(this).remove(); });
+$('#msg_' + chatEscapeSelector(id)).fadeOut(200, function () { $(this).remove(); });
 }, 'html');
 });
 
