@@ -86,13 +86,6 @@
       toggle.textContent = '🙂';
       controls.insertBefore(toggle, controls.firstChild);
 
-      var paragraphToggle = document.createElement('button');
-      paragraphToggle.type = 'button';
-      paragraphToggle.className = 'wall-comment-button lt-paragraph-toggle';
-      paragraphToggle.setAttribute('data-paragraph-toggle', '1');
-      paragraphToggle.textContent = 'Абзац';
-      controls.insertBefore(paragraphToggle, toggle.nextSibling);
-
       var panel = document.createElement('div');
       panel.className = 'lt-emoji-panel';
       panel.setAttribute('data-emoji-panel', '1');
@@ -101,74 +94,6 @@
         return '<button type="button" class="lt-emoji-item" data-emoji-value="' + emoji + '">' + emoji + '</button>';
       }).join('');
       controls.parentNode.appendChild(panel);
-
-      var paragraph = document.createElement('div');
-      paragraph.className = 'lt-paragraph-editor';
-      paragraph.setAttribute('data-paragraph-editor', '1');
-      paragraph.hidden = true;
-      paragraph.innerHTML = '<div class="lt-paragraph-editor-note">Paragraph режим: каждый Enter = новый абзац.</div><div class="lt-paragraph-editor-box" contenteditable="true"></div>';
-      controls.parentNode.appendChild(paragraph);
-
-      var paragraphBox = paragraph.querySelector('.lt-paragraph-editor-box');
-
-      paragraphToggle.addEventListener('click', function () {
-        var enabled = paragraph.hidden;
-        paragraph.hidden = !enabled;
-        paragraphToggle.classList.toggle('lt-paragraph-toggle-active', enabled);
-        if (enabled) {
-          paragraphBox.textContent = textarea.value;
-          paragraphBox.focus();
-        } else {
-          textarea.value = paragraphBox.textContent || '';
-          textarea.focus();
-        }
-      });
-
-      paragraphBox.addEventListener('input', function () {
-        textarea.value = paragraphBox.textContent || '';
-      });
-    });
-  }
-
-  function initUploadParagraph() {
-    var areas = document.querySelectorAll('#upload_descr, .edit-template-textarea');
-    Array.prototype.forEach.call(areas, function (textarea) {
-      if (textarea.getAttribute('data-paragraph-ready') === '1') {
-        return;
-      }
-
-      textarea.setAttribute('data-paragraph-ready', '1');
-      var wrap = document.createElement('div');
-      wrap.className = 'lt-upload-paragraph-wrap';
-      var toolbar = document.createElement('div');
-      toolbar.className = 'lt-upload-paragraph-toolbar';
-      toolbar.innerHTML = '<button type="button" class="wall-comment-button lt-upload-paragraph-button">Редактор абзацев</button>';
-      var editor = document.createElement('div');
-      editor.className = 'lt-paragraph-editor';
-      editor.hidden = true;
-      editor.innerHTML = '<div class="lt-paragraph-editor-note">Paragraph режим для описания: редактируйте текст по абзацам локально.</div><div class="lt-paragraph-editor-box" contenteditable="true"></div>';
-      var box = editor.querySelector('.lt-paragraph-editor-box');
-      var button = toolbar.querySelector('.lt-upload-paragraph-button');
-
-      button.addEventListener('click', function () {
-        var enabled = editor.hidden;
-        editor.hidden = !enabled;
-        button.classList.toggle('lt-paragraph-toggle-active', enabled);
-        if (enabled) {
-          box.textContent = textarea.value || '';
-          box.focus();
-        } else {
-          textarea.value = box.textContent || '';
-        }
-      });
-
-      box.addEventListener('input', function () {
-        textarea.value = box.textContent || '';
-      });
-
-      textarea.parentNode.insertBefore(wrap, textarea);
-      wrap.appendChild(toolbar);
-      wrap.appendChild(editor);
     });
   }
 
@@ -178,7 +103,6 @@
     var reactionBody = reactionModal ? reactionModal.querySelector('[data-reaction-modal-body]') : null;
 
     initEmojiTools(document);
-    initUploadParagraph();
 
     document.addEventListener('click', function (event) {
       var benefitsOpen = closest(event.target, '[data-plus-benefits-open]');

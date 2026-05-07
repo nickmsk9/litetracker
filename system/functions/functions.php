@@ -294,7 +294,14 @@ function lt_profile_slug_normalize($slug)
 
 function lt_profile_slug_is_reserved($slug)
 {
-	$reserved = array('admin', 'ajax', 'api', 'assets', 'bonus', 'browse', 'details', 'download', 'index', 'login', 'news', 'profile', 'shop', 'signup', 'static', 'user', 'users', 'u');
+	$reserved = array(
+		'admin', 'ajax', 'announce', 'api', 'assets', 'avatars', 'bonus', 'browse', 'categories',
+		'check_release', 'complaint', 'copyright', 'details', 'disclaimer', 'donate', 'download',
+		'edit', 'edit_priv', 'exit', 'faq', 'feedback', 'index', 'language', 'login', 'messages',
+		'multitracker_accounts', 'news', 'notify', 'profile', 'rating', 'rules', 'scrape',
+		'search_query', 'sessions', 'shop', 'signup', 'static', 'upload', 'user', 'user_add',
+		'users', 'u', 'wall_reports',
+	);
 
 	return in_array(lt_profile_slug_normalize($slug), $reserved, true);
 }
@@ -557,25 +564,12 @@ function profile_href($user, $view = 'profile', $params = array())
 		lt_profile_slug_normalize($userRow['profile_slug']) === (string) $userRow['profile_slug']
 	) {
 		$slug = rawurlencode((string) $userRow['profile_slug']);
-		if (!empty($config['rewrite'])) {
-			$path = 'u/'.$slug;
-			if ($view !== 'profile') {
-				$path .= '/'.$view;
-			}
-			$query = http_build_query($extraParams);
-			return $path.($query !== '' ? '?'.$query : '');
-		}
-
-		$params = array('slug' => (string) $userRow['profile_slug']);
+		$path = '/'.$slug;
 		if ($view !== 'profile') {
-			$params['view'] = $view;
+			$path .= '/'.$view;
 		}
-		if ($extraParams) {
-			$params = array_merge($params, $extraParams);
-		}
-
-		$query = http_build_query($params);
-		return 'profile.php'.($query !== '' ? '?'.$query : '');
+		$query = http_build_query($extraParams);
+		return $path.($query !== '' ? '?'.$query : '');
 	}
 
 	$params = array('id' => $userId);
