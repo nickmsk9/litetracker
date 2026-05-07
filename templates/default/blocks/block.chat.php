@@ -1,57 +1,28 @@
-<?
-if (!defined('LITETRACKER'))
+<?php
+if (!defined('LITETRACKER')) {
 die('Direct access denied.');
+}
 
-
-////////////////////////////////////////////////////////
-//Шаблон для Чата
-////////////////////////////////////////////////////////
-//$param - Описание
-
-begin_frame('Комната для общения');
+global $config, $PRIV, $USER, $language;
 ?>
 
-	
-
-<form name="chat" action="javascript:void(0)" onsubmit="send();">
-	<table width="100%">
-		<tbody>
-					<? if($USER) { ?>
-			<tr>
-				<td class="row1"><center><input type="text"  name="text_chat" id="text_chat" style="width:80%"> <input type="button" value="<?=$language['chat_3'];?>" onCLick="send();"></center></td>
-			</tr>
-			<? } ?>
-			<tr>
-				<td align="left" class="row1">
-
-					<div id="result_chat" style="overflow: auto; height: 250px; width:100%;  border: solid #dae1e8 0px;">
-					<br><center><img src="public/images/loading.gif" alt="<?=$language['default_4'];?>"></center>
-					</div>	
-
-					<table width="100%" cellspacing="1" cellpadding="1" border="0">
-						<tbody>
-						<tr>
-							<td width="70%" align="right" class="row2">
-								<small>
-								<?=($PRIV['chat_clear'] ? '<a title="'.$language['chat_2'].'" onClick="confirm_clear();" href="javascript:void(0)">'.$language['chat_2'].'</a>' : '');?>
-								</small>
-							</td>
-						</tr>
-
-						</tbody>
-					</table>
-				</td>
-			</tr>
-
-			<tr>
-				<td class="row1"><div id="result_send" class="row1"></div></tr>
-			</tr>
-		</tbody>
-	</table>
-</form>
-<?
-end_frame();
-?>
-
-
-
+<section class="frame chat-frame">
+<header class="frame-header">
+<h2 class="frame-title">Чат</h2>
+<?php if ($PRIV['chat_clear']) { ?>
+<a class="chat-clear-link" href="javascript:void(0);" onclick="chatClear();" title="<?=htmlspecialchars($language['chat_2'], ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars($language['chat_2'], ENT_QUOTES, 'UTF-8');?></a>
+<?php } ?>
+</header>
+<div class="frame-body chat-body">
+<?php if ($USER) { ?>
+<div class="chat-input-row">
+<input type="text" id="text_chat" class="chat-input" placeholder="<?=htmlspecialchars($language['chat_3'], ENT_QUOTES, 'UTF-8');?>" maxlength="250" autocomplete="off">
+<button id="chat_send_btn" class="chat-send-btn" type="button" onclick="chatSend();"><?=htmlspecialchars($language['chat_3'], ENT_QUOTES, 'UTF-8');?></button>
+</div>
+<div id="result_send" class="chat-send-status"></div>
+<?php } ?>
+<div id="result_chat" class="chat-messages-area">
+<div class="chat-notice">Загрузка…</div>
+</div>
+</div>
+</section>

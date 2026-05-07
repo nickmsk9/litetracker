@@ -323,7 +323,7 @@ $db->query("SELECT id, name, text, date FROM news ORDER BY date DESC");
 	</div>
 
 	<?php if(!$db->num_rows() ) { ?>
-	<div class="profile-empty-state"><?=$language['news_13'];?></div>
+	<div class="news-empty-state"><div class="profile-empty-state"><?=$language['news_13'];?></div></div>
 	<?php } else { ?>
 	<div class="news-archive-list">
 		<?php while($arr = $db->get_row() ) { ?>

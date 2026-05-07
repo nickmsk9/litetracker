@@ -24,7 +24,7 @@ if (!defined('LITETRACKER')) {
 				<div class="profile-card-main">
 					<h1 class="profile-card-name"><?=get_user_color((int) ($arr['class'] ?? 0), $profileName, $arr);?></h1>
 					<div class="profile-status <?=$profileStatusClass;?>"><?=$profileStatusLabel;?></div>
-					<div class="profile-rank-line">Класс: <strong><?=htmlspecialchars(get_user_class_name((int) ($arr['class'] ?? 0)), ENT_QUOTES, 'UTF-8');?></strong></div>
+					<div class="profile-rank-line">Класс: <strong><?=get_user_class_name((int) ($arr['class'] ?? 0));?></strong></div>
 
 					<?php if ($isOwnProfile && $profileAbout !== '') { ?>
 					<div class="profile-card-text"><?=$profileAbout;?></div>
@@ -116,6 +116,7 @@ if (!defined('LITETRACKER')) {
 				</div>
 			</section>
 			<?php } elseif ($profileView === 'bonus') { ?>
+			<?php $profileHasPlus = lt_user_has_plus($arr); ?>
 			<section class="profile-panel profile-bonus-panel">
 				<div class="profile-plus-shop-card">
 					<div>
@@ -123,10 +124,12 @@ if (!defined('LITETRACKER')) {
 						<div class="profile-plus-shop-text">Бейдж у имени, без рекламы, реакции, красивый никнейм, GIF-аватарка и дополнительные функции.</div>
 						<div class="profile-plus-shop-status">Статус: <strong><?=htmlspecialchars($profileStats['plus'], ENT_QUOTES, 'UTF-8');?></strong></div>
 					</div>
+					<?php if (!$profileHasPlus) { ?>
 					<form method="post" action="<?=profile_href($id, 'bonus');?>">
 						<input type="hidden" name="act" value="buy_plus">
 						<button class="profile-card-button" type="submit">Купить за <?=template_format_number(lt_plus_month_bonus_price());?> бонусов</button>
 					</form>
+					<?php } ?>
 				</div>
 
 				<form class="profile-bonus-form" method="post" action="<?=profile_href($id, 'bonus');?>">

@@ -111,10 +111,36 @@ if ($action === 'wall_add') {
 		$insertValues[] = $parentId;
 	}
 
-	$db->query(
-		"INSERT INTO comments_users (`".implode('`,`', $insertFields)."`)
-		 VALUES (".implode(', ', $insertValues).")"
-	);
+	$insertSql = "INSERT INTO comments_users (`".implode('`,`', $insertFields)."`)
+		 VALUES (".implode(', ', $insertValues).")";
+	$insertOk = ($db->query($insertSql, 0) !== false);
+
+	if (!$insertOk) {
+		$canFallback = function_exists('mb_ord') || function_exists('iconv');
+		if ($canFallback) {
+			$textSafe = preg_replace_callback(
+				'/[\x{10000}-\x{10FFFF}]/u',
+				function ($m) {
+					if (function_exists('mb_ord')) {
+						return '&#' . mb_ord($m[0], 'UTF-8') . ';';
+					}
+					$enc = iconv('UTF-8', 'UCS-4BE', $m[0]);
+					if ($enc === false || strlen($enc) !== 4) return '';
+					$cp = unpack('N', $enc);
+					return (!empty($cp[1]) ? '&#' . (int)$cp[1] . ';' : '');
+				},
+				$text
+			);
+			$insertValues[3] = "'".$db->safesql($textSafe)."'";
+			$insertSql = "INSERT INTO comments_users (`".implode('`,`', $insertFields)."`)
+				 VALUES (".implode(', ', $insertValues).")";
+			$insertOk = ($db->query($insertSql, 0) !== false);
+		}
+	}
+
+	if (!$insertOk) {
+		profile_ajax_response(false, 'Не удалось сохранить комментарий.');
+	}
 
 	if ((int) $USER['id'] !== (int) $wallOwner['id'] && !empty($wallOwner['notify_comments'])) {
 		send_msg(
