@@ -371,7 +371,7 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
             $update[] = 'id_user_edit=' . (int) $USER['id'];
             $update[] = 'date_edit=NOW()';
         }
- 
+
         if (count($update)) {
             $update_sql = "UPDATE `{$table_name}` SET " . implode(',', $update) . " WHERE id = {$id_comment}";
             $updated = ($db->query($update_sql, 0) !== false);
