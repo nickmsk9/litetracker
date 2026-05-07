@@ -1056,8 +1056,7 @@ function get_user_class()
 function get_user_class_name($class)
 {
 	$priv = get_priv_info($class);
-	return "<font>".htmlspecialchars($priv['NAME'])."</font>";
-
+	return htmlspecialchars((string) ($priv['NAME'] ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
 //Вывод сообщения

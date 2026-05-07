@@ -72,19 +72,20 @@
       }
 
       var textarea = form.querySelector('[data-comment-textarea], textarea[name="text"], textarea[name="descr"]');
-      var controls = form.querySelector('.wall-form-controls');
-      if (!textarea || !controls) {
+      if (!textarea) {
         return;
       }
 
       form.setAttribute('data-emoji-ready', '1');
 
+      var wrapper = document.createElement('div');
+      wrapper.className = 'lt-emoji-toolbar';
+
       var toggle = document.createElement('button');
       toggle.type = 'button';
       toggle.className = 'wall-comment-button lt-emoji-toggle';
       toggle.setAttribute('data-emoji-toggle', '1');
-      toggle.textContent = '🙂';
-      controls.insertBefore(toggle, controls.firstChild);
+      toggle.textContent = '🙂 Смайлы';
 
       var panel = document.createElement('div');
       panel.className = 'lt-emoji-panel';
@@ -93,7 +94,10 @@
       panel.innerHTML = emojiList.map(function (emoji) {
         return '<button type="button" class="lt-emoji-item" data-emoji-value="' + emoji + '">' + emoji + '</button>';
       }).join('');
-      controls.parentNode.appendChild(panel);
+
+      wrapper.appendChild(toggle);
+      wrapper.appendChild(panel);
+      textarea.parentNode.insertBefore(wrapper, textarea);
     });
   }
 
@@ -151,6 +155,10 @@
         var textarea = parentForm ? parentForm.querySelector('[data-comment-textarea], textarea[name="text"], textarea[name="descr"]') : null;
         if (textarea) {
           insertAtCursor(textarea, emojiItem.getAttribute('data-emoji-value') || '');
+          var itemPanel = closest(emojiItem, '[data-emoji-panel]');
+          if (itemPanel) {
+            itemPanel.hidden = true;
+          }
         }
         return;
       }
