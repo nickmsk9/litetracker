@@ -150,7 +150,7 @@ if($act == 'edit' && $id) {
 			$updatedText = cleanhtml(lt_fix_utf8_mojibake((string) ($updatedNews['text'] ?? $text)));
 			$updatedPublishedAt = lt_news_format_publication_date((string) ($updatedNews['date'] ?? $arr['date']));
 
-			lt_news_json_response(true, 'Новость сохранена.', array(
+			lt_news_json_response(true, (string) ($language['news_19'] ?? 'Новость сохранена'), array(
 				'name' => $updatedName,
 				'text' => $updatedText,
 				'published_at' => $updatedPublishedAt,
@@ -165,7 +165,7 @@ if($act == 'edit' && $id) {
 	begin_frame($language['news_4']);
 	?>
 	<div class="comment-ajax-notice" data-news-edit-notice hidden></div>
-	<form enctype="multipart/form-data" action="news.php?act=edit&id=<?=$id;?>" method="post" name="news" class="news-editor-form" data-news-edit-form="1" data-news-view-url="news.php?id=<?=$id;?>">
+	<form enctype="multipart/form-data" action="news.php?act=edit&id=<?=$id;?>" method="post" name="news" class="news-editor-form" data-news-edit-form="1" data-news-view-url="news.php?id=<?=$id;?>" data-label-submit="<?=htmlspecialchars((string) ($language['news_8'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8');?>" data-label-saving="<?=htmlspecialchars((string) ($language['default_4'] ?? 'Загрузка...'), ENT_QUOTES, 'UTF-8');?>" data-message-saved="<?=htmlspecialchars((string) ($language['news_19'] ?? 'Новость сохранена'), ENT_QUOTES, 'UTF-8');?>" data-message-save-error="<?=htmlspecialchars((string) ($language['news_20'] ?? 'Не удалось сохранить новость'), ENT_QUOTES, 'UTF-8');?>" data-message-save-error-retry="<?=htmlspecialchars((string) ($language['news_21'] ?? 'Не удалось сохранить новость. Попробуйте ещё раз.'), ENT_QUOTES, 'UTF-8');?>">
 		<div class="news-editor-grid">
 			<label class="news-editor-field">
 				<span class="news-editor-label"><?=$language['news_5'];?>:</span>
@@ -208,10 +208,15 @@ if($act == 'edit' && $id) {
 			event.preventDefault();
 			var submit = form.querySelector('.news-editor-submit');
 			var formData = new FormData(form);
+			var submitLabel = form.getAttribute('data-label-submit') || 'Редактировать';
+			var savingLabel = form.getAttribute('data-label-saving') || 'Загрузка...';
+			var savedMessage = form.getAttribute('data-message-saved') || 'Новость сохранена';
+			var saveErrorMessage = form.getAttribute('data-message-save-error') || 'Не удалось сохранить новость';
+			var saveRetryMessage = form.getAttribute('data-message-save-error-retry') || 'Не удалось сохранить новость. Попробуйте ещё раз.';
 
 			if (submit) {
 				submit.disabled = true;
-				submit.value = 'Сохранение...';
+				submit.value = savingLabel;
 			}
 			showNotice('', false);
 
@@ -228,19 +233,19 @@ if($act == 'edit' && $id) {
 				})
 				.then(function (payload) {
 					if (!payload || !payload.ok) {
-						showNotice((payload && payload.message) ? payload.message : 'Не удалось сохранить новость.', true);
+						showNotice((payload && payload.message) ? payload.message : saveErrorMessage, true);
 						return;
 					}
 
-					showNotice(payload.message || 'Новость сохранена.');
+					showNotice(payload.message || savedMessage);
 				})
 				.catch(function () {
-					showNotice('Не удалось сохранить новость. Попробуйте ещё раз.', true);
+					showNotice(saveRetryMessage, true);
 				})
 				.then(function () {
 					if (submit) {
 						submit.disabled = false;
-						submit.value = '<?=$language['news_8'];?>';
+						submit.value = submitLabel;
 					}
 				});
 		});
