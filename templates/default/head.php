@@ -71,6 +71,7 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <?=$header;?>
 <link href="templates/<?=$tpl;?>/css/my.css" rel="stylesheet" type="text/css">
+<link href="templates/<?=$tpl;?>/css/ui.css" rel="stylesheet" type="text/css">
 </head>
 <body<?=($bodyClasses ? ' class="'.htmlspecialchars(implode(' ', $bodyClasses), ENT_QUOTES, 'UTF-8').'"' : '');?>>
 <div class="site-wrapper">

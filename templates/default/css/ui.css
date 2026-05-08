@@ -1,0 +1,220 @@
+/*
+ * LiteTracker — Unified UI layer
+ * Minimal utility classes for buttons, cards, inputs, badges, alerts and tables.
+ * All values reference the CSS custom properties defined in my.css.
+ */
+
+/* =====================================================================
+   Buttons
+   ===================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 7px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-decoration: none;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.btn:hover {
+  background: var(--surface-muted);
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+/* Primary — filled accent */
+.btn-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  border-color: var(--accent-hover);
+  background: var(--accent-hover);
+  color: #ffffff;
+}
+
+/* Secondary — outlined / muted */
+.btn-secondary {
+  border-color: var(--line);
+  background: var(--surface-solid);
+  color: var(--muted);
+}
+
+.btn-secondary:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+/* Danger — destructive action */
+.btn-danger {
+  border-color: #c94f4f;
+  background: #c94f4f;
+  color: #ffffff;
+}
+
+.btn-danger:hover {
+  border-color: #b03e3e;
+  background: #b03e3e;
+  color: #ffffff;
+}
+
+/* Small modifier */
+.btn-small {
+  min-height: 28px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* =====================================================================
+   Card
+   ===================================================================== */
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+/* =====================================================================
+   Input  (use as a class on <input>, <select>, <textarea>)
+   ===================================================================== */
+
+.input {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface-solid);
+  color: var(--text);
+  font: inherit;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.input:hover {
+  border-color: #b8b8bf;
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(0, 113, 227, 0.5);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.12);
+}
+
+/* =====================================================================
+   Badge
+   ===================================================================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.badge-primary {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.badge-success {
+  background: #dff0d8;
+  color: #3a6b2a;
+}
+
+.badge-danger {
+  background: #fde8e8;
+  color: #8a2c2c;
+}
+
+/* =====================================================================
+   Alert  (inline feedback messages)
+   ===================================================================== */
+
+.alert {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.alert-success {
+  border-color: #9ec28d;
+  background: #f5fbf1;
+}
+
+.alert-error {
+  border-color: #d7a09c;
+  background: #fff6f5;
+  color: #8a2c2c;
+}
+
+.alert-info {
+  border-color: #a8c4e8;
+  background: #eef5ff;
+  color: #1d4a80;
+}
+
+/* =====================================================================
+   Table
+   ===================================================================== */
+
+.table-clean {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.table-clean th,
+.table-clean td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table-clean th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.table-clean tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table-clean tbody tr:hover td {
+  background: var(--surface-muted);
+}

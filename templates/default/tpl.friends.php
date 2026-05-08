@@ -30,7 +30,7 @@ begin_frame();
 
 
 
-	<table cellspacing="3" cellpadding="0" class="profileTable" width="100%">
+	<table cellspacing="3" cellpadding="0" class="profileTable table-clean" width="100%">
 
 		 <tbody>
 
@@ -74,7 +74,7 @@ begin_frame();
 		 <td class="data" colspan="2">
 				<?=$action;?>
 				<?
-				echo ($USER['id'] != $userid ? '<Input type="button" value="'.$language['profile_17'].'" onCLick="window.location.href=\'my.mail.php?act=conversation&id_user='.$userid.'\'">&nbsp' : '');
+				echo ($USER['id'] != $userid ? '<a class="btn btn-secondary" href="my.mail.php?act=conversation&id_user='.$userid.'">'.htmlspecialchars($language['profile_17'], ENT_QUOTES, 'UTF-8').'</a>&nbsp;' : '');
 
 
 				?>

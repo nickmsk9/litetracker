@@ -19,7 +19,7 @@ begin_frame();
 
 
 
-	<table cellspacing="3" cellpadding="0" class="profileTable" width="100%">
+	<table cellspacing="3" cellpadding="0" class="profileTable table-clean" width="100%">
 
 		 <tbody>
 
@@ -62,8 +62,8 @@ begin_frame();
 		 
 		 <td class="data" colspan="2">
 				<?
-				echo ($USER['id'] == $arr['id'] || !empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV']) ? '<Input type="button" value="'.$language['profile_16'].'" onCLick="window.location.href=\'my.setting.php?id='.$id.'\'">&nbsp' : '');
-				echo ($USER['id'] != $arr['id'] ? '<Input type="button" value="'.$language['profile_17'].'" onCLick="window.location.href=\'my.mail.php?act=conversation&id_user='.$arr['id'].'\'">&nbsp' : '');
+				echo ($USER['id'] == $arr['id'] || !empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV']) ? '<a class="btn btn-secondary" href="my.setting.php?id='.$id.'">'.htmlspecialchars($language['profile_16'], ENT_QUOTES, 'UTF-8').'</a>&nbsp;' : '');
+				echo ($USER['id'] != $arr['id'] ? '<a class="btn btn-secondary" href="my.mail.php?act=conversation&id_user='.$arr['id'].'">'.htmlspecialchars($language['profile_17'], ENT_QUOTES, 'UTF-8').'</a>&nbsp;' : '');
 
 
 				?>
