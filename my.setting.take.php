@@ -46,9 +46,9 @@ function prepare_user_avatar_upload($fieldName, $userId, $userRow)
 		err($language['default_1'], 'Можно загружать только изображения JPG, PNG или GIF.', 1);
 	}
 
-	$isAnimatedPlusGif = ($type === IMAGETYPE_GIF && lt_user_has_plus($userRow));
+	$isAnimatedGif = ($type === IMAGETYPE_GIF);
 
-	if (!$isAnimatedPlusGif && (!function_exists('imagecreatetruecolor') || !function_exists('imagejpeg') || !function_exists('imagecreatefromstring'))) {
+	if (!$isAnimatedGif && (!function_exists('imagecreatetruecolor') || !function_exists('imagejpeg') || !function_exists('imagecreatefromstring'))) {
 		err($language['default_1'], 'На сервере не включена библиотека GD для обработки изображений.', 1);
 	}
 
@@ -73,7 +73,7 @@ function prepare_user_avatar_upload($fieldName, $userId, $userRow)
 		err('Ошибка', 'Не удалось прочитать загруженное изображение.', 1);
 	}
 
-	if ($isAnimatedPlusGif) {
+	if ($isAnimatedGif) {
 		$fileName = (string) $userId.'_'.time().'_'.substr(md5(mksecret(16)), 0, 8).'.gif';
 		$mainPath = $dirDest . $fileName;
 		$smallPath = $dirDestSmall . $fileName;
@@ -331,41 +331,6 @@ if ((int) $arr['theme_dark'] !== $themeDark) {
 	$update[] = "theme_dark='".$themeDark."'";
 }
 
-$targetHasPlus = lt_user_has_plus($arr);
-if ($targetHasPlus) {
-	$badge = trim((string) ($_POST['plus_badge'] ?? ($arr['plus_badge'] ?? 'star')));
-	$badgeOptions = lt_plus_badge_options();
-	if (empty($badgeOptions[$badge])) {
-		$badge = 'star';
-	}
-	if ((string) ($arr['plus_badge'] ?? 'star') !== $badge) {
-		$update[] = "plus_badge=?";
-		$updateParams[] = $badge;
-		$updateTypes .= 's';
-	}
-
-	$profileSlug = lt_profile_slug_normalize($_POST['profile_slug'] ?? '');
-	if ($profileSlug !== '' && (strlen($profileSlug) < 3 || strlen($profileSlug) > 64)) {
-		err($language['default_1'], 'Красивый никнейм должен быть от 3 до 64 символов.', 1);
-	}
-	if ($profileSlug !== '' && lt_profile_slug_is_reserved($profileSlug)) {
-		err($language['default_1'], 'Этот красивый никнейм зарезервирован системой.', 1);
-	}
-	if ($profileSlug !== '') {
-		$slugOwnerId = lt_profile_slug_user_id($profileSlug);
-		if ($slugOwnerId > 0 && $slugOwnerId !== (int) $id) {
-			err($language['default_1'], 'Этот красивый никнейм уже занят.', 1);
-		}
-	}
-	if ((string) ($arr['profile_slug'] ?? '') !== $profileSlug) {
-		$update[] = "profile_slug=?";
-		$updateParams[] = $profileSlug;
-		$updateTypes .= 's';
-	}
-} elseif (!empty($arr['profile_slug'])) {
-	$update[] = "profile_slug=''";
-}
-
 $avatarFileName = prepare_user_avatar_upload('avatar_upload', $id, $arr);
 if ($avatarFileName !== false) {
 	$update[] = "avatar=?";
@@ -416,28 +381,6 @@ if(!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) {
 		}
 	}
 
-	if((!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) && (int) $id !== (int) $USER['id'] && isset($_POST['plus_grant_mode'])) {
-		$plusGrantMode = trim((string) ($_POST['plus_grant_mode'] ?? 'keep'));
-		if ($plusGrantMode === 'disable') {
-			$update[] = "plus_permanent='0'";
-			$update[] = "plus_until=NULL";
-			$update[] = "plus_source='manual_disabled'";
-		} elseif ($plusGrantMode === 'forever') {
-			$update[] = "plus_permanent='1'";
-			$update[] = "plus_until=NULL";
-			$update[] = "plus_source='manual'";
-		} elseif ($plusGrantMode === 'until') {
-			$manualUntil = trim((string) ($_POST['plus_manual_until'] ?? ''));
-			if ($manualUntil === '' || !preg_match('~^\d{4}-\d{2}-\d{2}$~', $manualUntil) || !strtotime($manualUntil.' 23:59:59')) {
-				err($language['default_1'], 'Укажите корректную дату окончания Plus.', 1);
-			}
-			$update[] = "plus_permanent='0'";
-			$update[] = "plus_until=?";
-			$updateParams[] = $manualUntil.' 23:59:59';
-			$updateTypes .= 's';
-			$update[] = "plus_source='manual'";
-		}
-	}
 }
 
 if(count($update)) {

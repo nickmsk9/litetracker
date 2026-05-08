@@ -456,48 +456,6 @@ if($arr['banned'] && !$PRIV['details_banned_view']) {
 	err($language['default_1'] , $language['details_20'] , 1);
 }
 
-if (isset($_GET['plus_reaction'])) {
-	if (!$USER) {
-		header('Location: login.php?referer='.rawurlencode('details.php?id='.(int) $id));
-		die();
-	}
-
-	if (!lt_csrf_validate('details_reaction_'.(int) $id)) {
-		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
-	}
-
-	if (!lt_user_has_plus($USER)) {
-		err($language['default_1'], 'Реакции доступны пользователям Plus.', 1);
-	}
-
-	lt_reaction_set('torrent', (int) $id, $_GET['plus_reaction'], (int) $USER['id']);
-	header('Location: details.php?id='.(int) $id.'#details-plus-reactions');
-	die();
-}
-
-if (isset($_GET['reaction_list'])) {
-	head('Оценившие раздачу', true);
-	begin_frame('Оценившие раздачу');
-	$reactionUsers = lt_reaction_users('torrent', (int) $id);
-	if ($reactionUsers) {
-		echo '<div class="plus-reaction-users">';
-		foreach ($reactionUsers as $reactionUser) {
-			$reactionLabel = ($reactionUser['reaction'] === 'dislike' ? 'дизлайк' : 'лайк');
-			echo '<div class="plus-reaction-user-row">';
-			echo '<a href="'.profile_href($reactionUser).'">'.get_user_color((int) $reactionUser['class'], htmlspecialchars((string) $reactionUser['name'], ENT_QUOTES, 'UTF-8'), $reactionUser).'</a>';
-			echo '<span>'.htmlspecialchars($reactionLabel, ENT_QUOTES, 'UTF-8').'</span>';
-			echo '</div>';
-		}
-		echo '</div>';
-	} else {
-		echo '<div class="profile-empty-state">Оценок пока нет.</div>';
-	}
-	echo '<br><a href="details.php?id='.(int) $id.'">Вернуться к раздаче</a>';
-	end_frame();
-	foot(true);
-	die();
-}
-
 
 /////////////////////////////////////////////////////////
 //Информация о файлах
@@ -862,10 +820,8 @@ foreach ($details_sections as $section) {
 }
 
 $details_description_html = ($details_description_text !== '' ? lt_details_render_text_html($details_description_text) : '');
-$details_summary_text = ((!empty($USER['id']) && lt_user_has_plus($USER)) ? lt_details_local_summary($details_description_text !== '' ? $details_description_text : $arr['descr']) : '');
+$details_summary_text = '';
 $details_has_structured_content = (!empty($details_main_items) || !empty($details_extra_sections));
-$details_plus_reaction_stats = lt_reaction_stats('torrent', (int) $id, (int) ($USER['id'] ?? 0));
-$details_plus_reaction_csrf = lt_csrf_query('details_reaction_'.(int) $id);
 $details_can_edit = ($PRIV['edit_release'] || (!empty($USER['id']) && $USER['id'] == $id_user));
 $details_download_href = ($infohash && $PRIV['download_torrent'] ? 'download.php?id='.$id : '');
 $details_magnet_href = ($infohash && $PRIV['download_magnet'] ? 'download.php?id='.$id.'&magnet=1' : '');

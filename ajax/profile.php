@@ -40,7 +40,7 @@ function profile_ajax_admin_ensure_schema()
 	}
 
 	$userColumns = array(
-		'support_enabled' => "ALTER TABLE `users` ADD COLUMN `support_enabled` tinyint NOT NULL DEFAULT '0' AFTER `plus_badge`",
+		'support_enabled' => "ALTER TABLE `users` ADD COLUMN `support_enabled` tinyint NOT NULL DEFAULT '0' AFTER `theme_dark`",
 		'support_until' => "ALTER TABLE `users` ADD COLUMN `support_until` datetime DEFAULT NULL AFTER `support_enabled`",
 		'warning_until' => "ALTER TABLE `users` ADD COLUMN `warning_until` datetime DEFAULT NULL AFTER `support_until`",
 		'chat_ban' => "ALTER TABLE `users` ADD COLUMN `chat_ban` tinyint NOT NULL DEFAULT '0' AFTER `warning_until`",

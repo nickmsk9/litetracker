@@ -318,7 +318,6 @@
       var editBtn     = target.closest('[data-wall-edit]');
       var deleteBtn   = target.closest('[data-wall-delete]');
       var reportBtn   = target.closest('[data-wall-report]');
-      var reactBtn    = target.closest('[data-wall-react]');
       var threadRoot, comment, commentId, csrfToken, td, formData;
 
       // ── Reply ────────────────────────────────────────────────
@@ -445,65 +444,6 @@
         return;
       }
 
-      // ── React (like / dislike) ───────────────────────────────
-      if (reactBtn) {
-        threadRoot = getThreadRoot(reactBtn);
-
-        if (!threadRoot) {
-          return;
-        }
-
-        event.preventDefault();
-
-        comment   = reactBtn.closest('.wall-comment');
-
-        if (!comment) {
-          return;
-        }
-
-        commentId = reactBtn.getAttribute('data-comment-id') || comment.getAttribute('data-comment-id') || '0';
-        csrfToken = reactBtn.getAttribute('data-csrf-token') || '';
-        td        = getThreadData(threadRoot);
-
-        formData  = new FormData();
-        formData.append('action', 'react');
-        formData.append('type', td.type);
-        formData.append('object_id', td.objectId);
-        formData.append('comment_id', commentId);
-        formData.append('reaction', reactBtn.getAttribute('data-wall-react') || 'like');
-        formData.append('file', td.file);
-
-        if (csrfToken) {
-          formData.append('csrf_token', csrfToken);
-        }
-
-        sendAjax(formData, function (payload) {
-          var likeBtn    = comment.querySelector('[data-wall-react="like"]');
-          var dislikeBtn = comment.querySelector('[data-wall-react="dislike"]');
-          var likeCnt    = comment.querySelector('[data-reaction-count="like"]');
-          var dislikeCnt = comment.querySelector('[data-reaction-count="dislike"]');
-
-          if (likeCnt && payload.like !== undefined) {
-            likeCnt.textContent = payload.like;
-          }
-
-          if (dislikeCnt && payload.dislike !== undefined) {
-            dislikeCnt.textContent = payload.dislike;
-          }
-
-          if (likeBtn) {
-            likeBtn.classList.toggle('plus-reaction-button-active', payload.user_reaction === 'like');
-          }
-
-          if (dislikeBtn) {
-            dislikeBtn.classList.toggle('plus-reaction-button-active', payload.user_reaction === 'dislike');
-          }
-        }, function (message) {
-          showThreadNotice(threadRoot, message, true);
-        });
-
-        return;
-      }
     });
 
     // ── Form submit (add comment) ───────────────────────────────

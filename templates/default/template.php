@@ -126,18 +126,6 @@ function render_standard_sidebar()
 	$newsItems = template_get_sidebar_news();
 	?>
 	<aside class="site-sidebar site-sidebar-right">
-		<?php if (!lt_user_has_plus($USER ?? null)) { ?>
-		<section class="sidebar-panel plus-promo-panel">
-			<button class="plus-promo-close" type="button" aria-label="Скрыть" data-plus-promo-close>&times;</button>
-			<div class="plus-promo-art" aria-hidden="true">
-				<span class="plus-promo-gem"></span>
-			</div>
-			<h2 class="sidebar-panel-title">Подписка Plus</h2>
-			<p class="plus-promo-copy">Без рекламы, реакции, красивый никнейм, видеоаватарка и другие функции Plus.</p>
-			<button class="plus-promo-button" type="button" data-plus-benefits-open="1">От <?=template_format_number(lt_plus_month_bonus_price());?> бонусов в месяц</button>
-		</section>
-		<?php } ?>
-
 		<section class="sidebar-panel project-help-panel">
 			<h2 class="sidebar-panel-title"><a class="sidebar-panel-title-link" href="<?=htmlspecialchars($buttonHref, ENT_QUOTES, 'UTF-8');?>">Помощь проекту</a></h2>
 			<p class="project-help-copy"><?=htmlspecialchars($helpText, ENT_QUOTES, 'UTF-8');?></p>
@@ -149,8 +137,6 @@ function render_standard_sidebar()
 			<?php } ?>
 			<a class="project-help-button" href="<?=htmlspecialchars($buttonHref, ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars($buttonLabel, ENT_QUOTES, 'UTF-8');?></a>
 		</section>
-
-		<?=lt_ads_render('sidebar');?>
 
 		<section class="sidebar-panel sidebar-news-panel">
 			<h2 class="sidebar-panel-title"><a class="sidebar-panel-title-link" href="news.php">Новости</a></h2>

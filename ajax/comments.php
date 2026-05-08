@@ -310,39 +310,4 @@ if ($action === 'report') {
     ajax_cm_response(1, 'Жалоба отправлена администрации.');
 }
 
-/////////////////////////////
-// REACT
-/////////////////////////////
-if ($action === 'react') {
-    $commentId = (int)($_REQUEST['comment_id'] ?? 0);
-    $reaction  = (in_array(($_REQUEST['reaction'] ?? ''), array('like', 'dislike'), true) ? (string)$_REQUEST['reaction'] : 'like');
-
-    if ($commentId <= 0) {
-        ajax_cm_response(0, 'Комментарий не найден.');
-    }
-
-    if (!lt_csrf_validate($csrfScope)) {
-        ajax_cm_response(0, 'Защитный токен устарел. Обновите страницу и попробуйте снова.');
-    }
-
-    if (!lt_user_has_plus($USER)) {
-        ajax_cm_response(0, 'Реакции доступны пользователям Plus.');
-    }
-
-    $comment = $db->super_query("SELECT id FROM `{$tableName}` WHERE id = {$commentId} AND `{$objectColumn}` = {$objectId} LIMIT 1");
-    if (empty($comment['id'])) {
-        ajax_cm_response(0, 'Комментарий не найден.');
-    }
-
-    $reactionObjectType = 'comment_' . $type;
-    lt_reaction_set($reactionObjectType, $commentId, $reaction, (int)$USER['id']);
-    $stats = lt_reaction_stats($reactionObjectType, $commentId, (int)$USER['id']);
-
-    ajax_cm_response(1, '', array(
-        'like'          => (int)($stats['like'] ?? 0),
-        'dislike'       => (int)($stats['dislike'] ?? 0),
-        'user_reaction' => (string)($stats['user'] ?? ''),
-    ));
-}
-
 ajax_cm_response(0, 'Неизвестное действие.');

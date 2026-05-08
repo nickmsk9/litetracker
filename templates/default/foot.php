@@ -60,43 +60,6 @@ $showBottomBlocks = empty($GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS']);
 </footer>
 </div>
 
-<div class="lt-modal" data-plus-benefits-modal hidden>
-	<div class="lt-modal-backdrop" data-lt-modal-close="1"></div>
-	<div class="lt-modal-dialog" role="dialog" aria-modal="true" aria-label="Преимущества Plus">
-		<div class="lt-modal-head">
-			<h2 class="lt-modal-title">Преимущества подписки Plus</h2>
-			<button class="lt-modal-close" type="button" data-lt-modal-close="1">&times;</button>
-		</div>
-		<div class="lt-modal-body">
-			<ul class="plus-benefits-list">
-				<li>Бейдж у имени</li>
-				<li>Без рекламы</li>
-				<li>Реакции у постов и комментариев</li>
-				<li>Краткое содержание постов</li>
-				<li>Красивый никнейм</li>
-				<li>Видеоаватарка</li>
-				<li>До 100 избранных GIF</li>
-				<li>Час на редактирование комментариев</li>
-				<li>AI-озвучка постов</li>
-				<li>Список оценивших пост или комментарий</li>
-			</ul>
-		</div>
-	</div>
-</div>
-
-<div class="lt-modal" data-reaction-modal hidden>
-	<div class="lt-modal-backdrop" data-lt-modal-close="1"></div>
-	<div class="lt-modal-dialog lt-modal-dialog-compact" role="dialog" aria-modal="true" aria-label="Кто оценил">
-		<div class="lt-modal-head">
-			<h2 class="lt-modal-title">Кто оценил</h2>
-			<button class="lt-modal-close" type="button" data-lt-modal-close="1">&times;</button>
-		</div>
-		<div class="lt-modal-body" data-reaction-modal-body>
-			<div class="profile-empty-state">Загрузка...</div>
-		</div>
-	</div>
-</div>
-
 <div class="feedback-modal" data-feedback-modal hidden>
 	<div class="feedback-modal-backdrop" data-feedback-close></div>
 	<div class="feedback-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="feedback-modal-title">
@@ -134,16 +97,6 @@ $showBottomBlocks = empty($GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS']);
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-	var plusPromoClose = document.querySelector('[data-plus-promo-close]');
-	if (plusPromoClose) {
-		plusPromoClose.addEventListener('click', function () {
-			var panel = plusPromoClose.closest('.plus-promo-panel');
-			if (panel) {
-				panel.hidden = true;
-			}
-		});
-	}
-
 	var modal = document.querySelector('[data-feedback-modal]');
 	var openers = document.querySelectorAll('[data-feedback-open]');
 	var closers = document.querySelectorAll('[data-feedback-close]');

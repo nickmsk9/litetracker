@@ -180,54 +180,6 @@ header('Location:' . comment_return_url($file, $object_id));
 }
 
 //////////////////////////////////////////////////////////////
-// Реакции на комментарий Plus
-//////////////////////////////////////////////////////////////
-if (($act === 'react' || $act === 'reaction_list') && !empty($_REQUEST['id_comment'])) {
-    $id_comment = (int) $_REQUEST['id_comment'];
-    $comment = $db->super_query("SELECT id, id_user FROM `{$table_name}` WHERE id = {$id_comment} AND `{$object_name}` = {$object_id} LIMIT 1");
-    if (empty($comment['id'])) {
-        err($language['default_1'], $language['comments_8'], 1);
-    }
-
-    $reactionObjectType = 'comment_'.$type;
-
-    if ($act === 'reaction_list') {
-        head('Оценившие комментарий');
-        begin_frame('Оценившие комментарий');
-        $reactionUsers = lt_reaction_users($reactionObjectType, $id_comment);
-        if ($reactionUsers) {
-            echo '<div class="plus-reaction-users">';
-            foreach ($reactionUsers as $reactionUser) {
-                $reactionLabel = ($reactionUser['reaction'] === 'dislike' ? 'дизлайк' : 'лайк');
-                echo '<div class="plus-reaction-user-row">';
-                echo '<a href="'.profile_href($reactionUser).'">'.get_user_color((int) $reactionUser['class'], htmlspecialchars((string) $reactionUser['name'], ENT_QUOTES, 'UTF-8'), $reactionUser).'</a>';
-                echo '<span>'.htmlspecialchars($reactionLabel, ENT_QUOTES, 'UTF-8').'</span>';
-                echo '</div>';
-            }
-            echo '</div>';
-        } else {
-            echo '<div class="profile-empty-state">Оценок пока нет.</div>';
-        }
-        echo '<br><a href="'.htmlspecialchars(comment_return_url($file, $object_id, '#wall-comment-'.$id_comment), ENT_QUOTES, 'UTF-8').'">Вернуться</a>';
-        end_frame();
-        foot();
-        die();
-    }
-
-    if (!lt_csrf_validate($commentCsrfScope)) {
-        err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
-    }
-
-    if (!lt_user_has_plus($USER)) {
-        err($language['default_1'], 'Реакции доступны пользователям Plus.', 1);
-    }
-
-    lt_reaction_set($reactionObjectType, $id_comment, $_REQUEST['reaction'] ?? 'like', (int) $USER['id']);
-    header('Location:' . comment_return_url($file, $object_id, '#wall-comment-' . $id_comment));
-    die();
-}
-
-//////////////////////////////////////////////////////////////
 // Жалоба на комментарий
 //////////////////////////////////////////////////////////////
 if ($act === 'report' && !empty($_REQUEST['id_comment'])) {

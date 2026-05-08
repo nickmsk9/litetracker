@@ -136,11 +136,12 @@ CREATE TABLE `comments_news` (
   `id_user_edit` int NOT NULL,
   `date_edit` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `comments_news` WRITE;
 /*!40000 ALTER TABLE `comments_news` DISABLE KEYS */;
+INSERT INTO `comments_news` VALUES (1,1,1,'2026-05-07 20:16:17','что?',0,1,'2026-05-07 20:16:17');
 /*!40000 ALTER TABLE `comments_news` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `comments_torrents`;
@@ -179,12 +180,12 @@ CREATE TABLE `comments_users` (
   `date_edit` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_users_parent` (`id_users`,`parent_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=8 DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `comments_users` WRITE;
 /*!40000 ALTER TABLE `comments_users` DISABLE KEYS */;
-INSERT INTO `comments_users` VALUES (1,1,1,'2026-05-07 18:50:59','давайте тут будут комментарии',0,0,NULL),(2,1,1,'2026-05-07 18:51:09','&#128513;',0,0,NULL),(3,1,1,'2026-05-07 18:51:14','давайте!',1,0,NULL);
+INSERT INTO `comments_users` VALUES (1,1,1,'2026-05-07 18:50:59','давайте тут будут комментарии',0,0,NULL),(2,1,1,'2026-05-07 18:51:09','&#128513;',0,0,NULL),(3,1,1,'2026-05-07 18:51:14','давайте!',1,0,NULL),(4,2,2,'2026-05-08 14:44:32','&#128512;',0,0,NULL),(5,2,2,'2026-05-08 14:44:32','&#128512;',0,0,NULL),(6,1,2,'2026-05-08 14:44:50','что',3,0,NULL),(7,1,2,'2026-05-08 14:44:50','что',3,0,NULL);
 /*!40000 ALTER TABLE `comments_users` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `comments_users_reports`;
@@ -242,7 +243,7 @@ CREATE TABLE `cron` (
 
 LOCK TABLES `cron` WRITE;
 /*!40000 ALTER TABLE `cron` DISABLE KEYS */;
-INSERT INTO `cron` VALUES ('autoclean_interval',1000),('autoclean_last',1777907575),('multi_remote',1),('remotecheck_interval',600),('remote_torrents',30),('remotepeers_cleantime',10800),('remote_lastchecked',0),('in_remotecheck',0),('num_checked',341),('last_remotecheck',1778173831),('multi_timeout',100);
+INSERT INTO `cron` VALUES ('autoclean_interval',1000),('autoclean_last',1777907575),('multi_remote',1),('remotecheck_interval',600),('remote_torrents',30),('remotepeers_cleantime',10800),('remote_lastchecked',0),('in_remotecheck',0),('num_checked',343),('last_remotecheck',1778241012),('multi_timeout',100);
 /*!40000 ALTER TABLE `cron` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `faq`;
@@ -328,11 +329,12 @@ CREATE TABLE `mail` (
   `delete_out` smallint NOT NULL,
   `reading` smallint NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `mail` WRITE;
 /*!40000 ALTER TABLE `mail` DISABLE KEYS */;
+INSERT INTO `mail` VALUES (1,'Добро пожаловать!','Спасибо за регистрацию на LiteTracker! Заполните профиль, ознакомьтесь с правилами и начинайте пользоваться сайтом.','2026-05-08 14:44:27',2,0,0,0,0);
 /*!40000 ALTER TABLE `mail` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `news`;
@@ -375,7 +377,7 @@ CREATE TABLE `orbital_blocks` (
 
 LOCK TABLES `orbital_blocks` WRITE;
 /*!40000 ALTER TABLE `orbital_blocks` DISABLE KEYS */;
-INSERT INTO `orbital_blocks` VALUES (1,'Поиск','c',1,0,'block-search.php','all','index'),(2,'Чат','c',2,0,'block-chat.php','all','index'),(3,'Новинки месяца','c',4,1,'block-newreleases.php','all','index'),(4,'Нагрузка на сервер','c',5,1,'block-load_in_server.php','all','index'),(5,'Категории','l',1,1,'block-categories.php','all','all'),(6,'Теги','d',3,1,'block-tags.php','all','browse'),(7,'ВКонтакте','l',2,1,'block-vkontakte.php','all','all'),(15,'Кто он-лайн','d',1,0,'block-online.php','all','index'),(9,'Новости','l',3,1,'block-news.php','all','index'),(17,'Опрос','c',3,1,'block-poll.php','users','index'),(16,'Статистика','d',2,0,'block-stats.php','all','index');
+INSERT INTO `orbital_blocks` VALUES (1,'Поиск','c',1,1,'block-search.php','all','index'),(2,'Чат','c',2,0,'block-chat.php','all','index'),(3,'Новинки месяца','c',4,1,'block-newreleases.php','all','index'),(4,'Нагрузка на сервер','c',5,1,'block-load_in_server.php','all','index'),(5,'Категории','l',1,1,'block-categories.php','all','all'),(6,'Теги','d',3,1,'block-tags.php','all','browse'),(15,'Кто он-лайн','d',1,0,'block-online.php','all','index'),(9,'Новости','l',2,1,'block-news.php','all','index'),(17,'Опрос','c',3,1,'block-poll.php','users','index'),(16,'Статистика','d',2,0,'block-stats.php','all','index');
 /*!40000 ALTER TABLE `orbital_blocks` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `peers`;
@@ -450,11 +452,12 @@ CREATE TABLE `plus_reactions` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `object_user` (`object_type`,`object_id`,`user_id`),
   KEY `object_reaction` (`object_type`,`object_id`,`reaction`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `plus_reactions` WRITE;
 /*!40000 ALTER TABLE `plus_reactions` DISABLE KEYS */;
+INSERT INTO `plus_reactions` VALUES (1,'comment_users',2,1,'like','2026-05-07 20:15:44'),(2,'comment_users',3,1,'dislike','2026-05-07 20:15:46'),(3,'comment_users',1,1,'like','2026-05-07 20:15:48');
 /*!40000 ALTER TABLE `plus_reactions` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `polls`;
@@ -606,12 +609,12 @@ CREATE TABLE `sessions` (
   UNIQUE KEY `session_id` (`session_id`),
   KEY `idx_sessions_user_access` (`user_id`,`last_access`),
   KEY `idx_sessions_last_access` (`last_access`)
-) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=cp1251;
+) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=cp1251;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `sessions` WRITE;
 /*!40000 ALTER TABLE `sessions` DISABLE KEYS */;
-INSERT INTO `sessions` VALUES (1,'cfeb7f7a71e2924e22bc498b5fa3ac55',-1,'2026-05-03 13:21:35',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(2,'477ad948299b8fc08c1edae2b8accea1',1,'2026-05-04 18:14:43',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(3,'4419cd46a2c17e5b261d3fa4b79c831e',-1,'2026-05-04 18:12:34',-1062715135,'curl/8.7.1','/index.php'),(4,'6d2a1e1d9e1277da15506290d80c99ef',-1,'2026-05-04 18:12:42',2130706433,'','/profile.php'),(5,'c1d890cd0410ff2a9bb87e3f0b710c51',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/shop.php'),(6,'af21a6b3223d81458ef7f3784f1cf86b',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/index.php'),(7,'870f06414b12fdfd5e1352db79df33a7',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/profile.php'),(8,'38d500d2c5ab1f31d23dd07215e01cb9',1,'2026-05-07 20:14:49',-1185611747,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php');
+INSERT INTO `sessions` VALUES (1,'cfeb7f7a71e2924e22bc498b5fa3ac55',-1,'2026-05-03 13:21:35',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(2,'477ad948299b8fc08c1edae2b8accea1',1,'2026-05-04 18:14:43',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(3,'4419cd46a2c17e5b261d3fa4b79c831e',-1,'2026-05-04 18:12:34',-1062715135,'curl/8.7.1','/index.php'),(4,'6d2a1e1d9e1277da15506290d80c99ef',-1,'2026-05-04 18:12:42',2130706433,'','/profile.php'),(5,'c1d890cd0410ff2a9bb87e3f0b710c51',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/shop.php'),(6,'af21a6b3223d81458ef7f3784f1cf86b',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/index.php'),(7,'870f06414b12fdfd5e1352db79df33a7',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/profile.php'),(8,'38d500d2c5ab1f31d23dd07215e01cb9',1,'2026-05-07 20:15:50',-1185611747,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/browse.php'),(9,'d034ddc9c15e4307e1f626339c0a8d77',2,'2026-05-08 14:44:27',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php');
 /*!40000 ALTER TABLE `sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `shop`;
@@ -822,12 +825,12 @@ CREATE TABLE `users` (
   KEY `name` (`name`),
   KEY `email` (`email`),
   KEY `idx_users_profile_slug` (`profile_slug`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','1_1778169081_0c7d3930.jpg','admin@admin.com','$2y$12$3ImCq59OZWwh3exrrcbtYOzvSD6sSoGU6WULEyr09QtgMPbJ8HiwW','',-1185611747,6,'2026-05-07 20:06:31','2026-05-04 18:14:43','ec932acf7c4e32b1f8f26ea1911bc30a',0,0,0,0,2272.38,1,'2009-04-04','',0,1,0,NULL,0,'','star','','','',0,0,0,0,0,1);
+INSERT INTO `users` VALUES (1,'admin','1_1778169081_0c7d3930.jpg','admin@admin.com','$2y$12$3ImCq59OZWwh3exrrcbtYOzvSD6sSoGU6WULEyr09QtgMPbJ8HiwW','',-1185611747,6,'2026-05-07 20:16:32','2026-05-04 18:14:43','ec932acf7c4e32b1f8f26ea1911bc30a',0,0,0,0,2327.94,1,'2009-04-04','',0,1,0,NULL,0,'','star','anminchd','','',0,0,0,0,0,1),(2,'nickmsk98','','sdfqwerfqwe@yandex.ru','$2y$12$i4wsRAw0O49PAiPM7vRI4u5QwJ7B8kjbtgTPKLA0/2n6fy0i1WHbm','',-1062715135,1,'2026-05-08 14:44:27','2026-05-08 14:44:27','52f0cf008ee335c101ebc51b32d2644c',0,0,0,0,633.36,1,'2008-05-04','',0,1,0,NULL,0,'','star','','','',0,0,0,0,0,1);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `users_blacklist`;

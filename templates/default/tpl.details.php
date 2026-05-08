@@ -139,18 +139,6 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 					<span><span class="details-date-label">Создан:</span> <?=$details_created_label;?></span>
 				</div>
 
-			<div class="yt-reactions" id="details-plus-reactions">
-					<?php if (!empty($USER['id']) && lt_user_has_plus($USER)) { ?>
-					<a class="yt-reaction-btn yt-reaction-like<?=($details_plus_reaction_stats['user'] === 'like' ? ' yt-reaction-active' : '');?>" href="details.php?id=<?=(int) $id;?>&amp;plus_reaction=like&amp;<?=$details_plus_reaction_csrf;?>" title="Лайк"><svg class="yt-reaction-icon" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M1 8a1 1 0 0 1 1-1h2v7H2a1 1 0 0 1-1-1V8zm4-1v7l.6.4A5 5 0 0 0 8.5 15h4.07a1.5 1.5 0 0 0 1.47-1.21l.9-4.5A1.5 1.5 0 0 0 13.57 7H11V4.5A1.5 1.5 0 0 0 9.5 3h-.25a.75.75 0 0 0-.75.75V5a3 3 0 0 1-.9 2.13L5 9z"/></svg><?=$details_plus_reaction_stats['like'];?></a>
-					<span class="yt-reaction-sep"></span>
-					<a class="yt-reaction-btn yt-reaction-dislike<?=($details_plus_reaction_stats['user'] === 'dislike' ? ' yt-reaction-active' : '');?>" href="details.php?id=<?=(int) $id;?>&amp;plus_reaction=dislike&amp;<?=$details_plus_reaction_csrf;?>" title="Дизлайк"><svg class="yt-reaction-icon" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M1 10a1 1 0 0 0 1 1h2V4H2a1 1 0 0 0-1 1v5zm4 1V4l.6-.4A5 5 0 0 1 8.5 3h4.07a1.5 1.5 0 0 1 1.47 1.21l.9 4.5A1.5 1.5 0 0 1 13.57 11H11v2.5A1.5 1.5 0 0 1 9.5 15h-.25a.75.75 0 0 1-.75-.75V13a3 3 0 0 0-.9-2.13L5 9z"/></svg><?=$details_plus_reaction_stats['dislike'];?></a>
-					<?php } else { ?>
-					<span class="yt-reaction-btn yt-reaction-like"><svg class="yt-reaction-icon" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M1 8a1 1 0 0 1 1-1h2v7H2a1 1 0 0 1-1-1V8zm4-1v7l.6.4A5 5 0 0 0 8.5 15h4.07a1.5 1.5 0 0 0 1.47-1.21l.9-4.5A1.5 1.5 0 0 0 13.57 7H11V4.5A1.5 1.5 0 0 0 9.5 3h-.25a.75.75 0 0 0-.75.75V5a3 3 0 0 1-.9 2.13L5 9z"/></svg><?=$details_plus_reaction_stats['like'];?></span>
-					<span class="yt-reaction-sep"></span>
-					<span class="yt-reaction-btn yt-reaction-dislike"><svg class="yt-reaction-icon" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M1 10a1 1 0 0 0 1 1h2V4H2a1 1 0 0 0-1 1v5zm4 1V4l.6-.4A5 5 0 0 1 8.5 3h4.07a1.5 1.5 0 0 1 1.47 1.21l.9 4.5A1.5 1.5 0 0 1 13.57 11H11v2.5A1.5 1.5 0 0 1 9.5 15h-.25a.75.75 0 0 1-.75-.75V13a3 3 0 0 0-.9-2.13L5 9z"/></svg><?=$details_plus_reaction_stats['dislike'];?></span>
-					<?php } ?>
-					<a class="yt-reaction-list-link" href="details.php?id=<?=(int) $id;?>&amp;reaction_list=1" data-plus-reaction-list="1" data-reaction-object-type="torrent" data-reaction-object-id="<?=(int) $id;?>">Кто оценил</a>
-				</div>
 			</section>
 
 			<?php if (!empty($details_tracker_rows)) { ?>
@@ -226,10 +214,6 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 					</div>
 					<?php } ?>
 
-					<?php if (!empty($USER['id']) && lt_user_has_plus($USER) && ($details_summary_text !== '' || $detailsDescriptionHtml !== '')) { ?>
-					<button class="details-tts-button" type="button" data-details-tts>Озвучить пост</button>
-					<div data-details-tts-text hidden><?=htmlspecialchars($details_summary_text !== '' ? $details_summary_text : strip_tags($detailsDescriptionHtml), ENT_QUOTES, 'UTF-8');?></div>
-					<?php } ?>
 				</div>
 
 				<?php foreach ($details_extra_sections as $section) { ?>

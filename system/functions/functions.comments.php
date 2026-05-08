@@ -339,10 +339,6 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0)
     $csrfTokenRaw = lt_csrf_token('comments_'.$type.'_'.$objectId);
     $csrfToken = rawurlencode($csrfTokenRaw);
     $csrfTokenSafe = htmlspecialchars($csrfTokenRaw, ENT_QUOTES, 'UTF-8');
-    $reactionObjectType = 'comment_'.$type;
-    $reactionStats = lt_reaction_stats($reactionObjectType, $commentId, (int) ($USER['id'] ?? 0));
-    $commentCanReact = (!empty($USER['id']) && !$commentDeleted && lt_user_has_plus($USER));
-
     echo '<article class="wall-comment comment-entry'.($children ? ' wall-comment-has-children' : '').($commentDeleted ? ' comment-entry-deleted' : '').'" id="wall-comment-'.$commentId.'" data-comment-id="'.$commentId.'" data-comment-type="'.htmlspecialchars($type, ENT_QUOTES, 'UTF-8').'" data-comment-object-id="'.$objectId.'" data-wall-level="'.$level.'">';
     echo '<a class="wall-comment-avatar comment-entry-avatar" href="'.$commentProfileHref.'">';
     echo '<img src="'.$commentAvatarPath.'" alt="'.$commentUserNameSafe.'" width="28" height="28">';
@@ -381,17 +377,6 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0)
     if ($commentCanReply) {
         echo '<div class="wall-comment-actions comment-entry-actions">';
         echo '<button class="wall-comment-button comment-reply-button" type="button" data-comment-reply="1" data-wall-reply="1" data-comment-id="'.$commentId.'" data-author-name="'.$commentUserNameSafe.'">Ответить</button>';
-        echo '<span class="yt-reactions">';
-        if ($commentCanReact) {
-            echo '<a class="yt-reaction-btn yt-reaction-like'.($reactionStats['user'] === 'like' ? ' yt-reaction-active' : '').'" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=react&amp;reaction=like&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" title="Нравится" data-wall-react="like" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'"><svg class="yt-reaction-icon" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M1 8a1 1 0 0 1 1-1h2v7H2a1 1 0 0 1-1-1V8zm4-1v7l.6.4A5 5 0 0 0 8.5 15h4.07a1.5 1.5 0 0 0 1.47-1.21l.9-4.5A1.5 1.5 0 0 0 13.57 7H11V4.5A1.5 1.5 0 0 0 9.5 3h-.25a.75.75 0 0 0-.75.75V5a3 3 0 0 1-.9 2.13L5 9z"/></svg><span data-reaction-count="like">'.$reactionStats['like'].'</span></a>';
-            echo '<span class="yt-reaction-sep"></span>';
-            echo '<a class="yt-reaction-btn yt-reaction-dislike'.($reactionStats['user'] === 'dislike' ? ' yt-reaction-active' : '').'" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=react&amp;reaction=dislike&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" title="Не нравится" data-wall-react="dislike" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'"><svg class="yt-reaction-icon" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M1 10a1 1 0 0 0 1 1h2V4H2a1 1 0 0 0-1 1v5zm4 1V4l.6-.4A5 5 0 0 1 8.5 3h4.07a1.5 1.5 0 0 1 1.47 1.21l.9 4.5A1.5 1.5 0 0 1 13.57 11H11v2.5A1.5 1.5 0 0 1 9.5 15h-.25a.75.75 0 0 1-.75-.75V13a3 3 0 0 0-.9-2.13L5 9z"/></svg><span data-reaction-count="dislike">'.$reactionStats['dislike'].'</span></a>';
-        } else {
-            echo '<span class="yt-reactions-readonly"><span class="yt-reaction-readonly-like"><svg class="yt-reaction-icon" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M1 8a1 1 0 0 1 1-1h2v7H2a1 1 0 0 1-1-1V8zm4-1v7l.6.4A5 5 0 0 0 8.5 15h4.07a1.5 1.5 0 0 0 1.47-1.21l.9-4.5A1.5 1.5 0 0 0 13.57 7H11V4.5A1.5 1.5 0 0 0 9.5 3h-.25a.75.75 0 0 0-.75.75V5a3 3 0 0 1-.9 2.13L5 9z"/></svg> <span data-reaction-count="like">'.$reactionStats['like'].'</span></span><span class="yt-reaction-sep"></span><span class="yt-reaction-readonly-dislike"><svg class="yt-reaction-icon" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M1 10a1 1 0 0 0 1 1h2V4H2a1 1 0 0 0-1 1v5zm4 1V4l.6-.4A5 5 0 0 1 8.5 3h4.07a1.5 1.5 0 0 1 1.47 1.21l.9 4.5A1.5 1.5 0 0 1 13.57 11H11v2.5A1.5 1.5 0 0 1 9.5 15h-.25a.75.75 0 0 1-.75-.75V13a3 3 0 0 0-.9-2.13L5 9z"/></svg> <span data-reaction-count="dislike">'.$reactionStats['dislike'].'</span></span></span>';
-        }
-        $reactionListHref = 'comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=reaction_list&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8');
-        echo '<a class="yt-reaction-list-link" href="'.$reactionListHref.'" data-plus-reaction-list="1" data-reaction-object-type="'.htmlspecialchars($reactionObjectType, ENT_QUOTES, 'UTF-8').'" data-reaction-object-id="'.$commentId.'">Кто оценил</a>';
-        echo '</span>';
         echo '</div>';
     }
 

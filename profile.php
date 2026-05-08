@@ -249,24 +249,6 @@ $profileStatusLabel = ($isOnline ? 'Онлайн' : 'Был на сайте '.$p
 $profileStatusClass = ($isOnline ? 'profile-status-online' : 'profile-status-offline');
 $profileFlashMessage = null;
 
-if ($profileView === 'bonus' && $canViewBonus && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['act'] ?? '') === 'buy_plus') {
-	$currentBonus = (float) ($arr['bonus'] ?? $arr['voice'] ?? 0);
-	$plusCost = lt_plus_month_bonus_price();
-
-	if ($currentBonus < $plusCost) {
-		$profileFlashMessage = array(
-			'type' => 'error',
-			'text' => 'Для покупки Plus нужно '.number_format($plusCost, 0, '.', ' ').' бонусов.',
-		);
-	} else {
-		$db->query("UPDATE users SET {$profileBonusColumn} = GREATEST({$profileBonusColumn} - {$plusCost}, 0) WHERE id = {$id}");
-		lt_plus_extend_subscription($id, 1, 'bonus_shop');
-		$memcached->delete('user_'.$id, 0);
-		header('Location: '.profile_href($id, 'bonus', array('status' => 'plus_bought')));
-		die();
-	}
-}
-
 if ($profileView === 'bonus' && $canViewBonus && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['act'] ?? '') === 'exchange_bonus') {
 	$bonusOptions = profile_get_bonus_options();
 	$selectedOptionId = trim((string) ($_POST['bonus_option'] ?? 'all'));
@@ -313,11 +295,6 @@ if (($_GET['status'] ?? '') === 'bonus_exchanged') {
 	$profileFlashMessage = array(
 		'type' => 'success',
 		'text' => 'Бонусы успешно обменяны.',
-	);
-} elseif (($_GET['status'] ?? '') === 'plus_bought') {
-	$profileFlashMessage = array(
-		'type' => 'success',
-		'text' => 'Подписка Plus активирована на месяц.',
 	);
 }
 
@@ -387,7 +364,6 @@ $peerStats = $db->super_query(
 
 $profileStats = array(
 	'bonus' => (float) ($arr['bonus'] ?? $arr['voice'] ?? 0),
-	'plus' => lt_plus_expiration_label($arr),
 	'seeders' => (int) ($peerStats['seeders'] ?? 0),
 	'leechers' => (int) ($peerStats['leechers'] ?? 0),
 	'downloaded' => mksize((int) ($arr['downloaded'] ?? 0)),

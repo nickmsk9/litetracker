@@ -8,4 +8,3 @@ import "../public/js/main.js";
 import "../public/js/comments.js";
 import "../public/js/details.js";
 import "../public/js/profile.js";
-import "../public/js/plus.features.js";

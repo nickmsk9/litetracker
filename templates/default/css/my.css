@@ -781,65 +781,6 @@ body.theme-dark .project-help-button:hover {
   color: #ffffff;
 }
 
-.plus-name-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 6px;
-  color: #1d65d8;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
-  vertical-align: -4%;
-}
-
-.site-user-name .plus-name-badge {
-  font-size: 18px;
-}
-
-.plus-promo-panel {
-  position: relative;
-  background: #fff;
-  font-family: inherit;
-}
-
-.plus-promo-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: 50%;
-  background: #eef4fa;
-  color: #6d7c8b;
-  font-size: 22px;
-  line-height: 24px;
-  cursor: pointer;
-}
-
-.plus-promo-art {
-  display: flex;
-  justify-content: center;
-  margin: 4px 0 14px;
-}
-
-.plus-promo-gem {
-  width: 54px;
-  height: 48px;
-  clip-path: polygon(20% 0, 80% 0, 100% 35%, 50% 100%, 0 35%);
-  background: linear-gradient(135deg, #0c55d8 0%, #31a7ff 46%, #1059e8 100%);
-  box-shadow: inset 0 0 0 5px rgba(255, 255, 255, .24);
-}
-
-.plus-promo-copy {
-  margin: 12px 0 0;
-  color: var(--text);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.plus-promo-button,
 .ad-sidebar-link {
   display: inline-flex;
   align-items: center;
@@ -855,7 +796,6 @@ body.theme-dark .project-help-button:hover {
   text-decoration: none;
 }
 
-.plus-promo-button:hover,
 .ad-sidebar-link:hover {
   background: #1554b8;
   color: #fff;
@@ -923,18 +863,6 @@ body.theme-dark .project-help-button:hover {
   max-height: min(68vh, 620px);
   overflow: auto;
   padding: 14px 16px 16px;
-}
-
-.plus-benefits-list {
-  margin: 0;
-  padding: 0 0 0 18px;
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.62;
-}
-
-.plus-benefits-list li + li {
-  margin-top: 3px;
 }
 
 .lt-modal-open {
@@ -1864,53 +1792,6 @@ body.theme-dark .project-help-button:hover {
   margin-top: 8px;
 }
 
-.plus-reactions {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.plus-reaction-button,
-.plus-reaction-count,
-.plus-reaction-list-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 0 9px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 12px;
-  line-height: 1;
-  text-decoration: none;
-}
-
-.plus-reaction-button:hover,
-.plus-reaction-list-link:hover,
-.plus-reaction-button-active {
-  border-color: #1c64d8;
-  background: #eef5ff;
-  color: #1c64d8;
-}
-
-.plus-reaction-users {
-  display: grid;
-  gap: 8px;
-}
-
-.plus-reaction-user-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--surface);
-}
-
 .comment-reply-button,
 .wall-comment-button.comment-reply-button {
   min-height: 22px;
@@ -2331,31 +2212,6 @@ body.theme-dark .project-help-button:hover {
 
 .profile-bonus-panel {
   overflow: hidden;
-}
-
-.profile-plus-shop-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 18px;
-  border-bottom: 1px solid var(--line);
-  background: #f5fbff;
-}
-
-.profile-plus-shop-title {
-  color: #111;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.profile-plus-shop-text,
-.profile-plus-shop-status {
-  margin-top: 6px;
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.45;
 }
 
 .profile-bonus-form {
@@ -3603,10 +3459,6 @@ body.theme-dark .details-bookmark-button-active {
 
 .details-date-separator {
   color: #a9b6c3;
-}
-
-.plus-reactions-details {
-  padding: 0 22px 14px;
 }
 
 .details-info-panel,
@@ -5693,12 +5545,6 @@ iframe {
     flex-direction: column;
     align-items: flex-start;
   }
-
-  .profile-plus-shop-card {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
   .profile-modal-backdrop {
     padding: 12px;
   }
@@ -7185,98 +7031,6 @@ body.is-mobile .details-bookmark-button {
   background: var(--success-bg);
 }
 
-/* YouTube-style like/dislike buttons */
-.yt-reactions {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  overflow: hidden;
-  font-size: 12px;
-  height: 28px;
-}
-
-.yt-reaction-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 0 12px;
-  height: 100%;
-  color: var(--text);
-  text-decoration: none;
-  background: var(--surface);
-  white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
-  cursor: pointer;
-  border: 0;
-}
-
-a.yt-reaction-btn:hover {
-  background: var(--surface-muted);
-  color: var(--text);
-  text-decoration: none;
-}
-
-.yt-reaction-active {
-  background: var(--success-bg);
-  color: var(--accent);
-}
-
-.yt-reaction-sep {
-  display: block;
-  width: 1px;
-  height: 60%;
-  background: var(--line);
-  flex-shrink: 0;
-}
-
-.yt-reaction-icon {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
-
-.yt-reactions-readonly {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  overflow: hidden;
-  height: 28px;
-}
-
-.yt-reaction-readonly-like,
-.yt-reaction-readonly-dislike {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 0 12px;
-  height: 100%;
-  color: var(--muted);
-  font-size: 12px;
-  background: var(--surface);
-}
-
-.yt-reaction-list-link {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 12px;
-  text-decoration: none;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.yt-reaction-list-link:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-  text-decoration: none;
-}
 
 /* Chat styles */
 .chat-frame .frame-header {
