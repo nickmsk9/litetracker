@@ -182,7 +182,7 @@ if($_GET['act'] == 'edit') {
 	<?=lt_csrf_input($shopEditScope);?>
 
 	<!--Файлы-->
-	<table class="lt-table">
+	<table class="lt-table lt-shop-form-table">
 	<tbody>
 
 

@@ -228,6 +228,11 @@ input[type="button"]:focus-visible {
   box-shadow: none;
 }
 
+.lt-shop-form-table {
+  width: min(100%, 80%);
+  margin-inline: auto;
+}
+
 /* =====================================================================
    Forms / Inputs
    ===================================================================== */
@@ -291,10 +296,14 @@ input[type="button"]:focus-visible {
   transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
 }
 
-textarea,
 .lt-form textarea {
   min-height: 120px;
   resize: vertical;
+}
+
+.lt-form input[type="file"],
+.settings-form input[type="file"] {
+  cursor: pointer;
 }
 
 .lt-input:hover,
@@ -303,7 +312,6 @@ textarea,
 .admin-settings-input:hover,
 .browse-search-input:hover,
 .lt-select:hover,
-select:hover,
 input[type="text"]:hover,
 input[type="password"]:hover,
 input[type="email"]:hover,
@@ -319,7 +327,6 @@ textarea:hover {
 .admin-settings-input:focus,
 .browse-search-input:focus,
 .lt-select:focus,
-select:focus,
 input[type="text"]:focus,
 input[type="password"]:focus,
 input[type="email"]:focus,
