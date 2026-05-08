@@ -9,7 +9,7 @@ echo '<div class="sidebar-news-list">';
 
 foreach ($news_array as $arr) {
 	$title = lt_fix_utf8_mojibake((string) $arr['name']);
-	$text = trim(strip_tags(lt_fix_utf8_mojibake((string) $arr['text'])));
+	$text = trim(strip_tags(cleanhtml(lt_fix_utf8_mojibake((string) $arr['text']))));
 
 	if (mb_strlen($title) > 56) {
 		$title = mb_substr($title, 0, 56).'...';

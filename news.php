@@ -57,6 +57,27 @@ function lt_news_format_publication_date($date)
 	return $day.' '.$month.' '.$year.' в '.$hour.':'.$minute;
 }
 
+function lt_news_is_ajax_request()
+{
+	$requestedWith = strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? ''));
+	$accept = strtolower((string) ($_SERVER['HTTP_ACCEPT'] ?? ''));
+
+	return ($requestedWith === 'xmlhttprequest' || strpos($accept, 'application/json') !== false);
+}
+
+function lt_news_json_response($ok, $message = '', $extra = array())
+{
+	header('Content-Type: application/json; charset=UTF-8');
+	echo json_encode(array_merge(
+		array(
+			'ok' => ($ok ? 1 : 0),
+			'message' => (string) $message,
+		),
+		(array) $extra
+	), JSON_UNESCAPED_UNICODE);
+	die();
+}
+
 
 
 
@@ -78,6 +99,7 @@ if($act == 'edit' && $id) {
 
 	//Обработка новости
 	if(count($_POST) ) {
+		$isAjaxRequest = lt_news_is_ajax_request();
 		$update = array();
 		$updateParams = array();
 		$updateTypes = '';
@@ -86,6 +108,9 @@ if($act == 'edit' && $id) {
 		$name = lt_fix_utf8_mojibake(trim((string) ($_POST['name'] ?? '')));
 		if($arr['name'] != $name) {
 			if(empty($name) ) {
+				if ($isAjaxRequest) {
+					lt_news_json_response(false, $language['news_2']);
+				}
 				err($language['default_1'] , $language['news_2'] , 1);
 			}
 			$update[] = 'name=?'; $updateParams[] = $name; $updateTypes .= 's';
@@ -96,6 +121,9 @@ if($act == 'edit' && $id) {
 		$text = lt_fix_utf8_mojibake((string) ($_POST['text'] ?? ''));
 		if($arr['text'] != $text) {
 			if(empty($text) ) {
+				if ($isAjaxRequest) {
+					lt_news_json_response(false, $language['news_3']);
+				}
 				err($language['default_1'] , $language['news_3'] , 1);
 			}
 			$update[] = 'text=?'; $updateParams[] = $text; $updateTypes .= 's';
@@ -115,14 +143,45 @@ if($act == 'edit' && $id) {
 		//Удаляем старый кеш
 		$memcached->delete('news');
 		$memcached->delete('sidebar_news_all');
-		header("Location:news.php?id=".$id."");
-		die();
+
+		if ($isAjaxRequest) {
+			$updatedNews = $db->psuper_query("SELECT id, name, text, date FROM news WHERE id=? LIMIT 1", 'i', array((int) $id));
+			$updatedName = htmlspecialchars(lt_fix_utf8_mojibake((string) ($updatedNews['name'] ?? $name)), ENT_QUOTES, 'UTF-8');
+			$updatedText = cleanhtml(lt_fix_utf8_mojibake((string) ($updatedNews['text'] ?? $text)));
+			$updatedPublishedAt = lt_news_format_publication_date((string) ($updatedNews['date'] ?? $arr['date']));
+
+			lt_news_json_response(true, (string) ($language['news_19'] ?? 'News saved'), array(
+				'name' => $updatedName,
+				'text' => $updatedText,
+				'raw_name' => (string) ($updatedNews['name'] ?? $name),
+				'raw_text' => (string) ($updatedNews['text'] ?? $text),
+				'published_at' => $updatedPublishedAt,
+			));
+		}
+		else {
+			header("Location:news.php?id=".$id."");
+			die();
+		}
 	}
 
 	head($language['news_4']);
 	begin_frame($language['news_4']);
 	?>
-	<form enctype="multipart/form-data" action="news.php?act=edit&id=<?=$id;?>" method="post" name="news" class="news-editor-form">
+	<div class="comment-ajax-notice news-ajax-notice" data-news-edit-notice hidden></div>
+	<form
+		enctype="multipart/form-data"
+		action="news.php?act=edit&id=<?=$id;?>"
+		method="post"
+		name="news"
+		class="news-editor-form"
+		data-news-edit-form="1"
+		data-news-view-url="news.php?id=<?=$id;?>"
+		data-label-submit="<?=htmlspecialchars((string) ($language['news_8'] ?? 'Edit'), ENT_QUOTES, 'UTF-8');?>"
+		data-label-saving="<?=htmlspecialchars((string) ($language['default_4'] ?? 'Loading...'), ENT_QUOTES, 'UTF-8');?>"
+		data-message-saved="<?=htmlspecialchars((string) ($language['news_19'] ?? 'News saved'), ENT_QUOTES, 'UTF-8');?>"
+		data-message-save-error="<?=htmlspecialchars((string) ($language['news_20'] ?? 'Failed to save news'), ENT_QUOTES, 'UTF-8');?>"
+		data-message-save-error-retry="<?=htmlspecialchars((string) ($language['news_21'] ?? 'Failed to save news. Please try again.'), ENT_QUOTES, 'UTF-8');?>"
+	>
 		<div class="news-editor-grid">
 			<label class="news-editor-field">
 				<span class="news-editor-label"><?=$language['news_5'];?>:</span>
@@ -144,6 +203,93 @@ if($act == 'edit' && $id) {
 			</div>
 		</div>
 	</form>
+	<script>
+	document.addEventListener('DOMContentLoaded', function () {
+		var form = document.querySelector('[data-news-edit-form]');
+		var notice = document.querySelector('[data-news-edit-notice]');
+		if (!form) {
+			return;
+		}
+
+		function showNotice(message, isError) {
+			if (!notice) {
+				return;
+			}
+			notice.textContent = message || '';
+			notice.className = 'comment-ajax-notice news-ajax-notice' + (isError ? ' comment-ajax-notice-error' : ' comment-ajax-notice-success');
+			notice.hidden = !message;
+		}
+
+		form.addEventListener('submit', function (event) {
+			event.preventDefault();
+			var submit = form.querySelector('.news-editor-submit');
+			var formData = new FormData(form);
+			var submitLabel = form.getAttribute('data-label-submit') || 'Edit';
+			var savingLabel = form.getAttribute('data-label-saving') || 'Loading...';
+			var savedMessage = form.getAttribute('data-message-saved') || 'News saved';
+			var saveErrorMessage = form.getAttribute('data-message-save-error') || 'Failed to save news';
+			var saveRetryMessage = form.getAttribute('data-message-save-error-retry') || 'Failed to save news. Please try again.';
+
+			if (submit) {
+				submit.disabled = true;
+				submit.value = savingLabel;
+			}
+			showNotice('', false);
+
+			fetch(form.getAttribute('action'), {
+				method: 'POST',
+				body: formData,
+				headers: {
+					'X-Requested-With': 'XMLHttpRequest',
+					'Accept': 'application/json'
+				}
+			})
+				.then(function (response) {
+					if (!response.ok) {
+						throw new Error('http_error');
+					}
+					return response.json();
+				})
+				.then(function (payload) {
+					var titleInput = form.querySelector('input[name="name"]');
+					var textInput = form.querySelector('textarea[name="text"]');
+					var noticeText = '';
+
+					if (!payload || !payload.ok) {
+						showNotice((payload && payload.message) ? payload.message : saveErrorMessage, true);
+						return;
+					}
+
+					if (titleInput && typeof payload.raw_name === 'string') {
+						titleInput.value = payload.raw_name;
+					}
+
+					if (textInput && typeof payload.raw_text === 'string') {
+						textInput.value = payload.raw_text;
+					}
+
+					noticeText = payload.message || savedMessage;
+					if (payload.published_at) {
+						noticeText += ' · ' + payload.published_at;
+					}
+					showNotice(noticeText);
+				})
+				.catch(function (error) {
+					if (error && error.message === 'http_error') {
+						showNotice(saveErrorMessage, true);
+						return;
+					}
+					showNotice(saveRetryMessage, true);
+				})
+				.finally(function () {
+					if (submit) {
+						submit.disabled = false;
+						submit.value = submitLabel;
+					}
+				});
+		});
+	});
+	</script>
 	<?php
 	end_frame();
 	foot();
