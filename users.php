@@ -79,7 +79,8 @@ head($language['users_1']);
 begin_frame($language['users_2']);
 ?>
 <form action="users.php" method="GET">
-<table width="95%" align="center">
+<div class="lt-table-scroll">
+<table class="lt-table lt-table-compact lt-users-filter-table">
 	<tr>
 	<td>
 	<input type="text" name="search" size="70%" class="search"   autocomplete="off" value="<?=htmlspecialchars($search);?>">
@@ -114,6 +115,7 @@ begin_frame($language['users_2']);
 
 
 </table>
+</div>
 </form>
 <?
 end_frame();

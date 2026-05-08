@@ -782,8 +782,8 @@ if (($_GET['status'] ?? '') == '1') {
 	<section class="lt-admin-panel">
 		<h2>Список классов</h2>
 		<p class="lt-admin-panel-text">В колонке “Может” показана короткая выжимка прав. Полный набор переключателей открывается по кнопке редактирования.</p>
-		<div class="lt-admin-table-wrap">
-			<table class="lt-admin-table">
+		<div class="lt-admin-table-wrap lt-table-scroll">
+			<table class="lt-table lt-table-compact lt-table-actions lt-admin-table">
 				<thead>
 					<tr>
 						<th>ID</th>

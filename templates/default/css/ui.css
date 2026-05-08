@@ -8,6 +8,7 @@
   --lt-radius-md: 12px;
   --lt-radius-pill: 999px;
   --lt-shop-form-max-width: 80%;
+  --lt-table-min-width: 640px;
   --lt-space-1: 8px;
   --lt-space-2: 12px;
   --lt-space-3: 16px;
@@ -429,6 +430,7 @@ textarea:focus {
 .profile-torrent-table,
 .details-trackers-table,
 .details-files-table,
+.lt-admin-table,
 table.tt {
   width: 100%;
   border-collapse: separate;
@@ -448,6 +450,8 @@ table.tt {
 .details-trackers-table th,
 .details-trackers-table td,
 .details-files-table td,
+.lt-admin-table th,
+.lt-admin-table td,
 table.tt th,
 table.tt td {
   padding: 11px 13px;
@@ -460,6 +464,7 @@ table.tt td {
 .table-clean th,
 .profile-torrent-table th,
 .details-trackers-table th,
+.lt-admin-table th,
 table.tt th,
 table.tt td.tt {
   border-top: 0;
@@ -474,6 +479,7 @@ table.tt td.tt {
 .profile-torrent-table tbody tr:first-child td,
 .details-trackers-table tbody tr:first-child td,
 .details-files-table tbody tr:first-child td,
+.lt-admin-table tbody tr:first-child td,
 table.tt tbody tr:first-child td {
   border-top: 0;
 }
@@ -483,8 +489,70 @@ table.tt tbody tr:first-child td {
 .profile-torrent-table tbody tr:hover td,
 .details-trackers-table tbody tr:hover td,
 .details-files-table tbody tr:hover td,
+.lt-admin-table tbody tr:hover td,
 table.tt tbody tr:hover td:not(.tt) {
   background: var(--lt-surface-muted);
+}
+
+.lt-table-compact th,
+.lt-table-compact td {
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.lt-table-actions th:last-child,
+.lt-table-actions td:last-child {
+  white-space: nowrap;
+}
+
+.lt-table-actions .lt-admin-inline-actions,
+.lt-table-actions .lt-admin-inline-actions a {
+  gap: 8px;
+}
+
+.lt-table-scroll,
+.lt-admin-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lt-table-scroll > .lt-table,
+.lt-table-scroll > .table-clean,
+.lt-table-scroll > .profile-torrent-table,
+.lt-table-scroll > .details-trackers-table,
+.lt-table-scroll > .details-files-table,
+.lt-table-scroll > .lt-admin-table,
+.lt-table-scroll > table.tt {
+  margin: 0;
+}
+
+.lt-releases-table,
+.lt-users-filter-table {
+  width: min(100%, 95%);
+  margin-inline: auto;
+}
+
+.lt-users-card-table {
+  width: min(100%, 70%);
+  margin-inline: auto;
+}
+
+@media (max-width: 768px) {
+  .lt-table-scroll > .lt-table,
+  .lt-table-scroll > .table-clean,
+  .lt-table-scroll > .profile-torrent-table,
+  .lt-table-scroll > .details-trackers-table,
+  .lt-table-scroll > .details-files-table,
+  .lt-table-scroll > .lt-admin-table,
+  .lt-table-scroll > table.tt,
+  .lt-admin-table-wrap > .lt-admin-table {
+    min-width: var(--lt-table-min-width);
+  }
+
+  .lt-users-card-table {
+    width: min(100%, var(--lt-table-min-width));
+  }
 }
 
 /* =====================================================================

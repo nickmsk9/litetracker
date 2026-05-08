@@ -74,24 +74,28 @@ if($db->num_rows($sql) > 0) {
 		<form action="check_release.php" method="post">
 			<?=lt_csrf_input('check_release');?>
 		<?php } ?>
-		<table width="95%" class="tt table-clean" align="center">
-            <tr><td class="tt" style="width:45px;" align="center"><font  color=white>Тип</font></td>
-                <td class="tt"><font color=white>Имя</font></td>
-				<td class="tt" width="60" align="center"><font  color=white>Размер</font></td>
-				<td class="tt" width="30" align="center"><font  color=white>Сидеры</font></td>
-				<td class="tt" width="30" align="center"><font  color=white>Личеры</font></td>
-				<td class="tt" width="30" align="center"><font  color=white>Файлов</font></td>
-				<td class="tt" width="30" align="center"><font  color=white>Скачан</font></td>
-				<?=($PRIV['edit_release'] ? '<td class="tt" width="30" align="center"><font size=$size color=white><input type="submit" value="'.$language['releases_18'].'"></td>' : '');?>
-
-
+		<div class="lt-table-scroll">
+		<table class="lt-table lt-table-compact lt-table-actions lt-releases-table tt table-clean">
+			<thead>
+				<tr>
+					<th class="tt" align="center">Тип</th>
+					<th class="tt">Имя</th>
+					<th class="tt" align="center">Размер</th>
+					<th class="tt" align="center">Сидеры</th>
+					<th class="tt" align="center">Личеры</th>
+					<th class="tt" align="center">Файлов</th>
+					<th class="tt" align="center">Скачан</th>
+					<?=($PRIV['edit_release'] ? '<th class="tt" align="center"><input class="lt-btn lt-btn-secondary" type="submit" value="'.$language['releases_18'].'"></th>' : '');?>
+				</tr>
+			</thead>
+			<tbody>
 		<?
 	while($arr = $db->get_row($sql) ) {
 
 		require 'modules/releases.arr.php';
 	}
 
-	echo '</table>';
+	echo '</tbody></table></div>';
 	echo ($PRIV['edit_release'] ? '</form>'  : '');
 	echo $pagertop;
 } else {
