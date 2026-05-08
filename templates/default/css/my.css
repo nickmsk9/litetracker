@@ -1066,6 +1066,13 @@ body.theme-dark .project-help-button:hover {
   letter-spacing: .04em;
 }
 
+.lt-emoji-results-limit {
+  margin-bottom: 8px;
+  color: #7a8a9d;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .lt-emoji-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1122,7 +1129,7 @@ body.theme-dark .project-help-button:hover {
 
 @media (max-width: 640px) {
   .lt-emoji-panel {
-    width: min(100vw - 28px, 420px);
+    width: min(100vw - 32px, 420px);
   }
 
   .lt-emoji-grid {

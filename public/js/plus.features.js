@@ -5,7 +5,7 @@
   var telegramEmojiBlocks = [
     {
       id: 'faces',
-      title: 'Улыбки Telegram',
+      title: 'Улыбки и смайлы',
       items: [
         { value: '🙂', title: 'Спокойная улыбка', keywords: ['улыбка', 'радость', 'smile', 'telegram'] },
         { value: '😊', title: 'Тёплая улыбка', keywords: ['счастье', 'милота', 'happy'] },
@@ -173,7 +173,7 @@
             searchText: normalizeSearchText([
               item.title,
               block.title,
-              kind === 'sticker' ? 'стикер stickers telegram telegram stickers' : 'эмодзи emoji telegram telegram emoji',
+              kind === 'sticker' ? 'стикер stickers telegram' : 'эмодзи emoji telegram',
               item.value
             ].concat(item.keywords || []).join(' '))
           });
@@ -227,9 +227,10 @@
         '<button type="button" class="lt-emoji-kind-button" data-emoji-kind-toggle="emoji" aria-pressed="false">Эмодзи</button>' +
         '<button type="button" class="lt-emoji-kind-button" data-emoji-kind-toggle="sticker" aria-pressed="false">Стикеры</button>' +
       '</div>' +
-      '<div class="lt-emoji-empty-state" data-emoji-initial-state="1">Все блоки выключены по умолчанию. Включите нужный блок или начните поиск.</div>' +
+      '<div class="lt-emoji-empty-state" data-emoji-initial-state="1">Выберите категорию или начните поиск эмодзи.</div>' +
       '<section class="lt-emoji-results" data-emoji-search-results hidden>' +
         '<div class="lt-emoji-group-title">Результаты поиска</div>' +
+        '<div class="lt-emoji-results-limit" data-emoji-results-limit hidden></div>' +
         '<div class="lt-emoji-grid" data-emoji-result-list></div>' +
         '<div class="lt-emoji-empty-state" data-emoji-empty hidden>Ничего не найдено. Попробуйте другое слово.</div>' +
       '</section>' +
@@ -325,17 +326,21 @@
     var query = normalizeSearchText(searchInput ? searchInput.value : '');
     var resultsSection = panel ? panel.querySelector('[data-emoji-search-results]') : null;
     var resultList = panel ? panel.querySelector('[data-emoji-result-list]') : null;
+    var limitNote = panel ? panel.querySelector('[data-emoji-results-limit]') : null;
     var emptyState = panel ? panel.querySelector('[data-emoji-empty]') : null;
     var initialState = panel ? panel.querySelector('[data-emoji-initial-state]') : null;
     var matches;
+    var totalMatches;
 
-    if (!resultsSection || !resultList || !emptyState || !initialState) {
+    if (!resultsSection || !resultList || !limitNote || !emptyState || !initialState) {
       return;
     }
 
     if (!query) {
       resultsSection.hidden = true;
       resultList.innerHTML = '';
+      limitNote.hidden = true;
+      limitNote.textContent = '';
       emptyState.hidden = true;
       initialState.hidden = shouldHideEmojiEmptyState(panel);
       return;
@@ -343,10 +348,14 @@
 
     matches = telegramCatalog.filter(function (item) {
       return item.searchText.indexOf(query) !== -1;
-    }).slice(0, maxEmojiSearchResults);
+    });
+    totalMatches = matches.length;
+    matches = matches.slice(0, maxEmojiSearchResults);
 
     resultsSection.hidden = false;
     resultList.innerHTML = matches.map(renderEmojiButton).join('');
+    limitNote.hidden = totalMatches <= maxEmojiSearchResults;
+    limitNote.textContent = totalMatches > maxEmojiSearchResults ? 'Показаны первые ' + maxEmojiSearchResults + ' результатов.' : '';
     emptyState.hidden = matches.length > 0;
     initialState.hidden = true;
   }
