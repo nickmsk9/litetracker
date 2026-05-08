@@ -164,8 +164,21 @@ if($act == 'edit' && $id) {
 	head($language['news_4']);
 	begin_frame($language['news_4']);
 	?>
-	<div class="comment-ajax-notice" data-news-edit-notice hidden></div>
-	<form enctype="multipart/form-data" action="news.php?act=edit&id=<?=$id;?>" method="post" name="news" class="news-editor-form" data-news-edit-form="1" data-news-view-url="news.php?id=<?=$id;?>" data-label-submit="<?=htmlspecialchars((string) ($language['news_8'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8');?>" data-label-saving="<?=htmlspecialchars((string) ($language['default_4'] ?? 'Загрузка...'), ENT_QUOTES, 'UTF-8');?>" data-message-saved="<?=htmlspecialchars((string) ($language['news_19'] ?? 'Новость сохранена'), ENT_QUOTES, 'UTF-8');?>" data-message-save-error="<?=htmlspecialchars((string) ($language['news_20'] ?? 'Не удалось сохранить новость'), ENT_QUOTES, 'UTF-8');?>" data-message-save-error-retry="<?=htmlspecialchars((string) ($language['news_21'] ?? 'Не удалось сохранить новость. Попробуйте ещё раз.'), ENT_QUOTES, 'UTF-8');?>">
+	<div class="comment-ajax-notice news-ajax-notice" data-news-edit-notice hidden></div>
+	<form
+		enctype="multipart/form-data"
+		action="news.php?act=edit&id=<?=$id;?>"
+		method="post"
+		name="news"
+		class="news-editor-form"
+		data-news-edit-form="1"
+		data-news-view-url="news.php?id=<?=$id;?>"
+		data-label-submit="<?=htmlspecialchars((string) ($language['news_8'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8');?>"
+		data-label-saving="<?=htmlspecialchars((string) ($language['default_4'] ?? 'Загрузка...'), ENT_QUOTES, 'UTF-8');?>"
+		data-message-saved="<?=htmlspecialchars((string) ($language['news_19'] ?? 'Новость сохранена'), ENT_QUOTES, 'UTF-8');?>"
+		data-message-save-error="<?=htmlspecialchars((string) ($language['news_20'] ?? 'Не удалось сохранить новость'), ENT_QUOTES, 'UTF-8');?>"
+		data-message-save-error-retry="<?=htmlspecialchars((string) ($language['news_21'] ?? 'Не удалось сохранить новость. Попробуйте ещё раз.'), ENT_QUOTES, 'UTF-8');?>"
+	>
 		<div class="news-editor-grid">
 			<label class="news-editor-field">
 				<span class="news-editor-label"><?=$language['news_5'];?>:</span>
@@ -200,7 +213,7 @@ if($act == 'edit' && $id) {
 				return;
 			}
 			notice.textContent = message || '';
-			notice.className = 'comment-ajax-notice' + (isError ? ' comment-ajax-notice-error' : ' comment-ajax-notice-success');
+			notice.className = 'comment-ajax-notice news-ajax-notice' + (isError ? ' comment-ajax-notice-error' : ' comment-ajax-notice-success');
 			notice.hidden = !message;
 		}
 
