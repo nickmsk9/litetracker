@@ -150,7 +150,7 @@ if($act == 'edit' && $id) {
 			$updatedText = cleanhtml(lt_fix_utf8_mojibake((string) ($updatedNews['text'] ?? $text)));
 			$updatedPublishedAt = lt_news_format_publication_date((string) ($updatedNews['date'] ?? $arr['date']));
 
-			lt_news_json_response(true, (string) ($language['news_19'] ?? 'Новость сохранена'), array(
+			lt_news_json_response(true, (string) ($language['news_19'] ?? 'News saved'), array(
 				'name' => $updatedName,
 				'text' => $updatedText,
 				'published_at' => $updatedPublishedAt,
@@ -173,11 +173,11 @@ if($act == 'edit' && $id) {
 		class="news-editor-form"
 		data-news-edit-form="1"
 		data-news-view-url="news.php?id=<?=$id;?>"
-		data-label-submit="<?=htmlspecialchars((string) ($language['news_8'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8');?>"
-		data-label-saving="<?=htmlspecialchars((string) ($language['default_4'] ?? 'Загрузка...'), ENT_QUOTES, 'UTF-8');?>"
-		data-message-saved="<?=htmlspecialchars((string) ($language['news_19'] ?? 'Новость сохранена'), ENT_QUOTES, 'UTF-8');?>"
-		data-message-save-error="<?=htmlspecialchars((string) ($language['news_20'] ?? 'Не удалось сохранить новость'), ENT_QUOTES, 'UTF-8');?>"
-		data-message-save-error-retry="<?=htmlspecialchars((string) ($language['news_21'] ?? 'Не удалось сохранить новость. Попробуйте ещё раз.'), ENT_QUOTES, 'UTF-8');?>"
+		data-label-submit="<?=htmlspecialchars((string) ($language['news_8'] ?? 'Edit'), ENT_QUOTES, 'UTF-8');?>"
+		data-label-saving="<?=htmlspecialchars((string) ($language['default_4'] ?? 'Loading...'), ENT_QUOTES, 'UTF-8');?>"
+		data-message-saved="<?=htmlspecialchars((string) ($language['news_19'] ?? 'News saved'), ENT_QUOTES, 'UTF-8');?>"
+		data-message-save-error="<?=htmlspecialchars((string) ($language['news_20'] ?? 'Failed to save news'), ENT_QUOTES, 'UTF-8');?>"
+		data-message-save-error-retry="<?=htmlspecialchars((string) ($language['news_21'] ?? 'Failed to save news. Please try again.'), ENT_QUOTES, 'UTF-8');?>"
 	>
 		<div class="news-editor-grid">
 			<label class="news-editor-field">
@@ -221,11 +221,11 @@ if($act == 'edit' && $id) {
 			event.preventDefault();
 			var submit = form.querySelector('.news-editor-submit');
 			var formData = new FormData(form);
-			var submitLabel = form.getAttribute('data-label-submit') || 'Редактировать';
-			var savingLabel = form.getAttribute('data-label-saving') || 'Загрузка...';
-			var savedMessage = form.getAttribute('data-message-saved') || 'Новость сохранена';
-			var saveErrorMessage = form.getAttribute('data-message-save-error') || 'Не удалось сохранить новость';
-			var saveRetryMessage = form.getAttribute('data-message-save-error-retry') || 'Не удалось сохранить новость. Попробуйте ещё раз.';
+			var submitLabel = form.getAttribute('data-label-submit') || 'Edit';
+			var savingLabel = form.getAttribute('data-label-saving') || 'Loading...';
+			var savedMessage = form.getAttribute('data-message-saved') || 'News saved';
+			var saveErrorMessage = form.getAttribute('data-message-save-error') || 'Failed to save news';
+			var saveRetryMessage = form.getAttribute('data-message-save-error-retry') || 'Failed to save news. Please try again.';
 
 			if (submit) {
 				submit.disabled = true;
