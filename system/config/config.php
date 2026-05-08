@@ -190,7 +190,6 @@ $config  = array(
 
 'sql_log_file' => $ltRootDir.'/logs/mysql_log_'.date("M_d_Y").'.log' , //Файл с логами ошибок mySQL
 
-'blocks_use' => 1 , //Использовать блоки ?
 );
 
 

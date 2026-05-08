@@ -160,10 +160,6 @@ function render_standard_sidebar()
 			<div class="sidebar-empty">Новостей пока нет.</div>
 			<?php } ?>
 		</section>
-
-		<div class="sidebar-dynamic sidebar-dynamic-right">
-			<?php show_blocks('r'); ?>
-		</div>
 	</aside>
 	<?php
 }

@@ -1,11 +1,26 @@
 .DS_Store
 Thumbs.db
+.php-cs-fixer.cache
+.env
+.env.*
 
+node_modules/
+vendor/
 docker-data/
+docker/.data/
+coverage/
+tmp/
+*.tmp
+*.bak
+*.orig
+*.sql
+!database/*.sql
+!database/migrations/*.sql
 logs/*.log
+logs/*
+!logs/.htaccess
 system/cache/*.cache
-system/cache/locks/
-!system/cache/locks/
+system/cache/locks/*
 !system/cache/locks/.gitkeep
 comments_debug.log
 

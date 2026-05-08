@@ -4,15 +4,8 @@ if (!defined('LITETRACKER')) {
 }
 
 $showStandardSidebar = (!defined('LIGHT') && !empty($GLOBALS['LITETRACKER_STANDARD_SIDEBAR']) && empty($GLOBALS['LITETRACKER_HIDE_STANDARD_SIDEBAR']));
-$showBottomBlocks = empty($GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS']);
 ?>
 			</div>
-
-			<?php if ($showBottomBlocks) { ?>
-			<div class="site-bottom-blocks">
-				<?php show_blocks('d'); ?>
-			</div>
-			<?php } ?>
 		</main>
 
 		<?php if ($showStandardSidebar) { ?>

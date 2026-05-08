@@ -108,13 +108,12 @@ function admin_dashboard_settings_schema()
 	return array(
 		'site-settings' => array(
 			'title' => 'Настройки сайта',
-			'description' => 'Главные публичные переключатели движка. Эти параметры влияют на вход, регистрацию, отображение блоков и базовое имя проекта.',
+			'description' => 'Главные публичные переключатели движка. Эти параметры влияют на вход, регистрацию и базовое имя проекта.',
 			'fields' => array(
 				array('key' => 'sitename', 'label' => 'Название сайта', 'type' => 'text', 'required' => true, 'description' => 'Показывается в заголовках и системных местах. Пример: LiteTracker.'),
 				array('key' => 'siteonline', 'label' => 'Сайт открыт', 'type' => 'checkbox', 'description' => 'Если выключить, обычные пользователи не смогут пользоваться сайтом во время работ.'),
 				array('key' => 'registeronline', 'label' => 'Регистрация открыта', 'type' => 'checkbox', 'description' => 'Разрешает создание новых аккаунтов через публичную форму регистрации.'),
 				array('key' => 'gzip', 'label' => 'Gzip-сжатие', 'type' => 'checkbox', 'description' => 'Сжимает HTML-ответы, если сервер и браузер это поддерживают.'),
-				array('key' => 'blocks_use', 'label' => 'Использовать блоки', 'type' => 'checkbox', 'description' => 'Глобально включает блоки из blocks.php. Если выключено, настройки блоков сохраняются, но блоки не видны.'),
 				array('key' => 'begin_money', 'label' => 'Стартовый баланс', 'type' => 'text', 'description' => 'Сколько бонусных единиц получает новый пользователь после регистрации.'),
 				array('key' => 'project_help_text', 'label' => 'Текст блока помощи проекту', 'type' => 'text', 'description' => 'Короткое описание цели сбора. Пример: “Оплата аренды сервера”.'),
 				array('key' => 'project_help_button_label', 'label' => 'Кнопка помощи проекту', 'type' => 'text', 'description' => 'Текст кнопки в блоке помощи. Пример: “Помочь проекту”.'),
@@ -341,7 +340,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			admin_dashboard_redirect($activeTab, 'db_optimized');
 		}
 
-		if ($quickAction === 'toggle_siteonline' || $quickAction === 'toggle_registeronline' || $quickAction === 'toggle_blocks_use') {
+		if ($quickAction === 'toggle_siteonline' || $quickAction === 'toggle_registeronline') {
 			if (!$roles['superadmin']) {
 				admin_dashboard_redirect($activeTab, 'action_denied');
 			}
@@ -466,11 +465,10 @@ $sections = array(
 	array(
 		'tab' => 'content',
 		'title' => 'Контент',
-		'description' => 'Управление наполнением сайта, структурой и визуальными блоками.',
+		'description' => 'Управление наполнением сайта и структурой каталога.',
 		'items' => array(
 			array('label' => 'Релизы', 'description' => 'Каталог торрентов, переход к редактированию и модерации.', 'href' => 'browse.php?act=all', 'allowed' => true),
 			array('label' => 'Категории', 'description' => 'Создание, редактирование и перенос релизов между категориями.', 'href' => 'categories.php', 'allowed' => !empty($PRIV['cats'])),
-			array('label' => 'Блоки сайта', 'description' => 'Настройка боковых и центральных блоков интерфейса.', 'href' => 'blocks.php', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
 			array('label' => 'Новости', 'description' => 'Публикация и редактирование новостей проекта.', 'href' => 'news.php', 'allowed' => !empty($PRIV['news_add']) || !empty($PRIV['edit_news'])),
 			array('label' => 'FAQ', 'description' => 'Управление разделом вопросов и ответов.', 'href' => 'faq.php', 'allowed' => !empty($PRIV['faq_moderate'])),
 		),
@@ -510,7 +508,6 @@ $sections = array(
 $quickActions = array(
 	array('id' => 'toggle_siteonline', 'label' => (!empty($config['siteonline']) ? 'Закрыть сайт' : 'Открыть сайт'), 'description' => (!empty($config['siteonline']) ? 'Сразу перевести сайт в закрытый режим.' : 'Снова открыть доступ к сайту.'), 'allowed' => $roles['superadmin'], 'confirm' => 'Изменить публичный статус сайта?'),
 	array('id' => 'toggle_registeronline', 'label' => (!empty($config['registeronline']) ? 'Закрыть регистрацию' : 'Открыть регистрацию'), 'description' => 'Мгновенно переключить доступность регистрации новых пользователей.', 'allowed' => $roles['superadmin'], 'confirm' => 'Изменить доступность регистрации?'),
-	array('id' => 'toggle_blocks_use', 'label' => (!empty($config['blocks_use']) ? 'Отключить блоки' : 'Включить блоки'), 'description' => 'Переключить глобальную блочную систему сайта.', 'allowed' => $roles['superadmin'], 'confirm' => 'Изменить состояние блочной системы?'),
 	array('id' => 'clear_sessions', 'label' => 'Очистить сессии', 'description' => 'Удалить все активные записи из таблицы сессий.', 'allowed' => !empty($PRIV['sessions_clear']), 'confirm' => 'Очистить все сессии?'),
 	array('id' => 'clear_search_queries', 'label' => 'Очистить мониторинг поиска', 'description' => 'Стереть накопленные поисковые запросы пользователей.', 'allowed' => $roles['superadmin'], 'confirm' => 'Очистить мониторинг поиска?'),
 	array('id' => 'flush_cache', 'label' => 'Очистить кэш', 'description' => 'Сбросить memcached и файловый кэш.', 'allowed' => $roles['superadmin'], 'confirm' => 'Очистить весь кэш?'),
@@ -521,8 +518,6 @@ $shortcuts = array(
 	array('label' => 'Добавить пользователя', 'href' => 'user_add.php', 'allowed' => !empty($PRIV['user_add'])),
 	array('label' => 'Добавить новость', 'href' => 'news.php?act=add', 'allowed' => !empty($PRIV['news_add']) || !empty($PRIV['edit_news'])),
 	array('label' => 'Редактировать новости', 'href' => 'news.php', 'allowed' => !empty($PRIV['news_add']) || !empty($PRIV['edit_news'])),
-	array('label' => 'Добавить опрос', 'href' => 'blocks.php?act=add', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
-	array('label' => 'Редактировать опросы', 'href' => 'blocks.php', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
 	array('label' => 'Открыть классы и права', 'href' => 'edit_priv.php', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
 	array('label' => 'Открыть жалобы', 'href' => user_wall_reports_href(), 'allowed' => user_wall_reports_can_moderate()),
 );
@@ -1016,10 +1011,6 @@ head('Админка');
 			<div class='admin-system-item'>
 				<div class='admin-system-label'>Конфиг</div>
 				<div class='admin-system-value'><?=htmlspecialchars($configPath, ENT_QUOTES, 'UTF-8');?><br><?=($configWritable ? 'доступен для записи из админки' : 'недоступен для записи, проверьте права файла');?></div>
-			</div>
-			<div class='admin-system-item'>
-				<div class='admin-system-label'>Блоки</div>
-				<div class='admin-system-value'><?=(!empty($config['blocks_use']) ? 'включены' : 'выключены');?>. Управление находится в разделе “Контент”.</div>
 			</div>
 			<div class='admin-system-item'>
 				<div class='admin-system-label'>CAPTCHA</div>

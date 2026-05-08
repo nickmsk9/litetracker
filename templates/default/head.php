@@ -409,7 +409,3 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
                     end_frame();
                 } */
                 ?>
-
-				<?php if (empty($GLOBALS['LITETRACKER_HIDE_TOP_BLOCKS'])) { ?>
-					<?php show_blocks('c'); ?>
-				<?php } ?>

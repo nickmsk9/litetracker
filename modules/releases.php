@@ -167,8 +167,6 @@ elseif($act == 'releases' || $id_category || $search !== '' || !$config['search_
 
 
 		//Дополнительные файлы js и моды
-
-		// echo '<script src="public/js/overlib.js"></script>';
 		echo '<script type="text/javascript" src="public/js/wz_tooltip.js"></script>';
 		echo $pagertop;
 

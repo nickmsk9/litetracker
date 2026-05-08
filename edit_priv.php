@@ -50,8 +50,6 @@ function edit_priv_permission_labels()
 		'faq_moderate' => 'FAQ',
 		'profile_view' => 'просмотр профилей',
 		'users_view' => 'список пользователей',
-		'block_moderators' => 'модераторские блоки',
-		'block_administrators' => 'админские блоки',
 		'EDIT_PRIV' => 'классы и права',
 	);
 }
@@ -249,7 +247,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		}
 
 		//Массив с правами
-		$array = array('faq_moderate'  , 'edit_banned' ,'edit_news' , 'user_add' , 'news_add' ,'upload', 'cats', 'chat_delete', 'chat_view', 'chat_clear',  'comments_edit', 'comments_delete', 'details_banned_view', 'details_view', 'download_torrent', 'download_magnet', 'edit_release', 'messages', 'multitracker_accounts', 'setting_user', 'ip_util', 'profile_view', 'search_query', 'sessions_view', 'sessions_clear', 'users_view' , 'block_moderators' ,  'block_administrators');
+		$array = array('faq_moderate'  , 'edit_banned' ,'edit_news' , 'user_add' , 'news_add' ,'upload', 'cats', 'chat_delete', 'chat_view', 'chat_clear',  'comments_edit', 'comments_delete', 'details_banned_view', 'details_view', 'download_torrent', 'download_magnet', 'edit_release', 'messages', 'multitracker_accounts', 'setting_user', 'ip_util', 'profile_view', 'search_query', 'sessions_view', 'sessions_clear', 'users_view');
 		$update = array();
 
 		//Обрабатываем данные
@@ -687,32 +685,6 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		<td style="padding: 0px;">
 			<input type="checkbox" name="users_view" value="1" <?=($arr['users_view'] ? 'checked' : '');?> \>
 			<small>Возможность просматривать участников</small>
-		</td><td>
-	   </td></tr>
-
-	   <tr>
-		<td class="ta_r" valign="top" colspan="2">
-		 <span class="grey" ><b>Блоки</b></span>
-		</td>
-		</tr>
-
-	   <tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" >Модераторские блоки:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="checkbox" name="block_moderators" value="1" <?=($arr['block_moderators'] ? 'checked' : '');?> \>
-			<small>Видит модераторские блоки</small>
-		</td><td>
-	   </td></tr>
-
-	   <tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" >Административные блоки:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="checkbox" name="block_administrators" value="1" <?=($arr['block_administrators'] ? 'checked' : '');?> \>
-			<small>Видит административные блоки</small>
 		</td><td>
 	   </td></tr>
 

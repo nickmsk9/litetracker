@@ -48,7 +48,6 @@ require __DIR__ . '/config/config.mysql.php';
 //Подключаем главный функционал
 require __DIR__ . '/functions/functions.php';
 require __DIR__ . '/functions/functions.http.php';
-require __DIR__ . '/functions/functions.blocks.php';
 require __DIR__ . '/functions/functions.upload.php';
 
 
