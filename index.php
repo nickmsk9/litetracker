@@ -133,13 +133,30 @@ $perPage = 5;
 $pagesCount = ($countTorrent > 0 ? (int) ceil($countTorrent / $perPage) : 0);
 $nextPage = ($currentPage + 1 < $pagesCount ? $currentPage + 1 : null);
 $nextPageUrl = ($nextPage !== null ? home_build_url(array('page' => $nextPage, 'view' => $view, 'sort' => $sort, 'ajax' => 1)) : '');
-$homeLoadBlock = $db->super_query("SELECT active, type, which FROM orbital_blocks WHERE blockfile = 'block-load_in_server.php' LIMIT 1");
+$homeLoadBlock = $memcached->get('home_load_block_config_v1');
+if (false === $homeLoadBlock || !is_array($homeLoadBlock)) {
+	$homeLoadBlock = $db->super_query("SELECT active, type, which FROM orbital_blocks WHERE blockfile = 'block-load_in_server.php' LIMIT 1");
+	$memcached->set('home_load_block_config_v1', (is_array($homeLoadBlock) ? $homeLoadBlock : array()), 0, 5 * 60);
+}
+
 $homeLoadBlockType = trim($homeLoadBlock['type'] ?? 'all');
 $homeLoadBlockWhich = trim($homeLoadBlock['which'] ?? 'all');
-$homeLoadBlockPages = ($homeLoadBlockWhich === '' ? array('all') : array_map('trim', explode(',', $homeLoadBlockWhich)));
+$homeLoadBlockPages = array();
+
+foreach (explode(',', ($homeLoadBlockWhich === '' ? 'all' : $homeLoadBlockWhich)) as $page) {
+	$page = preg_replace('~[^a-z0-9_\-]~', '', strtolower(trim($page)));
+	if ($page !== '') {
+		$homeLoadBlockPages[$page] = true;
+	}
+}
+
+if (empty($homeLoadBlockPages)) {
+	$homeLoadBlockPages = array('all' => true);
+}
+
 $showHomeLoadBlock = (
 	!empty($homeLoadBlock['active'])
-	&& (in_array('all', $homeLoadBlockPages, true) || in_array('index', $homeLoadBlockPages, true))
+	&& (isset($homeLoadBlockPages['all']) || isset($homeLoadBlockPages['index']))
 	&& (
 		$homeLoadBlockType === 'all'
 		|| ($homeLoadBlockType === 'guests' && !$USER)
