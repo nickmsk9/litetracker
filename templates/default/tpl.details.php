@@ -14,7 +14,7 @@ $detailsDescriptionHtml = ($detailsDescriptionHtml !== '' ? cleanhtml($detailsDe
 $detailsCategoryHref = 'browse.php?id_category='.(int) ($cat_id ?? 0);
 $detailsCategoryLabel = htmlspecialchars((string) ($cat_name_plain ?? ''), ENT_QUOTES, 'UTF-8');
 $detailsPosterPath = trim((string) $image);
-$detailsPosterAvailable = ($detailsPosterPath !== '' && stripos($detailsPosterPath, 'default_avatar.gif') === false);
+$detailsHasValidPoster = ($detailsPosterPath !== '' && stripos($detailsPosterPath, 'default_avatar.gif') === false);
 ?>
 
 <div class="details-page">
@@ -22,7 +22,7 @@ $detailsPosterAvailable = ($detailsPosterPath !== '' && stripos($detailsPosterPa
 		<aside class="details-sidebar">
 			<div class="details-poster-card lt-card">
 				<div class="details-poster-badge"><?=htmlspecialchars($category_badge !== '' ? $category_badge : 'торрент', ENT_QUOTES, 'UTF-8');?></div>
-				<?php if ($detailsPosterAvailable) { ?>
+				<?php if ($detailsHasValidPoster) { ?>
 				<img class="details-poster-image" src="<?=htmlspecialchars($detailsPosterPath, ENT_QUOTES, 'UTF-8');?>" alt="<?=$detailsTitle;?>">
 				<?php } else { ?>
 				<div class="details-media-placeholder details-poster-placeholder" role="img" aria-label="Постер отсутствует">Постер отсутствует</div>

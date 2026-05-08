@@ -7,7 +7,7 @@ $torrentCard = (is_array($torrentCard ?? null) ? $torrentCard : array());
 $extraSections = (array) ($torrentCard['extra_sections'] ?? array());
 $torrentCardName = htmlspecialchars((string) ($torrentCard['name'] ?? ''), ENT_QUOTES, 'UTF-8');
 $torrentCardCoverPath = trim((string) ($torrentCard['cover'] ?? ''));
-$torrentCardHasCover = ($torrentCardCoverPath !== '' && stripos($torrentCardCoverPath, 'default_avatar.gif') === false);
+$torrentCardHasValidCover = ($torrentCardCoverPath !== '' && stripos($torrentCardCoverPath, 'default_avatar.gif') === false);
 $extraSummaryLabel = 'Дополнительная информация';
 if (!empty($extraSections[0]['label'])) {
 	$firstLabelKey = lt_torrent_label_key((string) ($extraSections[0]['label'] ?? ''));
@@ -61,7 +61,7 @@ if (!empty($extraSections[0]['label'])) {
 					<?php if (!empty($torrentCard['is_multitracker'])) { ?>
 					<span class="browse-torrent-card-multi-badge">multi</span>
 					<?php } ?>
-					<?php if ($torrentCardHasCover) { ?>
+					<?php if ($torrentCardHasValidCover) { ?>
 					<img src="<?=htmlspecialchars($torrentCardCoverPath, ENT_QUOTES, 'UTF-8');?>" alt="<?=$torrentCardName;?>">
 					<?php } else { ?>
 					<span class="browse-torrent-card-cover-placeholder">Постер отсутствует</span>
@@ -117,7 +117,7 @@ if (!empty($extraSections[0]['label'])) {
 				<?php if (!empty($torrentCard['is_multitracker'])) { ?>
 				<span class="browse-torrent-card-multi-badge browse-torrent-card-multi-badge-compact">m</span>
 				<?php } ?>
-				<?php if ($torrentCardHasCover) { ?>
+				<?php if ($torrentCardHasValidCover) { ?>
 				<img src="<?=htmlspecialchars($torrentCardCoverPath, ENT_QUOTES, 'UTF-8');?>" alt="<?=$torrentCardName;?>">
 				<?php } else { ?>
 				<span class="browse-torrent-card-cover-placeholder browse-torrent-card-cover-placeholder-compact">Нет</span>

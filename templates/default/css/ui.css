@@ -24,6 +24,8 @@
   --lt-primary-hover: var(--accent-hover);
   --lt-danger: #b95050;
   --lt-danger-hover: #a23f3f;
+  --lt-magnet: #de8e2e;
+  --lt-magnet-hover: #c77f29;
   --lt-focus-color: color-mix(in srgb, var(--lt-primary) 24%, transparent);
   --lt-focus-ring: 0 0 0 4px var(--lt-focus-color);
 }
@@ -687,14 +689,14 @@ table.tt tbody tr:hover td:not(.tt) {
 
 .details-download-button-magnet.lt-btn {
   min-width: 48px;
-  border-color: #de8e2e;
-  background: #de8e2e;
+  border-color: var(--lt-magnet);
+  background: var(--lt-magnet);
   color: #fff;
 }
 
 .details-download-button-magnet.lt-btn:hover {
-  border-color: #c77f29;
-  background: #c77f29;
+  border-color: var(--lt-magnet-hover);
+  background: var(--lt-magnet-hover);
   color: #fff;
 }
 
