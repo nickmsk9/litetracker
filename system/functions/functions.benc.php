@@ -619,7 +619,12 @@ function getUrlPort($urlInfo) {
  * @return string String to be used in remote tracker statistics
  */
 function check_fail($result) {
-	if ($result['value']['failure reason']['value']) return 'failed:'.$result['value']['failure reason']['value'].'_'; else return 'ok_';
+	$reason = '';
+	if (is_array($result) && isset($result['value']['failure reason']['value'])) {
+		$reason = (string) $result['value']['failure reason']['value'];
+	}
+
+	return ($reason !== '' ? 'failed:'.$reason.'_' : 'ok_');
 }
 
 /**
@@ -631,6 +636,14 @@ function check_fail($result) {
  */
 function get_remote_peers($url, $info_hash, $method = 'scrape') {
 	global $CRON, $config;
+	$emptyResult = array('tracker' => (string) $url, 'seeders' => 0, 'leechers' => 0, 'state' => 'failed:unknown_'.$method);
+	$urlorig = (string) $url;
+	$info_hash = preg_replace('~[^a-f0-9]~i', '', (string) $info_hash);
+	if (strlen($info_hash) !== 40) {
+		$emptyResult['state'] = 'failed:invalid_infohash_'.$method;
+		return $emptyResult;
+	}
+
 	$maxTimeout = max(1, (int) ($config['remote_tracker_timeout'] ?? 8));
 	$timeout = (int) ($CRON['multi_timeout'] ?? 0);
 	if ($timeout <= 0 || $timeout > $maxTimeout) {
@@ -650,8 +663,16 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
     			"numwant" => 9999
 		);
 	} else {
-		$urlorig=$url;
-		$url = str_replace('announce', 'scrape', $url);
+		$urlInfoForScrape = parse_url($url);
+		if (!empty($urlInfoForScrape['path'])) {
+			$urlInfoForScrape['path'] = preg_replace('~announce~i', 'scrape', $urlInfoForScrape['path'], 1);
+			$url = (isset($urlInfoForScrape['scheme']) ? $urlInfoForScrape['scheme'].'://' : '')
+				. (isset($urlInfoForScrape['user']) ? $urlInfoForScrape['user'].(isset($urlInfoForScrape['pass']) ? ':'.$urlInfoForScrape['pass'] : '').'@' : '')
+				. ($urlInfoForScrape['host'] ?? '')
+				. (isset($urlInfoForScrape['port']) ? ':'.$urlInfoForScrape['port'] : '')
+				. ($urlInfoForScrape['path'] ?? '')
+				. (isset($urlInfoForScrape['query']) ? '?'.$urlInfoForScrape['query'] : '');
+		}
 		$get_params = array(
     			"info_hash" => pack("H*", $info_hash)
 		);
@@ -673,23 +694,28 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
 	$http_port = getUrlPort($urlInfo);
 
 	if ($http_port === 0)
-	return array('tracker' => $http_host, 'state' => 'failed:no_port_detected_'.$method);
+	return array('tracker' => $http_host, 'seeders' => 0, 'leechers' => 0, 'state' => 'failed:no_port_detected_'.$method);
 	else
 	$http_port = ':' . $http_port;
 
 	$http_path = ($urlInfo['path'] ?? '/');
 	$get_request_params = explode('&', (string) ($urlInfo['query'] ?? ''));
+	$new_get_request_params = array();
 
 	foreach (array_filter($get_request_params) as $array_value) {
-		list($key, $value) = explode('=', $array_value);
+		$parts = explode('=', $array_value, 2);
+		$key = (string) ($parts[0] ?? '');
+		$value = (string) ($parts[1] ?? '');
+		if ($key === '') {
+			continue;
+		}
 		$new_get_request_params[$key] = $value;
 	}
 
-	if (!$new_get_request_params) $new_get_request_params=array();
 	// Params gathering complete
 
 	// Creating params
-	$http_params = http_build_query(array_merge($new_get_request_params, $get_params));
+	$http_params = http_build_query(array_merge($new_get_request_params, $get_params), '', '&', PHP_QUERY_RFC3986);
 
 	$opts = array('http' =>
 	array(
@@ -709,36 +735,53 @@ function get_remote_peers($url, $info_hash, $method = 'scrape') {
 	}
 
 	$context = stream_context_create($opts);
-	$result = file_get_contents($scheme.'://'.$http_host.$http_port.$http_path.($http_params ? '?'.$http_params : ''), false, $context);
+	$result = @file_get_contents($scheme.'://'.$http_host.$http_port.$http_path.($http_params ? '?'.$http_params : ''), false, $context);
 	// $result = true;
 	if (!$result)
 	{
 		if ($method=='scrape')
 		return get_remote_peers($urlorig, $info_hash, "announce"); else
-		return array('tracker' => $http_host, 'state' => 'failed:no_benc_result_or_timeout_'.$method);
+		return array('tracker' => $http_host, 'seeders' => 0, 'leechers' => 0, 'state' => 'failed:no_benc_result_or_timeout_'.$method);
 
 	}
 
 
 	//var_dump($method);
 	$resulttemp=$result;
-	$result = bdec($result);
+	try {
+		$result = bdec($result);
+	} catch (Throwable $e) {
+		return array('tracker' => $http_host, 'seeders' => 0, 'leechers' => 0, 'state' => 'failed:unable_to_bdec_'.$method);
+	}
 
-	if (!is_array($result)) return array('tracker' => $http_host, 'state' => 'failed:unable_to_bdec:'.$resulttemp.'_'.$method);
+	if (!is_array($result)) return array('tracker' => $http_host, 'seeders' => 0, 'leechers' => 0, 'state' => 'failed:unable_to_bdec_'.$method);
 	unset($resulttemp);
 	//    print('<pre>'); var_dump($result);
 	if ($method == 'scrape') {
 
-		if ($result['value']['files']['value']) {
+		if (!empty($result['value']['files']['value']) && is_array($result['value']['files']['value'])) {
 			$peersarray = array_shift($result['value']['files']['value']);
-			return array('tracker' => $http_host, 'seeders' => $peersarray['value']['complete']['value'], 'leechers' => $peersarray['value']['incomplete']['value'], 'state' => check_fail($result).$method);
+			return array(
+				'tracker' => $http_host,
+				'seeders' => max(0, (int) ($peersarray['value']['complete']['value'] ?? 0)),
+				'leechers' => max(0, (int) ($peersarray['value']['incomplete']['value'] ?? 0)),
+				'state' => check_fail($result).$method
+			);
 		} else return get_remote_peers($urlorig, $info_hash, "announce");
 	}
 
 	if($method == 'announce') {
-		return array('tracker' => $http_host, 'seeders' => (is_array($result['value']['peers']['value'])?count($result['value']['peers']['value']):(strlen($result['value']['peers']['value'])/6)), 'leechers' => 0, 'state'=> check_fail($result).$method);
+		$peersValue = $result['value']['peers']['value'] ?? '';
+		$peerCount = (is_array($peersValue) ? count($peersValue) : (int) floor(strlen((string) $peersValue) / 6));
+		return array(
+			'tracker' => $http_host,
+			'seeders' => max(0, (int) ($result['value']['complete']['value'] ?? $peerCount)),
+			'leechers' => max(0, (int) ($result['value']['incomplete']['value'] ?? 0)),
+			'state'=> check_fail($result).$method
+		);
 	}
 
+	return $emptyResult;
 }
 
 ?>

@@ -3,12 +3,9 @@ if (!defined('LITETRACKER')) {
 	die('Direct access denied.');
 }
 
-$detailsInfoTitle = lt_details_info_heading($cat_name_plain);
-$detailsRatingPercent = max(0, min(100, ($details_rating_score / 5) * 100));
-$detailsDescriptionHtml = $details_description_html;
-if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
-	$detailsDescriptionHtml = $descr;
-}
+$detailsInfoTitle = (string) $detailsInfoTitle;
+$detailsRatingPercent = max(0, min(100, (float) $detailsRatingPercent));
+$detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 ?>
 
 <div class="details-page">

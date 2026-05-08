@@ -116,15 +116,25 @@ if ($CRON['multi_remote']) {
 
 	$res = $db->query("SELECT torrents.id, torrents.infohash, trackers.tracker FROM trackers LEFT JOIN torrents ON torrents.id=trackers.torrent WHERE ".($CRON['remotepeers_cleantime']?"trackers.lastchecked<".(time()-$CRON['remotepeers_cleantime'])." AND ":'')."trackers.tracker<>'localhost'".($CRON['remote_lastchecked']?" AND torrents.id<{$CRON['remote_lastchecked']}":'')." ORDER BY torrents.id DESC".($CRON['remote_torrents']?" LIMIT {$CRON['remote_torrents']}":''));
 
-	while ($row = $db->get_row($res)) {$LAST_ID=$row['id']; $parray[$row['id']] = array('info_hash'=>$row['infohash'],'tracker'=>$row['tracker']); }
+	$parray = array();
+	while ($row = $db->get_row($res)) {
+		$LAST_ID = (int) $row['id'];
+		$parray[] = array(
+			'id' => (int) $row['id'],
+			'info_hash' => (string) $row['infohash'],
+			'tracker' => (string) $row['tracker'],
+		);
+	}
 
 	if ($parray) {
 		$db->query("UPDATE cron SET cron_value=$LAST_ID WHERE cron_name='remote_lastchecked'");
-		foreach ($parray as $id => $torrent) {
+		foreach ($parray as $torrent) {
+			$id = (int) $torrent['id'];
 			$hash = $torrent['info_hash'];
 			$url = $torrent['tracker'];
 			$peers = get_remote_peers($url, $hash);
 			$db->query("UPDATE LOW_PRIORITY trackers SET seeders=".(int)$peers['seeders'].", leechers=".(int)$peers['leechers'].", lastchecked=".time().", state='".$db->safesql((string) ($peers['state'] ?? ''))."' WHERE torrent=$id AND tracker='".$db->safesql($url)."'");
+			$updatedTrackers++;
 		}
 
 	} else $db->query("UPDATE cron SET cron_value=0 WHERE cron_name='remote_lastchecked'");

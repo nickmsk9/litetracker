@@ -95,6 +95,7 @@ $showBottomBlocks = empty($GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS']);
 	</div>
 </div>
 
+<script type="text/javascript" src="/public/js/lt.ajax.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 	var modal = document.querySelector('[data-feedback-modal]');

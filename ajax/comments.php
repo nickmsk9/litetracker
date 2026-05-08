@@ -24,11 +24,6 @@ function ajax_cm_response($ok, $message = '', $extra = array())
     die();
 }
 
-// Require login for all actions
-if (empty($USER['id'])) {
-    ajax_cm_response(0, 'Требуется авторизация.');
-}
-
 $action   = preg_replace('~[^a-z_]~', '', trim((string)($_REQUEST['action'] ?? $_REQUEST['act'] ?? '')));
 $type     = preg_replace('~[^a-z0-9_]~i', '', trim((string)($_REQUEST['type'] ?? '')));
 $objectId = (int)($_REQUEST['object_id'] ?? 0);
@@ -49,7 +44,6 @@ if ($fileName !== '' && !is_file($fileName)) {
 $tableName    = comments_table_name($type);
 $objectColumn = comments_object_column($type);
 $csrfScope    = 'comments_' . $type . '_' . $objectId;
-$rateLimitId  = ((int)($USER['id'] ?? 0)) . ':' . ($_SERVER['REMOTE_ADDR'] ?? 'cli');
 
 if (!lt_table_exists($tableName)) {
     ajax_cm_response(0, 'Тип комментариев не найден.');
@@ -77,16 +71,27 @@ function ajax_cm_csrf_input($scope)
 }
 
 /////////////////////////////
+// REFRESH
+/////////////////////////////
+if ($action === 'refresh') {
+    ajax_cm_response(1, '', array(
+        'html' => ajax_cm_stream_html($type, $objectId, $file),
+    ));
+}
+
+// Require login for mutating actions
+if (empty($USER['id'])) {
+    ajax_cm_response(0, 'Требуется авторизация.');
+}
+
+$rateLimitId = ((int)($USER['id'] ?? 0)) . ':' . ($_SERVER['REMOTE_ADDR'] ?? 'cli');
+
+/////////////////////////////
 // ADD
 /////////////////////////////
 if ($action === 'add') {
     if (!lt_csrf_validate($csrfScope)) {
         ajax_cm_response(0, 'Защитный токен устарел. Обновите страницу и попробуйте снова.');
-    }
-
-    $rl = lt_rate_limit_hit('comments_add', $rateLimitId, 8, 5 * 60);
-    if (!empty($rl['blocked'])) {
-        ajax_cm_response(0, 'Слишком много комментариев за короткое время. Повторите попытку позже.');
     }
 
     $text = trim((string)($_POST['text'] ?? $_POST['descr'] ?? ''));

@@ -447,7 +447,7 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
     }
 
     $fileSafe = htmlspecialchars($file, ENT_QUOTES, 'UTF-8');
-    echo '<div class="comment-thread-root" data-comment-thread="1" data-comment-type="'.htmlspecialchars($type, ENT_QUOTES, 'UTF-8').'" data-object-id="'.$object_id.'" data-file="'.$fileSafe.'">';
+    echo '<div class="comment-thread-root" data-comment-thread="1" data-comment-type="'.htmlspecialchars($type, ENT_QUOTES, 'UTF-8').'" data-object-id="'.$object_id.'" data-file="'.$fileSafe.'" data-endpoint="ajax/comments.php">';
     echo '<div class="comment-ajax-notice" data-comment-notice="1" hidden></div>';
 
     if ($showPager) {

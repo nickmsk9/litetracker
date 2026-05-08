@@ -50,12 +50,12 @@ if (!defined('LITETRACKER')) {
 					<h2 class="profile-wall-title">Стена пользователя</h2>
 				</div>
 
-				<div class="profile-wall-body comment-thread-root" data-comment-thread="1" data-comment-type="users" data-object-id="<?=$id;?>" data-file="profile.php?id=<?=$id;?>&amp;">
+				<div class="profile-wall-body comment-thread-root" data-comment-thread="1" data-comment-type="users" data-object-id="<?=$id;?>" data-file="profile.php?id=<?=$id;?>&amp;" data-endpoint="ajax/comments.php">
 					<div class="comment-ajax-notice" data-comment-notice="1" hidden></div>
 					<div id="profile-wall-comments"><?=$wallCommentsHtml;?></div>
 
 					<?php if (!empty($USER) && is_array($USER)) { ?>
-					<form class="wall-form" id="profile-wall-form" data-comment-form="1" method="post" action="ajax/comments.php">
+					<form class="wall-form" id="profile-wall-form" data-comment-form="1" method="post" action="comments.take.php">
 						<div class="wall-reply-banner" id="profile-wall-reply-info" data-comment-reply-banner="1" hidden>
 							<span id="profile-wall-reply-label" data-comment-reply-label="1"></span>
 							<button class="wall-comment-button" id="profile-wall-reply-cancel" data-comment-reply-cancel="1" type="button">Отмена</button>
@@ -77,6 +77,7 @@ if (!defined('LITETRACKER')) {
 						<input type="hidden" name="type" value="users">
 						<input type="hidden" name="file" value="profile.php?id=<?=$id;?>&amp;">
 						<input type="hidden" name="parent_id" id="profile-wall-parent-id" data-comment-parent="1" value="0">
+						<input type="hidden" name="act" value="add">
 						<?=lt_csrf_input('comments_users_'.$id);?>
 					</form>
 					<?php } ?>

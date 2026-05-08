@@ -15,9 +15,9 @@
     return el && el.closest ? el.closest(selector) : null;
   }
 
-  function sendAjax(formData, onSuccess, onError) {
+  function sendAjax(url, formData, onSuccess, onError) {
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', AJAX_URL, true);
+    xhr.open('POST', url || AJAX_URL, true);
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.onreadystatechange = function () {
       var payload;
@@ -47,6 +47,14 @@
       }
     };
     xhr.send(formData);
+  }
+
+  function confirmAction(message) {
+    if (window.LiteTracker && window.LiteTracker.ui && typeof window.LiteTracker.ui.confirm === 'function') {
+      return window.LiteTracker.ui.confirm(message);
+    }
+
+    return window.confirm(message);
   }
 
   function setButtonBusy(button, busy, text) {
@@ -80,6 +88,8 @@
     this.type = root.getAttribute('data-comment-type') || '';
     this.objectId = root.getAttribute('data-object-id') || '0';
     this.file = root.getAttribute('data-file') || '';
+    this.endpoint = root.getAttribute('data-endpoint') || AJAX_URL;
+    this.refreshUrl = root.getAttribute('data-refresh-url') || this.endpoint;
   }
 
   CommentThread.prototype.notice = function (message, isError) {
@@ -317,7 +327,7 @@
       }
       self.fillBasePayload(formData);
 
-      sendAjax(formData, function (payload) {
+      sendAjax(self.endpoint, formData, function (payload) {
         self.refreshStream(payload.html || '', payload.comment_id || commentId);
         self.notice(payload.message || 'Комментарий обновлён.');
       }, function (message) {
@@ -328,6 +338,24 @@
 
     slot.appendChild(form);
     textarea.focus();
+  };
+
+  CommentThread.prototype.refresh = function () {
+    var formData = new FormData();
+    var self = this;
+
+    formData.append('action', 'refresh');
+    this.fillBasePayload(formData);
+
+    sendAjax(this.refreshUrl, formData, function (payload) {
+      self.refreshStream(payload.html || '', payload.comment_id || 0);
+
+      if (payload.message) {
+        self.notice(payload.message);
+      }
+    }, function (message) {
+      self.notice(message, true);
+    });
   };
 
   CommentThread.prototype.submitAdd = function (form) {
@@ -348,7 +376,7 @@
     formData.set('action', 'add');
     this.fillBasePayload(formData);
 
-    sendAjax(formData, function (payload) {
+    sendAjax(this.endpoint, formData, function (payload) {
       var newId = payload.comment_id || 0;
 
       self.refreshStream(payload.html || '', newId);
@@ -379,7 +407,7 @@
       return;
     }
 
-    if (options.confirm && !window.confirm(options.confirm)) {
+    if (options.confirm && !confirmAction(options.confirm)) {
       return;
     }
 
@@ -391,7 +419,7 @@
     }
     this.fillBasePayload(formData);
 
-    sendAjax(formData, function (payload) {
+    sendAjax(this.endpoint, formData, function (payload) {
       if (payload.html) {
         self.refreshStream(payload.html || '', payload.comment_id || 0);
       }
@@ -413,7 +441,14 @@
     var editBtn = closest(target, '[data-wall-edit]');
     var deleteBtn = closest(target, '[data-wall-delete]');
     var reportBtn = closest(target, '[data-wall-report]');
+    var refreshBtn = closest(target, '[data-comment-refresh]');
     var comment;
+
+    if (refreshBtn && this.root.contains(refreshBtn)) {
+      event.preventDefault();
+      this.refresh();
+      return;
+    }
 
     if (replyBtn && this.root.contains(replyBtn)) {
       event.preventDefault();
