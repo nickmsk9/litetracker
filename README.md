@@ -12,7 +12,7 @@
 
 LiteTracker Engine is a Docker-ready PHP BitTorrent tracker with a classic web interface, torrent announce/scrape endpoints, user profiles, comments, ratings, bookmarks, chat, moderation tools, and a seeded demo database.
 
-Русская версия: [README на русском](#readme-на-русском)  
+Русская версия: [README на русском](#readme-на-русском)
 English version: [English README](#english-readme)
 
 ---
@@ -50,7 +50,7 @@ LiteTracker Engine - это PHP-движок BitTorrent-трекера с лок
 - Memcached
 - phpMyAdmin
 - Docker Compose
-- HTML/CSS/JavaScript без сборщика фронтенда
+- HTML/CSS/JavaScript (опциональная сборка JS через Vite)
 
 ### Структура проекта
 
@@ -121,6 +121,15 @@ demo12345
 
 ### Полезные команды
 
+Сборка фронтенд-ассетов (опционально):
+
+```bash
+npm ci
+npm run build
+```
+
+Примечание: приложение работает и без предварительной сборки. Если `public/dist/manifest.json` отсутствует, LiteTracker автоматически подключает исходный entrypoint `src/app.js`.
+
 Запуск проекта:
 
 ```bash
@@ -171,32 +180,32 @@ docker compose exec -T db mysql -uroot < database/litetracker.sql
 
 Основные переменные окружения задаются в `docker-compose.yml` или передаются при запуске Docker Compose.
 
-| Переменная | Назначение | Значение по умолчанию |
-| --- | --- | --- |
-| `LITETRACKER_HOST_HTTP_PORT` | HTTP-порт на хосте | `8094` |
-| `LITETRACKER_HOST_HTTPS_PORT` | HTTPS-порт на хосте | `443` |
-| `LITETRACKER_PUBLIC_SCHEME` | Публичная схема сайта | `http` в Docker Compose |
-| `LITETRACKER_PUBLIC_HOST` | Публичный host сайта | `localhost:8094` |
-| `LITETRACKER_ANNOUNCE_HOST` | Host для announce URL | `localhost:8094` |
-| `LITETRACKER_ANNOUNCE_URL` | Полный announce URL | `http://localhost:8094/announce.php` |
-| `LITETRACKER_DB_HOST` | Host MySQL | `db` |
-| `LITETRACKER_DB_USER` | Пользователь MySQL | `root` |
-| `LITETRACKER_DB_PASSWORD` | Пароль MySQL | пусто |
-| `LITETRACKER_DB_NAME` | Имя базы данных | `lite` |
-| `LITETRACKER_CACHE_DRIVER` | Драйвер кэша: `memcached` или `filecache` | `memcached` |
-| `LITETRACKER_CACHE_HOST` | Host Memcached | `memcached` |
-| `LITETRACKER_CACHE_PORT` | Порт Memcached внутри сети Docker | `11211` |
-| `LITETRACKER_CRON_MODE` | Режим фоновых задач | `external` |
-| `LITETRACKER_CRON_TOKEN` | Токен для защищенных cron-запросов | `litetracker-local-cron-token` |
-| `LITETRACKER_SQL_DEBUG` | Логирование SQL-ошибок | `0` |
-| `LITETRACKER_TIMEZONE` | Часовой пояс приложения | `Europe/Moscow` |
-| `LITETRACKER_CAPTCHA_ENABLED` | Включить локальную CAPTCHA | `0` |
-| `LITETRACKER_CAPTCHA_SIGNUP` | CAPTCHA при регистрации | `1` |
-| `LITETRACKER_CAPTCHA_LOGIN` | CAPTCHA при входе | `0` |
-| `LITETRACKER_CAPTCHA_DOWNLOAD` | CAPTCHA при скачивании | `0` |
-| `LITETRACKER_MAIL_FROM` | From-адрес для писем | `admin@localhost` |
-| `LITETRACKER_MAIL_LOGIN` | Логин SMTP | пусто |
-| `LITETRACKER_MAIL_PASSWORD` | Пароль SMTP | пусто |
+| Переменная                     | Назначение                                | Значение по умолчанию                |
+| ------------------------------ | ----------------------------------------- | ------------------------------------ |
+| `LITETRACKER_HOST_HTTP_PORT`   | HTTP-порт на хосте                        | `8094`                               |
+| `LITETRACKER_HOST_HTTPS_PORT`  | HTTPS-порт на хосте                       | `443`                                |
+| `LITETRACKER_PUBLIC_SCHEME`    | Публичная схема сайта                     | `http` в Docker Compose              |
+| `LITETRACKER_PUBLIC_HOST`      | Публичный host сайта                      | `localhost:8094`                     |
+| `LITETRACKER_ANNOUNCE_HOST`    | Host для announce URL                     | `localhost:8094`                     |
+| `LITETRACKER_ANNOUNCE_URL`     | Полный announce URL                       | `http://localhost:8094/announce.php` |
+| `LITETRACKER_DB_HOST`          | Host MySQL                                | `db`                                 |
+| `LITETRACKER_DB_USER`          | Пользователь MySQL                        | `root`                               |
+| `LITETRACKER_DB_PASSWORD`      | Пароль MySQL                              | пусто                                |
+| `LITETRACKER_DB_NAME`          | Имя базы данных                           | `lite`                               |
+| `LITETRACKER_CACHE_DRIVER`     | Драйвер кэша: `memcached` или `filecache` | `memcached`                          |
+| `LITETRACKER_CACHE_HOST`       | Host Memcached                            | `memcached`                          |
+| `LITETRACKER_CACHE_PORT`       | Порт Memcached внутри сети Docker         | `11211`                              |
+| `LITETRACKER_CRON_MODE`        | Режим фоновых задач                       | `external`                           |
+| `LITETRACKER_CRON_TOKEN`       | Токен для защищенных cron-запросов        | `litetracker-local-cron-token`       |
+| `LITETRACKER_SQL_DEBUG`        | Логирование SQL-ошибок                    | `0`                                  |
+| `LITETRACKER_TIMEZONE`         | Часовой пояс приложения                   | `Europe/Moscow`                      |
+| `LITETRACKER_CAPTCHA_ENABLED`  | Включить локальную CAPTCHA                | `0`                                  |
+| `LITETRACKER_CAPTCHA_SIGNUP`   | CAPTCHA при регистрации                   | `1`                                  |
+| `LITETRACKER_CAPTCHA_LOGIN`    | CAPTCHA при входе                         | `0`                                  |
+| `LITETRACKER_CAPTCHA_DOWNLOAD` | CAPTCHA при скачивании                    | `0`                                  |
+| `LITETRACKER_MAIL_FROM`        | From-адрес для писем                      | `admin@localhost`                    |
+| `LITETRACKER_MAIL_LOGIN`       | Логин SMTP                                | пусто                                |
+| `LITETRACKER_MAIL_PASSWORD`    | Пароль SMTP                               | пусто                                |
 
 Пример запуска на другом порту:
 
@@ -307,7 +316,7 @@ The repository includes an SQL dump with demo data, so the application can be st
 - Memcached
 - phpMyAdmin
 - Docker Compose
-- HTML/CSS/JavaScript without a frontend build step
+- HTML/CSS/JavaScript (optional JS bundling with Vite)
 
 ### Project Structure
 
@@ -378,6 +387,15 @@ demo12345
 
 ### Useful Commands
 
+Build frontend assets (optional):
+
+```bash
+npm ci
+npm run build
+```
+
+Note: the app also works without a prebuilt bundle. If `public/dist/manifest.json` is missing, LiteTracker automatically falls back to the source entrypoint `src/app.js`.
+
 Start the project:
 
 ```bash
@@ -428,32 +446,32 @@ docker compose exec -T db mysql -uroot < database/litetracker.sql
 
 The main environment variables are configured in `docker-compose.yml` or passed when running Docker Compose.
 
-| Variable | Purpose | Default |
-| --- | --- | --- |
-| `LITETRACKER_HOST_HTTP_PORT` | Host HTTP port | `8094` |
-| `LITETRACKER_HOST_HTTPS_PORT` | Host HTTPS port | `443` |
-| `LITETRACKER_PUBLIC_SCHEME` | Public site scheme | `http` in Docker Compose |
-| `LITETRACKER_PUBLIC_HOST` | Public site host | `localhost:8094` |
-| `LITETRACKER_ANNOUNCE_HOST` | Host used for announce URL | `localhost:8094` |
-| `LITETRACKER_ANNOUNCE_URL` | Full announce URL | `http://localhost:8094/announce.php` |
-| `LITETRACKER_DB_HOST` | MySQL host | `db` |
-| `LITETRACKER_DB_USER` | MySQL user | `root` |
-| `LITETRACKER_DB_PASSWORD` | MySQL password | empty |
-| `LITETRACKER_DB_NAME` | Database name | `lite` |
-| `LITETRACKER_CACHE_DRIVER` | Cache driver: `memcached` or `filecache` | `memcached` |
-| `LITETRACKER_CACHE_HOST` | Memcached host | `memcached` |
-| `LITETRACKER_CACHE_PORT` | Memcached port inside Docker network | `11211` |
-| `LITETRACKER_CRON_MODE` | Background task mode | `external` |
-| `LITETRACKER_CRON_TOKEN` | Token for protected cron requests | `litetracker-local-cron-token` |
-| `LITETRACKER_SQL_DEBUG` | SQL error logging | `0` |
-| `LITETRACKER_TIMEZONE` | Application timezone | `Europe/Moscow` |
-| `LITETRACKER_CAPTCHA_ENABLED` | Enable local CAPTCHA | `0` |
-| `LITETRACKER_CAPTCHA_SIGNUP` | CAPTCHA on signup | `1` |
-| `LITETRACKER_CAPTCHA_LOGIN` | CAPTCHA on login | `0` |
-| `LITETRACKER_CAPTCHA_DOWNLOAD` | CAPTCHA on download | `0` |
-| `LITETRACKER_MAIL_FROM` | Mail sender address | `admin@localhost` |
-| `LITETRACKER_MAIL_LOGIN` | SMTP login | empty |
-| `LITETRACKER_MAIL_PASSWORD` | SMTP password | empty |
+| Variable                       | Purpose                                  | Default                              |
+| ------------------------------ | ---------------------------------------- | ------------------------------------ |
+| `LITETRACKER_HOST_HTTP_PORT`   | Host HTTP port                           | `8094`                               |
+| `LITETRACKER_HOST_HTTPS_PORT`  | Host HTTPS port                          | `443`                                |
+| `LITETRACKER_PUBLIC_SCHEME`    | Public site scheme                       | `http` in Docker Compose             |
+| `LITETRACKER_PUBLIC_HOST`      | Public site host                         | `localhost:8094`                     |
+| `LITETRACKER_ANNOUNCE_HOST`    | Host used for announce URL               | `localhost:8094`                     |
+| `LITETRACKER_ANNOUNCE_URL`     | Full announce URL                        | `http://localhost:8094/announce.php` |
+| `LITETRACKER_DB_HOST`          | MySQL host                               | `db`                                 |
+| `LITETRACKER_DB_USER`          | MySQL user                               | `root`                               |
+| `LITETRACKER_DB_PASSWORD`      | MySQL password                           | empty                                |
+| `LITETRACKER_DB_NAME`          | Database name                            | `lite`                               |
+| `LITETRACKER_CACHE_DRIVER`     | Cache driver: `memcached` or `filecache` | `memcached`                          |
+| `LITETRACKER_CACHE_HOST`       | Memcached host                           | `memcached`                          |
+| `LITETRACKER_CACHE_PORT`       | Memcached port inside Docker network     | `11211`                              |
+| `LITETRACKER_CRON_MODE`        | Background task mode                     | `external`                           |
+| `LITETRACKER_CRON_TOKEN`       | Token for protected cron requests        | `litetracker-local-cron-token`       |
+| `LITETRACKER_SQL_DEBUG`        | SQL error logging                        | `0`                                  |
+| `LITETRACKER_TIMEZONE`         | Application timezone                     | `Europe/Moscow`                      |
+| `LITETRACKER_CAPTCHA_ENABLED`  | Enable local CAPTCHA                     | `0`                                  |
+| `LITETRACKER_CAPTCHA_SIGNUP`   | CAPTCHA on signup                        | `1`                                  |
+| `LITETRACKER_CAPTCHA_LOGIN`    | CAPTCHA on login                         | `0`                                  |
+| `LITETRACKER_CAPTCHA_DOWNLOAD` | CAPTCHA on download                      | `0`                                  |
+| `LITETRACKER_MAIL_FROM`        | Mail sender address                      | `admin@localhost`                    |
+| `LITETRACKER_MAIL_LOGIN`       | SMTP login                               | empty                                |
+| `LITETRACKER_MAIL_PASSWORD`    | SMTP password                            | empty                                |
 
 Example with a custom local port:
 

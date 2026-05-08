@@ -33,3 +33,6 @@ public/downloads/*
 !public/downloads/screens/.gitkeep
 !public/downloads/torrents/
 !public/downloads/torrents/.gitkeep
+
+public/dist/*
+!public/dist/.gitkeep
