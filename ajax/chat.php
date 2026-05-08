@@ -9,9 +9,9 @@ by Nick
 ===================================================================
 */
 
-// Only allow XHR requests
-if (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') !== 'XMLHttpRequest') {
-	http_response_code(403);
+// Allow chat actions only via POST
+if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+	http_response_code(405);
 	die();
 }
 
