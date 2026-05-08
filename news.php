@@ -70,7 +70,7 @@ function lt_news_json_response($ok, $message = '', $extra = array())
 	header('Content-Type: application/json; charset=UTF-8');
 	echo json_encode(array_merge(
 		array(
-			'ok' => (int) (bool) $ok,
+			'ok' => ($ok ? 1 : 0),
 			'message' => (string) $message,
 		),
 		(array) $extra
@@ -281,7 +281,7 @@ if($act == 'edit' && $id) {
 					}
 					showNotice(saveRetryMessage, true);
 				})
-				.then(function () {
+				.finally(function () {
 					if (submit) {
 						submit.disabled = false;
 						submit.value = submitLabel;
