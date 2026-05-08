@@ -13,13 +13,13 @@ by Nick
 $requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $isXmlHttpRequest = (strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest');
 $secFetchSite = strtolower((string) ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? ''));
-$isSameSiteFetch = ($secFetchSite === 'same-origin');
+$isSameOriginFetch = ($secFetchSite === 'same-origin');
 
 if ($requestMethod !== 'POST') {
 	http_response_code(405);
 	die();
 }
-if (!$isXmlHttpRequest && !$isSameSiteFetch) {
+if (!$isXmlHttpRequest && !$isSameOriginFetch) {
 	http_response_code(403);
 	die();
 }
