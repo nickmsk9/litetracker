@@ -153,6 +153,8 @@ if($act == 'edit' && $id) {
 			lt_news_json_response(true, (string) ($language['news_19'] ?? 'News saved'), array(
 				'name' => $updatedName,
 				'text' => $updatedText,
+				'raw_name' => (string) ($updatedNews['name'] ?? $name),
+				'raw_text' => (string) ($updatedNews['text'] ?? $text),
 				'published_at' => $updatedPublishedAt,
 			));
 		}
@@ -248,14 +250,34 @@ if($act == 'edit' && $id) {
 					return response.json();
 				})
 				.then(function (payload) {
+					var titleInput = form.querySelector('input[name="name"]');
+					var textInput = form.querySelector('textarea[name="text"]');
+					var noticeText = '';
+
 					if (!payload || !payload.ok) {
 						showNotice((payload && payload.message) ? payload.message : saveErrorMessage, true);
 						return;
 					}
 
-					showNotice(payload.message || savedMessage);
+					if (titleInput && typeof payload.raw_name === 'string') {
+						titleInput.value = payload.raw_name;
+					}
+
+					if (textInput && typeof payload.raw_text === 'string') {
+						textInput.value = payload.raw_text;
+					}
+
+					noticeText = payload.message || savedMessage;
+					if (payload.published_at) {
+						noticeText += ' · ' + payload.published_at;
+					}
+					showNotice(noticeText);
 				})
-				.catch(function () {
+				.catch(function (error) {
+					if (error && error.message === 'http_error') {
+						showNotice(saveErrorMessage, true);
+						return;
+					}
 					showNotice(saveRetryMessage, true);
 				})
 				.then(function () {
