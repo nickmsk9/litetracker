@@ -159,7 +159,7 @@ function render_standard_sidebar()
 				<?php foreach ($newsItems as $item) { ?>
 				<?php
 				$title = template_truncate_text(lt_fix_utf8_mojibake((string) $item['name']), 96);
-				$excerpt = template_truncate_text(lt_fix_utf8_mojibake((string) $item['text']), 220);
+				$excerpt = template_truncate_text(cleanhtml(lt_fix_utf8_mojibake((string) $item['text'])), 220);
 				?>
 				<article class="sidebar-news-item">
 					<a class="sidebar-news-title" href="news.php?id=<?=$item['id'];?>"><?=htmlspecialchars($title, ENT_QUOTES, 'UTF-8');?></a>

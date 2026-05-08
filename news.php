@@ -57,6 +57,27 @@ function lt_news_format_publication_date($date)
 	return $day.' '.$month.' '.$year.' в '.$hour.':'.$minute;
 }
 
+function lt_news_is_ajax_request()
+{
+	$requestedWith = strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? ''));
+	$accept = strtolower((string) ($_SERVER['HTTP_ACCEPT'] ?? ''));
+
+	return ($requestedWith === 'xmlhttprequest' || strpos($accept, 'application/json') !== false);
+}
+
+function lt_news_json_response($ok, $message = '', $extra = array())
+{
+	header('Content-Type: application/json; charset=UTF-8');
+	echo json_encode(array_merge(
+		array(
+			'ok' => (int) (bool) $ok,
+			'message' => (string) $message,
+		),
+		(array) $extra
+	), JSON_UNESCAPED_UNICODE);
+	die();
+}
+
 
 
 
@@ -78,6 +99,7 @@ if($act == 'edit' && $id) {
 
 	//Обработка новости
 	if(count($_POST) ) {
+		$isAjaxRequest = lt_news_is_ajax_request();
 		$update = array();
 		$updateParams = array();
 		$updateTypes = '';
@@ -86,6 +108,9 @@ if($act == 'edit' && $id) {
 		$name = lt_fix_utf8_mojibake(trim((string) ($_POST['name'] ?? '')));
 		if($arr['name'] != $name) {
 			if(empty($name) ) {
+				if ($isAjaxRequest) {
+					lt_news_json_response(false, $language['news_2']);
+				}
 				err($language['default_1'] , $language['news_2'] , 1);
 			}
 			$update[] = 'name=?'; $updateParams[] = $name; $updateTypes .= 's';
@@ -96,6 +121,9 @@ if($act == 'edit' && $id) {
 		$text = lt_fix_utf8_mojibake((string) ($_POST['text'] ?? ''));
 		if($arr['text'] != $text) {
 			if(empty($text) ) {
+				if ($isAjaxRequest) {
+					lt_news_json_response(false, $language['news_3']);
+				}
 				err($language['default_1'] , $language['news_3'] , 1);
 			}
 			$update[] = 'text=?'; $updateParams[] = $text; $updateTypes .= 's';
@@ -115,6 +143,20 @@ if($act == 'edit' && $id) {
 		//Удаляем старый кеш
 		$memcached->delete('news');
 		$memcached->delete('sidebar_news_all');
+
+		if ($isAjaxRequest) {
+			$updatedNews = $db->super_query("SELECT id, name, text, date FROM news WHERE id=".(int) $id." LIMIT 1");
+			$updatedName = htmlspecialchars(lt_fix_utf8_mojibake((string) ($updatedNews['name'] ?? $name)), ENT_QUOTES, 'UTF-8');
+			$updatedText = cleanhtml(lt_fix_utf8_mojibake((string) ($updatedNews['text'] ?? $text)));
+			$updatedPublishedAt = lt_news_format_publication_date((string) ($updatedNews['date'] ?? $arr['date']));
+
+			lt_news_json_response(true, 'Новость сохранена.', array(
+				'name' => $updatedName,
+				'text' => $updatedText,
+				'published_at' => $updatedPublishedAt,
+			));
+		}
+
 		header("Location:news.php?id=".$id."");
 		die();
 	}
@@ -122,7 +164,8 @@ if($act == 'edit' && $id) {
 	head($language['news_4']);
 	begin_frame($language['news_4']);
 	?>
-	<form enctype="multipart/form-data" action="news.php?act=edit&id=<?=$id;?>" method="post" name="news" class="news-editor-form">
+	<div class="comment-ajax-notice" data-news-edit-notice hidden></div>
+	<form enctype="multipart/form-data" action="news.php?act=edit&id=<?=$id;?>" method="post" name="news" class="news-editor-form" data-news-edit-form="1" data-news-view-url="news.php?id=<?=$id;?>">
 		<div class="news-editor-grid">
 			<label class="news-editor-field">
 				<span class="news-editor-label"><?=$language['news_5'];?>:</span>
@@ -144,6 +187,65 @@ if($act == 'edit' && $id) {
 			</div>
 		</div>
 	</form>
+	<script>
+	document.addEventListener('DOMContentLoaded', function () {
+		var form = document.querySelector('[data-news-edit-form]');
+		var notice = document.querySelector('[data-news-edit-notice]');
+		if (!form) {
+			return;
+		}
+
+		function showNotice(message, isError) {
+			if (!notice) {
+				return;
+			}
+			notice.textContent = message || '';
+			notice.className = 'comment-ajax-notice' + (isError ? ' comment-ajax-notice-error' : ' comment-ajax-notice-success');
+			notice.hidden = !message;
+		}
+
+		form.addEventListener('submit', function (event) {
+			event.preventDefault();
+			var submit = form.querySelector('.news-editor-submit');
+			var formData = new FormData(form);
+
+			if (submit) {
+				submit.disabled = true;
+				submit.value = 'Сохранение...';
+			}
+			showNotice('', false);
+
+			fetch(form.getAttribute('action'), {
+				method: 'POST',
+				body: formData,
+				headers: {
+					'X-Requested-With': 'XMLHttpRequest',
+					'Accept': 'application/json'
+				}
+			})
+				.then(function (response) {
+					return response.json();
+				})
+				.then(function (payload) {
+					if (!payload || !payload.ok) {
+						showNotice((payload && payload.message) ? payload.message : 'Не удалось сохранить новость.', true);
+						return;
+					}
+
+					showNotice(payload.message || 'Новость сохранена.');
+				})
+				.catch(function () {
+					showNotice('Не удалось сохранить новость. Попробуйте ещё раз.', true);
+				})
+				.then(function () {
+					if (submit) {
+						submit.disabled = false;
+						submit.value = '<?=$language['news_8'];?>';
+					}
+				});
+		});
+	});
+	</script>
 	<?php
 	end_frame();
 	foot();

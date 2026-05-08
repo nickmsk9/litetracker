@@ -8,8 +8,6 @@
 
 require 'system/init.php';
 
-$GLOBALS['LITETRACKER_HIDE_TOP_BLOCKS'] = true;
-$GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS'] = true;
 $GLOBALS['LITETRACKER_SIDEBAR_SKIP_BLOCKS'] = array(
 	'block-online.php',
 	'block-stats.php',
