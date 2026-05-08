@@ -251,7 +251,7 @@ head('Торренты');
 		</div>
 		<?php if ($canUpload) { ?>
 		<div class="browse-hero-action">
-			<a class="browse-upload-button" href="upload.php">
+			<a class="browse-upload-button lt-btn lt-btn-primary" href="upload.php">
 				<span class="browse-upload-button-icon" aria-hidden="true">
 					<svg viewBox="0 0 20 20" fill="none">
 						<path d="M10 13V4m0 0L6.75 7.25M10 4l3.25 3.25M4 14.5v.5A1 1 0 0 0 5 16h10a1 1 0 0 0 1-1v-.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -278,7 +278,7 @@ head('Торренты');
 					<?php } ?>
 					<div class="browse-search-row">
 						<input type="text" name="search" value="<?=htmlspecialchars($search, ENT_QUOTES, 'UTF-8');?>" class="browse-search-input" placeholder="Поиск..." autocomplete="off">
-						<button type="submit" class="browse-search-submit">Найти</button>
+						<button type="submit" class="browse-search-submit lt-btn lt-btn-primary">Найти</button>
 					</div>
 				</form>
 			</section>
@@ -297,16 +297,16 @@ head('Торренты');
 					<ul class="browse-sort-list" role="tablist" aria-label="Сортировка торрентов">
 						<?php foreach ($sortOptions as $sortKey => $sortOption) { ?>
 						<li class="browse-sort-item<?=($sort === $sortKey ? ' is-active' : '');?>">
-							<a class="browse-sort-link" href="<?=htmlspecialchars(browse_build_url(array('sort' => $sortKey, 'page' => null)), ENT_QUOTES, 'UTF-8');?>"><?=$sortOption['label'];?></a>
+							<a class="browse-sort-link lt-btn lt-btn-ghost" href="<?=htmlspecialchars(browse_build_url(array('sort' => $sortKey, 'page' => null)), ENT_QUOTES, 'UTF-8');?>"><?=$sortOption['label'];?></a>
 						</li>
 						<?php } ?>
 					</ul>
 
 					<div class="browse-view-switch" role="group" aria-label="Вид списка">
-						<button type="button" class="browse-view-button<?=($view === 'full' ? ' is-active' : '');?>" data-browse-view-toggle data-browse-view="full" aria-pressed="<?=($view === 'full' ? 'true' : 'false');?>">
+						<button type="button" class="browse-view-button lt-btn lt-btn-ghost<?=($view === 'full' ? ' is-active' : '');?>" data-browse-view-toggle data-browse-view="full" aria-pressed="<?=($view === 'full' ? 'true' : 'false');?>">
 							<span class="browse-view-icon browse-view-icon-medium" aria-hidden="true"></span>
 						</button>
-						<button type="button" class="browse-view-button<?=($view === 'compact' ? ' is-active' : '');?>" data-browse-view-toggle data-browse-view="compact" aria-pressed="<?=($view === 'compact' ? 'true' : 'false');?>">
+						<button type="button" class="browse-view-button lt-btn lt-btn-ghost<?=($view === 'compact' ? ' is-active' : '');?>" data-browse-view-toggle data-browse-view="compact" aria-pressed="<?=($view === 'compact' ? 'true' : 'false');?>">
 							<span class="browse-view-icon browse-view-icon-small" aria-hidden="true"></span>
 						</button>
 					</div>
@@ -380,7 +380,7 @@ head('Торренты');
 				</fieldset>
 				<?php } ?>
 
-				<button type="submit" class="browse-filter-submit">Применить</button>
+				<button type="submit" class="browse-filter-submit lt-btn lt-btn-primary">Применить</button>
 			</form>
 		</aside>
 	</div>

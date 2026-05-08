@@ -1122,7 +1122,7 @@ head('Админка');
 					<?=lt_csrf_input('admin_dashboard');?>
 					<div class='admin-action-row'>
 						<div class='admin-action-title'><?=$action['label'];?></div>
-						<button class='admin-action-button' type='submit'>Выполнить</button>
+						<button class='admin-action-button lt-btn <?=in_array((string) $action['id'], array('clear_sessions', 'clear_search_queries', 'flush_cache'), true) ? 'lt-btn-danger' : 'lt-btn-secondary';?>' type='submit'>Выполнить</button>
 					</div>
 					<div class='admin-action-text'><?=$action['description'];?></div>
 				</form>
@@ -1138,7 +1138,7 @@ head('Админка');
 			<?php foreach ($shortcuts as $shortcut) { ?>
 			<?php if (empty($shortcut['allowed'])) { continue; } ?>
 			<?php $hasShortcuts = true; ?>
-			<a class='admin-shortcut-link' href='<?=$shortcut['href'];?>'><?=$shortcut['label'];?></a>
+			<a class='admin-shortcut-link lt-btn lt-btn-secondary' href='<?=$shortcut['href'];?>'><?=$shortcut['label'];?></a>
 			<?php } ?>
 		</div>
 		<?php if (!$hasShortcuts) { ?>
@@ -1207,7 +1207,7 @@ head('Админка');
 					<input type='checkbox' name='ad_enabled' value='1' checked> Включен
 				</label>
 			</div>
-			<div class='admin-settings-footer'><button class='admin-settings-submit' type='submit'>Добавить блок</button></div>
+			<div class='admin-settings-footer'><button class='admin-settings-submit lt-btn lt-btn-primary' type='submit'>Добавить блок</button></div>
 		</form>
 	</section>
 
@@ -1248,7 +1248,7 @@ head('Админка');
 						<input type='checkbox' name='ad_enabled' value='1'<?=(!empty($adRow['enabled']) ? ' checked' : '');?>> Включен
 					</label>
 					<div class='admin-settings-footer' style='gap:10px;'>
-						<button class='admin-settings-submit' type='submit'>Сохранить</button>
+						<button class='admin-settings-submit lt-btn lt-btn-primary' type='submit'>Сохранить</button>
 					</div>
 				</form>
 				<form method='post' action='admin.php' data-admin-confirm='Удалить рекламный блок?' style='margin-top:10px;'>
@@ -1256,7 +1256,7 @@ head('Админка');
 					<input type='hidden' name='admin_action' value='delete_ad'>
 					<input type='hidden' name='ad_id' value='<?=(int) $adRow['id'];?>'>
 					<?=lt_csrf_input('admin_dashboard');?>
-					<button class='admin-action-button' type='submit' style='background:#b85050;'>Удалить</button>
+					<button class='admin-action-button lt-btn lt-btn-danger' type='submit'>Удалить</button>
 				</form>
 			</div>
 			<?php } ?>
@@ -1301,7 +1301,7 @@ head('Админка');
 				<?php } ?>
 			</div>
 			<div class='admin-settings-footer'>
-				<button class='admin-settings-submit' type='submit'>Сохранить</button>
+				<button class='admin-settings-submit lt-btn lt-btn-primary' type='submit'>Сохранить</button>
 			</div>
 		</form>
 	</section>

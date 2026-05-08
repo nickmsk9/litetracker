@@ -469,14 +469,14 @@ $view = 'compact';
 <div class="newrel-wrap">
 	<div class="newrel-toolbar">
 		<div class="newrel-toolbar-left">
-			<a href="javascript:void(0)" class="newrel-sort-link is-active">Дата</a>
-			<a href="javascript:void(0)" class="newrel-sort-link">Размер</a>
-			<a href="javascript:void(0)" class="newrel-sort-link">Раздающие</a>
-			<a href="javascript:void(0)" class="newrel-sort-link">А — Я</a>
+			<a href="javascript:void(0)" class="newrel-sort-link lt-btn lt-btn-ghost is-active">Дата</a>
+			<a href="javascript:void(0)" class="newrel-sort-link lt-btn lt-btn-ghost">Размер</a>
+			<a href="javascript:void(0)" class="newrel-sort-link lt-btn lt-btn-ghost">Раздающие</a>
+			<a href="javascript:void(0)" class="newrel-sort-link lt-btn lt-btn-ghost">А — Я</a>
 		</div>
 
 		<div class="newrel-toolbar-right">
-			<button type="button" class="newrel-view-btn" data-newrel-view="full" title="Полный вид">
+			<button type="button" class="newrel-view-btn lt-btn lt-btn-ghost" data-newrel-view="full" title="Полный вид">
 				<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 					<rect x="3" y="3" width="6" height="6"></rect>
 					<rect x="11" y="3" width="6" height="6"></rect>
@@ -484,7 +484,7 @@ $view = 'compact';
 					<rect x="11" y="11" width="6" height="6"></rect>
 				</svg>
 			</button>
-			<button type="button" class="newrel-view-btn" data-newrel-view="compact" title="Компактный вид">
+			<button type="button" class="newrel-view-btn lt-btn lt-btn-ghost" data-newrel-view="compact" title="Компактный вид">
 				<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 					<rect x="4" y="3" width="12" height="4"></rect>
 					<rect x="4" y="8" width="12" height="4"></rect>

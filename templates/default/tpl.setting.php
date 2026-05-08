@@ -38,10 +38,10 @@ if ($settingsActiveTabRaw === 'password') {
 										<img src="<?=$avatarPath;?>" alt="<?=htmlspecialchars($arr['name'], ENT_QUOTES, 'UTF-8');?>" width="82" height="82">
 									</div>
 									<div class="settings-avatar-actions">
-										<label class="settings-upload-button" for="avatar_upload">Загрузить аватар</label>
+										<label class="settings-upload-button lt-btn lt-btn-primary" for="avatar_upload">Загрузить аватар</label>
 										<input class="settings-upload-input" id="avatar_upload" type="file" name="avatar_upload" accept=".jpg,.jpeg,.png,.gif">
 										<?php if (!empty($arr['avatar'])) { ?>
-										<a class="settings-remove-button" href="my.setting.take.php?id=<?=$id;?>&amp;act=foto_delete&amp;<?=lt_csrf_query('settings_avatar_'.$id);?>">Удалить</a>
+										<a class="settings-remove-button lt-btn lt-btn-danger" href="my.setting.take.php?id=<?=$id;?>&amp;act=foto_delete&amp;<?=lt_csrf_query('settings_avatar_'.$id);?>">Удалить</a>
 										<?php } ?>
 									</div>
 								</div>
@@ -165,7 +165,7 @@ if ($settingsActiveTabRaw === 'password') {
 					<?php } ?>
 
 					<div class="settings-actions">
-						<button class="settings-submit" type="submit">Сохранить</button>
+						<button class="settings-submit lt-btn lt-btn-primary" type="submit">Сохранить</button>
 					</div>
 				</form>
 			</div>
@@ -192,7 +192,7 @@ if ($settingsActiveTabRaw === 'password') {
 					</section>
 
 					<div class="settings-actions">
-						<button class="settings-submit" type="submit">Изменить</button>
+						<button class="settings-submit lt-btn lt-btn-primary" type="submit">Изменить</button>
 					</div>
 				</form>
 			</div>
@@ -281,7 +281,7 @@ if ($settingsActiveTabRaw === 'password') {
 					</section>
 
 					<div class="settings-actions">
-						<button class="settings-submit" type="submit">Сохранить через AJAX</button>
+						<button class="settings-submit lt-btn lt-btn-primary" type="submit">Сохранить через AJAX</button>
 					</div>
 					<input type="hidden" name="user_id" value="<?=(int) $id;?>">
 				</form>

@@ -134,7 +134,7 @@ function render_standard_sidebar()
 			</div>
 			<h2 class="sidebar-panel-title">Подписка Plus</h2>
 			<p class="plus-promo-copy">Без рекламы, реакции, красивый никнейм, видеоаватарка и другие функции Plus.</p>
-			<button class="plus-promo-button" type="button" data-plus-benefits-open="1">От <?=template_format_number(lt_plus_month_bonus_price());?> бонусов в месяц</button>
+			<button class="plus-promo-button lt-btn lt-btn-primary" type="button" data-plus-benefits-open="1">От <?=template_format_number(lt_plus_month_bonus_price());?> бонусов в месяц</button>
 		</section>
 		<?php } ?>
 
@@ -147,7 +147,7 @@ function render_standard_sidebar()
 				<div class="project-help-progress-label"><?=htmlspecialchars($progressLabel, ENT_QUOTES, 'UTF-8');?></div>
 			</div>
 			<?php } ?>
-			<a class="project-help-button" href="<?=htmlspecialchars($buttonHref, ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars($buttonLabel, ENT_QUOTES, 'UTF-8');?></a>
+			<a class="project-help-button lt-btn lt-btn-primary" href="<?=htmlspecialchars($buttonHref, ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars($buttonLabel, ENT_QUOTES, 'UTF-8');?></a>
 		</section>
 
 		<?=lt_ads_render('sidebar');?>

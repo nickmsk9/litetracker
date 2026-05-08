@@ -17,7 +17,7 @@ foreach ($categories_array as $thisCat) {
 	<div class="search-form">
 		<div class="search-row search-row-primary">
 			<input type="text" name="search" class="inputText search-input" onkeypress="checkResult();" autocomplete="off" value="<?=htmlspecialchars($search, ENT_QUOTES, 'UTF-8');?>" placeholder="<?=$language['search_1'];?>">
-			<input type="submit" class="btn btn-primary" value="<?=$language['search_1'];?>">
+			<input type="submit" class="btn btn-primary lt-btn lt-btn-primary" value="<?=$language['search_1'];?>">
 		</div>
 
 		<div class="search-row search-row-filters">

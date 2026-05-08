@@ -553,9 +553,9 @@ head('Загрузить торрент');
 		<div class="upload-header">
 			<h1 class="upload-title">Загрузить торрент</h1>
 			<div class="upload-actions">
-				<a class="upload-top-link upload-top-link-green" href="faq.php">Правила оформления раздач</a>
+				<a class="upload-top-link upload-top-link-green lt-btn lt-btn-secondary" href="faq.php">Правила оформления раздач</a>
 				<div class="upload-top-danger">
-					<a class="upload-top-link upload-top-link-red" href="copyright.php">Список запрещенных раздач</a>
+					<a class="upload-top-link upload-top-link-red lt-btn lt-btn-secondary" href="copyright.php">Список запрещенных раздач</a>
 					<span class="upload-top-note">запрещено к загрузке на трекере</span>
 				</div>
 			</div>
@@ -641,7 +641,7 @@ head('Загрузить торрент');
 			</div>
 
 			<div class="upload-footer">
-				<button class="upload-submit" type="submit">Загрузить</button>
+				<button class="upload-submit lt-btn lt-btn-primary" type="submit">Загрузить</button>
 			</div>
 		</form>
 	</section>

@@ -22,9 +22,9 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 			<div class="details-sidebar-actions">
 				<?php if ($details_download_href !== '') { ?>
 				<div class="details-download-group">
-					<a class="details-download-button" href="<?=htmlspecialchars($details_download_href, ENT_QUOTES, 'UTF-8');?>"><?=$language['details_2'];?></a>
+					<a class="details-download-button lt-btn lt-btn-primary" href="<?=htmlspecialchars($details_download_href, ENT_QUOTES, 'UTF-8');?>"><?=$language['details_2'];?></a>
 					<?php if ($details_magnet_href !== '') { ?>
-					<a class="details-download-button details-download-button-magnet" href="<?=htmlspecialchars($details_magnet_href, ENT_QUOTES, 'UTF-8');?>" aria-label="<?=$language['details_3'];?>">m</a>
+					<a class="details-download-button details-download-button-magnet lt-btn lt-btn-primary" href="<?=htmlspecialchars($details_magnet_href, ENT_QUOTES, 'UTF-8');?>" aria-label="<?=$language['details_3'];?>">m</a>
 					<?php } ?>
 				</div>
 				<?php } elseif ($details_guest_login_href !== '' || $details_guest_register_href !== '') { ?>
@@ -32,10 +32,10 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 					<div class="details-guest-copy"><?=htmlspecialchars($details_guest_notice, ENT_QUOTES, 'UTF-8');?></div>
 					<div class="details-guest-actions">
 						<?php if ($details_guest_register_href !== '') { ?>
-						<a class="details-download-button" href="<?=htmlspecialchars($details_guest_register_href, ENT_QUOTES, 'UTF-8');?>">Зарегистрироваться</a>
+						<a class="details-download-button lt-btn lt-btn-primary" href="<?=htmlspecialchars($details_guest_register_href, ENT_QUOTES, 'UTF-8');?>">Зарегистрироваться</a>
 						<?php } ?>
 						<?php if ($details_guest_login_href !== '') { ?>
-						<a class="details-bookmark-button details-guest-login-button" href="<?=htmlspecialchars($details_guest_login_href, ENT_QUOTES, 'UTF-8');?>">Войти</a>
+						<a class="details-bookmark-button details-guest-login-button lt-btn lt-btn-secondary" href="<?=htmlspecialchars($details_guest_login_href, ENT_QUOTES, 'UTF-8');?>">Войти</a>
 						<?php } ?>
 					</div>
 				</div>
@@ -43,7 +43,7 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 
 				<?php if ($details_bookmark_href !== '') { ?>
 				<a
-					class="details-bookmark-button<?=(!empty($details_bookmarked) ? ' details-bookmark-button-active' : '');?>"
+					class="details-bookmark-button lt-btn lt-btn-secondary<?=(!empty($details_bookmarked) ? ' details-bookmark-button-active' : '');?>"
 					href="<?=htmlspecialchars($details_bookmark_href, ENT_QUOTES, 'UTF-8');?>"
 					data-details-bookmark="1"
 					data-bookmarked="<?=(!empty($details_bookmarked) ? '1' : '0');?>"
@@ -51,7 +51,7 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 				<?php } ?>
 
 				<?php if ($details_edit_href !== '') { ?>
-				<a class="details-edit-link" href="<?=htmlspecialchars($details_edit_href, ENT_QUOTES, 'UTF-8');?>">Редактировать релиз</a>
+				<a class="details-edit-link lt-btn lt-btn-secondary" href="<?=htmlspecialchars($details_edit_href, ENT_QUOTES, 'UTF-8');?>">Редактировать релиз</a>
 				<?php } ?>
 			</div>
 		</aside>
@@ -229,7 +229,7 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 					<?php } ?>
 
 					<?php if (!empty($USER['id']) && lt_user_has_plus($USER) && ($details_summary_text !== '' || $detailsDescriptionHtml !== '')) { ?>
-					<button class="details-tts-button" type="button" data-details-tts>Озвучить пост</button>
+					<button class="details-tts-button lt-btn lt-btn-ghost" type="button" data-details-tts>Озвучить пост</button>
 					<div data-details-tts-text hidden><?=htmlspecialchars($details_summary_text !== '' ? $details_summary_text : strip_tags($detailsDescriptionHtml), ENT_QUOTES, 'UTF-8');?></div>
 					<?php } ?>
 				</div>

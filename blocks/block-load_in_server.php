@@ -32,7 +32,7 @@ if (false === ($load_in_server = $memcached->get('load_in_server_v2') ) ) {
 			.'<div class="load-widget-progress-bar load-widget-progress-bar-'.$state.'" style="width: 100%;"></div>'
 			.'</div>'
 			.'<div class="load-widget-meta">'.sprintf($language['load_in_server_2'] ,$connected).'</div>'
-			.'<div class="load-widget-action"><a href="browse.php?act=all" class="load-widget-button">Открыть каталог</a></div>'
+			.'<div class="load-widget-action"><a href="browse.php?act=all" class="load-widget-button lt-btn lt-btn-secondary">Открыть каталог</a></div>'
 			.'</div>';
 			$memcached->set('load_in_server_v2', $load_in_server  , 0, (15 * 60));
 	}
