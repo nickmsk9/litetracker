@@ -178,11 +178,11 @@ if($_GET['act'] == 'edit') {
 	head($name);
 	begin_frame($name);
 	?>
-	<form action="shop.php?id=<?=$id;?>&act=edit" method="POST" enctype="multipart/form-data" >
+	<form class="lt-form" action="shop.php?id=<?=$id;?>&act=edit" method="POST" enctype="multipart/form-data" >
 	<?=lt_csrf_input($shopEditScope);?>
 
 	<!--Файлы-->
-	<table width="80%"  cellspacing="7" cellpadding="0" border="0"  align="center">
+	<table class="lt-table lt-shop-form-table">
 	<tbody>
 
 
@@ -191,7 +191,7 @@ if($_GET['act'] == 'edit') {
 		 <span class="grey">Название товара:</span>
 		</td>
 		<td style="padding: 0px;">
-		 <input type="text" name="name" style="margin: 0px;" size="25" class="inputText" value="<?=htmlspecialchars($arr['name']);?>">
+		 <input type="text" name="name" size="25" class="inputText lt-input" value="<?=htmlspecialchars($arr['name']);?>">
 		</td><td>
 	   </td></tr>
 
@@ -200,7 +200,7 @@ if($_GET['act'] == 'edit') {
 		 <span class="grey">Цена:</span>
 		</td>
 		<td style="padding: 0px;">
-		 <input type="text" name="voice" style="margin: 0px;" size="10" class="inputText" value="<?=$arr['voice'];?>"> рублей
+		 <input type="text" name="voice" size="10" class="inputText lt-input" value="<?=$arr['voice'];?>"> рублей
 		<br><small>Формат: 1.00</small>
 		</td><td>
 	   </td></tr>
@@ -210,7 +210,7 @@ if($_GET['act'] == 'edit') {
 		 <span class="grey" >Картинка:</span>
 		</td>
 		<td style="padding: 0px;">
-			<input type="file" name="image">
+			<input class="lt-input" type="file" name="image">
 			<br><small>Вы можете загрузить картинку</small>
 		</td><td>
 	   </td></tr>
@@ -219,7 +219,7 @@ if($_GET['act'] == 'edit') {
 		 <span class="grey" >Файл обработки:</span>
 		</td>
 		<td style="padding: 0px;">
-			<select name="file">
+			<select class="lt-select" name="file">
 			<?
 			$dir = "modules/shop/";
 
@@ -244,7 +244,7 @@ if($_GET['act'] == 'edit') {
 		 <span class="grey"></span>
 		</td>
 		<td style="padding: 0px;">
-		 <input type="submit" value="<?=($_GET['id'] ? 'Редактировать' : 'Добавить');?>">
+		 <input class="lt-btn lt-btn-primary" type="submit" value="<?=($_GET['id'] ? 'Редактировать' : 'Добавить');?>">
 		</td><td>
 	   </td></tr>
 
@@ -329,11 +329,11 @@ if($_GET['status'] == '1') {
 begin_frame('Магазин на трекере');
 
 if($PRIV['EDIT_PRIV']) {
-	echo '<input type="button" value="Добавить товар" onClick="window.location.href=\'shop.php?act=edit\'"><br><br>';
+	echo '<input class="lt-btn lt-btn-primary" type="button" value="Добавить товар" onClick="window.location.href=\'shop.php?act=edit\'"><br><br>';
 }
 
 
-echo '<table width="100%" align="center">';
+echo '<table class="lt-table">';
 while($arr = $db->get_row($sql) ) {
 	echo '<tr>';
 
@@ -352,10 +352,10 @@ while($arr = $db->get_row($sql) ) {
 	echo '</td>';
 
 	echo '<td>';
-	echo '<input type="button" value="Купить" onClick="window.location.href=\'shop.php?act=voicing&id='.$arr['id'].'&'.lt_csrf_query($shopBuyScope).'\'">';
+	echo '<input class="lt-btn lt-btn-primary" type="button" value="Купить" onClick="window.location.href=\'shop.php?act=voicing&id='.$arr['id'].'&'.lt_csrf_query($shopBuyScope).'\'">';
 	if($PRIV['EDIT_PRIV']) {
-		echo '&nbsp<input type="button" value="Редактировать" onClick="window.location.href=\'shop.php?act=edit&id='.$arr['id'].'\'">';
-		echo '&nbsp<input type="button" value="Удалить" onClick="window.location.href=\'shop.php?act=delete&id='.$arr['id'].'&'.lt_csrf_query($shopDeleteScope).'\'">';
+		echo '&nbsp<input class="lt-btn lt-btn-secondary" type="button" value="Редактировать" onClick="window.location.href=\'shop.php?act=edit&id='.$arr['id'].'\'">';
+		echo '&nbsp<input class="lt-btn lt-btn-danger" type="button" value="Удалить" onClick="window.location.href=\'shop.php?act=delete&id='.$arr['id'].'&'.lt_csrf_query($shopDeleteScope).'\'">';
 	}
 	echo '</td>';
 
