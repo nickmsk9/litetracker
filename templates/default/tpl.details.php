@@ -129,7 +129,7 @@ $detailsPosterAvailable = ($detailsPosterPath !== '' && stripos($detailsPosterPa
 					</div>
 					<div class="details-meta-cell">
 						<div class="details-meta-cell-label">Скачивания</div>
-						<div class="details-meta-cell-value"><?=$downloaded;?></div>
+						<div class="details-meta-cell-value"><?=$completed;?></div>
 					</div>
 					<div class="details-meta-cell">
 						<div class="details-meta-cell-label">Создан</div>
