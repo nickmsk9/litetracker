@@ -1,6 +1,7 @@
 (function () {
   var reactionCache = {};
   var emojiPanelCounter = 0;
+  var maxEmojiSearchResults = 24;
   var telegramSearchLabel = '100M+';
   var telegramEmojiBlocks = [
     {
@@ -156,6 +157,11 @@
       .trim();
   }
 
+  function shouldHideEmojiEmptyState(panel) {
+    return !!panel.querySelector('[data-emoji-kind-toggle="emoji"][aria-pressed="true"]') ||
+      !!panel.querySelector('[data-emoji-kind-toggle="sticker"][aria-pressed="true"]');
+  }
+
   function buildCatalog() {
     function pushItems(blocks, kind) {
       Array.prototype.forEach.call(blocks, function (block) {
@@ -223,7 +229,7 @@
         '<button type="button" class="lt-emoji-kind-button" data-emoji-kind-toggle="emoji" aria-pressed="false">Эмодзи</button>' +
         '<button type="button" class="lt-emoji-kind-button" data-emoji-kind-toggle="sticker" aria-pressed="false">Стикеры</button>' +
       '</div>' +
-      '<div class="lt-emoji-empty-state" data-emoji-default-state="1">Все блоки выключены по умолчанию. Включите нужный блок или начните поиск.</div>' +
+      '<div class="lt-emoji-empty-state" data-emoji-initial-state="1">Все блоки выключены по умолчанию. Включите нужный блок или начните поиск.</div>' +
       '<section class="lt-emoji-results" data-emoji-search-results hidden>' +
         '<div class="lt-emoji-group-title">Результаты поиска</div>' +
         '<div class="lt-emoji-grid" data-emoji-result-list></div>' +
@@ -243,7 +249,7 @@
     var blocks;
     var results;
     var emptyState;
-    var defaultState;
+    var initialState;
 
     if (!panel) {
       return;
@@ -254,7 +260,7 @@
     blocks = panel.querySelectorAll('[data-emoji-block]');
     results = panel.querySelector('[data-emoji-search-results]');
     emptyState = panel.querySelector('[data-emoji-empty]');
-    defaultState = panel.querySelector('[data-emoji-default-state]');
+    initialState = panel.querySelector('[data-emoji-initial-state]');
 
     if (searchInput) {
       searchInput.value = '';
@@ -276,8 +282,8 @@
       emptyState.hidden = true;
     }
 
-    if (defaultState) {
-      defaultState.hidden = false;
+    if (initialState) {
+      initialState.hidden = false;
     }
   }
 
@@ -299,7 +305,7 @@
   function toggleEmojiBlock(panel, kind) {
     var button = panel ? panel.querySelector('[data-emoji-kind-toggle="' + kind + '"]') : null;
     var block = panel ? panel.querySelector('[data-emoji-block="' + kind + '"]') : null;
-    var defaultState = panel ? panel.querySelector('[data-emoji-default-state]') : null;
+    var initialState = panel ? panel.querySelector('[data-emoji-initial-state]') : null;
     var isActive;
 
     if (!button || !block) {
@@ -310,11 +316,9 @@
     button.setAttribute('aria-pressed', isActive ? 'false' : 'true');
     block.hidden = isActive;
 
-    if (defaultState) {
-      var emojiEnabled = panel.querySelector('[data-emoji-kind-toggle="emoji"][aria-pressed="true"]');
-      var stickerEnabled = panel.querySelector('[data-emoji-kind-toggle="sticker"][aria-pressed="true"]');
+    if (initialState) {
       var searchInput = panel.querySelector('[data-emoji-search]');
-      defaultState.hidden = !!emojiEnabled || !!stickerEnabled || !!(searchInput && normalizeSearchText(searchInput.value));
+      initialState.hidden = shouldHideEmojiEmptyState(panel) || !!(searchInput && normalizeSearchText(searchInput.value));
     }
   }
 
@@ -324,10 +328,10 @@
     var resultsSection = panel ? panel.querySelector('[data-emoji-search-results]') : null;
     var resultList = panel ? panel.querySelector('[data-emoji-result-list]') : null;
     var emptyState = panel ? panel.querySelector('[data-emoji-empty]') : null;
-    var defaultState = panel ? panel.querySelector('[data-emoji-default-state]') : null;
+    var initialState = panel ? panel.querySelector('[data-emoji-initial-state]') : null;
     var matches;
 
-    if (!resultsSection || !resultList || !emptyState || !defaultState) {
+    if (!resultsSection || !resultList || !emptyState || !initialState) {
       return;
     }
 
@@ -335,18 +339,18 @@
       resultsSection.hidden = true;
       resultList.innerHTML = '';
       emptyState.hidden = true;
-      defaultState.hidden = !!panel.querySelector('[data-emoji-kind-toggle="emoji"][aria-pressed="true"]') || !!panel.querySelector('[data-emoji-kind-toggle="sticker"][aria-pressed="true"]');
+      initialState.hidden = shouldHideEmojiEmptyState(panel);
       return;
     }
 
     matches = telegramCatalog.filter(function (item) {
       return item.searchText.indexOf(query) !== -1;
-    }).slice(0, 24);
+    }).slice(0, maxEmojiSearchResults);
 
     resultsSection.hidden = false;
     resultList.innerHTML = matches.map(renderEmojiButton).join('');
     emptyState.hidden = matches.length > 0;
-    defaultState.hidden = true;
+    initialState.hidden = true;
   }
 
   function hideModal(modal) {
