@@ -5,21 +5,31 @@ if (!defined('LITETRACKER')) {
 
 $detailsInfoTitle = lt_details_info_heading($cat_name_plain);
 $detailsRatingPercent = max(0, min(100, ($details_rating_score / 5) * 100));
-$detailsDescriptionHtml = $details_description_html;
+$detailsTitle = htmlspecialchars((string) ($torrent_name_plain ?? ''), ENT_QUOTES, 'UTF-8');
+$detailsDescriptionHtml = trim((string) $details_description_html);
 if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
-	$detailsDescriptionHtml = $descr;
+	$detailsDescriptionHtml = trim((string) $descr);
 }
+$detailsDescriptionHtml = ($detailsDescriptionHtml !== '' ? cleanhtml($detailsDescriptionHtml) : '');
+$detailsCategoryHref = 'browse.php?id_category='.(int) ($cat_id ?? 0);
+$detailsCategoryLabel = htmlspecialchars((string) ($cat_name_plain ?? ''), ENT_QUOTES, 'UTF-8');
+$detailsPosterPath = trim((string) $image);
+$detailsPosterAvailable = ($detailsPosterPath !== '' && stripos($detailsPosterPath, 'default_avatar.gif') === false);
 ?>
 
 <div class="details-page">
 	<div class="details-layout">
 		<aside class="details-sidebar">
-			<div class="details-poster-card">
+			<div class="details-poster-card lt-card">
 				<div class="details-poster-badge"><?=htmlspecialchars($category_badge !== '' ? $category_badge : 'торрент', ENT_QUOTES, 'UTF-8');?></div>
-				<img class="details-poster-image" src="<?=htmlspecialchars($image, ENT_QUOTES, 'UTF-8');?>" alt="<?=$name;?>">
+				<?php if ($detailsPosterAvailable) { ?>
+				<img class="details-poster-image" src="<?=htmlspecialchars($detailsPosterPath, ENT_QUOTES, 'UTF-8');?>" alt="<?=$detailsTitle;?>">
+				<?php } else { ?>
+				<div class="details-media-placeholder details-poster-placeholder" role="img" aria-label="Постер отсутствует">Постер отсутствует</div>
+				<?php } ?>
 			</div>
 
-			<div class="details-sidebar-actions">
+			<div class="details-sidebar-actions lt-card">
 				<?php if ($details_download_href !== '') { ?>
 				<div class="details-download-group">
 					<a class="details-download-button lt-btn lt-btn-primary" href="<?=htmlspecialchars($details_download_href, ENT_QUOTES, 'UTF-8');?>"><?=$language['details_2'];?></a>
@@ -57,8 +67,11 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 		</aside>
 
 		<div class="details-main">
-			<section class="details-panel details-title-panel">
-				<h1 class="details-title"><?=$name;?></h1>
+			<section class="details-panel details-title-panel lt-card">
+				<h1 class="details-title"><?=$detailsTitle;?></h1>
+				<div class="details-title-subline">
+					<a class="details-category-link" href="<?=htmlspecialchars($detailsCategoryHref, ENT_QUOTES, 'UTF-8');?>"><?=$detailsCategoryLabel;?></a>
+				</div>
 				<?php if ($details_status_badges) { ?>
 				<div class="details-badges">
 					<?php foreach ($details_status_badges as $badge) { ?>
@@ -69,12 +82,12 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 			</section>
 
 			<?php if (!$infohash) { ?>
-			<div class="details-panel details-alert-panel">
+			<div class="details-panel details-alert-panel lt-card">
 				Этот релиз пока нельзя скачать: у него нет torrent-файла.
 			</div>
 			<?php } ?>
 
-			<section class="details-panel details-meta-panel">
+			<section class="details-panel details-meta-panel lt-card">
 				<div class="details-rating-row">
 					<div class="details-rating-block">
 						<div class="details-rating-stars" aria-label="Рейтинг <?=htmlspecialchars(number_format($details_rating_score, 1), ENT_QUOTES, 'UTF-8');?>">
@@ -97,46 +110,39 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 					</div>
 				</div>
 
-				<div class="details-meta-stats">
-					<span class="details-meta-item">
-						<span class="details-meta-icon" aria-hidden="true">
-							<svg viewBox="0 0 16 16"><path d="M8 2 3.5 6.8h2.2V14h4.6V6.8H12.5L8 2Z" fill="currentColor"/></svg>
-						</span>
-						<span><?=$seeders;?></span>
-					</span>
-					<span class="details-meta-item">
-						<span class="details-meta-icon" aria-hidden="true">
-							<svg viewBox="0 0 16 16"><path d="M8 14 12.5 9.2h-2.2V2H5.7v7.2H3.5L8 14Z" fill="currentColor"/></svg>
-						</span>
-						<span><?=$leechers;?></span>
-					</span>
-					<span class="details-meta-item">
-						<span><?=$size;?></span>
-					</span>
-					<span class="details-meta-item">
-						<span class="details-meta-icon" aria-hidden="true">
-							<svg viewBox="0 0 16 16"><path d="M8 8a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 1.4c-2.7 0-5 1.4-5 3.1V14h10v-1.5c0-1.7-2.3-3.1-5-3.1Z" fill="currentColor"/></svg>
-						</span>
-						<span><a class="details-user-link" href="<?=profile_href($user);?>"><?=get_user_color((int) $user_class, htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8'), $user);?></a></span>
-					</span>
-					<span class="details-meta-item">
-						<span class="details-meta-icon" aria-hidden="true">
-							<svg viewBox="0 0 16 16"><path d="M8 3C4.3 3 1.2 5 0 8c1.2 3 4.3 5 8 5s6.8-2 8-5c-1.2-3-4.3-5-8-5Zm0 8.1A3.1 3.1 0 1 1 8 4.9a3.1 3.1 0 0 1 0 6.2Zm0-1.7A1.4 1.4 0 1 0 8 6.6a1.4 1.4 0 0 0 0 2.8Z" fill="currentColor"/></svg>
-						</span>
-						<span><?=number_format((int) $details_views_count);?></span>
-					</span>
-					<span class="details-meta-item">
-						<span class="details-meta-icon" aria-hidden="true">
-							<svg viewBox="0 0 16 16"><path d="M13.6 3.1 6.3 10.4 2.4 6.5l1.3-1.3 2.6 2.6 6-6Z" fill="currentColor"/></svg>
-						</span>
-						<span><?=$completed;?></span>
-					</span>
-				</div>
-
-				<div class="details-date-row">
-					<span><span class="details-date-label">Обновлён:</span> <?=$details_updated_label;?></span>
-					<span class="details-date-separator">|</span>
-					<span><span class="details-date-label">Создан:</span> <?=$details_created_label;?></span>
+				<div class="details-meta-grid">
+					<div class="details-meta-cell">
+						<div class="details-meta-cell-label">Категория</div>
+						<div class="details-meta-cell-value"><a class="details-category-link" href="<?=htmlspecialchars($detailsCategoryHref, ENT_QUOTES, 'UTF-8');?>"><?=$detailsCategoryLabel;?></a></div>
+					</div>
+					<div class="details-meta-cell">
+						<div class="details-meta-cell-label">Размер</div>
+						<div class="details-meta-cell-value"><?=$size;?></div>
+					</div>
+					<div class="details-meta-cell">
+						<div class="details-meta-cell-label">Сиды</div>
+						<div class="details-meta-cell-value"><?=$seeders;?></div>
+					</div>
+					<div class="details-meta-cell">
+						<div class="details-meta-cell-label">Личи</div>
+						<div class="details-meta-cell-value"><?=$leechers;?></div>
+					</div>
+					<div class="details-meta-cell">
+						<div class="details-meta-cell-label">Скачивания</div>
+						<div class="details-meta-cell-value"><?=$downloaded;?></div>
+					</div>
+					<div class="details-meta-cell">
+						<div class="details-meta-cell-label">Создан</div>
+						<div class="details-meta-cell-value"><?=$details_created_label;?></div>
+					</div>
+					<div class="details-meta-cell">
+						<div class="details-meta-cell-label">Обновлён</div>
+						<div class="details-meta-cell-value"><?=$details_updated_label;?></div>
+					</div>
+					<div class="details-meta-cell">
+						<div class="details-meta-cell-label">Автор</div>
+						<div class="details-meta-cell-value"><a class="details-user-link" href="<?=profile_href($user);?>"><?=get_user_color((int) $user_class, htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8'), $user);?></a></div>
+					</div>
 				</div>
 
 			<div class="details-reactions-row">
@@ -156,7 +162,7 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 			</section>
 
 			<?php if (!empty($details_tracker_rows)) { ?>
-			<section class="details-panel details-trackers-panel">
+			<section class="details-panel details-trackers-panel lt-card">
 				<div class="details-section-group">
 					<div class="details-trackers-heading">
 						<h2 class="details-section-title">Мультитрекерная раздача</h2>
@@ -203,7 +209,7 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 			</section>
 			<?php } ?>
 
-			<section class="details-panel details-info-panel">
+			<section class="details-panel details-info-panel lt-card">
 				<div class="details-section-group">
 					<h2 class="details-section-title"><?=$detailsInfoTitle;?></h2>
 					<?php if ($details_main_items) { ?>
@@ -218,7 +224,10 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 					<?php } ?>
 
 					<?php if ($detailsDescriptionHtml !== '') { ?>
-					<div class="details-copy-block"><?=$detailsDescriptionHtml;?></div>
+					<div class="details-description-block lt-card">
+						<div class="details-section-title">Описание</div>
+						<div class="details-copy-block"><?=$detailsDescriptionHtml;?></div>
+					</div>
 					<?php } ?>
 
 					<?php if ($details_summary_text !== '') { ?>
@@ -282,8 +291,9 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 				<?php } ?>
 			</section>
 
-			<?php if ($screens) { ?>
-			<section class="details-panel details-gallery-panel">
+			<section class="details-panel details-gallery-panel lt-card">
+				<h2 class="details-section-title">Скриншоты</h2>
+				<?php if ($screens) { ?>
 				<div class="details-gallery-grid" id="details-gallery">
 					<?php foreach ($screens as $screen) { ?>
 					<div
@@ -296,11 +306,13 @@ if ($detailsDescriptionHtml === '' && !$details_has_structured_content) {
 					</div>
 					<?php } ?>
 				</div>
+				<?php } else { ?>
+				<div class="details-media-placeholder details-screens-placeholder">Скриншоты отсутствуют</div>
+				<?php } ?>
 			</section>
-			<?php } ?>
 
 			<?php if (!empty($USER['id'])) { ?>
-			<section class="details-panel details-comments-panel">
+			<section class="details-panel details-comments-panel lt-card">
 				<header class="details-comments-header">
 					<h2 class="details-comments-title">Комментарии к торренту</h2>
 				</header>

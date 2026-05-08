@@ -571,3 +571,169 @@ table.tt tbody tr:hover td:not(.tt) {
   color: var(--lt-muted);
   text-align: center;
 }
+
+/* =====================================================================
+   Details / Torrent cards refresh
+   ===================================================================== */
+
+.details-layout {
+  grid-template-columns: minmax(220px, 250px) minmax(0, 1fr);
+  gap: var(--lt-space-4);
+}
+
+.details-poster-card.lt-card,
+.details-sidebar-actions.lt-card,
+.details-panel.lt-card {
+  border-radius: var(--lt-radius-md);
+}
+
+.details-poster-card.lt-card {
+  padding: var(--lt-space-2);
+}
+
+.details-sidebar-actions.lt-card {
+  padding: var(--lt-space-2);
+  gap: var(--lt-space-2);
+}
+
+.details-title-panel {
+  padding: var(--lt-space-4);
+}
+
+.details-title-subline {
+  margin-top: 10px;
+}
+
+.details-category-link {
+  color: var(--lt-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.details-category-link:hover {
+  color: var(--lt-primary-hover);
+}
+
+.details-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  padding: 14px var(--lt-space-4) var(--lt-space-4);
+}
+
+.details-meta-cell {
+  padding: 10px 12px;
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface-muted);
+}
+
+.details-meta-cell-label {
+  color: var(--lt-muted);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.details-meta-cell-value {
+  margin-top: 4px;
+  color: var(--lt-text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.details-description-block.lt-card {
+  margin-top: var(--lt-space-3);
+  padding: var(--lt-space-3);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface-muted);
+}
+
+.details-media-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: 1px dashed var(--lt-border-strong);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface-muted);
+  color: var(--lt-muted);
+  text-align: center;
+}
+
+.details-poster-placeholder {
+  aspect-ratio: 250 / 360;
+  min-height: 260px;
+  padding: 14px;
+}
+
+.details-screens-placeholder {
+  min-height: 180px;
+  padding: 20px;
+}
+
+.details-comments-panel.lt-card {
+  border: 1px solid color-mix(in srgb, var(--lt-primary) 25%, var(--lt-border));
+}
+
+.details-download-group {
+  gap: 8px;
+}
+
+.details-download-group .details-download-button {
+  border-radius: var(--lt-radius-sm);
+}
+
+.details-download-button-magnet.lt-btn {
+  min-width: 48px;
+  border-color: #de8e2e;
+  background: #de8e2e;
+  color: #fff;
+}
+
+.details-download-button-magnet.lt-btn:hover {
+  border-color: #c77f29;
+  background: #c77f29;
+  color: #fff;
+}
+
+.browse-torrent-card.lt-card {
+  border-radius: var(--lt-radius-md);
+  border: 1px solid var(--lt-border);
+  background: var(--lt-surface);
+}
+
+.browse-torrent-card-cover,
+.browse-torrent-card-compact-cover {
+  border-radius: var(--lt-radius-sm);
+}
+
+.browse-torrent-card-cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  background: var(--lt-surface-muted);
+  color: var(--lt-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.browse-torrent-card-cover-placeholder-compact {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+@media (max-width: 992px) {
+  .details-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .details-sidebar {
+    position: static;
+  }
+}

@@ -5,6 +5,9 @@ if (!defined('LITETRACKER')) {
 
 $torrentCard = (is_array($torrentCard ?? null) ? $torrentCard : array());
 $extraSections = (array) ($torrentCard['extra_sections'] ?? array());
+$torrentCardName = htmlspecialchars((string) ($torrentCard['name'] ?? ''), ENT_QUOTES, 'UTF-8');
+$torrentCardCoverPath = trim((string) ($torrentCard['cover'] ?? ''));
+$torrentCardHasCover = ($torrentCardCoverPath !== '' && stripos($torrentCardCoverPath, 'default_avatar.gif') === false);
 $extraSummaryLabel = 'Дополнительная информация';
 if (!empty($extraSections[0]['label'])) {
 	$firstLabelKey = lt_torrent_label_key((string) ($extraSections[0]['label'] ?? ''));
@@ -13,11 +16,11 @@ if (!empty($extraSections[0]['label'])) {
 	}
 }
 ?>
-<article class="browse-torrent-card<?=(!empty($torrentCard['is_banned']) ? ' is-banned' : '');?>">
+<article class="browse-torrent-card lt-card<?=(!empty($torrentCard['is_banned']) ? ' is-banned' : '');?>">
 	<div class="browse-torrent-card-full">
 		<div class="browse-torrent-card-title-wrap">
 			<h3 class="browse-torrent-card-title">
-				<a href="<?=htmlspecialchars((string) ($torrentCard['details_href'] ?? ''), ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars((string) ($torrentCard['name'] ?? ''), ENT_QUOTES, 'UTF-8');?></a>
+				<a href="<?=htmlspecialchars((string) ($torrentCard['details_href'] ?? ''), ENT_QUOTES, 'UTF-8');?>"><?=$torrentCardName;?></a>
 			</h3>
 		</div>
 
@@ -58,7 +61,11 @@ if (!empty($extraSections[0]['label'])) {
 					<?php if (!empty($torrentCard['is_multitracker'])) { ?>
 					<span class="browse-torrent-card-multi-badge">multi</span>
 					<?php } ?>
-					<img src="<?=htmlspecialchars((string) ($torrentCard['cover'] ?? ''), ENT_QUOTES, 'UTF-8');?>" alt="<?=htmlspecialchars((string) ($torrentCard['name'] ?? ''), ENT_QUOTES, 'UTF-8');?>">
+					<?php if ($torrentCardHasCover) { ?>
+					<img src="<?=htmlspecialchars($torrentCardCoverPath, ENT_QUOTES, 'UTF-8');?>" alt="<?=$torrentCardName;?>">
+					<?php } else { ?>
+					<span class="browse-torrent-card-cover-placeholder">Постер отсутствует</span>
+					<?php } ?>
 				</a>
 			</div>
 
@@ -110,12 +117,16 @@ if (!empty($extraSections[0]['label'])) {
 				<?php if (!empty($torrentCard['is_multitracker'])) { ?>
 				<span class="browse-torrent-card-multi-badge browse-torrent-card-multi-badge-compact">m</span>
 				<?php } ?>
-				<img src="<?=htmlspecialchars((string) ($torrentCard['cover'] ?? ''), ENT_QUOTES, 'UTF-8');?>" alt="<?=htmlspecialchars((string) ($torrentCard['name'] ?? ''), ENT_QUOTES, 'UTF-8');?>">
+				<?php if ($torrentCardHasCover) { ?>
+				<img src="<?=htmlspecialchars($torrentCardCoverPath, ENT_QUOTES, 'UTF-8');?>" alt="<?=$torrentCardName;?>">
+				<?php } else { ?>
+				<span class="browse-torrent-card-cover-placeholder browse-torrent-card-cover-placeholder-compact">Нет</span>
+				<?php } ?>
 			</a>
 
 			<div class="browse-torrent-card-compact-content">
 				<h3 class="browse-torrent-card-compact-title">
-					<a href="<?=htmlspecialchars((string) ($torrentCard['details_href'] ?? ''), ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars((string) ($torrentCard['name'] ?? ''), ENT_QUOTES, 'UTF-8');?></a>
+					<a href="<?=htmlspecialchars((string) ($torrentCard['details_href'] ?? ''), ENT_QUOTES, 'UTF-8');?>"><?=$torrentCardName;?></a>
 				</h3>
 				<div class="browse-torrent-card-meta browse-torrent-card-meta-compact">
 					<span class="browse-torrent-card-meta-item">
