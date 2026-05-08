@@ -145,7 +145,7 @@ if($act == 'edit' && $id) {
 		$memcached->delete('sidebar_news_all');
 
 		if ($isAjaxRequest) {
-			$updatedNews = $db->super_query("SELECT id, name, text, date FROM news WHERE id=".(int) $id." LIMIT 1");
+			$updatedNews = $db->psuper_query("SELECT id, name, text, date FROM news WHERE id=? LIMIT 1", 'i', array((int) $id));
 			$updatedName = htmlspecialchars(lt_fix_utf8_mojibake((string) ($updatedNews['name'] ?? $name)), ENT_QUOTES, 'UTF-8');
 			$updatedText = cleanhtml(lt_fix_utf8_mojibake((string) ($updatedNews['text'] ?? $text)));
 			$updatedPublishedAt = lt_news_format_publication_date((string) ($updatedNews['date'] ?? $arr['date']));
@@ -242,6 +242,9 @@ if($act == 'edit' && $id) {
 				}
 			})
 				.then(function (response) {
+					if (!response.ok) {
+						throw new Error('http_error');
+					}
 					return response.json();
 				})
 				.then(function (payload) {
