@@ -2,7 +2,6 @@
   var reactionCache = {};
   var emojiPanelCounter = 0;
   var maxEmojiSearchResults = 24;
-  var telegramSearchLabel = '100M+';
   var telegramEmojiBlocks = [
     {
       id: 'faces',
@@ -158,8 +157,7 @@
   }
 
   function shouldHideEmojiEmptyState(panel) {
-    return !!panel.querySelector('[data-emoji-kind-toggle="emoji"][aria-pressed="true"]') ||
-      !!panel.querySelector('[data-emoji-kind-toggle="sticker"][aria-pressed="true"]');
+    return panel.querySelectorAll('[data-emoji-kind-toggle][aria-pressed="true"]').length > 0;
   }
 
   function buildCatalog() {
@@ -217,9 +215,9 @@
       '<div class="lt-emoji-panel-head">' +
         '<div>' +
           '<div class="lt-emoji-panel-title">Telegram Emoji</div>' +
-          '<div class="lt-emoji-panel-subtitle">Поиск по ' + telegramSearchLabel + ' эмодзи и стикеров</div>' +
+          '<div class="lt-emoji-panel-subtitle">Поиск по Telegram-эмодзи и стикерам</div>' +
         '</div>' +
-        '<div class="lt-emoji-panel-badge">TG ' + telegramSearchLabel + '</div>' +
+        '<div class="lt-emoji-panel-badge">Telegram</div>' +
       '</div>' +
       '<label class="lt-emoji-searchbox" for="' + escapeHtml(panelId + '-search') + '">' +
         '<span class="lt-emoji-search-icon">🔎</span>' +
@@ -415,7 +413,7 @@
       toggle.setAttribute('data-emoji-toggle', '1');
       toggle.setAttribute('aria-expanded', 'false');
       toggle.setAttribute('aria-controls', panelId);
-      toggle.textContent = '💬 Telegram Emoji';
+      toggle.textContent = '💬 Telegram-смайлы';
 
       var panel = document.createElement('div');
       panel.id = panelId;
