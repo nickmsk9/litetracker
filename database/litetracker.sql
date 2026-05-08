@@ -159,11 +159,12 @@ CREATE TABLE `comments_torrents` (
   PRIMARY KEY (`id`),
   KEY `idx_comments_torrents_object_date` (`id_torrents`,`date`),
   KEY `idx_comments_torrents_parent` (`parent_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `comments_torrents` WRITE;
 /*!40000 ALTER TABLE `comments_torrents` DISABLE KEYS */;
+INSERT INTO `comments_torrents` VALUES (1,1,2,'2026-05-08 15:05:12','тест комментария',0,2,'2026-05-08 15:05:12'),(2,1,2,'2026-05-08 15:05:19','а что тут тестировать?',1,2,'2026-05-08 15:05:19');
 /*!40000 ALTER TABLE `comments_torrents` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `comments_users`;
@@ -180,12 +181,12 @@ CREATE TABLE `comments_users` (
   `date_edit` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_users_parent` (`id_users`,`parent_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=8 DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=14 DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `comments_users` WRITE;
 /*!40000 ALTER TABLE `comments_users` DISABLE KEYS */;
-INSERT INTO `comments_users` VALUES (1,1,1,'2026-05-07 18:50:59','давайте тут будут комментарии',0,0,NULL),(2,1,1,'2026-05-07 18:51:09','&#128513;',0,0,NULL),(3,1,1,'2026-05-07 18:51:14','давайте!',1,0,NULL),(4,2,2,'2026-05-08 14:44:32','&#128512;',0,0,NULL),(5,2,2,'2026-05-08 14:44:32','&#128512;',0,0,NULL),(6,1,2,'2026-05-08 14:44:50','что',3,0,NULL),(7,1,2,'2026-05-08 14:44:50','что',3,0,NULL);
+INSERT INTO `comments_users` VALUES (1,1,1,'2026-05-07 18:50:59','давайте тут будут комментарии',0,0,NULL),(2,1,1,'2026-05-07 18:51:09','&#128513;',0,0,NULL),(3,1,1,'2026-05-07 18:51:14','давайте!',1,0,NULL),(4,2,2,'2026-05-08 14:44:32','&#128512;',0,0,NULL),(5,2,2,'2026-05-08 14:44:32','23423',0,2,'2026-05-08 15:00:39'),(6,1,2,'2026-05-08 14:44:50','что',3,0,NULL),(7,1,2,'2026-05-08 14:44:50','что',3,0,NULL),(8,2,2,'2026-05-08 15:03:15','ываыва',0,2,'2026-05-08 15:03:15'),(9,2,2,'2026-05-08 15:03:16','ываыв',0,2,'2026-05-08 15:03:16'),(10,2,2,'2026-05-08 15:03:17','ываы',0,2,'2026-05-08 15:03:17'),(11,2,2,'2026-05-08 15:03:18','ываы',0,2,'2026-05-08 15:03:18'),(12,2,2,'2026-05-08 15:03:20','ываыв',10,2,'2026-05-08 15:03:20'),(13,2,2,'2026-05-08 15:03:25','ываы',9,2,'2026-05-08 15:03:25');
 /*!40000 ALTER TABLE `comments_users` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `comments_users_reports`;
@@ -243,7 +244,7 @@ CREATE TABLE `cron` (
 
 LOCK TABLES `cron` WRITE;
 /*!40000 ALTER TABLE `cron` DISABLE KEYS */;
-INSERT INTO `cron` VALUES ('autoclean_interval',1000),('autoclean_last',1777907575),('multi_remote',1),('remotecheck_interval',600),('remote_torrents',30),('remotepeers_cleantime',10800),('remote_lastchecked',0),('in_remotecheck',0),('num_checked',343),('last_remotecheck',1778241012),('multi_timeout',100);
+INSERT INTO `cron` VALUES ('autoclean_interval',1000),('autoclean_last',1777907575),('multi_remote',1),('remotecheck_interval',600),('remote_torrents',30),('remotepeers_cleantime',10800),('remote_lastchecked',0),('in_remotecheck',0),('num_checked',344),('last_remotecheck',1778241612),('multi_timeout',100);
 /*!40000 ALTER TABLE `cron` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `faq`;
@@ -274,11 +275,12 @@ CREATE TABLE `files` (
   `filename` varchar(300) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `size` bigint NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `files` WRITE;
 /*!40000 ALTER TABLE `files` DISABLE KEYS */;
+INSERT INTO `files` VALUES (1,1,'Казнить нельзя помиловать_2026_WEB-DLRip.avi',1565290496),(2,1,'Казнить нельзя помиловать_2026_WEB-DLRip.srt',3594);
 /*!40000 ALTER TABLE `files` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `forgot`;
@@ -614,7 +616,7 @@ CREATE TABLE `sessions` (
 
 LOCK TABLES `sessions` WRITE;
 /*!40000 ALTER TABLE `sessions` DISABLE KEYS */;
-INSERT INTO `sessions` VALUES (1,'cfeb7f7a71e2924e22bc498b5fa3ac55',-1,'2026-05-03 13:21:35',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(2,'477ad948299b8fc08c1edae2b8accea1',1,'2026-05-04 18:14:43',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(3,'4419cd46a2c17e5b261d3fa4b79c831e',-1,'2026-05-04 18:12:34',-1062715135,'curl/8.7.1','/index.php'),(4,'6d2a1e1d9e1277da15506290d80c99ef',-1,'2026-05-04 18:12:42',2130706433,'','/profile.php'),(5,'c1d890cd0410ff2a9bb87e3f0b710c51',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/shop.php'),(6,'af21a6b3223d81458ef7f3784f1cf86b',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/index.php'),(7,'870f06414b12fdfd5e1352db79df33a7',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/profile.php'),(8,'38d500d2c5ab1f31d23dd07215e01cb9',1,'2026-05-07 20:15:50',-1185611747,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/browse.php'),(9,'d034ddc9c15e4307e1f626339c0a8d77',2,'2026-05-08 14:44:27',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php');
+INSERT INTO `sessions` VALUES (1,'cfeb7f7a71e2924e22bc498b5fa3ac55',-1,'2026-05-03 13:21:35',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(2,'477ad948299b8fc08c1edae2b8accea1',1,'2026-05-04 18:14:43',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(3,'4419cd46a2c17e5b261d3fa4b79c831e',-1,'2026-05-04 18:12:34',-1062715135,'curl/8.7.1','/index.php'),(4,'6d2a1e1d9e1277da15506290d80c99ef',-1,'2026-05-04 18:12:42',2130706433,'','/profile.php'),(5,'c1d890cd0410ff2a9bb87e3f0b710c51',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/shop.php'),(6,'af21a6b3223d81458ef7f3784f1cf86b',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/index.php'),(7,'870f06414b12fdfd5e1352db79df33a7',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/profile.php'),(8,'38d500d2c5ab1f31d23dd07215e01cb9',1,'2026-05-07 20:15:50',-1185611747,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/browse.php'),(9,'d034ddc9c15e4307e1f626339c0a8d77',2,'2026-05-08 15:04:45',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/edit.php');
 /*!40000 ALTER TABLE `sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `shop`;
@@ -666,11 +668,12 @@ CREATE TABLE `tags` (
   `name` varchar(30) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `howmuch` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `tags` WRITE;
 /*!40000 ALTER TABLE `tags` DISABLE KEYS */;
+INSERT INTO `tags` VALUES (1,6,'исекай',1),(2,6,'повседневность',1),(3,6,'фэнтези',1);
 /*!40000 ALTER TABLE `tags` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `torrent_ratings`;
@@ -705,11 +708,12 @@ CREATE TABLE `torrent_views` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `torrent_visitor` (`torrent_id`,`visitor_hash`),
   KEY `torrent_id` (`torrent_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3;
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `torrent_views` WRITE;
 /*!40000 ALTER TABLE `torrent_views` DISABLE KEYS */;
+INSERT INTO `torrent_views` VALUES (1,1,2,'33e75dafbd31084454d70392eda234536c511411','2026-05-08 15:04:36');
 /*!40000 ALTER TABLE `torrent_views` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `torrents`;
@@ -754,11 +758,12 @@ CREATE TABLE `torrents` (
   KEY `idx_torrents_type` (`type`),
   KEY `idx_torrents_content_type` (`content_type`),
   KEY `idx_torrents_name` (`name`(191))
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3;
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `torrents` WRITE;
 /*!40000 ALTER TABLE `torrents` DISABLE KEYS */;
+INSERT INTO `torrents` VALUES (1,'0','Isekai Nonbiri Nouka 2 / Фермерская жизнь в ином мире [ТВ-2] (1—5)','[kinozal.tv]id2128508.torrent',1565294090,0,'[b]Тип:[/b] ТВ\r\n[b]Жанр:[/b] детектив, приключения, семейный\r\n[b]Год выхода:[/b]\r\n[b]Количество эпизодов:[/b]\r\n[b]Продолжительность:[/b]\r\n[b]Режиссер:[/b]\r\n[b]Описание:[/b]После рождения наследника жизнь Матио Хираку в «Лесу Смерти» переходит на новый уровень: теперь ему предстоит совмещать отцовство с масштабным расширением Деревни Большого Древа. И пока слава о процветающем крае привлекает новых жителей и внимание могущественных соседей, герой основывает дополнительные поселения и продолжает внедрять земные новшества, доказывая, что доброта и упорный труд способны превратить опасную глушь в настоящий рай для десятков рас, где все смогут жить в мире и согласии.\r\n\r\n[u]Дополнительно[/u]\r\n[b]Формат:[/b]\r\n[b]Качество:[/b]\r\n[b]Видео:[/b]\r\n[b]Аудио:[/b] китайский\r\n[b]Субтитры:[/b] русские\r\n[b]Страна:[/b] Россия, Франция, Индия',_binary '86105c82ca44f781936f5083b81d478a811bed28','исекай,повседневность,фэнтези',6,2,'2026-05-08 15:04:35','1.jpg','1',0,'2026-05-08 15:04:35','1_0.jpg','','','','',0,'tv','russian','chinese','detective,adventure,family','hevc','russia,france,india','multi',2);
 /*!40000 ALTER TABLE `torrents` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `trackers`;
@@ -775,11 +780,12 @@ CREATE TABLE `trackers` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `torrent` (`torrent`,`tracker`),
   UNIQUE KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3;
+) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `trackers` WRITE;
 /*!40000 ALTER TABLE `trackers` DISABLE KEYS */;
+INSERT INTO `trackers` VALUES (1,1,'localhost',0,0,1778241912,''),(2,1,'http://tr2.torrent4me.com/ann?uk=cAETnuUKbT',0,0,1778241901,'failed:no_benc_result_or_timeout_announce'),(3,1,'http://tr2.tor4me.info/ann?uk=cAETnuUKbT',50,0,1778241897,'ok_announce'),(4,1,'http://tr2.tor2me.info/ann?uk=cAETnuUKbT',0,0,1778241896,'failed:no_benc_result_or_timeout_announce'),(5,1,'http://retracker.local/announce',0,0,1778241896,'failed:no_benc_result_or_timeout_announce');
 /*!40000 ALTER TABLE `trackers` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `users`;
@@ -830,7 +836,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','1_1778169081_0c7d3930.jpg','admin@admin.com','$2y$12$3ImCq59OZWwh3exrrcbtYOzvSD6sSoGU6WULEyr09QtgMPbJ8HiwW','',-1185611747,6,'2026-05-07 20:16:32','2026-05-04 18:14:43','ec932acf7c4e32b1f8f26ea1911bc30a',0,0,0,0,2327.94,1,'2009-04-04','',0,1,0,NULL,0,'','star','anminchd','','',0,0,0,0,0,1),(2,'nickmsk98','','sdfqwerfqwe@yandex.ru','$2y$12$i4wsRAw0O49PAiPM7vRI4u5QwJ7B8kjbtgTPKLA0/2n6fy0i1WHbm','',-1062715135,1,'2026-05-08 14:44:27','2026-05-08 14:44:27','52f0cf008ee335c101ebc51b32d2644c',0,0,0,0,633.36,1,'2008-05-04','',0,1,0,NULL,0,'','star','','','',0,0,0,0,0,1);
+INSERT INTO `users` VALUES (1,'admin','1_1778169081_0c7d3930.jpg','admin@admin.com','$2y$12$3ImCq59OZWwh3exrrcbtYOzvSD6sSoGU6WULEyr09QtgMPbJ8HiwW','',-1185611747,6,'2026-05-07 20:16:32','2026-05-04 18:14:43','ec932acf7c4e32b1f8f26ea1911bc30a',0,0,0,0,2327.94,1,'2009-04-04','',0,1,0,NULL,0,'','star','anminchd','','',0,0,0,0,0,1),(2,'nickmsk98','','sdfqwerfqwe@yandex.ru','$2y$12$i4wsRAw0O49PAiPM7vRI4u5QwJ7B8kjbtgTPKLA0/2n6fy0i1WHbm','',-1062715135,1,'2026-05-08 14:56:42','2026-05-08 14:44:27','52f0cf008ee335c101ebc51b32d2644c',21475910221,0,0,0,83.3403,1,'2008-05-04','',0,1,0,NULL,0,'','star','','','',0,0,0,0,0,1);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `users_blacklist`;

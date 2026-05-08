@@ -6,7 +6,7 @@ LiteTracker Source
 by Nick
 -------------------------------------------------------------------
 Назначение: AJAX-обработчик системы комментариев (добавление,
-редактирование, удаление, жалобы, реакции)
+редактирование, удаление, жалобы)
 ===================================================================
 */
 
@@ -53,6 +53,13 @@ $rateLimitId  = ((int)($USER['id'] ?? 0)) . ':' . ($_SERVER['REMOTE_ADDR'] ?? 'c
 
 if (!lt_table_exists($tableName)) {
     ajax_cm_response(0, 'Тип комментариев не найден.');
+}
+
+if ($type === 'users') {
+    $wallOwner = get_user_info($objectId);
+    if (empty($wallOwner['id'])) {
+        ajax_cm_response(0, 'Пользователь не найден.');
+    }
 }
 
 comments_ensure_thread_support($type);
@@ -273,16 +280,29 @@ if ($action === 'report') {
         ajax_cm_response(0, 'Нельзя пожаловаться на свой комментарий.');
     }
 
-    comments_reports_ensure_table();
-    $reportsTable = comments_reports_table_name();
-    $existing     = $db->super_query(
-        "SELECT id FROM `{$reportsTable}`
-         WHERE comment_type = '" . $db->safesql($type) . "'
-           AND comment_id = {$commentId}
-           AND reporter_user_id = " . (int)$USER['id'] . "
-           AND status = 'open'
-         LIMIT 1"
-    );
+    if ($type === 'users') {
+        user_wall_reports_ensure_table();
+        $reportsTable = user_wall_reports_table_name();
+        $existing = $db->super_query(
+            "SELECT id
+             FROM `{$reportsTable}`
+             WHERE comment_id = {$commentId}
+               AND reporter_user_id = " . (int)$USER['id'] . "
+               AND status = 'open'
+             LIMIT 1"
+        );
+    } else {
+        comments_reports_ensure_table();
+        $reportsTable = comments_reports_table_name();
+        $existing = $db->super_query(
+            "SELECT id FROM `{$reportsTable}`
+             WHERE comment_type = '" . $db->safesql($type) . "'
+               AND comment_id = {$commentId}
+               AND reporter_user_id = " . (int)$USER['id'] . "
+               AND status = 'open'
+             LIMIT 1"
+        );
+    }
 
     if (!empty($existing['id'])) {
         ajax_cm_response(0, 'Вы уже пожаловались на этот комментарий.');
@@ -293,19 +313,27 @@ if ($action === 'report') {
         ajax_cm_response(0, 'Слишком много жалоб за короткое время. Повторите попытку позже.');
     }
 
-    $db->query(
-        "INSERT INTO `{$reportsTable}` (`comment_type`, `comment_id`, `object_id`, `comment_user_id`, `reporter_user_id`, `comment_text_snapshot`, `status`, `created_at`)
-         VALUES (
-            '" . $db->safesql($type) . "',
-            {$commentId},
-            {$objectId},
-            " . (int)$comment['id_user'] . ",
-            " . (int)$USER['id'] . ",
-            '" . $db->safesql((string)($comment['text'] ?? '')) . "',
-            'open',
-            NOW()
-         )"
-    );
+    if ($type === 'users') {
+        $db->query(
+            "INSERT INTO `{$reportsTable}` (`comment_id`, `object_id`, `comment_user_id`, `reporter_user_id`, `comment_text_snapshot`, `status`, `created_at`)
+             VALUES ({$commentId}, {$objectId}, " . (int)$comment['id_user'] . ", " . (int)$USER['id'] . ", '" . $db->safesql((string)($comment['text'] ?? '')) . "', 'open', NOW())"
+        );
+        user_wall_reports_notify_moderators((int)$db->insert_id(), $objectId, $commentId, (string)($USER['name'] ?? ''));
+    } else {
+        $db->query(
+            "INSERT INTO `{$reportsTable}` (`comment_type`, `comment_id`, `object_id`, `comment_user_id`, `reporter_user_id`, `comment_text_snapshot`, `status`, `created_at`)
+             VALUES (
+                '" . $db->safesql($type) . "',
+                {$commentId},
+                {$objectId},
+                " . (int)$comment['id_user'] . ",
+                " . (int)$USER['id'] . ",
+                '" . $db->safesql((string)($comment['text'] ?? '')) . "',
+                'open',
+                NOW()
+             )"
+        );
+    }
 
     ajax_cm_response(1, 'Жалоба отправлена администрации.');
 }

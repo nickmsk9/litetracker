@@ -11,6 +11,7 @@
   function sendRequest(formData, onSuccess, onError) {
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'ajax/profile.php', true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.onreadystatechange = function () {
       var payload;
 
@@ -49,14 +50,6 @@
     }
 
     var ajaxMessage = document.getElementById('profile-ajax-message');
-    var wallContainer = document.getElementById('profile-wall-comments');
-    var wallForm = document.getElementById('profile-wall-form');
-    var wallTextarea = document.getElementById('profile-wall-text');
-    var wallParentInput = document.getElementById('profile-wall-parent-id');
-    var wallReplyInfo = document.getElementById('profile-wall-reply-info');
-    var wallReplyLabel = document.getElementById('profile-wall-reply-label');
-    var wallReplyCancel = document.getElementById('profile-wall-reply-cancel');
-    var profileUserId = parseInt(page.getAttribute('data-profile-user-id') || '0', 10);
     var modal = document.getElementById('profile-message-modal');
     var modalTextarea = document.getElementById('profile-message-text');
     var modalForm = document.getElementById('profile-message-form');
@@ -70,28 +63,6 @@
       ajaxMessage.textContent = message || '';
       ajaxMessage.className = 'profile-inline-message profile-inline-message-' + (isError ? 'error' : 'success');
       ajaxMessage.hidden = !message;
-    }
-
-    function resetReplyState() {
-      if (wallParentInput) {
-        wallParentInput.value = '0';
-      }
-
-      if (wallReplyInfo) {
-        wallReplyInfo.hidden = true;
-      }
-
-      if (wallReplyLabel) {
-        wallReplyLabel.textContent = '';
-      }
-    }
-
-    function replaceWall(html) {
-      if (!wallContainer) {
-        return;
-      }
-
-      wallContainer.innerHTML = html;
     }
 
     function openModal() {
@@ -114,196 +85,6 @@
 
       modal.hidden = true;
       document.body.classList.remove('profile-modal-open');
-    }
-
-    function buildEditor(comment) {
-      var slot = comment.querySelector('.wall-comment-editor-slot');
-      var source = comment.querySelector('.wall-comment-source');
-      var existing = comment.querySelector('.wall-inline-editor');
-      var textarea;
-      var controls;
-      var saveButton;
-      var cancelButton;
-      var form;
-
-      if (!slot || !source) {
-        return;
-      }
-
-      if (existing) {
-        existing.querySelector('textarea').focus();
-        return;
-      }
-
-      form = document.createElement('form');
-      form.className = 'wall-inline-editor';
-
-      textarea = document.createElement('textarea');
-      textarea.className = 'wall-inline-editor-textarea';
-      textarea.value = source.value;
-      form.appendChild(textarea);
-
-      controls = document.createElement('div');
-      controls.className = 'wall-inline-editor-actions';
-
-      saveButton = document.createElement('button');
-      saveButton.type = 'submit';
-      saveButton.className = 'wall-form-submit wall-inline-editor-save';
-      saveButton.textContent = 'Сохранить';
-      controls.appendChild(saveButton);
-
-      cancelButton = document.createElement('button');
-      cancelButton.type = 'button';
-      cancelButton.className = 'wall-comment-button';
-      cancelButton.textContent = 'Отмена';
-      cancelButton.addEventListener('click', function () {
-        form.parentNode.removeChild(form);
-      });
-      controls.appendChild(cancelButton);
-
-      form.appendChild(controls);
-      form.addEventListener('submit', function (event) {
-        var formData;
-
-        event.preventDefault();
-        formData = new FormData();
-        formData.append('action', 'wall_edit');
-        formData.append('object_id', String(profileUserId));
-        formData.append('comment_id', String(comment.getAttribute('data-comment-id') || '0'));
-        formData.append('text', textarea.value);
-
-        sendRequest(formData, function (payload) {
-          replaceWall(payload.html || '');
-          showNotice(payload.message || 'Комментарий обновлен.');
-        }, function (message) {
-          showNotice(message, true);
-        });
-      });
-
-      slot.appendChild(form);
-      textarea.focus();
-    }
-
-    if (wallReplyCancel) {
-      wallReplyCancel.addEventListener('click', function () {
-        resetReplyState();
-        if (wallTextarea) {
-          wallTextarea.focus();
-        }
-      });
-    }
-
-    if (wallForm) {
-      wallForm.addEventListener('submit', function (event) {
-        var formData = new FormData(wallForm);
-
-        event.preventDefault();
-        formData.append('action', 'wall_add');
-
-        sendRequest(formData, function (payload) {
-          replaceWall(payload.html || '');
-          showNotice(payload.message || 'Комментарий добавлен.');
-
-          if (wallTextarea) {
-            wallTextarea.value = '';
-          }
-
-          resetReplyState();
-        }, function (message) {
-          showNotice(message, true);
-        });
-      });
-    }
-
-    if (wallContainer) {
-      wallContainer.addEventListener('click', function (event) {
-        var replyButton = event.target.closest('[data-wall-reply]');
-        var editButton = event.target.closest('[data-wall-edit]');
-        var deleteButton = event.target.closest('[data-wall-delete]');
-        var reportButton = event.target.closest('[data-wall-report]');
-        var comment;
-        var formData;
-
-        if (replyButton) {
-          event.preventDefault();
-
-          if (wallParentInput) {
-            wallParentInput.value = replyButton.getAttribute('data-comment-id') || '0';
-          }
-
-          if (wallReplyInfo && wallReplyLabel) {
-            wallReplyLabel.textContent = 'Ответ пользователю ' + (replyButton.getAttribute('data-author-name') || '');
-            wallReplyInfo.hidden = false;
-          }
-
-          if (wallTextarea) {
-            wallTextarea.focus();
-          }
-
-          return;
-        }
-
-        if (editButton) {
-          event.preventDefault();
-          comment = editButton.closest('.wall-comment');
-          if (comment) {
-            buildEditor(comment);
-          }
-          return;
-        }
-
-        if (deleteButton) {
-          event.preventDefault();
-
-          if (!window.confirm('Удалить комментарий?')) {
-            return;
-          }
-
-          comment = deleteButton.closest('.wall-comment');
-          if (!comment) {
-            return;
-          }
-
-          formData = new FormData();
-          formData.append('action', 'wall_delete');
-          formData.append('object_id', String(profileUserId));
-          formData.append('comment_id', String(comment.getAttribute('data-comment-id') || '0'));
-
-          sendRequest(formData, function (payload) {
-            replaceWall(payload.html || '');
-            showNotice(payload.message || 'Комментарий удален.');
-            resetReplyState();
-          }, function (message) {
-            showNotice(message, true);
-          });
-
-          return;
-        }
-
-        if (reportButton) {
-          event.preventDefault();
-
-          comment = reportButton.closest('.wall-comment');
-          if (!comment) {
-            return;
-          }
-
-          if (!window.confirm('Отправить жалобу администрации?')) {
-            return;
-          }
-
-          formData = new FormData();
-          formData.append('action', 'wall_report');
-          formData.append('object_id', String(profileUserId));
-          formData.append('comment_id', String(comment.getAttribute('data-comment-id') || '0'));
-
-          sendRequest(formData, function (payload) {
-            showNotice(payload.message || 'Жалоба отправлена.');
-          }, function (message) {
-            showNotice(message, true);
-          });
-        }
-      });
     }
 
     document.addEventListener('click', function (event) {

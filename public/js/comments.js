@@ -1,7 +1,5 @@
 (function () {
   var AJAX_URL = '/ajax/comments.php';
-
-  // WeakMap to track auto-hide timers per notice element
   var noticeTimers = typeof WeakMap === 'function' ? new WeakMap() : null;
 
   function ready(fn) {
@@ -13,10 +11,14 @@
     fn();
   }
 
-  // ─── XHR helper ────────────────────────────────────────────────
+  function closest(el, selector) {
+    return el && el.closest ? el.closest(selector) : null;
+  }
+
   function sendAjax(formData, onSuccess, onError) {
     var xhr = new XMLHttpRequest();
     xhr.open('POST', AJAX_URL, true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.onreadystatechange = function () {
       var payload;
 
@@ -26,7 +28,7 @@
 
       try {
         payload = JSON.parse(xhr.responseText || '{}');
-      } catch (e) {
+      } catch (error) {
         if (typeof onError === 'function') {
           onError('Не удалось обработать ответ сервера. Попробуйте обновить страницу.');
         }
@@ -47,32 +49,41 @@
     xhr.send(formData);
   }
 
-  // ─── Thread root helpers ────────────────────────────────────────
-  function getThreadRoot(el) {
-    return el ? el.closest('[data-comment-thread]') : null;
-  }
-
-  function getThreadData(threadRoot) {
-    if (!threadRoot) {
-      return {};
-    }
-
-    return {
-      type:     threadRoot.getAttribute('data-comment-type') || '',
-      objectId: threadRoot.getAttribute('data-object-id') || '0',
-      file:     threadRoot.getAttribute('data-file') || '',
-    };
-  }
-
-  // ─── Inline notice ─────────────────────────────────────────────
-  function showThreadNotice(threadRoot, message, isError) {
-    var notice;
-
-    if (!threadRoot) {
+  function setButtonBusy(button, busy, text) {
+    if (!button) {
       return;
     }
 
-    notice = threadRoot.querySelector('[data-comment-notice]');
+    if (!button.getAttribute('data-original-label')) {
+      button.setAttribute('data-original-label', button.value || button.textContent || '');
+    }
+
+    button.disabled = !!busy;
+
+    if (text) {
+      if ('value' in button) {
+        button.value = text;
+      } else {
+        button.textContent = text;
+      }
+    } else if (!busy) {
+      if ('value' in button) {
+        button.value = button.getAttribute('data-original-label') || 'Отправить';
+      } else {
+        button.textContent = button.getAttribute('data-original-label') || 'Отправить';
+      }
+    }
+  }
+
+  function CommentThread(root) {
+    this.root = root;
+    this.type = root.getAttribute('data-comment-type') || '';
+    this.objectId = root.getAttribute('data-object-id') || '0';
+    this.file = root.getAttribute('data-file') || '';
+  }
+
+  CommentThread.prototype.notice = function (message, isError) {
+    var notice = this.root.querySelector('[data-comment-notice]');
 
     if (!notice) {
       return;
@@ -82,71 +93,67 @@
     notice.className = 'comment-ajax-notice' + (isError ? ' comment-ajax-notice-error' : ' comment-ajax-notice-success');
     notice.hidden = !message;
 
-    if (message) {
-      if (noticeTimers) {
-        clearTimeout(noticeTimers.get(notice));
-        noticeTimers.set(notice, setTimeout(function () {
-          notice.hidden = true;
-        }, 5000));
-      } else {
-        clearTimeout(notice._hideTimer);
-        notice._hideTimer = setTimeout(function () {
-          notice.hidden = true;
-        }, 5000);
-      }
-    }
-  }
-
-  // ─── Comment stream refresh ────────────────────────────────────
-  function refreshStream(threadRoot, streamHtml, highlightId) {
-    var stream, tmp, newStream;
-
-    if (!threadRoot || !streamHtml) {
+    if (!message) {
       return;
     }
 
-    stream = threadRoot.querySelector('[data-comment-stream]');
-
-    if (!stream) {
+    if (noticeTimers) {
+      clearTimeout(noticeTimers.get(notice));
+      noticeTimers.set(notice, setTimeout(function () {
+        notice.hidden = true;
+      }, 5000));
       return;
     }
 
-    tmp = document.createElement('div');
-    tmp.innerHTML = streamHtml;
-    newStream = tmp.querySelector('[data-comment-stream]');
+    clearTimeout(notice._hideTimer);
+    notice._hideTimer = setTimeout(function () {
+      notice.hidden = true;
+    }, 5000);
+  };
 
-    if (newStream) {
-      stream.innerHTML = newStream.innerHTML;
-    } else {
-      stream.innerHTML = streamHtml;
-    }
+  CommentThread.prototype.stream = function () {
+    return this.root.querySelector('[data-comment-stream]');
+  };
 
-    if (highlightId) {
-      setTimeout(function () {
-        var el = threadRoot.querySelector('[data-comment-id="' + highlightId + '"]');
+  CommentThread.prototype.form = function () {
+    return this.root.querySelector('[data-comment-form]');
+  };
 
-        if (el) {
-          el.classList.add('comment-entry-highlight');
-          setTimeout(function () {
-            el.classList.remove('comment-entry-highlight');
-          }, 2000);
-          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      }, 30);
-    }
-  }
+  CommentThread.prototype.textarea = function (root) {
+    root = root || this.form() || this.root;
+    return root.querySelector('[data-comment-textarea]') ||
+      root.querySelector("textarea[name='text']") ||
+      root.querySelector("textarea[name='descr']") ||
+      root.querySelector("textarea[name='textComment']");
+  };
 
-  // ─── Reply state ───────────────────────────────────────────────
-  function resetReplyState(root) {
-    var parentInput, replyBanner, replyLabel;
+  CommentThread.prototype.focusTextarea = function (root) {
+    var textarea = this.textarea(root);
 
-    if (!root) {
+    if (!textarea) {
       return;
     }
 
-    parentInput = root.querySelector('[data-comment-parent]');
-    replyBanner = root.querySelector('[data-comment-reply-banner]');
-    replyLabel  = root.querySelector('[data-comment-reply-label]');
+    textarea.focus();
+
+    if (typeof textarea.setSelectionRange === 'function') {
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    }
+  };
+
+  CommentThread.prototype.resetReply = function (form) {
+    var parentInput;
+    var replyBanner;
+    var replyLabel;
+
+    form = form || this.form();
+    if (!form) {
+      return;
+    }
+
+    parentInput = form.querySelector('[data-comment-parent]');
+    replyBanner = form.querySelector('[data-comment-reply-banner]');
+    replyLabel = form.querySelector('[data-comment-reply-label]');
 
     if (parentInput) {
       parentInput.value = '0';
@@ -159,37 +166,61 @@
     if (replyBanner) {
       replyBanner.hidden = true;
     }
-  }
+  };
 
-  function getCommentTextarea(root) {
-    if (!root) {
-      return null;
-    }
+  CommentThread.prototype.refreshStream = function (streamHtml, highlightId) {
+    var stream = this.stream();
+    var tmp;
+    var newStream;
+    var self = this;
 
-    return root.querySelector('[data-comment-textarea]') ||
-      root.querySelector("textarea[name='text']") ||
-      root.querySelector("textarea[name='textComment']");
-  }
-
-  function focusTextarea(root) {
-    var textarea = getCommentTextarea(root);
-
-    if (!textarea) {
+    if (!stream || !streamHtml) {
       return;
     }
 
-    textarea.focus();
+    tmp = document.createElement('div');
+    tmp.innerHTML = streamHtml;
+    newStream = tmp.querySelector('[data-comment-stream]');
+    stream.innerHTML = newStream ? newStream.innerHTML : streamHtml;
 
-    if (typeof textarea.setSelectionRange === 'function') {
-      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    if (!highlightId) {
+      return;
     }
-  }
 
-  // ─── Reply button ──────────────────────────────────────────────
-  function activateReply(button) {
-    var threadRoot = getThreadRoot(button);
-    var form       = threadRoot ? threadRoot.querySelector('[data-comment-form]') : null;
-    var parentInput, replyBanner, replyLabel, authorName;
+    setTimeout(function () {
+      var el = self.root.querySelector('[data-comment-id="' + highlightId + '"]');
+
+      if (!el) {
+        return;
+      }
+
+      el.classList.add('comment-entry-highlight', 'comment-entry-new');
+      setTimeout(function () {
+        el.classList.remove('comment-entry-highlight');
+      }, 2000);
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 30);
+  };
+
+  CommentThread.prototype.fillBasePayload = function (formData) {
+    if (!formData.has('type')) {
+      formData.append('type', this.type);
+    }
+
+    if (!formData.has('object_id')) {
+      formData.append('object_id', this.objectId);
+    }
+
+    if (!formData.has('file')) {
+      formData.append('file', this.file);
+    }
+  };
+
+  CommentThread.prototype.activateReply = function (button) {
+    var form = this.form();
+    var parentInput;
+    var replyBanner;
+    var replyLabel;
 
     if (!form) {
       return;
@@ -197,8 +228,7 @@
 
     parentInput = form.querySelector('[data-comment-parent]');
     replyBanner = form.querySelector('[data-comment-reply-banner]');
-    replyLabel  = form.querySelector('[data-comment-reply-label]');
-    authorName  = button.getAttribute('data-author-name') || '';
+    replyLabel = form.querySelector('[data-comment-reply-label]');
 
     if (!parentInput) {
       return;
@@ -207,35 +237,33 @@
     parentInput.value = button.getAttribute('data-comment-id') || '0';
 
     if (replyBanner && replyLabel) {
-      replyLabel.textContent = 'Ответ пользователю ' + authorName;
+      replyLabel.textContent = 'Ответ пользователю ' + (button.getAttribute('data-author-name') || '');
       replyBanner.hidden = false;
     }
 
-    focusTextarea(form);
-  }
+    this.focusTextarea(form);
+  };
 
-  // ─── Inline editor ─────────────────────────────────────────────
-  function buildInlineEditor(commentEl, threadRoot) {
-    var slot     = commentEl.querySelector('.wall-comment-editor-slot');
+  CommentThread.prototype.buildInlineEditor = function (commentEl) {
+    var slot = commentEl.querySelector('.wall-comment-editor-slot');
     var sourceEl = commentEl.querySelector('.wall-comment-source');
     var existing = commentEl.querySelector('.wall-inline-editor');
     var editLink = commentEl.querySelector('[data-wall-edit]');
-    var td       = getThreadData(threadRoot);
     var commentId = commentEl.getAttribute('data-comment-id') || '0';
     var csrfToken = editLink ? (editLink.getAttribute('data-csrf-token') || '') : '';
-    var form, textarea, controls, saveBtn, cancelBtn;
+    var form;
+    var textarea;
+    var controls;
+    var saveBtn;
+    var cancelBtn;
+    var self = this;
 
     if (!slot || !sourceEl) {
       return;
     }
 
     if (existing) {
-      var et = existing.querySelector('textarea');
-
-      if (et) {
-        et.focus();
-      }
-
+      this.focusTextarea(existing);
       return;
     }
 
@@ -268,273 +296,207 @@
     controls.appendChild(cancelBtn);
 
     form.appendChild(controls);
-
     form.addEventListener('submit', function (event) {
       var formData;
 
       event.preventDefault();
 
       if (!textarea.value.trim()) {
-        showThreadNotice(threadRoot, 'Введите текст комментария.', true);
+        self.notice('Введите текст комментария.', true);
         return;
       }
 
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Сохранение…';
+      setButtonBusy(saveBtn, true, 'Сохранение...');
 
       formData = new FormData();
       formData.append('action', 'edit');
-      formData.append('type', td.type);
-      formData.append('object_id', td.objectId);
       formData.append('comment_id', commentId);
       formData.append('text', textarea.value);
-      formData.append('file', td.file);
-
       if (csrfToken) {
         formData.append('csrf_token', csrfToken);
       }
+      self.fillBasePayload(formData);
 
       sendAjax(formData, function (payload) {
-        refreshStream(threadRoot, payload.html || '', payload.comment_id || commentId);
-        showThreadNotice(threadRoot, payload.message || 'Комментарий обновлён.');
+        self.refreshStream(payload.html || '', payload.comment_id || commentId);
+        self.notice(payload.message || 'Комментарий обновлён.');
       }, function (message) {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Сохранить';
-        showThreadNotice(threadRoot, message, true);
+        setButtonBusy(saveBtn, false);
+        self.notice(message, true);
       });
     });
 
     slot.appendChild(form);
     textarea.focus();
-  }
+  };
 
-  // ─── Main event delegation ─────────────────────────────────────
-  ready(function () {
+  CommentThread.prototype.submitAdd = function (form) {
+    var textarea = this.textarea(form);
+    var submitBtn = form.querySelector('[type="submit"]');
+    var formData;
+    var self = this;
 
-    document.addEventListener('click', function (event) {
-      var target      = event.target;
-      var replyBtn    = target.closest('[data-comment-reply]');
-      var cancelBtn   = target.closest('[data-comment-reply-cancel]');
-      var editBtn     = target.closest('[data-wall-edit]');
-      var deleteBtn   = target.closest('[data-wall-delete]');
-      var reportBtn   = target.closest('[data-wall-report]');
-      var threadRoot, comment, commentId, csrfToken, td, formData;
+    if (textarea && !textarea.value.trim()) {
+      this.notice('Введите текст комментария.', true);
+      this.focusTextarea(form);
+      return;
+    }
 
-      // ── Reply ────────────────────────────────────────────────
-      if (replyBtn) {
-        event.preventDefault();
-        activateReply(replyBtn);
-        return;
+    setButtonBusy(submitBtn, true, 'Отправка...');
+
+    formData = new FormData(form);
+    formData.set('action', 'add');
+    this.fillBasePayload(formData);
+
+    sendAjax(formData, function (payload) {
+      var newId = payload.comment_id || 0;
+
+      self.refreshStream(payload.html || '', newId);
+
+      if (textarea) {
+        textarea.value = '';
       }
 
-      // ── Cancel reply ─────────────────────────────────────────
-      if (cancelBtn) {
-        event.preventDefault();
-        var replyForm = cancelBtn.closest('[data-comment-form]');
-        resetReplyState(replyForm);
-        focusTextarea(replyForm);
-        return;
-      }
-
-      // ── Edit (only inside a data-comment-thread) ─────────────
-      if (editBtn) {
-        threadRoot = getThreadRoot(editBtn);
-
-        if (!threadRoot) {
-          return; // let profile.js handle its own wall
-        }
-
-        event.preventDefault();
-        comment = editBtn.closest('.wall-comment');
-
-        if (comment) {
-          buildInlineEditor(comment, threadRoot);
-        }
-
-        return;
-      }
-
-      // ── Delete ───────────────────────────────────────────────
-      if (deleteBtn) {
-        threadRoot = getThreadRoot(deleteBtn);
-
-        if (!threadRoot) {
-          return;
-        }
-
-        event.preventDefault();
-
-        if (!window.confirm('Удалить комментарий?')) {
-          return;
-        }
-
-        comment   = deleteBtn.closest('.wall-comment');
-
-        if (!comment) {
-          return;
-        }
-
-        commentId = comment.getAttribute('data-comment-id') || '0';
-        csrfToken = deleteBtn.getAttribute('data-csrf-token') || '';
-        td        = getThreadData(threadRoot);
-
-        formData  = new FormData();
-        formData.append('action', 'delete');
-        formData.append('type', td.type);
-        formData.append('object_id', td.objectId);
-        formData.append('comment_id', commentId);
-        formData.append('file', td.file);
-
-        if (csrfToken) {
-          formData.append('csrf_token', csrfToken);
-        }
-
-        sendAjax(formData, function (payload) {
-          refreshStream(threadRoot, payload.html || '');
-          showThreadNotice(threadRoot, payload.message || 'Комментарий удалён.');
-          resetReplyState(threadRoot.querySelector('[data-comment-form]'));
-        }, function (message) {
-          showThreadNotice(threadRoot, message, true);
-        });
-
-        return;
-      }
-
-      // ── Report ───────────────────────────────────────────────
-      if (reportBtn) {
-        threadRoot = getThreadRoot(reportBtn);
-
-        if (!threadRoot) {
-          return;
-        }
-
-        event.preventDefault();
-
-        if (!window.confirm('Отправить жалобу администрации?')) {
-          return;
-        }
-
-        comment   = reportBtn.closest('.wall-comment');
-
-        if (!comment) {
-          return;
-        }
-
-        commentId = comment.getAttribute('data-comment-id') || '0';
-        csrfToken = reportBtn.getAttribute('data-csrf-token') || '';
-        td        = getThreadData(threadRoot);
-
-        formData  = new FormData();
-        formData.append('action', 'report');
-        formData.append('type', td.type);
-        formData.append('object_id', td.objectId);
-        formData.append('comment_id', commentId);
-        formData.append('file', td.file);
-
-        if (csrfToken) {
-          formData.append('csrf_token', csrfToken);
-        }
-
-        sendAjax(formData, function (payload) {
-          showThreadNotice(threadRoot, payload.message || 'Жалоба отправлена.');
-        }, function (message) {
-          showThreadNotice(threadRoot, message, true);
-        });
-
-        return;
-      }
-
+      self.resetReply(form);
+      self.notice(payload.message || 'Комментарий добавлен.');
+      setButtonBusy(submitBtn, false);
+    }, function (message) {
+      self.notice(message, true);
+      setButtonBusy(submitBtn, false);
     });
+  };
 
-    // ── Form submit (add comment) ───────────────────────────────
-    document.addEventListener('submit', function (event) {
-      var form = event.target.closest('[data-comment-form]');
-      var threadRoot, textarea, submitBtn, formData, td;
+  CommentThread.prototype.submitCommentAction = function (action, button, options) {
+    var comment = closest(button, '.wall-comment');
+    var commentId = comment ? (comment.getAttribute('data-comment-id') || '0') : '0';
+    var csrfToken = button.getAttribute('data-csrf-token') || '';
+    var formData;
+    var self = this;
 
-      if (!form) {
+    options = options || {};
+
+    if (!comment || commentId === '0') {
+      return;
+    }
+
+    if (options.confirm && !window.confirm(options.confirm)) {
+      return;
+    }
+
+    formData = new FormData();
+    formData.append('action', action);
+    formData.append('comment_id', commentId);
+    if (csrfToken) {
+      formData.append('csrf_token', csrfToken);
+    }
+    this.fillBasePayload(formData);
+
+    sendAjax(formData, function (payload) {
+      if (payload.html) {
+        self.refreshStream(payload.html || '', payload.comment_id || 0);
+      }
+
+      if (action === 'delete') {
+        self.resetReply();
+      }
+
+      self.notice(payload.message || options.success || '');
+    }, function (message) {
+      self.notice(message, true);
+    });
+  };
+
+  CommentThread.prototype.handleClick = function (event) {
+    var target = event.target;
+    var replyBtn = closest(target, '[data-comment-reply], [data-wall-reply]');
+    var cancelBtn = closest(target, '[data-comment-reply-cancel]');
+    var editBtn = closest(target, '[data-wall-edit]');
+    var deleteBtn = closest(target, '[data-wall-delete]');
+    var reportBtn = closest(target, '[data-wall-report]');
+    var comment;
+
+    if (replyBtn && this.root.contains(replyBtn)) {
+      event.preventDefault();
+      this.activateReply(replyBtn);
+      return;
+    }
+
+    if (cancelBtn && this.root.contains(cancelBtn)) {
+      event.preventDefault();
+      this.resetReply(closest(cancelBtn, '[data-comment-form]'));
+      this.focusTextarea(closest(cancelBtn, '[data-comment-form]'));
+      return;
+    }
+
+    if (editBtn && this.root.contains(editBtn)) {
+      event.preventDefault();
+      comment = closest(editBtn, '.wall-comment');
+      if (comment) {
+        this.buildInlineEditor(comment);
+      }
+      return;
+    }
+
+    if (deleteBtn && this.root.contains(deleteBtn)) {
+      event.preventDefault();
+      this.submitCommentAction('delete', deleteBtn, {
+        confirm: 'Удалить комментарий?',
+        success: 'Комментарий удалён.'
+      });
+      return;
+    }
+
+    if (reportBtn && this.root.contains(reportBtn)) {
+      event.preventDefault();
+      this.submitCommentAction('report', reportBtn, {
+        confirm: 'Отправить жалобу администрации?',
+        success: 'Жалоба отправлена.'
+      });
+    }
+  };
+
+  CommentThread.prototype.handleSubmit = function (event) {
+    var form = closest(event.target, '[data-comment-form]');
+
+    if (!form || !this.root.contains(form)) {
+      return;
+    }
+
+    event.preventDefault();
+    this.submitAdd(form);
+  };
+
+  CommentThread.prototype.bind = function () {
+    var self = this;
+    this.root.addEventListener('click', function (event) {
+      self.handleClick(event);
+    });
+    this.root.addEventListener('submit', function (event) {
+      self.handleSubmit(event);
+    });
+  };
+
+  ready(function () {
+    var roots = document.querySelectorAll('[data-comment-thread]');
+    Array.prototype.forEach.call(roots, function (root) {
+      if (root.getAttribute('data-comment-thread-ready') === '1') {
         return;
       }
 
-      threadRoot = getThreadRoot(form);
-
-      if (!threadRoot) {
-        return; // profile wall — handled by profile.js
-      }
-
-      textarea = getCommentTextarea(form);
-
-      if (textarea && !textarea.value.trim()) {
-        resetReplyState(form);
-        return; // let native validation fire
-      }
-
-      event.preventDefault();
-
-      td        = getThreadData(threadRoot);
-      submitBtn = form.querySelector('[type="submit"]');
-
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.value    = 'Отправка…';
-      }
-
-      formData = new FormData(form);
-      formData.append('action', 'add'); // AJAX action flag
-
-      sendAjax(formData, function (payload) {
-        var newId = payload.comment_id || 0;
-
-        refreshStream(threadRoot, payload.html || '', newId);
-
-        if (newId) {
-          setTimeout(function () {
-            var newEl = threadRoot.querySelector('[data-comment-id="' + newId + '"]');
-
-            if (newEl) {
-              newEl.classList.add('comment-entry-new');
-            }
-          }, 60);
-        }
-
-        if (textarea) {
-          textarea.value = '';
-        }
-
-        resetReplyState(form);
-        showThreadNotice(threadRoot, payload.message || 'Комментарий добавлен.');
-
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.value    = 'Отправить';
-        }
-      }, function (message) {
-        showThreadNotice(threadRoot, message, true);
-
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.value    = 'Отправить';
-        }
-      });
+      root.setAttribute('data-comment-thread-ready', '1');
+      new CommentThread(root).bind();
     });
   });
 
-  // Legacy global helper (kept for backward compatibility)
-  window.replyWallComment = function (userName) {
-    var activeForm = document.querySelector('[data-comment-form]');
-    var textarea   = getCommentTextarea(activeForm || document);
+  window.CommentThread = CommentThread;
+  window.replyWallComment = function () {
+    var form = document.querySelector('[data-comment-form]');
+    var root = form ? closest(form, '[data-comment-thread]') : null;
+    var thread = root ? new CommentThread(root) : null;
 
-    if (activeForm) {
-      resetReplyState(activeForm);
-    }
-
-    if (!textarea) {
-      return false;
-    }
-
-    textarea.focus();
-
-    if (typeof textarea.setSelectionRange === 'function') {
-      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    if (thread) {
+      thread.resetReply(form);
+      thread.focusTextarea(form);
     }
 
     return false;

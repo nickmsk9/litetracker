@@ -50,14 +50,15 @@ if (!defined('LITETRACKER')) {
 					<h2 class="profile-wall-title">Стена пользователя</h2>
 				</div>
 
-				<div class="profile-wall-body">
+				<div class="profile-wall-body comment-thread-root" data-comment-thread="1" data-comment-type="users" data-object-id="<?=$id;?>" data-file="profile.php?id=<?=$id;?>&amp;">
+					<div class="comment-ajax-notice" data-comment-notice="1" hidden></div>
 					<div id="profile-wall-comments"><?=$wallCommentsHtml;?></div>
 
 					<?php if (!empty($USER) && is_array($USER)) { ?>
-					<form class="wall-form" id="profile-wall-form" method="post" action="ajax/profile.php">
-						<div class="wall-reply-banner" id="profile-wall-reply-info" hidden>
-							<span id="profile-wall-reply-label"></span>
-							<button class="wall-comment-button" id="profile-wall-reply-cancel" type="button">Отмена</button>
+					<form class="wall-form" id="profile-wall-form" data-comment-form="1" method="post" action="ajax/comments.php">
+						<div class="wall-reply-banner" id="profile-wall-reply-info" data-comment-reply-banner="1" hidden>
+							<span id="profile-wall-reply-label" data-comment-reply-label="1"></span>
+							<button class="wall-comment-button" id="profile-wall-reply-cancel" data-comment-reply-cancel="1" type="button">Отмена</button>
 						</div>
 
 						<div class="wall-form-row">
@@ -65,7 +66,7 @@ if (!defined('LITETRACKER')) {
 								<img src="<?=$currentUserWallAvatar;?>" alt="<?=htmlspecialchars((string) $USER['name'], ENT_QUOTES, 'UTF-8');?>" width="28" height="28">
 							</div>
 							<div class="wall-form-body">
-								<textarea class="wall-form-textarea" id="profile-wall-text" name="text"></textarea>
+								<textarea class="wall-form-textarea" id="profile-wall-text" data-comment-textarea="1" name="text"></textarea>
 								<div class="wall-form-controls">
 									<input class="wall-form-submit" value="Отправить" type="submit">
 								</div>
@@ -73,7 +74,10 @@ if (!defined('LITETRACKER')) {
 						</div>
 
 						<input type="hidden" name="object_id" value="<?=$id;?>">
-						<input type="hidden" name="parent_id" id="profile-wall-parent-id" value="0">
+						<input type="hidden" name="type" value="users">
+						<input type="hidden" name="file" value="profile.php?id=<?=$id;?>&amp;">
+						<input type="hidden" name="parent_id" id="profile-wall-parent-id" data-comment-parent="1" value="0">
+						<?=lt_csrf_input('comments_users_'.$id);?>
 					</form>
 					<?php } ?>
 				</div>
