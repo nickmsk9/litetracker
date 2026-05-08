@@ -191,7 +191,7 @@ if($_GET['act'] == 'edit') {
 		 <span class="grey">Название товара:</span>
 		</td>
 		<td style="padding: 0px;">
-		 <input type="text" name="name" style="margin: 0px;" size="25" class="inputText lt-input" value="<?=htmlspecialchars($arr['name']);?>">
+		 <input type="text" name="name" size="25" class="inputText lt-input" value="<?=htmlspecialchars($arr['name']);?>">
 		</td><td>
 	   </td></tr>
 
@@ -200,7 +200,7 @@ if($_GET['act'] == 'edit') {
 		 <span class="grey">Цена:</span>
 		</td>
 		<td style="padding: 0px;">
-		 <input type="text" name="voice" style="margin: 0px;" size="10" class="inputText lt-input" value="<?=$arr['voice'];?>"> рублей
+		 <input type="text" name="voice" size="10" class="inputText lt-input" value="<?=$arr['voice'];?>"> рублей
 		<br><small>Формат: 1.00</small>
 		</td><td>
 	   </td></tr>

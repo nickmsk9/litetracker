@@ -6,6 +6,7 @@
 :root {
   --lt-radius-sm: 8px;
   --lt-radius-md: 12px;
+  --lt-radius-pill: 999px;
   --lt-space-1: 8px;
   --lt-space-2: 12px;
   --lt-space-3: 16px;
@@ -345,7 +346,7 @@ textarea:focus {
   gap: 6px;
   min-height: 22px;
   padding: 2px 9px;
-  border-radius: 999px;
+  border-radius: var(--lt-radius-pill);
   border: 1px solid var(--lt-border);
   background: var(--lt-surface-alt);
   color: var(--lt-muted);
@@ -382,7 +383,7 @@ textarea:focus {
   min-height: 34px;
   padding: 6px 12px;
   border: 1px solid var(--lt-border);
-  border-radius: 999px;
+  border-radius: var(--lt-radius-pill);
   background: var(--lt-surface);
   color: var(--lt-muted);
   text-decoration: none;
