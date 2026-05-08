@@ -34,7 +34,10 @@ if ($USER) {
 
 $messagesCount = 0;
 if ($USER) {
-	$messagesCount = max(0, (int) ($USER['num_messages'] ?? 0));
+	$messagesUnreadRow = $db->super_query(
+		"SELECT COUNT(*) AS c FROM mail WHERE id_user_in = ".(int) $USER['id']." AND delete_in = 0 AND reading = 0"
+	);
+	$messagesCount = max(0, (int) ($messagesUnreadRow['c'] ?? 0));
 }
 $openWallReportsCount = 0;
 if ($USER && user_wall_reports_can_moderate()) {
@@ -45,7 +48,7 @@ if ($USER && user_wall_reports_can_moderate()) {
 $alertCount = $messagesCount;
 $alertBadge = ($alertCount > 99 ? '99+' : (string) $alertCount);
 $messagesHref = 'my.mail.php';
-$messagesLabel = 'Личные сообщения'.($alertCount > 0 ? ': '.$alertBadge : '');
+$messagesLabel = 'Сообщения'.($alertCount > 0 ? ': '.$alertBadge : '');
 $requestUri = ltrim((string) ($_SERVER['REQUEST_URI'] ?? ''), '/');
 $loginHref = 'login.php';
 if ($requestUri !== '' && strpos($requestUri, 'login.php') !== 0) {
