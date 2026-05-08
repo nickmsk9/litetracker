@@ -1,220 +1,497 @@
 /*
- * LiteTracker — Unified UI layer
- * Minimal utility classes for buttons, cards, inputs, badges, alerts and tables.
- * All values reference the CSS custom properties defined in my.css.
+ * LiteTracker — Unified minimal design system (2026 light UI)
+ * New API: .lt-* classes + compatibility layer for legacy classes.
  */
+
+:root {
+  --lt-radius-sm: 10px;
+  --lt-radius-md: 14px;
+  --lt-space-1: 8px;
+  --lt-space-2: 12px;
+  --lt-space-3: 16px;
+  --lt-space-4: 20px;
+  --lt-border: var(--line);
+  --lt-border-strong: var(--line-strong);
+  --lt-surface: var(--surface);
+  --lt-surface-muted: var(--surface-muted);
+  --lt-surface-alt: var(--surface-alt);
+  --lt-text: var(--text);
+  --lt-muted: var(--muted);
+  --lt-primary: var(--accent);
+  --lt-primary-hover: var(--accent-hover);
+  --lt-danger: #b95050;
+  --lt-danger-hover: #a23f3f;
+  --lt-focus-ring: 0 0 0 4px rgba(77, 127, 199, 0.16);
+}
+
+body.theme-dark {
+  --lt-danger: #d26a6a;
+  --lt-danger-hover: #e27c7c;
+  --lt-focus-ring: 0 0 0 4px rgba(121, 167, 235, 0.2);
+}
 
 /* =====================================================================
    Buttons
    ===================================================================== */
 
-.btn {
+.lt-btn,
+.btn,
+.proleft,
+.site-auth-link,
+.project-help-button,
+.settings-upload-button,
+.settings-remove-button,
+.details-download-button,
+.details-bookmark-button,
+.profile-card-button,
+.wall-comment-button,
+.browse-upload-button,
+.browse-search-submit,
+.browse-filter-submit,
+.home-load-more,
+.admin-settings-submit,
+.admin-action-button,
+.admin-shortcut-link,
+input[type="submit"],
+input[type="button"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 36px;
-  padding: 7px 14px;
-  border: 1px solid var(--line-strong);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: var(--lt-text);
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
   text-decoration: none;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
 }
 
-.btn:hover {
-  background: var(--surface-muted);
-  border-color: var(--line-strong);
-  color: var(--text);
+.lt-btn:hover,
+.btn:hover,
+.proleft:hover,
+.site-auth-link:hover,
+.project-help-button:hover,
+.settings-upload-button:hover,
+.settings-remove-button:hover,
+.details-download-button:hover,
+.details-bookmark-button:hover,
+.profile-card-button:hover,
+.wall-comment-button:hover,
+.browse-upload-button:hover,
+.browse-search-submit:hover,
+.browse-filter-submit:hover,
+.home-load-more:hover,
+.admin-settings-submit:hover,
+.admin-action-button:hover,
+.admin-shortcut-link:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover {
+  background: var(--lt-surface-muted);
+  border-color: var(--lt-border-strong);
+  color: var(--lt-text);
 }
 
-/* Primary — filled accent */
-.btn-primary {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #ffffff;
-}
-
-.btn-primary:hover {
-  border-color: var(--accent-hover);
-  background: var(--accent-hover);
-  color: #ffffff;
-}
-
-/* Secondary — outlined / muted */
-.btn-secondary {
-  border-color: var(--line);
-  background: var(--surface-solid);
-  color: var(--muted);
-}
-
-.btn-secondary:hover {
-  border-color: var(--line-strong);
-  background: var(--surface-muted);
-  color: var(--text);
-}
-
-/* Danger — destructive action */
-.btn-danger {
-  border-color: #c94f4f;
-  background: #c94f4f;
-  color: #ffffff;
-}
-
-.btn-danger:hover {
-  border-color: #b03e3e;
-  background: #b03e3e;
-  color: #ffffff;
-}
-
-/* Small modifier */
-.btn-small {
-  min-height: 28px;
-  padding: 4px 10px;
-  font-size: 12px;
-}
-
-/* =====================================================================
-   Card
-   ===================================================================== */
-
-.card {
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--surface);
-  overflow: hidden;
-}
-
-/* =====================================================================
-   Input  (use as a class on <input>, <select>, <textarea>)
-   ===================================================================== */
-
-.input {
-  display: block;
-  width: 100%;
-  min-height: 36px;
-  padding: 7px 12px;
-  border: 1px solid var(--line-strong);
-  border-radius: 6px;
-  background: var(--surface-solid);
-  color: var(--text);
-  font: inherit;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
-}
-
-.input:hover {
-  border-color: #b8b8bf;
-}
-
-.input:focus {
+.lt-btn:focus-visible,
+.btn:focus-visible,
+.proleft:focus-visible,
+.site-auth-link:focus-visible,
+.project-help-button:focus-visible,
+.settings-upload-button:focus-visible,
+.settings-remove-button:focus-visible,
+.details-download-button:focus-visible,
+.details-bookmark-button:focus-visible,
+.profile-card-button:focus-visible,
+.wall-comment-button:focus-visible,
+.browse-upload-button:focus-visible,
+.browse-search-submit:focus-visible,
+.browse-filter-submit:focus-visible,
+.home-load-more:focus-visible,
+.admin-settings-submit:focus-visible,
+.admin-action-button:focus-visible,
+.admin-shortcut-link:focus-visible,
+input[type="submit"]:focus-visible,
+input[type="button"]:focus-visible {
   outline: none;
-  border-color: rgba(0, 113, 227, 0.5);
-  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.12);
+  box-shadow: var(--lt-focus-ring);
+}
+
+.lt-btn-primary,
+.btn-primary,
+.site-auth-link,
+.project-help-button,
+.details-download-button,
+.profile-card-button,
+.wall-form-submit,
+.browse-upload-button,
+.browse-search-submit,
+.browse-filter-submit,
+.home-load-more,
+.admin-settings-submit {
+  border-color: var(--lt-primary);
+  background: var(--lt-primary);
+  color: #fff;
+}
+
+.lt-btn-primary:hover,
+.btn-primary:hover,
+.site-auth-link:hover,
+.project-help-button:hover,
+.details-download-button:hover,
+.profile-card-button:hover,
+.wall-form-submit:hover,
+.browse-upload-button:hover,
+.browse-search-submit:hover,
+.browse-filter-submit:hover,
+.home-load-more:hover,
+.admin-settings-submit:hover {
+  border-color: var(--lt-primary-hover);
+  background: var(--lt-primary-hover);
+  color: #fff;
+}
+
+.lt-btn-secondary,
+.btn-secondary,
+.settings-upload-button,
+.details-bookmark-button,
+.admin-shortcut-link,
+.proleft {
+  background: var(--lt-surface);
+  color: var(--lt-muted);
+}
+
+.lt-btn-secondary:hover,
+.btn-secondary:hover,
+.settings-upload-button:hover,
+.details-bookmark-button:hover,
+.admin-shortcut-link:hover,
+.proleft:hover {
+  color: var(--lt-text);
+}
+
+.lt-btn-danger,
+.btn-danger,
+.settings-remove-button,
+.admin-action-button[style*="b85050"],
+.admin-action-button[style*="B85050"] {
+  border-color: var(--lt-danger);
+  background: var(--lt-danger);
+  color: #fff;
+}
+
+.lt-btn-danger:hover,
+.btn-danger:hover,
+.settings-remove-button:hover,
+.admin-action-button[style*="b85050"]:hover,
+.admin-action-button[style*="B85050"]:hover {
+  border-color: var(--lt-danger-hover);
+  background: var(--lt-danger-hover);
+  color: #fff;
+}
+
+.lt-btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--lt-muted);
+}
+
+.lt-btn-ghost:hover {
+  border-color: var(--lt-border);
+  background: var(--lt-surface-muted);
+  color: var(--lt-text);
 }
 
 /* =====================================================================
-   Badge
+   Cards / Panels
    ===================================================================== */
 
-.badge {
+.lt-card,
+.card,
+.admin-card,
+.admin-settings-form,
+.admin-action-card,
+.admin-link-card,
+.profile-card,
+.profile-panel,
+.profile-sidebar-card,
+.settings-section,
+.settings-nav-card,
+.browse-panel,
+.details-panel,
+.lt-panel {
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface);
+  box-shadow: none;
+}
+
+/* =====================================================================
+   Forms / Inputs
+   ===================================================================== */
+
+.lt-form,
+.settings-form,
+.profile-bonus-form,
+.profile-modal-form,
+.wall-form,
+.browse-search-form,
+.browse-filter-panel,
+.admin-action-form {
+  width: 100%;
+}
+
+.lt-input,
+.input,
+.inputText,
+.admin-settings-input,
+.browse-search-input,
+.settings-textarea,
+.wall-form-textarea,
+.profile-modal-textarea,
+.settings-form input[type="text"],
+.settings-form input[type="password"],
+.settings-form input[type="email"],
+.settings-form input[type="number"],
+.settings-form input[type="date"],
+.settings-form textarea,
+.profile-bonus-form input[type="text"],
+.profile-bonus-form input[type="number"],
+.profile-bonus-form textarea,
+.profile-modal-form textarea,
+.wall-form textarea,
+.admin-settings-form input[type="text"],
+.admin-settings-form input[type="number"],
+.admin-settings-form textarea,
+.admin-settings-form select,
+.lt-select,
+.settings-form select,
+.profile-bonus-form select,
+.browse-search-form select,
+.browse-filter-panel select,
+select,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="date"],
+textarea {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: var(--lt-text);
+  box-shadow: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+textarea,
+.lt-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.lt-input:hover,
+.input:hover,
+.inputText:hover,
+.admin-settings-input:hover,
+.browse-search-input:hover,
+.lt-select:hover,
+select:hover,
+input[type="text"]:hover,
+input[type="password"]:hover,
+input[type="email"]:hover,
+input[type="number"]:hover,
+input[type="date"]:hover,
+textarea:hover {
+  border-color: var(--lt-border-strong);
+}
+
+.lt-input:focus,
+.input:focus,
+.inputText:focus,
+.admin-settings-input:focus,
+.browse-search-input:focus,
+.lt-select:focus,
+select:focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--lt-primary);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* =====================================================================
+   Badges
+   ===================================================================== */
+
+.lt-badge,
+.badge,
+.admin-role-badge,
+.admin-link-badge,
+.details-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 20px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: var(--surface-alt);
-  color: var(--muted);
+  gap: 6px;
+  min-height: 22px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--lt-border);
+  background: var(--lt-surface-alt);
+  color: var(--lt-muted);
   font-size: 11px;
-  font-weight: 700;
-  line-height: 1.2;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-weight: 600;
+  line-height: 1.25;
   white-space: nowrap;
 }
 
-.badge-primary {
-  background: var(--accent);
-  color: #ffffff;
-}
-
-.badge-success {
-  background: #dff0d8;
-  color: #3a6b2a;
-}
-
-.badge-danger {
-  background: #fde8e8;
-  color: #8a2c2c;
-}
-
 /* =====================================================================
-   Alert  (inline feedback messages)
+   Tabs
    ===================================================================== */
 
-.alert {
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--surface-muted);
-  color: var(--text);
+.lt-tabs,
+.admin-tabs,
+.profile-torrent-tabs,
+.browse-categories,
+.browse-sort-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.lt-tabs .lt-tab,
+.lt-tabs a,
+.admin-tab-link,
+.profile-torrent-tab,
+.browse-category-tab,
+.browse-sort-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--lt-border);
+  border-radius: 999px;
+  background: var(--lt-surface);
+  color: var(--lt-muted);
+  text-decoration: none;
   font-size: 13px;
-  line-height: 1.55;
+  font-weight: 500;
 }
 
-.alert-success {
-  border-color: #9ec28d;
-  background: #f5fbf1;
+.lt-tabs .lt-tab:hover,
+.lt-tabs a:hover,
+.admin-tab-link:hover,
+.profile-torrent-tab:hover,
+.browse-category-tab:hover,
+.browse-sort-link:hover {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-surface-muted);
+  color: var(--lt-text);
 }
 
-.alert-error {
-  border-color: #d7a09c;
-  background: #fff6f5;
-  color: #8a2c2c;
-}
-
-.alert-info {
-  border-color: #a8c4e8;
-  background: #eef5ff;
-  color: #1d4a80;
+.lt-tabs .lt-tab-active,
+.admin-tab-link-active,
+.profile-torrent-tab-active,
+.browse-category-tab.is-active,
+.browse-sort-item.is-active .browse-sort-link {
+  border-color: var(--lt-primary);
+  background: color-mix(in srgb, var(--lt-primary) 12%, var(--lt-surface));
+  color: var(--lt-primary);
 }
 
 /* =====================================================================
-   Table
+   Tables
    ===================================================================== */
 
-.table-clean {
+.lt-table,
+.table-clean,
+.profile-torrent-table,
+.details-trackers-table,
+.details-files-table,
+table.tt {
   width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  line-height: 1.45;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface);
+  overflow: hidden;
 }
 
+.lt-table th,
+.lt-table td,
 .table-clean th,
-.table-clean td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--line);
+.table-clean td,
+.profile-torrent-table th,
+.profile-torrent-table td,
+.details-trackers-table th,
+.details-trackers-table td,
+.details-files-table td,
+table.tt th,
+table.tt td {
+  padding: 11px 13px;
+  border-top: 1px solid var(--lt-border);
   text-align: left;
   vertical-align: top;
 }
 
-.table-clean th {
-  color: var(--muted);
+.lt-table thead th,
+.table-clean th,
+.profile-torrent-table th,
+.details-trackers-table th,
+table.tt th,
+table.tt td.tt {
+  border-top: 0;
+  background: var(--lt-surface-muted);
+  color: var(--lt-muted);
   font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-weight: 600;
 }
 
-.table-clean tbody tr:last-child td {
-  border-bottom: 0;
+.lt-table tbody tr:first-child td,
+.table-clean tbody tr:first-child td,
+.profile-torrent-table tbody tr:first-child td,
+.details-trackers-table tbody tr:first-child td,
+.details-files-table tbody tr:first-child td,
+table.tt tbody tr:first-child td {
+  border-top: 0;
 }
 
-.table-clean tbody tr:hover td {
-  background: var(--surface-muted);
+.lt-table tbody tr:hover td,
+.table-clean tbody tr:hover td,
+.profile-torrent-table tbody tr:hover td,
+.details-trackers-table tbody tr:hover td,
+.details-files-table tbody tr:hover td,
+table.tt tbody tr:hover td:not(.tt) {
+  background: var(--lt-surface-muted);
+}
+
+/* =====================================================================
+   Empty state
+   ===================================================================== */
+
+.lt-empty-state,
+.browse-empty-state,
+.browse-empty-state-filtered,
+.profile-empty-state,
+.admin-empty {
+  padding: var(--lt-space-4);
+  border: 1px dashed var(--lt-border-strong);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-muted);
+  color: var(--lt-muted);
+  text-align: center;
 }
