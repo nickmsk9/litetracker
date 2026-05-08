@@ -158,9 +158,10 @@ if($act == 'edit' && $id) {
 				'published_at' => $updatedPublishedAt,
 			));
 		}
-
-		header("Location:news.php?id=".$id."");
-		die();
+		else {
+			header("Location:news.php?id=".$id."");
+			die();
+		}
 	}
 
 	head($language['news_4']);
