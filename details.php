@@ -493,7 +493,7 @@ if (isset($_GET['reaction_list'])) {
 	} else {
 		echo '<div class="profile-empty-state">Оценок пока нет.</div>';
 	}
-	echo '<br><a href="details.php?id='.(int) $id.'">Вернуться к раздаче</a>';
+	echo '<br><a class="lt-btn lt-btn-secondary" href="details.php?id='.(int) $id.'">Вернуться к раздаче</a>';
 	end_frame();
 	foot(true);
 	die();
@@ -511,7 +511,7 @@ if(isset($_GET['files'])) {
 	}
 
 	head('Информация о файлах' , true);
-	msg('Здесь показаны все файлы  , которые были найдены в торренте' , '<a href="javascript:history.go(-1);">Вернуться к деталям</a>');
+	msg('Здесь показаны все файлы  , которые были найдены в торренте' , '<a class="lt-btn lt-btn-secondary" href="javascript:history.go(-1);">Вернуться к деталям</a>');
 	begin_frame('Информация о файлах');
 
 	//Перебираем в цикле
@@ -543,7 +543,7 @@ if(isset($_GET['peers']) ) {
 
 	head('Информация о соединениях');
 	begin_frame('Информация о соединениях');
-	msg('Здесь показаны все соединение , которые контролирует наш трекер' , '<a href="javascript:history.go(-1);">Вернуться к деталям</a>');
+	msg('Здесь показаны все соединение , которые контролирует наш трекер' , '<a class="lt-btn lt-btn-secondary" href="javascript:history.go(-1);">Вернуться к деталям</a>');
 	echo '<table>';
 	echo '<tr>
 	'.($PRIV['ip_util'] ? '<td><b>IP</b></td>' : '').'
@@ -593,7 +593,7 @@ if(isset($_GET['trackers']) && $arr['multi']) {
 
 	head('Информация о трекерах');
 	begin_frame('Информация о трекерах');
-	msg('Данные могут не соответствовать настоящим' , '<a href="javascript:history.go(-1);">Вернуться к деталям</a>');
+	msg('Данные могут не соответствовать настоящим' , '<a class="lt-btn lt-btn-secondary" href="javascript:history.go(-1);">Вернуться к деталям</a>');
 	echo '<table>';
 	echo '<tr><td><b>Трекер</b></td><td><b>Раздают</b></td><td><b>Качают</b></td><td><b>Дата обновление</b></td></tr>';
 

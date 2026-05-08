@@ -609,8 +609,8 @@ if ($act == 'delete') {
 
 	head('Удалить релиз');
 	msg('Удалить релиз', 'Вы действительно хотите удалить релиз?');
-	echo '<input type="button" value="'.$language['upload_38'].'" onClick="window.location.href=\'edit.php?act=delete&id='.(int) $id.'&take=1\'"> ';
-	echo '<input type="button" value="'.$language['default_5'].'" onClick="history.go(-1)">';
+	echo '<input class="lt-btn lt-btn-danger" type="button" value="'.$language['upload_38'].'" onClick="window.location.href=\'edit.php?act=delete&id='.(int) $id.'&take=1\'"> ';
+	echo '<input class="lt-btn lt-btn-secondary" type="button" value="'.$language['default_5'].'" onClick="history.go(-1)">';
 	foot();
 	die();
 }
@@ -655,9 +655,9 @@ head($language['edit_3'], true);
 		<div class="upload-header">
 			<h1 class="upload-title"><?=$language['edit_3'];?></h1>
 			<div class="upload-actions">
-				<a class="upload-top-link upload-top-link-green" href="details.php?id=<?=(int) $id;?>">Вернуться к раздаче</a>
+				<a class="upload-top-link upload-top-link-green lt-btn lt-btn-secondary" href="details.php?id=<?=(int) $id;?>">Вернуться к раздаче</a>
 				<div class="upload-top-danger">
-					<a class="upload-top-link upload-top-link-red" href="edit.php?act=delete&id=<?=(int) $id;?>"><?=$language['upload_38'];?></a>
+					<a class="upload-top-link upload-top-link-red lt-btn lt-btn-danger" href="edit.php?act=delete&id=<?=(int) $id;?>"><?=$language['upload_38'];?></a>
 					<span class="upload-top-note">удаление раздачи целиком</span>
 				</div>
 			</div>
@@ -761,7 +761,7 @@ head($language['edit_3'], true);
 						<div class="edit-media-card edit-media-card-cover">
 							<div class="edit-media-card-head">
 								<strong>Текущая обложка</strong>
-								<a class="upload-top-link upload-top-link-red" href="edit.php?id=<?=(int) $id;?>&amp;act=delete_image">Удалить</a>
+								<a class="upload-top-link upload-top-link-red lt-btn lt-btn-danger" href="edit.php?id=<?=(int) $id;?>&amp;act=delete_image">Удалить</a>
 							</div>
 							<a class="edit-media-preview edit-media-preview-cover" href="public/downloads/images/<?=htmlspecialchars($currentCover, ENT_QUOTES, 'UTF-8');?>" target="_blank" rel="noopener noreferrer">
 								<img class="edit-media-preview-image edit-media-preview-image-cover" src="public/downloads/images/<?=htmlspecialchars($currentCover, ENT_QUOTES, 'UTF-8');?>" alt="Обложка">
@@ -789,7 +789,7 @@ head($language['edit_3'], true);
 									</a>
 									<div class="edit-media-preview-actions">
 										<span class="edit-media-preview-title">Скрин <?=htmlspecialchars((string) $screenItem['index'], ENT_QUOTES, 'UTF-8');?></span>
-										<a class="upload-top-link upload-top-link-red" href="edit.php?id=<?=(int) $id;?>&amp;act=delete_screen&amp;screen=<?=(int) $screenItem['index'];?>">Удалить</a>
+										<a class="upload-top-link upload-top-link-red lt-btn lt-btn-danger" href="edit.php?id=<?=(int) $id;?>&amp;act=delete_screen&amp;screen=<?=(int) $screenItem['index'];?>">Удалить</a>
 									</div>
 								</div>
 								<?php } ?>
@@ -816,7 +816,7 @@ head($language['edit_3'], true);
 			</div>
 
 			<div class="upload-footer">
-				<button class="upload-submit" type="submit"><?=$language['details_23'];?></button>
+				<button class="upload-submit lt-btn lt-btn-primary" type="submit"><?=$language['details_23'];?></button>
 			</div>
 		</form>
 	</section>

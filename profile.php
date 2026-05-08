@@ -332,21 +332,21 @@ if ($isOwnProfile) {
 		'type' => 'link',
 		'label' => 'Редактировать',
 		'href' => 'my.setting.php?id='.$id,
-		'class' => 'profile-card-button',
+		'class' => 'profile-card-button lt-btn lt-btn-secondary',
 	);
 } elseif ($profileCanMessage) {
 	$profileActions[] = array(
 		'type' => 'link',
 		'label' => 'Написать сообщение',
 		'href' => $profileMessageHref,
-		'class' => 'profile-card-button',
+		'class' => 'profile-card-button lt-btn lt-btn-secondary',
 	);
 
 	if ($profileBlacklistEnabled) {
 		$profileActions[] = array(
 			'type' => 'button',
 			'label' => ($profileBlacklisted ? 'Убрать из ЧС' : 'Добавить в ЧС'),
-			'class' => 'profile-card-button profile-card-button-dark'.($profileBlacklisted ? ' profile-card-button-dark-active' : ''),
+			'class' => 'profile-card-button profile-card-button-dark lt-btn lt-btn-danger'.($profileBlacklisted ? ' profile-card-button-dark-active' : ''),
 			'attributes' => ' data-profile-toggle-blacklist="1" data-user-id="'.$id.'" data-blacklisted="'.($profileBlacklisted ? '1' : '0').'"',
 		);
 	}

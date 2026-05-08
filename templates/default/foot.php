@@ -126,7 +126,7 @@ $showBottomBlocks = empty($GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS']);
 			</div>
 
 			<div class="feedback-form-footer">
-				<button class="feedback-submit" type="submit">Отправить</button>
+				<button class="feedback-submit lt-btn lt-btn-primary" type="submit">Отправить</button>
 			</div>
 		</form>
 	</div>

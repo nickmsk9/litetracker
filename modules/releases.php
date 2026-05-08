@@ -186,7 +186,7 @@ elseif($act == 'releases' || $id_category || $search !== '' || !$config['search_
 				<td class="tt" width="30" align="center"><font  color=white>Личеры</font></td>
 				<td class="tt" width="30" align="center"><font  color=white>Файлов</font></td>
 				<td class="tt" width="30" align="center"><font  color=white>Скачан</font></td>
-				<?=($PRIV['edit_release'] ? '<td class="tt" width="30" align="center"><font size=$size color=white><input type="submit" value="'.$language['releases_18'].'"></td>' : '');?>
+				<?=($PRIV['edit_release'] ? '<td class="tt" width="30" align="center"><font size=$size color=white><input class="lt-btn lt-btn-secondary" type="submit" value="'.$language['releases_18'].'"></td>' : '');?>
 
 
 		<?

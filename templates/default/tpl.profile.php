@@ -57,7 +57,7 @@ if (!defined('LITETRACKER')) {
 					<form class="wall-form" id="profile-wall-form" method="post" action="ajax/profile.php">
 						<div class="wall-reply-banner" id="profile-wall-reply-info" hidden>
 							<span id="profile-wall-reply-label"></span>
-							<button class="wall-comment-button" id="profile-wall-reply-cancel" type="button">Отмена</button>
+							<button class="wall-comment-button lt-btn lt-btn-ghost" id="profile-wall-reply-cancel" type="button">Отмена</button>
 						</div>
 
 						<div class="wall-form-row">
@@ -67,7 +67,7 @@ if (!defined('LITETRACKER')) {
 							<div class="wall-form-body">
 								<textarea class="wall-form-textarea" id="profile-wall-text" name="text"></textarea>
 								<div class="wall-form-controls">
-									<input class="wall-form-submit" value="Отправить" type="submit">
+									<input class="wall-form-submit lt-btn lt-btn-primary" value="Отправить" type="submit">
 								</div>
 							</div>
 						</div>
@@ -127,7 +127,7 @@ if (!defined('LITETRACKER')) {
 					<?php if (!$profileHasPlus) { ?>
 					<form method="post" action="<?=profile_href($id, 'bonus');?>">
 						<input type="hidden" name="act" value="buy_plus">
-						<button class="profile-card-button" type="submit">Купить за <?=template_format_number(lt_plus_month_bonus_price());?> бонусов</button>
+						<button class="profile-card-button lt-btn lt-btn-primary" type="submit">Купить за <?=template_format_number(lt_plus_month_bonus_price());?> бонусов</button>
 					</form>
 					<?php } ?>
 				</div>
@@ -147,7 +147,7 @@ if (!defined('LITETRACKER')) {
 					<?php } ?>
 
 					<div class="profile-bonus-footer">
-						<button class="profile-card-button" type="submit">Обменять</button>
+						<button class="profile-card-button lt-btn lt-btn-primary" type="submit">Обменять</button>
 						<div class="profile-bonus-available">Доступно для обмена: <strong><?=template_format_number($profileStats['bonus']);?> бонусов</strong></div>
 					</div>
 
@@ -206,7 +206,7 @@ if (!defined('LITETRACKER')) {
 		<form class="profile-modal-form" id="profile-message-form" method="post" action="ajax/profile.php">
 			<textarea class="profile-modal-textarea" id="profile-message-text" name="text"></textarea>
 			<div class="profile-modal-actions">
-				<button class="profile-card-button" type="submit">Отправить</button>
+				<button class="profile-card-button lt-btn lt-btn-primary" type="submit">Отправить</button>
 
 			</div>
 			<input type="hidden" name="user_id" value="<?=$id;?>">

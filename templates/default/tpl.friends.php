@@ -74,7 +74,7 @@ begin_frame();
 		 <td class="data" colspan="2">
 				<?=$action;?>
 				<?
-				echo ($USER['id'] != $userid ? '<a class="btn btn-secondary" href="my.mail.php?act=conversation&amp;id_user='.(int)$userid.'">'.htmlspecialchars($language['profile_17'], ENT_QUOTES, 'UTF-8').'</a>&nbsp;' : '');
+				echo ($USER['id'] != $userid ? '<a class="btn btn-secondary lt-btn lt-btn-secondary" href="my.mail.php?act=conversation&amp;id_user='.(int)$userid.'">'.htmlspecialchars($language['profile_17'], ENT_QUOTES, 'UTF-8').'</a>&nbsp;' : '');
 
 
 				?>

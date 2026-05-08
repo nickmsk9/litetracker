@@ -26,8 +26,8 @@ begin_frame('', '100', false, 0);
 
 			<?php if (!empty($PRIV['news_add'])) { ?>
 			<div class="news-detail-admin-links">
-				<a class="news-detail-admin-link" href="news.php?act=edit&id=<?=$id;?>"><?=$language['news_16'];?></a>
-				<a class="news-detail-admin-link" href="news.php?act=delete&id=<?=$id;?>" onclick="return confirm('Удалить эту новость?');"><?=$language['news_17'];?></a>
+				<a class="news-detail-admin-link lt-btn lt-btn-secondary" href="news.php?act=edit&id=<?=$id;?>"><?=$language['news_16'];?></a>
+				<a class="news-detail-admin-link lt-btn lt-btn-danger" href="news.php?act=delete&id=<?=$id;?>" onclick="return confirm('Удалить эту новость?');"><?=$language['news_17'];?></a>
 			</div>
 			<?php } ?>
 		</div>

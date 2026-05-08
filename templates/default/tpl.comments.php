@@ -26,10 +26,10 @@ $commentTextHtml = ($commentDeleted
         <?php if ($commentHasSideActions) { ?>
         <div class="comment-side-actions">
             <?php if ($commentCanEdit) { ?>
-            <a class="comment-side-button comment-side-button-edit" href="comments.take.php?type=<?=urlencode($type);?>&amp;object_id=<?=(int)$object_id;?>&amp;id_comment=<?=(int)$id;?>&amp;act=edit&amp;file=<?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?>"><?=$language['comments_4'];?></a>
+            <a class="comment-side-button comment-side-button-edit lt-btn lt-btn-secondary" href="comments.take.php?type=<?=urlencode($type);?>&amp;object_id=<?=(int)$object_id;?>&amp;id_comment=<?=(int)$id;?>&amp;act=edit&amp;file=<?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?>"><?=$language['comments_4'];?></a>
             <?php } ?>
             <?php if ($commentCanDelete) { ?>
-            <a class="comment-side-button comment-side-button-delete" href="comments.take.php?type=<?=urlencode($type);?>&amp;object_id=<?=(int)$object_id;?>&amp;id_comment=<?=(int)$id;?>&amp;act=delete&amp;file=<?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?>"><?=$language['comments_5'];?></a>
+            <a class="comment-side-button comment-side-button-delete lt-btn lt-btn-danger" href="comments.take.php?type=<?=urlencode($type);?>&amp;object_id=<?=(int)$object_id;?>&amp;id_comment=<?=(int)$id;?>&amp;act=delete&amp;file=<?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?>"><?=$language['comments_5'];?></a>
             <?php } ?>
         </div>
         <?php } ?>
@@ -38,7 +38,7 @@ $commentTextHtml = ($commentDeleted
 
         <?php if ($commentCanReply) { ?>
         <div class="wall-comment-actions comment-entry-actions">
-            <button class="wall-comment-button comment-reply-button" type="button" onclick="return replyWallComment('<?=htmlspecialchars(addslashes($user_name), ENT_QUOTES, 'UTF-8');?>');">Ответить</button>
+            <button class="wall-comment-button comment-reply-button lt-btn lt-btn-secondary" type="button" onclick="return replyWallComment('<?=htmlspecialchars(addslashes($user_name), ENT_QUOTES, 'UTF-8');?>');">Ответить</button>
         </div>
         <?php } ?>
     </div>
