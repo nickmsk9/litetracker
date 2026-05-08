@@ -3,7 +3,10 @@
 ///////////////////////////////////////////////////////////////////////
 
 var chatUpdateTimer = null;
-var CHAT_AJAX_URL = 'ajax/chat.php';
+var CHAT_AJAX_URL = '/ajax/chat.php';
+var CHAT_POLL_INTERVAL_MS = 3000;
+var CHAT_REQUEST_TIMEOUT_MS = 10000;
+var CHAT_ERROR_MESSAGE = '<div class="chat-notice">Чат временно недоступен. Попробуйте обновить страницу.</div>';
 
 // Escape special characters for jQuery selectors (fallback for jQuery < 3.0)
 function chatEscapeSelector(value) {
@@ -11,10 +14,18 @@ return value.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&');
 }
 
 function chatUpdate() {
-$.post(CHAT_AJAX_URL, { type: 'update' }, function (response) {
+$.ajax({
+url: CHAT_AJAX_URL,
+method: 'POST',
+data: { type: 'update' },
+dataType: 'html',
+timeout: CHAT_REQUEST_TIMEOUT_MS
+}).done(function (response) {
 $('#result_chat').html(response);
-}, 'html').always(function () {
-chatUpdateTimer = setTimeout(chatUpdate, 3000);
+}).fail(function () {
+$('#result_chat').html(CHAT_ERROR_MESSAGE);
+}).always(function () {
+chatUpdateTimer = setTimeout(chatUpdate, CHAT_POLL_INTERVAL_MS);
 });
 }
 
@@ -29,14 +40,22 @@ return false;
 
 $btn.prop('disabled', true);
 
-$.post(CHAT_AJAX_URL, { type: 'send', text: text }, function (response) {
+$.ajax({
+url: CHAT_AJAX_URL,
+method: 'POST',
+data: { type: 'send', text: text },
+dataType: 'html',
+timeout: CHAT_REQUEST_TIMEOUT_MS
+}).done(function (response) {
 $('#result_send').html(response);
 if (!response) {
 $input.val('');
 clearTimeout(chatUpdateTimer);
 chatUpdate();
 }
-}, 'html').always(function () {
+}).fail(function () {
+$('#result_send').html(CHAT_ERROR_MESSAGE);
+}).always(function () {
 $btn.prop('disabled', false);
 });
 
@@ -49,7 +68,9 @@ return false;
 }
 $.post(CHAT_AJAX_URL, { type: 'clear' }, function (response) {
 $('#result_chat').html(response);
-}, 'html');
+}, 'html').fail(function () {
+$('#result_chat').html(CHAT_ERROR_MESSAGE);
+});
 return false;
 }
 

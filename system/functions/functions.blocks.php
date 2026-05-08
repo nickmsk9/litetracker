@@ -19,7 +19,7 @@ function render_blocks($blockfile) {
 		return null;
 	}
 
-	if ($blockfile === 'block-poll.php' || $blockfile === 'block-vkontakte.php') {
+	if ($blockfile === 'block-poll.php') {
 		return null;
 	}
 

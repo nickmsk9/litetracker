@@ -11,6 +11,7 @@ require 'system/init.php';
 $GLOBALS['LITETRACKER_SIDEBAR_SKIP_BLOCKS'] = array(
 	'block-online.php',
 	'block-stats.php',
+	'block-load_in_server.php',
 );
 
 function home_build_url($overrides = array(), $drop = array())
@@ -132,6 +133,25 @@ $perPage = 5;
 $pagesCount = ($countTorrent > 0 ? (int) ceil($countTorrent / $perPage) : 0);
 $nextPage = ($currentPage + 1 < $pagesCount ? $currentPage + 1 : null);
 $nextPageUrl = ($nextPage !== null ? home_build_url(array('page' => $nextPage, 'view' => $view, 'sort' => $sort, 'ajax' => 1)) : '');
+$homeLoadBlock = $db->super_query("SELECT active, type, which FROM orbital_blocks WHERE blockfile = 'block-load_in_server.php' LIMIT 1");
+$homeLoadBlockType = trim((string) ($homeLoadBlock['type'] ?? 'all'));
+$homeLoadBlockWhich = trim((string) ($homeLoadBlock['which'] ?? 'all'));
+$homeLoadBlockPages = ($homeLoadBlockWhich === '' ? array('all') : array_map('trim', explode(',', $homeLoadBlockWhich)));
+$showHomeLoadBlock = false;
+
+if (!empty($homeLoadBlock['active']) && (in_array('all', $homeLoadBlockPages, true) || in_array('index', $homeLoadBlockPages, true))) {
+	if ($homeLoadBlockType === 'all') {
+		$showHomeLoadBlock = true;
+	} elseif ($homeLoadBlockType === 'guests' && !$USER) {
+		$showHomeLoadBlock = true;
+	} elseif ($homeLoadBlockType === 'users' && $USER) {
+		$showHomeLoadBlock = true;
+	} elseif ($homeLoadBlockType === 'moderators' && !empty($PRIV['block_moderators'])) {
+		$showHomeLoadBlock = true;
+	} elseif ($homeLoadBlockType === 'administrators' && !empty($PRIV['block_administrators'])) {
+		$showHomeLoadBlock = true;
+	}
+}
 
 if ($isAjaxLoad) {
 	header('Content-Type: application/json; charset=utf-8');
@@ -194,6 +214,10 @@ head('Главная');
 		<?php } ?>
 		<div data-home-pagination-html><?=$pagerbottom ?: $pagertop;?></div>
 	</div>
+	<?php } ?>
+
+	<?php if ($showHomeLoadBlock) { ?>
+	<?php require __DIR__.'/blocks/block-load_in_server.php'; ?>
 	<?php } ?>
 </div>
 
