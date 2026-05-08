@@ -11,7 +11,9 @@ by Nick
 
 global $config ,$PRIV , $USER ,$language;
 
-$basePath = trim((string) dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/')), '/\\');
+$basePathSource = (string) ($_SERVER['PHP_SELF'] ?? '/');
+$basePath = trim((string) dirname($basePathSource), '/\\');
+$basePath = preg_replace('~[^a-zA-Z0-9_./-]+~', '', $basePath);
 $basePath = ($basePath === '' || $basePath === '.' ? '' : '/'.$basePath);
 
 //////////////////////////////////////////////////////////////////

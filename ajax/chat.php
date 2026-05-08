@@ -13,7 +13,7 @@ by Nick
 $requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $isXmlHttpRequest = (strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest');
 $secFetchSite = strtolower((string) ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? ''));
-$isSameSiteFetch = in_array($secFetchSite, array('same-origin', 'same-site', 'none'), true);
+$isSameSiteFetch = in_array($secFetchSite, array('same-origin', 'same-site'), true);
 
 if ($requestMethod !== 'POST') {
 	http_response_code(405);
