@@ -9,6 +9,8 @@ by Nick
 ===================================================================
 */
 
+require_once __DIR__ . '/functions.common.php';
+
 
 function announce_fail_message()
 {
@@ -214,36 +216,6 @@ function announce_count_peers_by_passkey($torrentId, $passkey)
 
 	return (int) ($row['cnt'] ?? 0);
 }
-
-//Информация о правах класса
-function get_priv_info($class) {
-	global $db;
-	$class = (int)$class;
-
-	return lt_cache_remember(
-		'priv_'.$class,
-		300,
-		function () use ($db, $class) {
-			return $db->super_query("SELECT * FROM priv WHERE id=".$class);
-		},
-		'privileges'
-	);
-}
-
-//Преобразуем размер файла
-function mksize($bytes)
-{
-    if ($bytes < 1000 * 1024)
-        return number_format($bytes / 1024, 2) . " kB";
-    elseif ($bytes < 1000 * 1048576)
-        return number_format($bytes / 1048576, 2) . " MB";
-    elseif ($bytes < 1000 * 1073741824)
-        return number_format($bytes / 1073741824, 2) . " GB";
-    else
-        return number_format($bytes / 1099511627776, 2) . " TB";
-}
-
-
 /**
  * Checks that user client was not banned. Dies on false
  * @param string $peer_id Peer_id of client
@@ -345,64 +317,6 @@ function emu_getallheaders() {
 	return $headers;
 }
 
-
-
-function validip($ip) {
-	if (!empty($ip) && $ip == long2ip(ip2long($ip)))
-	{
-		$reserved_ips = array (
-		array('0.0.0.0','2.255.255.255'),
-		array('10.0.0.0','10.255.255.255'),
-		array('127.0.0.0','127.255.255.255'),
-		array('169.254.0.0','169.254.255.255'),
-		array('172.16.0.0','172.31.255.255'),
-		array('192.0.2.0','192.0.2.255'),
-		array('192.168.0.0','192.168.255.255'),
-		array('255.255.255.0','255.255.255.255')
-		);
-
-		foreach ($reserved_ips as $r)
-		{
-			$min = ip2long($r[0]);
-			$max = ip2long($r[1]);
-			if ((ip2long($ip) >= $min) && (ip2long($ip) <= $max)) return false;
-		}
-		return true;
-	}
-	else return false;
-}
-
-function getip() {
-	if (isset($_SERVER)) {
-		if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && validip($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-			$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-		} elseif (isset($_SERVER['HTTP_CLIENT_IP']) && validip($_SERVER['HTTP_CLIENT_IP'])) {
-			$ip = $_SERVER['HTTP_CLIENT_IP'];
-		} else {
-			$ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-		}
-	} else {
-		if (getenv('HTTP_X_FORWARDED_FOR') && validip(getenv('HTTP_X_FORWARDED_FOR'))) {
-			$ip = getenv('HTTP_X_FORWARDED_FOR');
-		} elseif (getenv('HTTP_CLIENT_IP') && validip(getenv('HTTP_CLIENT_IP'))) {
-			$ip = getenv('HTTP_CLIENT_IP');
-		} else {
-			$ip = getenv('REMOTE_ADDR');
-		}
-	}
-
-	return $ip;
-}
-
-function gzip() {
-	if (extension_loaded('zlib') && ini_get('zlib.output_compression') != '1' && ini_get('output_handler') != 'ob_gzhandler') {
-		ob_start('ob_gzhandler');
-	}
-	return;
-}
-
-
-
 function err($msg){
 	benc_resp(array('failure reason' => array('type' => 'string', 'value' => $msg)));
 	die();
@@ -448,19 +362,5 @@ function portblacklisted($port)
 
 function sqlesc($value) {
 	return announce_escape($value);
-}
-
-//Определяем ратио
-function get_ratio($uploaded , $downloaded) {
-
-	if($downloaded > 0) {
-		$ratio =  ($uploaded / ($downloaded / 10) / 1);
-		$ratio = number_format($ratio);
-		$ratio = str_replace(',' , '' , $ratio);
-	}else {
-		$ratio = '0';
-	}
-
-	return $ratio;
 }
 ?>

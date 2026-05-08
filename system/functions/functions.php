@@ -9,6 +9,8 @@ by jenaDI
 ===================================================================
 */
 
+require_once __DIR__ . '/functions.common.php';
+
 //Информация о пользователе
 function get_user_info($id) {
 	global $db , $memcached;
@@ -335,26 +337,6 @@ function admin_dashboard_can_access($user = null, $priv = null)
 
 	return user_wall_reports_can_moderate();
 }
-
-
-
-//Gzip сжатие
-function gzip() {
-	global $config;
-	static $already_loaded;
-	if ($already_loaded) {
-		return;
-	}
-
-	if (extension_loaded('zlib') && ini_get('zlib.output_compression') != '1' && ini_get('output_handler') != 'ob_gzhandler' && $config['gzip']) {
-		ob_start('ob_gzhandler');
-	} else {
-		ob_start();
-	}
-
-	$already_loaded = true;
-}
-
 // Resolves a Vite entry-point to a hashed output URL.
 // Falls back to the source path if the manifest doesn't exist yet.
 function lt_asset_url($entry) {
@@ -592,33 +574,6 @@ function user_session()
 
 	return;
 }
-
-
-//IP адрес
-function getip()
-{
-  if (isset($_SERVER)) {
-    if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-      $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-    } elseif (isset($_SERVER['HTTP_CLIENT_IP'])) {
-      $ip = $_SERVER['HTTP_CLIENT_IP'];
-    } else {
-      $ip = $_SERVER['REMOTE_ADDR'];
-    }
-  } else {
-    if (getenv('HTTP_X_FORWARDED_FOR')) {
-      $ip = getenv('HTTP_X_FORWARDED_FOR');
-    } elseif (getenv('HTTP_CLIENT_IP')) {
-      $ip = getenv('HTTP_CLIENT_IP');
-    } else {
-      $ip = getenv('REMOTE_ADDR');
-    }
-  }
-
-  return $ip;
-
-}
-
 //Определяем время
 function get_date_time($timestamp = 0) {
 	if ($timestamp)
@@ -706,11 +661,6 @@ function validemail($email) {
 //Функция проверки файла
 function validfilename($name) {
     return preg_match('/^[^\0-\x1f:\\\\\/?*\xff#<>|]+$/si', $name);
-}
-
-
-function validip($ip) {
-	return preg_match("/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/", $ip);
 }
 //Формирование секретного кода
 function mksecret($length = 32) {
@@ -1188,19 +1138,6 @@ function pager($rpp, $count, $href, $opts = array()) {
 
 	return array($pagertop, $pagerbottom, "LIMIT $start , $rpp");
 }
-
-//Преобразуем размер файла
-function mksize($bytes) {
-	if ($bytes < 1000 * 1024)
-		return number_format($bytes / 1024, 2) . " kB";
-	elseif ($bytes < 1000 * 1048576)
-		return number_format($bytes / 1048576, 2) . " MB";
-	elseif ($bytes < 1000 * 1073741824)
-		return number_format($bytes / 1073741824, 2) . " GB";
-	else
-		return number_format($bytes / 1099511627776, 2) . " TB";
-}
-
 //Цвет ратио
   function get_ratio_color($ratio) {
     if ($ratio < 0.1) return "#ff0000";
@@ -1302,21 +1239,6 @@ function get_user_rating($uploaded = '' , $downloaded = '') {
 	}
 
 }
-
-//Определяем ратио
-function get_ratio($uploaded , $downloaded) {
-
-	if($downloaded > 0) {
-		$ratio =  ($uploaded / ($downloaded / 10) / 1);
-		$ratio = number_format($ratio);
-		$ratio = str_replace(',' , '' , $ratio);
-	}else {
-		$ratio = '0';
-	}
-
-	return $ratio;
-}
-
 //Преобразуем дату
 function rusdate($num,$type = 0){
     $rus = array (
@@ -1812,43 +1734,6 @@ function get_select_language() {
 function is_language($language = "") {
 	return file_exists($_SERVER['DOCUMENT_ROOT']."/languages/$language/site.php");
 }
-
-
-//Информация о правах класса
-function get_priv_info($class) {
-	global $memcached , $db;
-
-	$class = (int)$class;
-
-	//Определяем права пользовател
-	if (false === ($row = $memcached->get('priv_'.$class)))
-	{
-		$row = $db->super_query("SELECT * FROM priv WHERE id=".$class);
-		$memcached->set('priv_'.$class , $row , 0, 1000);
-	}
-
-	if ($row) {
-		return $row;
-	}
-
-	if (false === ($row = $memcached->get('priv_guest_defaults'))) {
-		$row = array();
-		$sql = $db->query("SHOW COLUMNS FROM priv");
-		while ($column = $db->get_row($sql)) {
-			$row[$column['Field']] = 0;
-		}
-		$db->free($sql);
-
-		$row['id'] = 0;
-		$row['NAME'] = 'Гость';
-		$row['COLOR'] = '000000';
-
-		$memcached->set('priv_guest_defaults', $row, 0, 1000);
-	}
-
-	return $row;
-}
-
 //Получение списка классов
 function get_classes_list() {
 	global $memcached , $db;
