@@ -16,9 +16,10 @@ tmp/
 *.sql
 !database/*.sql
 !database/migrations/*.sql
-logs/*.log
 logs/*
 !logs/.htaccess
+cache/*
+!cache/.gitkeep
 system/cache/*.cache
 system/cache/locks/*
 !system/cache/locks/.gitkeep
@@ -32,4 +33,3 @@ public/downloads/*
 !public/downloads/screens/.gitkeep
 !public/downloads/torrents/
 !public/downloads/torrents/.gitkeep
-node_modules/
