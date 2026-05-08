@@ -1113,6 +1113,7 @@ head('Админка');
 			<?php $hasQuickActions = false; ?>
 			<?php foreach ($quickActions as $action) { ?>
 			<?php if (empty($action['allowed'])) { continue; } ?>
+			<?php $quickActionButtonVariant = (in_array((string) $action['id'], array('clear_sessions', 'clear_search_queries', 'flush_cache'), true) ? 'lt-btn-danger' : 'lt-btn-secondary'); ?>
 			<?php $hasQuickActions = true; ?>
 			<div class='admin-action-card'>
 				<form class='admin-action-form' method='post' action='admin.php'<?=(empty($action['confirm']) ? '' : ' data-admin-confirm="'.htmlspecialchars($action['confirm'], ENT_QUOTES, 'UTF-8').'"');?> >
@@ -1122,7 +1123,7 @@ head('Админка');
 					<?=lt_csrf_input('admin_dashboard');?>
 					<div class='admin-action-row'>
 						<div class='admin-action-title'><?=$action['label'];?></div>
-						<button class='admin-action-button lt-btn <?=in_array((string) $action['id'], array('clear_sessions', 'clear_search_queries', 'flush_cache'), true) ? 'lt-btn-danger' : 'lt-btn-secondary';?>' type='submit'>Выполнить</button>
+						<button class='admin-action-button lt-btn <?=$quickActionButtonVariant;?>' type='submit'>Выполнить</button>
 					</div>
 					<div class='admin-action-text'><?=$action['description'];?></div>
 				</form>
