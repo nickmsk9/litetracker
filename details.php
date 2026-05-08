@@ -482,10 +482,11 @@ if (isset($_GET['reaction_list'])) {
 	if ($reactionUsers) {
 		echo '<div class="plus-reaction-users">';
 		foreach ($reactionUsers as $reactionUser) {
-			$reactionLabel = ($reactionUser['reaction'] === 'dislike' ? 'дизлайк' : 'лайк');
+			$isDislike = ($reactionUser['reaction'] === 'dislike');
+			$reactionLabel = ($isDislike ? 'Дизлайк' : 'Лайк');
 			echo '<div class="plus-reaction-user-row">';
-			echo '<a href="'.profile_href($reactionUser).'">'.get_user_color((int) $reactionUser['class'], htmlspecialchars((string) $reactionUser['name'], ENT_QUOTES, 'UTF-8'), $reactionUser).'</a>';
-			echo '<span>'.htmlspecialchars($reactionLabel, ENT_QUOTES, 'UTF-8').'</span>';
+			echo '<a class="plus-reaction-user-link" href="'.profile_href($reactionUser).'">'.get_user_color((int) $reactionUser['class'], htmlspecialchars((string) $reactionUser['name'], ENT_QUOTES, 'UTF-8'), $reactionUser).'</a>';
+			echo '<span class="plus-reaction-user-badge '.($isDislike ? 'plus-reaction-user-badge-dislike' : 'plus-reaction-user-badge-like').'">'.htmlspecialchars($reactionLabel, ENT_QUOTES, 'UTF-8').'</span>';
 			echo '</div>';
 		}
 		echo '</div>';

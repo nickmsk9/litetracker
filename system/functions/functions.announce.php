@@ -17,12 +17,75 @@ function announce_fail_message()
 
 function announce_get_string_param($name)
 {
-	return (string) ($_GET[$name] ?? '');
+	$value = $_GET[$name] ?? '';
+	if (is_array($value) || is_object($value)) {
+		return '';
+	}
+
+	return (string) $value;
 }
 
 function announce_get_int_param($name)
 {
-	return (int) ($_GET[$name] ?? 0);
+	$value = $_GET[$name] ?? 0;
+	if (is_array($value) || is_object($value)) {
+		return 0;
+	}
+
+	return (int) $value;
+}
+
+function announce_get_request_scalar($name, $required = false)
+{
+	$name = (string) $name;
+	$required = (bool) $required;
+
+	if (!array_key_exists($name, $_GET)) {
+		if ($required) {
+			err(sprintf($GLOBALS['language']['announce_1'], $name));
+		}
+
+		return '';
+	}
+
+	$value = $_GET[$name];
+	if (is_array($value) || is_object($value)) {
+		err(sprintf($GLOBALS['language']['announce_1'], $name));
+	}
+
+	return (string) $value;
+}
+
+function announce_get_typed_int_param($name, $required = false, $allowNegative = false)
+{
+	$name = (string) $name;
+	$required = (bool) $required;
+	$allowNegative = (bool) $allowNegative;
+	$value = announce_get_request_scalar($name, $required);
+
+	if ($value === '') {
+		if ($required) {
+			err(sprintf($GLOBALS['language']['announce_1'], $name));
+		}
+
+		return 0;
+	}
+
+	if (!preg_match('~^-?[0-9]+$~', $value)) {
+		err(sprintf($GLOBALS['language']['announce_1'], $name));
+	}
+
+	$intValue = (int) $value;
+	if (!$allowNegative && $intValue < 0) {
+		err(sprintf($GLOBALS['language']['announce_1'], $name));
+	}
+
+	return $intValue;
+}
+
+function announce_get_typed_flag_param($name)
+{
+	return (announce_get_typed_int_param($name, false, false) === 1);
 }
 
 function announce_ensure_string_length($value, $length, $label)
@@ -40,25 +103,19 @@ function announce_ensure_string_length($value, $length, $label)
 function announce_parse_request()
 {
 	$request = array(
-		'info_hash' => announce_ensure_string_length(announce_get_string_param('info_hash'), 20, 'info_hash'),
-		'peer_id' => announce_ensure_string_length(announce_get_string_param('peer_id'), 20, 'peer_id'),
-		'event' => announce_get_string_param('event'),
-		'ip' => announce_get_string_param('ip'),
-		'localip' => announce_get_string_param('localip'),
-		'port' => announce_get_int_param('port'),
-		'downloaded' => announce_get_int_param('downloaded'),
-		'uploaded' => announce_get_int_param('uploaded'),
-		'left' => announce_get_int_param('left'),
-		'passkey' => trim((string) ($_GET['passkey'] ?? '')),
-		'compact' => ((int) ($_GET['compact'] ?? 0) === 1),
-		'no_peer_id' => ((int) ($_GET['no_peer_id'] ?? 0) === 1),
+		'info_hash' => announce_ensure_string_length(announce_get_request_scalar('info_hash', true), 20, 'info_hash'),
+		'peer_id' => announce_ensure_string_length(announce_get_request_scalar('peer_id', true), 20, 'peer_id'),
+		'event' => announce_get_request_scalar('event', false),
+		'ip' => announce_get_request_scalar('ip', false),
+		'localip' => announce_get_request_scalar('localip', false),
+		'port' => announce_get_typed_int_param('port', true, false),
+		'downloaded' => announce_get_typed_int_param('downloaded', true, false),
+		'uploaded' => announce_get_typed_int_param('uploaded', true, false),
+		'left' => announce_get_typed_int_param('left', true, false),
+		'passkey' => trim(announce_get_request_scalar('passkey', false)),
+		'compact' => announce_get_typed_flag_param('compact'),
+		'no_peer_id' => announce_get_typed_flag_param('no_peer_id'),
 	);
-
-	foreach (array('info_hash', 'peer_id', 'port', 'downloaded', 'uploaded', 'left') as $field) {
-		if ($request[$field] === '' && !is_int($request[$field])) {
-			err(sprintf($GLOBALS['language']['announce_1'], $field));
-		}
-	}
 
 	return $request;
 }
@@ -67,7 +124,7 @@ function announce_numwant($default = 50)
 {
 	foreach (array('num want', 'numwant', 'num_want') as $key) {
 		if (isset($_GET[$key])) {
-			return max(1, (int) $_GET[$key]);
+			return max(1, announce_get_typed_int_param($key, false, true));
 		}
 	}
 
