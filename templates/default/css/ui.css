@@ -7,6 +7,7 @@
   --lt-radius-sm: 8px;
   --lt-radius-md: 12px;
   --lt-radius-pill: 999px;
+  --lt-shop-form-max-width: 80%;
   --lt-space-1: 8px;
   --lt-space-2: 12px;
   --lt-space-3: 16px;
@@ -229,7 +230,7 @@ input[type="button"]:focus-visible {
 }
 
 .lt-shop-form-table {
-  width: min(100%, 80%);
+  width: min(100%, var(--lt-shop-form-max-width));
   margin-inline: auto;
 }
 
