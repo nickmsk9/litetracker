@@ -74,7 +74,7 @@ if($db->num_rows($sql) > 0) {
 		<form action="check_release.php" method="post">
 			<?=lt_csrf_input('check_release');?>
 		<?php } ?>
-		<table width="95%" class="tt" align="center">
+		<table width="95%" class="tt table-clean" align="center">
             <tr><td class="tt" style="width:45px;" align="center"><font  color=white>Тип</font></td>
                 <td class="tt"><font color=white>Имя</font></td>
 				<td class="tt" width="60" align="center"><font  color=white>Размер</font></td>
