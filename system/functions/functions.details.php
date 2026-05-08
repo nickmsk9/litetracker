@@ -443,8 +443,11 @@ function lt_details_prepare_rating($torrentId)
 	}
 
 	$feedback = '';
-	if (!empty($_GET['rated']) && $userValue > 0) {
+	$ratedState = trim((string) ($_GET['rated'] ?? ''));
+	if ($ratedState === '1' && $userValue > 0) {
 		$feedback = 'Спасибо, ваша оценка учтена.';
+	} elseif ($ratedState === 'exists' && $userValue > 0) {
+		$feedback = 'Вы уже оценили эту раздачу.';
 	} elseif (!empty($USER['id']) && $userValue > 0) {
 		$feedback = 'Вы уже оценили эту раздачу.';
 	} elseif (!empty($USER['id']) && !$tableReady) {
@@ -485,29 +488,38 @@ function lt_details_handle_rating_request($torrentId, array &$rating)
 		die();
 	}
 
-	$existingRating = $db->super_query(
-		"SELECT id, rating FROM torrent_ratings WHERE torrent_id = ".$torrentId." AND user_id = ".(int) $USER['id']." LIMIT 1"
+	$db->query(
+		"INSERT INTO torrent_ratings (torrent_id, user_id, rating, ip, date)
+		SELECT
+			".$torrentId.",
+			".(int) $USER['id'].",
+			".$ratingValue.",
+			'".$db->safesql((string) getip())."',
+			NOW()
+		FROM DUAL
+		WHERE NOT EXISTS (
+			SELECT 1 FROM torrent_ratings
+			WHERE torrent_id = ".$torrentId." AND user_id = ".(int) $USER['id']."
+			LIMIT 1
+		)"
 	);
 
-	if (empty($existingRating['id'])) {
-		$db->query(
-			"INSERT INTO torrent_ratings (torrent_id, user_id, rating, ip, date)
-			VALUES (
-				".$torrentId.",
-				".(int) $USER['id'].",
-				".$ratingValue.",
-				'".$db->safesql((string) getip())."',
-				NOW()
-			)"
-		);
+	$ratedState = 'exists';
+	if ((int) $db->affected_rows() > 0) {
 		$rating['user_value'] = $ratingValue;
+		$ratedState = '1';
 	} else {
+		$existingRating = $db->super_query(
+			"SELECT rating FROM torrent_ratings WHERE torrent_id = ".$torrentId." AND user_id = ".(int) $USER['id']." LIMIT 1"
+		);
 		$rating['user_value'] = (int) ($existingRating['rating'] ?? 0);
 	}
 
-	lt_set_cookie($rating['cookie_name'], (string) max(1, (int) $rating['user_value']), time() + 31536000, false, 'Lax');
+	if ((int) $rating['user_value'] > 0) {
+		lt_set_cookie($rating['cookie_name'], (string) (int) $rating['user_value'], time() + 31536000, false, 'Lax');
+	}
 	$memcached->delete('torrent_'.$torrentId, 0);
-	header('Location: details.php?id='.$torrentId.'&rated=1');
+	header('Location: details.php?id='.$torrentId.'&rated='.$ratedState);
 	die();
 }
 

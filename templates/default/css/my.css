@@ -3291,9 +3291,9 @@ body.theme-dark .details-bookmark-button-active {
   position: relative;
   display: inline-block;
   overflow: hidden;
-  font-size: 32px;
+  font-size: 24px;
   line-height: 1;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
 }
 
 .details-rating-stars-base,
@@ -3330,7 +3330,7 @@ body.theme-dark .details-bookmark-button-active {
   inset: 0;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   z-index: 2;
 }
 
@@ -3338,14 +3338,40 @@ body.theme-dark .details-bookmark-button-active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 29px;
+  width: 22px;
   color: transparent;
-  font-size: 32px;
+  font-size: 24px;
   line-height: 1;
 }
 
 .details-rating-vote-star:hover {
   color: transparent;
+}
+
+.details-rating-voted {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  z-index: 2;
+}
+
+.details-rating-voted-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+  line-height: 1;
+  color: transparent;
+  border-radius: 999px;
+  box-sizing: border-box;
+}
+
+.details-rating-voted-star-selected {
+  border: 2px solid rgba(247, 163, 61, 0.95);
 }
 
 .details-rating-note {

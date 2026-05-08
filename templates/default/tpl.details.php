@@ -83,6 +83,12 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 							<a class="details-rating-vote-star" href="details.php?id=<?=(int) $id;?>&amp;rating=<?=$ratingIndex;?>" aria-label="Оценить на <?=$ratingIndex;?> из 5">★</a>
 							<?php } ?>
 							</span>
+							<?php } elseif ((int) $details_rating_user_value > 0) { ?>
+							<span class="details-rating-voted" aria-label="Вы оценили на <?=(int) $details_rating_user_value;?> из 5">
+							<?php for ($ratingIndex = 1; $ratingIndex <= 5; $ratingIndex++) { ?>
+							<span class="details-rating-voted-star<?=((int) $details_rating_user_value === $ratingIndex ? ' details-rating-voted-star-selected' : '');?>">★</span>
+							<?php } ?>
+							</span>
 							<?php } ?>
 						</div>
 					</div>
