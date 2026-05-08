@@ -56,7 +56,11 @@ function lt_blocks_available_files()
 {
 	$files = array();
 	foreach ((array) glob(__DIR__.'/blocks/*.php') as $path) {
-		$files[] = basename($path);
+		$file = basename($path);
+		if ($file === 'block-vkontakte.php') {
+			continue;
+		}
+		$files[] = $file;
 	}
 	sort($files);
 
@@ -425,10 +429,10 @@ if ($position === 'all') {
 	foreach (array_keys($positions) as $positionKey) {
 		lt_blocks_reindex_position($positionKey);
 	}
-	$sql = $db->query("SELECT * FROM orbital_blocks ORDER BY FIELD(position, 'l', 'c', 'd', 'r'), weight ASC, bid ASC");
+	$sql = $db->query("SELECT * FROM orbital_blocks WHERE blockfile <> 'block-vkontakte.php' ORDER BY FIELD(position, 'l', 'c', 'd', 'r'), weight ASC, bid ASC");
 } else {
 	lt_blocks_reindex_position($position);
-	$sql = $db->query("SELECT * FROM orbital_blocks WHERE position='".$db->safesql($position)."' ORDER BY weight ASC, bid ASC");
+	$sql = $db->query("SELECT * FROM orbital_blocks WHERE position='".$db->safesql($position)."' AND blockfile <> 'block-vkontakte.php' ORDER BY weight ASC, bid ASC");
 }
 
 $blocks = array();

@@ -375,7 +375,7 @@ CREATE TABLE `orbital_blocks` (
 
 LOCK TABLES `orbital_blocks` WRITE;
 /*!40000 ALTER TABLE `orbital_blocks` DISABLE KEYS */;
-INSERT INTO `orbital_blocks` VALUES (1,'Поиск','c',1,0,'block-search.php','all','index'),(2,'Чат','c',2,0,'block-chat.php','all','index'),(3,'Новинки месяца','c',4,1,'block-newreleases.php','all','index'),(4,'Нагрузка на сервер','c',5,1,'block-load_in_server.php','all','index'),(5,'Категории','l',1,1,'block-categories.php','all','all'),(6,'Теги','d',3,1,'block-tags.php','all','browse'),(7,'ВКонтакте','l',2,1,'block-vkontakte.php','all','all'),(15,'Кто он-лайн','d',1,0,'block-online.php','all','index'),(9,'Новости','l',3,1,'block-news.php','all','index'),(17,'Опрос','c',3,1,'block-poll.php','users','index'),(16,'Статистика','d',2,0,'block-stats.php','all','index');
+INSERT INTO `orbital_blocks` VALUES (1,'Поиск','c',1,0,'block-search.php','all','index'),(2,'Чат','c',2,0,'block-chat.php','all','index'),(3,'Новинки месяца','c',4,1,'block-newreleases.php','all','index'),(4,'Нагрузка на сервер','d',5,1,'block-load_in_server.php','all','index'),(5,'Категории','l',1,1,'block-categories.php','all','all'),(6,'Теги','d',3,1,'block-tags.php','all','browse'),(15,'Кто он-лайн','d',1,0,'block-online.php','all','index'),(9,'Новости','l',3,1,'block-news.php','all','index'),(17,'Опрос','c',3,1,'block-poll.php','users','index'),(16,'Статистика','d',2,0,'block-stats.php','all','index');
 /*!40000 ALTER TABLE `orbital_blocks` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `peers`;
@@ -857,4 +857,3 @@ UNLOCK TABLES;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-

@@ -11,6 +11,7 @@ require 'system/init.php';
 $GLOBALS['LITETRACKER_SIDEBAR_SKIP_BLOCKS'] = array(
 	'block-online.php',
 	'block-stats.php',
+	'block-load_in_server.php',
 );
 
 function home_build_url($overrides = array(), $drop = array())
@@ -132,6 +133,38 @@ $perPage = 5;
 $pagesCount = ($countTorrent > 0 ? (int) ceil($countTorrent / $perPage) : 0);
 $nextPage = ($currentPage + 1 < $pagesCount ? $currentPage + 1 : null);
 $nextPageUrl = ($nextPage !== null ? home_build_url(array('page' => $nextPage, 'view' => $view, 'sort' => $sort, 'ajax' => 1)) : '');
+$homeLoadBlock = $memcached->get('home_load_block_config_v1');
+if (false === $homeLoadBlock || !is_array($homeLoadBlock)) {
+	$homeLoadBlock = $db->super_query("SELECT active, type, which FROM orbital_blocks WHERE blockfile = 'block-load_in_server.php' LIMIT 1");
+	$memcached->set('home_load_block_config_v1', (is_array($homeLoadBlock) ? $homeLoadBlock : array()), 0, 5 * 60);
+}
+
+$homeLoadBlockType = trim($homeLoadBlock['type'] ?? 'all');
+$homeLoadBlockWhich = trim($homeLoadBlock['which'] ?? 'all');
+$homeLoadBlockPages = array();
+
+foreach (explode(',', ($homeLoadBlockWhich === '' ? 'all' : $homeLoadBlockWhich)) as $page) {
+	$page = preg_replace('~[^a-z0-9_\-]~', '', strtolower(trim($page)));
+	if ($page !== '') {
+		$homeLoadBlockPages[$page] = true;
+	}
+}
+
+if (empty($homeLoadBlockPages)) {
+	$homeLoadBlockPages = array('all' => true);
+}
+
+$showHomeLoadBlock = (
+	!empty($homeLoadBlock['active'])
+	&& (isset($homeLoadBlockPages['all']) || isset($homeLoadBlockPages['index']))
+	&& (
+		$homeLoadBlockType === 'all'
+		|| ($homeLoadBlockType === 'guests' && !$USER)
+		|| ($homeLoadBlockType === 'users' && $USER)
+		|| ($homeLoadBlockType === 'moderators' && !empty($PRIV['block_moderators']))
+		|| ($homeLoadBlockType === 'administrators' && !empty($PRIV['block_administrators']))
+	)
+);
 
 if ($isAjaxLoad) {
 	header('Content-Type: application/json; charset=utf-8');
@@ -194,6 +227,10 @@ head('Главная');
 		<?php } ?>
 		<div data-home-pagination-html><?=$pagerbottom ?: $pagertop;?></div>
 	</div>
+	<?php } ?>
+
+	<?php if ($showHomeLoadBlock) { ?>
+	<?php require __DIR__.'/blocks/block-load_in_server.php'; ?>
 	<?php } ?>
 </div>
 
