@@ -9,9 +9,18 @@ by Nick
 ===================================================================
 */
 
-// Allow chat actions only via POST
-if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+// Allow chat actions only via same-origin POST AJAX/fetch requests
+$requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+$isXmlHttpRequest = (strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest');
+$secFetchSite = strtolower((string) ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? ''));
+$isSameSiteFetch = in_array($secFetchSite, array('same-origin', 'same-site', 'none'), true);
+
+if ($requestMethod !== 'POST') {
 	http_response_code(405);
+	die();
+}
+if (!$isXmlHttpRequest && !$isSameSiteFetch) {
+	http_response_code(403);
 	die();
 }
 
