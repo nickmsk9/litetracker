@@ -492,8 +492,8 @@ head('Управление блоками');
 	<section class="lt-admin-panel">
 		<h2><?=htmlspecialchars($positions[$positionKey] ?? 'Неизвестная позиция', ENT_QUOTES, 'UTF-8');?></h2>
 		<p class="lt-admin-panel-text">Порядок влияет только внутри этой зоны. Для перемещения вверх или вниз откройте конкретную позицию.</p>
-		<div class="lt-admin-table-wrap">
-			<table class="lt-admin-table">
+		<div class="lt-admin-table-wrap lt-table-scroll">
+			<table class="lt-table lt-table-compact lt-table-actions lt-admin-table">
 				<thead>
 					<tr>
 						<th>ID</th>

@@ -342,8 +342,8 @@ $notice = lt_admin_categories_notice($status);
 		<?php if (!$categories) { ?>
 		<div class="lt-admin-empty" style="margin-top:14px;">Категорий пока нет.</div>
 		<?php } else { ?>
-		<div class="lt-admin-table-wrap">
-			<table class="lt-admin-table">
+		<div class="lt-admin-table-wrap lt-table-scroll">
+			<table class="lt-table lt-table-compact lt-table-actions lt-admin-table">
 				<thead>
 					<tr>
 						<th>ID</th>

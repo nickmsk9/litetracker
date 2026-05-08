@@ -10,7 +10,8 @@ if (!defined('LITETRACKER'))
 
 begin_frame();
 ?>
-<table width="70%" cellpadding="3" style="border:1px">
+<div class="lt-table-scroll">
+<table class="lt-table lt-table-compact lt-users-card-table">
 <tr>
 <td valign="top" width="50">
 <a href="<?=profile_href($id);?>"><?=$avatar;?></a>
@@ -19,7 +20,7 @@ begin_frame();
 
 
 
-	<table cellspacing="3" cellpadding="0" class="profileTable table-clean" width="100%">
+	<table class="lt-table lt-table-compact profileTable table-clean">
 
 		 <tbody>
 
@@ -78,4 +79,5 @@ begin_frame();
 
 </tr>
 </table>
+</div>
 <? end_frame(); ?>
