@@ -40,6 +40,7 @@ require __DIR__ . '/config/config.mysql.php';
 
 //Подключаем главный функционал
 require __DIR__ . '/functions/functions.php';
+require __DIR__ . '/functions/functions.http.php';
 
 //Подключаем класс db
 require __DIR__ . '/classes/class.db.php';
