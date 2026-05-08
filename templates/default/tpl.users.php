@@ -62,8 +62,8 @@ begin_frame();
 		 
 		 <td class="data" colspan="2">
 				<?
-				echo ($USER['id'] == $arr['id'] || !empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV']) ? '<a class="btn btn-secondary" href="my.setting.php?id='.$id.'">'.htmlspecialchars($language['profile_16'], ENT_QUOTES, 'UTF-8').'</a>&nbsp;' : '');
-				echo ($USER['id'] != $arr['id'] ? '<a class="btn btn-secondary" href="my.mail.php?act=conversation&id_user='.$arr['id'].'">'.htmlspecialchars($language['profile_17'], ENT_QUOTES, 'UTF-8').'</a>&nbsp;' : '');
+				echo ($USER['id'] == $arr['id'] || !empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV']) ? '<a class="btn btn-secondary" href="my.setting.php?id='.(int)$id.'">'.htmlspecialchars($language['profile_16'], ENT_QUOTES, 'UTF-8').'</a>&nbsp;' : '');
+				echo ($USER['id'] != $arr['id'] ? '<a class="btn btn-secondary" href="my.mail.php?act=conversation&amp;id_user='.(int)$arr['id'].'">'.htmlspecialchars($language['profile_17'], ENT_QUOTES, 'UTF-8').'</a>&nbsp;' : '');
 
 
 				?>
