@@ -182,7 +182,7 @@ if($_GET['act'] == 'edit') {
 	<?=lt_csrf_input($shopEditScope);?>
 
 	<!--Файлы-->
-	<table class="lt-table" width="80%"  cellspacing="7" cellpadding="0" border="0"  align="center">
+	<table class="lt-table">
 	<tbody>
 
 
@@ -333,7 +333,7 @@ if($PRIV['EDIT_PRIV']) {
 }
 
 
-echo '<table class="lt-table" width="100%" align="center">';
+echo '<table class="lt-table">';
 while($arr = $db->get_row($sql) ) {
 	echo '<tr>';
 

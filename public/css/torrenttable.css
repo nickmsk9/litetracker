@@ -3,7 +3,7 @@ table.tt {
   border-collapse: separate;
   border-spacing: 0;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--lt-radius-md, 12px);
   overflow: hidden;
   background: var(--surface);
 }

@@ -4,8 +4,8 @@
  */
 
 :root {
-  --lt-radius-sm: 10px;
-  --lt-radius-md: 14px;
+  --lt-radius-sm: 8px;
+  --lt-radius-md: 12px;
   --lt-space-1: 8px;
   --lt-space-2: 12px;
   --lt-space-3: 16px;
@@ -21,13 +21,14 @@
   --lt-primary-hover: var(--accent-hover);
   --lt-danger: #b95050;
   --lt-danger-hover: #a23f3f;
-  --lt-focus-ring: 0 0 0 4px rgba(77, 127, 199, 0.16);
+  --lt-focus-color: color-mix(in srgb, var(--lt-primary) 24%, transparent);
+  --lt-focus-ring: 0 0 0 4px var(--lt-focus-color);
 }
 
 body.theme-dark {
   --lt-danger: #d26a6a;
   --lt-danger-hover: #e27c7c;
-  --lt-focus-ring: 0 0 0 4px rgba(121, 167, 235, 0.2);
+  --lt-focus-color: color-mix(in srgb, var(--lt-primary) 30%, transparent);
 }
 
 /* =====================================================================
@@ -176,9 +177,7 @@ input[type="button"]:focus-visible {
 
 .lt-btn-danger,
 .btn-danger,
-.settings-remove-button,
-.admin-action-button[style*="b85050"],
-.admin-action-button[style*="B85050"] {
+.settings-remove-button {
   border-color: var(--lt-danger);
   background: var(--lt-danger);
   color: #fff;
@@ -186,9 +185,7 @@ input[type="button"]:focus-visible {
 
 .lt-btn-danger:hover,
 .btn-danger:hover,
-.settings-remove-button:hover,
-.admin-action-button[style*="b85050"]:hover,
-.admin-action-button[style*="B85050"]:hover {
+.settings-remove-button:hover {
   border-color: var(--lt-danger-hover);
   background: var(--lt-danger-hover);
   color: #fff;
@@ -258,6 +255,7 @@ input[type="button"]:focus-visible {
 .settings-form input[type="email"],
 .settings-form input[type="number"],
 .settings-form input[type="date"],
+.settings-form input[type="file"],
 .settings-form textarea,
 .profile-bonus-form input[type="text"],
 .profile-bonus-form input[type="number"],
@@ -268,18 +266,19 @@ input[type="button"]:focus-visible {
 .admin-settings-form input[type="number"],
 .admin-settings-form textarea,
 .admin-settings-form select,
+.lt-form input[type="text"],
+.lt-form input[type="password"],
+.lt-form input[type="email"],
+.lt-form input[type="number"],
+.lt-form input[type="date"],
+.lt-form input[type="file"],
+.lt-form textarea,
+.lt-form select,
 .lt-select,
 .settings-form select,
 .profile-bonus-form select,
 .browse-search-form select,
-.browse-filter-panel select,
-select,
-input[type="text"],
-input[type="password"],
-input[type="email"],
-input[type="number"],
-input[type="date"],
-textarea {
+.browse-filter-panel select {
   width: 100%;
   min-height: 38px;
   padding: 8px 12px;
