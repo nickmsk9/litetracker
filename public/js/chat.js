@@ -3,9 +3,14 @@
 ///////////////////////////////////////////////////////////////////////
 
 var chatUpdateTimer = null;
+var globalChatAjaxUrl = (
+typeof window.LITETRACKER_CHAT_AJAX_URL === 'string' && window.LITETRACKER_CHAT_AJAX_URL !== ''
+? window.LITETRACKER_CHAT_AJAX_URL
+: window.LT_CHAT_AJAX_URL
+);
 var CHAT_AJAX_URL = (
-typeof window.LT_CHAT_AJAX_URL === 'string' && window.LT_CHAT_AJAX_URL !== ''
-? window.LT_CHAT_AJAX_URL
+typeof globalChatAjaxUrl === 'string' && globalChatAjaxUrl !== ''
+? globalChatAjaxUrl
 : '/ajax/chat.php'
 );
 var CHAT_POLL_INTERVAL_MS = 3000;
