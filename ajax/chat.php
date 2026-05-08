@@ -9,8 +9,17 @@ by Nick
 ===================================================================
 */
 
-// Only allow XHR requests
-if (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') !== 'XMLHttpRequest') {
+// Allow chat actions only via same-origin POST AJAX/fetch requests
+$requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+$isXmlHttpRequest = (strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest');
+$secFetchSite = strtolower((string) ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? ''));
+$isSameOriginFetch = ($secFetchSite === 'same-origin');
+
+if ($requestMethod !== 'POST') {
+	http_response_code(405);
+	die();
+}
+if (!$isXmlHttpRequest && !$isSameOriginFetch) {
 	http_response_code(403);
 	die();
 }

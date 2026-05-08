@@ -3,7 +3,16 @@
 ///////////////////////////////////////////////////////////////////////
 
 var chatUpdateTimer = null;
-var CHAT_AJAX_URL = '/ajax/chat.php';
+var globalChatAjaxUrl = (
+typeof window.LITETRACKER_CHAT_AJAX_URL === 'string' && window.LITETRACKER_CHAT_AJAX_URL !== ''
+? window.LITETRACKER_CHAT_AJAX_URL
+: window.LT_CHAT_AJAX_URL
+);
+var CHAT_AJAX_URL = (
+typeof globalChatAjaxUrl === 'string' && globalChatAjaxUrl !== ''
+? globalChatAjaxUrl
+: '/ajax/chat.php'
+);
 var CHAT_POLL_INTERVAL_MS = 3000;
 var CHAT_REQUEST_TIMEOUT_MS = 10000;
 var CHAT_ERROR_MESSAGE = '<div class="chat-notice">Чат временно недоступен. Попробуйте обновить страницу.</div>';
