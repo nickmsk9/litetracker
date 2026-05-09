@@ -31,9 +31,6 @@ function edit_priv_permission_labels()
 		'edit_news' => 'новинка месяца',
 		'edit_banned' => 'бан релизов',
 		'cats' => 'категории',
-		'chat_view' => 'чат',
-		'chat_delete' => 'удаление в чате',
-		'chat_clear' => 'очистка чата',
 		'comments_edit' => 'редактирование комментариев',
 		'comments_delete' => 'удаление комментариев',
 		'download_torrent' => 'скачивание torrent',
@@ -247,7 +244,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		}
 
 		//Массив с правами
-		$array = array('faq_moderate'  , 'edit_banned' ,'edit_news' , 'user_add' , 'news_add' ,'upload', 'cats', 'chat_delete', 'chat_view', 'chat_clear',  'comments_edit', 'comments_delete', 'details_banned_view', 'details_view', 'download_torrent', 'download_magnet', 'edit_release', 'messages', 'multitracker_accounts', 'setting_user', 'ip_util', 'profile_view', 'search_query', 'sessions_view', 'sessions_clear', 'users_view');
+			$array = array('faq_moderate'  , 'edit_banned' ,'edit_news' , 'user_add' , 'news_add' ,'upload', 'cats',  'comments_edit', 'comments_delete', 'details_banned_view', 'details_view', 'download_torrent', 'download_magnet', 'edit_release', 'messages', 'multitracker_accounts', 'setting_user', 'ip_util', 'profile_view', 'search_query', 'sessions_view', 'sessions_clear', 'users_view');
 		$update = array();
 
 		//Обрабатываем данные
@@ -435,60 +432,6 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 			<small>Возможность добавлять, редактировать, удалять категории</small>
 		</td><td>
 	  </td></tr>
-
-
-
-
-
-	 	<tr>
-		<td class="ta_r" valign="top" colspan="2">
-		 <span class="grey" ><b>Чат</b></span>
-		</td>
-	</tr>
-	<tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" >Удалять сообщения в чате:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="checkbox" name="chat_delete" value="1" <?=($arr['chat_delete'] ? 'checked' : '');?> \>
-			<small>Возможность удалять чужые сообщения в чате</small>
-		</td><td>
-	   </td></tr>
-
-		<tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" >Просмотр чата:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="checkbox" name="chat_view" value="1" <?=($arr['chat_view'] ? 'checked' : '');?> \>
-			<small>Возможность видеть и писать в чате</small>
-		</td><td>
-	   </td></tr>
-
-
-		<tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" >Очистка чата:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="checkbox" name="chat_clear" value="1" <?=($arr['chat_clear'] ? 'checked' : '');?> \>
-			<small>Возможность выполнять очистку чата</small>
-		</td><td>
-	   </td></tr>
-
-
-		<!--
-		<tr>
-		<td class="ta_r" valign="top">
-		 <span class="grey" >Видеть чат при большой нагрузке:</span>
-		</td>
-		<td style="padding: 0px;">
-			<input type="checkbox" name="chat_load_in_server" value="1" <?=($arr['chat_load_in_server'] ? 'checked' : '');?> \>
-			<small>Возможность видеть чат при большой нагрузке</small>
-		</td><td>
-	   </td></tr>	-->
-
-
 
 		<tr>
 		<td class="ta_r" valign="top" colspan="2">

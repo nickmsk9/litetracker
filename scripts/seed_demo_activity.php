@@ -206,7 +206,6 @@ function demo_seed_cleanup($db)
 		$userList = implode(',', $demoUserIds);
 		$db->query("DELETE FROM comments_users WHERE id_users IN (".$userList.") OR id_user IN (".$userList.")");
 		$db->query("DELETE FROM sessions WHERE user_id IN (".$userList.")");
-		$db->query("DELETE FROM chat WHERE id_user IN (".$userList.")");
 		$db->query("DELETE FROM users_blacklist WHERE user_id IN (".$userList.") OR blocked_user_id IN (".$userList.")");
 		$db->query("DELETE FROM users WHERE id IN (".$userList.")");
 	}
@@ -250,14 +249,6 @@ function demo_seed_insert_session($db, $userId, $ip, $lastAccess)
 	$db->query(
 		"INSERT INTO sessions (session_id, user_id, last_access, ip, user_agent, php_self)
 		VALUES ('".md5('demo-session|'.$userId.'|'.$lastAccess)."', ".(int) $userId.", '".$db->safesql($lastAccess)."', ".(int) $ip.", 'LiteTracker Demo Seeder', '/index.php')"
-	);
-}
-
-function demo_seed_insert_chat_message($db, $userId, $username, $date, $text)
-{
-	$db->query(
-		"INSERT INTO chat (id_user, username, userclass, date, text)
-		VALUES (".(int) $userId.", '".$db->safesql($username)."', 1, '".$db->safesql($date)."', '".$db->safesql($text)."')"
 	);
 }
 
@@ -405,20 +396,6 @@ foreach ($createdUsers as $index => $user) {
 	if ($index < 4) {
 		demo_seed_insert_session($db, $user['id'], $user['ip'], demo_seed_datetime($now - mt_rand(30, 600)));
 	}
-}
-
-$chatTexts = array(
-	'[DEMO] Кто уже посмотрел первые серии? Интерфейс комментариев проверяется отлично.',
-	'[DEMO] Закинул пару релизов в закладки, карточки выглядят аккуратно.',
-	'[DEMO] Проверяю ответы в профилях, треды на стене собираются как надо.',
-	'[DEMO] Неплохо бы ещё погонять сортировку по раздающим и размеру.',
-	'[DEMO] Рейтинг релизов тоже ожил, можно спокойно тестировать детали.',
-	'[DEMO] Всё синтетическое и локальное, зато для UI теперь есть на что смотреть.',
-);
-
-foreach ($chatTexts as $index => $text) {
-	$user = $createdUsers[$index % count($createdUsers)];
-	demo_seed_insert_chat_message($db, $user['id'], $user['name'], demo_seed_datetime($now - (900 - ($index * 120))), $text);
 }
 
 $animeTitles = array(

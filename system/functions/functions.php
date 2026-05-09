@@ -1055,12 +1055,16 @@ function sqlwildcardesc($x) {
 //Постраничная навигация
 function pager($rpp, $count, $href, $opts = array()) {
 	$opts = array_merge(array('lastpagedefault' => 0), $opts);
-	$pagertop = '';
-	$pagerbottom = '';
-	$pages = ceil($count / $rpp);
+		$pagertop = '';
+		$pagerbottom = '';
+		$pages = ceil($count / $rpp);
+		if ($pages <= 1) {
+			$page = 0;
+			return array('', '', ' LIMIT 0, ' . (int) $rpp);
+		}
 
-	if (!$opts["lastpagedefault"])
-		$pagedefault = 0;
+		if (!$opts["lastpagedefault"])
+			$pagedefault = 0;
 	else {
 		$pagedefault = floor(($count - 1) / $rpp);
 		if ($pagedefault < 0)

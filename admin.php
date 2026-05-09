@@ -141,6 +141,8 @@ function admin_dashboard_settings_schema()
 				array('key' => 'search_forum', 'label' => 'Форумный вид поиска', 'type' => 'checkbox', 'description' => 'Показывает список категорий на странице browse.php?act=all.'),
 				array('key' => 'search_image', 'label' => 'Поиск по изображениям', 'type' => 'checkbox', 'description' => 'Включает отдельный модуль поиска по изображениям.'),
 				array('key' => 'search_image_lenght', 'label' => 'Минимум символов для изображений', 'type' => 'int', 'min' => 0, 'description' => 'С какого размера запроса показывать результаты по изображениям. 0 значит без ограничения.'),
+				array('key' => 'bonus_source', 'label' => 'Источник бонусов', 'type' => 'select', 'options' => array('seeding' => 'Сидирование', 'online' => 'Онлайн на сайте'), 'description' => 'За что начислять бонусы при запуске autoclean. Режим “Онлайн” считает активные сессии за последний интервал cron.'),
+				array('key' => 'bonus_price', 'label' => 'Бонусов за час', 'type' => 'int', 'min' => 0, 'description' => 'Сколько бонусов начислять за один час выбранной активности. По умолчанию: 10.'),
 				array('key' => 'captcha', 'label' => 'Включить локальную CAPTCHA', 'type' => 'checkbox', 'description' => 'Главный переключатель локальной проверки без внешних сервисов.'),
 				array('key' => 'reCaptcha_login', 'label' => 'CAPTCHA на входе', 'type' => 'checkbox', 'description' => 'Показывать проверку на странице авторизации.'),
 				array('key' => 'reCaptcha_signup', 'label' => 'CAPTCHA при регистрации', 'type' => 'checkbox', 'description' => 'Показывать проверку при создании нового аккаунта.'),
@@ -393,6 +395,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 					}
 				}
 
+				if ($type === 'select') {
+					$options = (array) ($field['options'] ?? array());
+					if (!array_key_exists((string) $value, $options)) {
+						$errors[] = 'Поле «'.$field['label'].'» содержит неизвестное значение.';
+						continue;
+					}
+				}
+
 				if ($type === 'text' && (strpos((string) $value, "\n") !== false || strpos((string) $value, "\r") !== false)) {
 					$errors[] = 'Поле «'.$field['label'].'» не должно содержать перевод строки.';
 					continue;
@@ -580,181 +590,224 @@ head('Админка');
 ?>
 <style>
 .admin-dashboard {
-	max-width: 1360px;
-	margin: 18px auto 0;
-	padding: 0 20px 24px;
+	max-width: 1320px;
+	margin: 16px auto 0;
+	padding: 0 18px 28px;
 	box-sizing: border-box;
+	color: #1c2733;
 }
 
 .admin-hero,
+.admin-tabs,
 .admin-card,
-.admin-stat-card,
-.admin-tab-link,
-.admin-link-card,
-.admin-action-card,
 .admin-settings-form,
 .admin-inline-message {
+	border: 1px solid #dfe7ef;
+	border-radius: 6px;
 	background: #fff;
-	border-radius: 4px;
 	box-sizing: border-box;
 }
 
-.admin-hero,
-.admin-card,
-.admin-settings-form {
-	padding: 24px 26px;
-	margin-bottom: 20px;
+.admin-hero {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 18px;
+	align-items: end;
+	padding: 20px 22px;
+	margin-bottom: 12px;
+	border-top: 4px solid #334e68;
+}
+
+.admin-hero-kicker {
+	margin: 0 0 5px;
+	color: #738091;
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1.2;
+	text-transform: uppercase;
 }
 
 .admin-hero-title {
 	margin: 0;
-	font-size: 34px;
-	line-height: 1.1;
-	color: #111;
+	color: #111827;
+	font-size: 28px;
+	line-height: 1.15;
 }
 
 .admin-hero-text {
-	margin: 10px 0 0;
-	max-width: 760px;
-	font-size: 16px;
+	max-width: 820px;
+	margin: 8px 0 0;
+	color: #536170;
+	font-size: 14px;
 	line-height: 1.55;
-	color: #586574;
 }
 
 .admin-role-badges {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 8px;
-	margin-top: 16px;
+	justify-content: flex-end;
+	gap: 6px;
 }
 
-.admin-role-badge {
-	padding: 6px 10px;
+.admin-role-badge,
+.admin-link-badge {
+	display: inline-flex;
+	align-items: center;
+	min-height: 24px;
+	padding: 0 9px;
+	border: 1px solid #d7e1eb;
 	border-radius: 999px;
-	background: #edf3f8;
+	background: #f4f7fa;
+	color: #45576a;
 	font-size: 12px;
 	font-weight: 700;
 	line-height: 1;
-	color: #4d6479;
+	white-space: nowrap;
 }
 
 .admin-inline-message {
-	padding: 14px 18px;
-	margin-bottom: 18px;
-	border: 1px solid #d8e1e8;
+	padding: 12px 14px;
+	margin-bottom: 12px;
 	font-size: 14px;
-	line-height: 1.5;
+	line-height: 1.45;
 }
 
 .admin-inline-message-success {
-	background: #edf8ef;
+	border-color: #c9e0cf;
+	background: #f0f8f2;
 	color: #235c33;
-	border-color: #cce6d3;
 }
 
 .admin-inline-message-error {
-	background: #fff1f1;
-	color: #7a2b2b;
-	border-color: #f2d1d1;
+	border-color: #ecc8c8;
+	background: #fff3f3;
+	color: #783131;
 }
 
 .admin-tabs {
+	position: sticky;
+	top: 0;
+	z-index: 20;
 	display: flex;
 	flex-wrap: wrap;
-	gap: 10px;
-	margin-bottom: 20px;
+	gap: 4px;
+	margin-bottom: 14px;
+	padding: 6px;
 }
 
 .admin-tab-link {
 	display: inline-flex;
 	align-items: center;
-	padding: 12px 16px;
-	text-decoration: none;
-	color: #526170;
-	font-size: 14px;
+	justify-content: center;
+	min-height: 34px;
+	padding: 0 12px;
+	border-radius: 4px;
+	color: #536170;
+	font-size: 13px;
 	font-weight: 700;
-	transition: box-shadow .18s ease, transform .18s ease, color .18s ease;
+	text-decoration: none;
 }
 
 .admin-tab-link:hover {
-	box-shadow: 0 8px 20px rgba(35, 52, 70, .08);
-	transform: translateY(-1px);
+	background: #f2f6fa;
+	color: #111827;
 }
 
 .admin-tab-link-active {
-	color: #111;
-	box-shadow: inset 0 -2px 0 #77a7d3;
+	background: #334e68;
+	color: #fff;
 }
 
 .admin-stats,
 .admin-action-grid,
 .admin-shortcut-grid,
 .admin-grid,
-.admin-settings-grid {
+.admin-settings-grid,
+.admin-system-grid,
+.admin-permission-list {
 	display: grid;
-	gap: 16px;
+	gap: 12px;
 }
 
-.admin-stats,
+.admin-stats {
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	margin-bottom: 14px;
+}
+
 .admin-action-grid,
 .admin-shortcut-grid,
-.admin-grid {
-	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+.admin-grid,
+.admin-system-grid {
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .admin-settings-grid {
 	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-	margin-top: 18px;
+	margin-top: 16px;
+}
+
+.admin-card,
+.admin-settings-form {
+	padding: 18px 20px;
+	margin-bottom: 14px;
 }
 
 .admin-stat-card,
 .admin-link-card,
-.admin-action-card {
+.admin-action-card,
+.admin-permission-row,
+.admin-system-item {
 	display: block;
-	padding: 18px 20px;
-	border: 1px solid #e4ebf1;
-	text-decoration: none;
+	padding: 14px 16px;
+	border: 1px solid #e1e8ef;
+	border-radius: 5px;
+	background: #fbfcfd;
 	color: inherit;
-	transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+	text-decoration: none;
+	box-sizing: border-box;
 }
 
 .admin-stat-card:hover,
 .admin-link-card:hover,
-.admin-action-card:hover {
-	box-shadow: 0 10px 26px rgba(35, 52, 70, .12);
-	transform: translateY(-1px);
-	border-color: #c6d9ea;
+.admin-permission-row:hover {
+	border-color: #b8c9d8;
+	background: #fff;
 }
 
 .admin-stat-value {
 	display: block;
-	font-size: 30px;
+	color: #111827;
+	font-size: 26px;
+	font-weight: 800;
 	line-height: 1;
-	font-weight: 700;
-	color: #111;
 }
 
 .admin-stat-label,
 .admin-link-text,
 .admin-action-text,
 .admin-card-text,
-.admin-settings-text {
-	font-size: 14px;
-	line-height: 1.55;
-	color: #6d7c8b;
+.admin-settings-text,
+.admin-permission-text,
+.admin-settings-help {
+	color: #647283;
+	font-size: 13px;
+	line-height: 1.5;
 }
 
-.admin-stat-label {
+.admin-stat-label,
+.admin-link-text,
+.admin-action-text,
+.admin-permission-text {
 	display: block;
-	margin-top: 8px;
+	margin-top: 7px;
 }
 
 .admin-card-title,
 .admin-settings-title {
-	margin: 0 0 8px;
-	font-size: 24px;
-	line-height: 1.2;
-	color: #111;
+	margin: 0 0 7px;
+	color: #111827;
+	font-size: 20px;
+	line-height: 1.25;
 }
 
 .admin-card-text,
@@ -771,63 +824,23 @@ head('Админка');
 }
 
 .admin-link-title,
-.admin-action-title {
-	font-size: 17px;
-	line-height: 1.3;
-	font-weight: 700;
-	color: #111;
-}
-
-.admin-link-badge {
-	padding: 4px 9px;
-	border-radius: 999px;
-	background: #e9eff5;
-	font-size: 12px;
-	line-height: 1;
-	font-weight: 700;
-	color: #4c6175;
-	white-space: nowrap;
-}
-
-.admin-link-text,
-.admin-action-text {
-	margin-top: 8px;
-}
-
-.admin-permission-list {
-	display: grid;
-	gap: 12px;
-	margin-top: 18px;
-}
-
-.admin-permission-row {
-	padding: 14px 16px;
-	border: 1px solid #e4ebf1;
-	border-radius: 4px;
-	background: #fff;
-}
-
+.admin-action-title,
 .admin-permission-name {
-	font-size: 16px;
-	font-weight: 700;
-	color: #111;
-}
-
-.admin-permission-text {
-	margin-top: 6px;
-	font-size: 13px;
-	line-height: 1.5;
-	color: #667584;
+	color: #111827;
+	font-size: 15px;
+	font-weight: 800;
+	line-height: 1.3;
 }
 
 .admin-action-card {
 	padding: 0;
+	background: #fff;
 	overflow: hidden;
 }
 
 .admin-action-form {
 	display: block;
-	padding: 18px 20px;
+	padding: 14px 16px;
 }
 
 .admin-action-button,
@@ -836,150 +849,140 @@ head('Админка');
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 40px;
-	padding: 0 16px;
-	border: 0;
+	min-height: 36px;
+	padding: 0 13px;
+	border: 1px solid #334e68;
 	border-radius: 4px;
-	background: #4e8fca;
+	background: #334e68;
 	color: #fff;
-	font-size: 14px;
-	font-weight: 700;
+	font-size: 13px;
+	font-weight: 800;
+	line-height: 1;
 	text-decoration: none;
 	cursor: pointer;
-	transition: background .18s ease;
 }
 
 .admin-action-button:hover,
 .admin-settings-submit:hover,
 .admin-shortcut-link:hover {
-	background: #3e7fb8;
+	border-color: #263d55;
+	background: #263d55;
+	color: #fff;
 }
 
 .admin-shortcut-grid {
-	margin-top: 18px;
-}
-
-.admin-settings-form {
-	max-width: 980px;
+	margin-top: 14px;
 }
 
 .admin-settings-field {
 	display: grid;
-	gap: 8px;
+	gap: 7px;
 }
 
 .admin-settings-label {
-	font-size: 14px;
-	font-weight: 700;
 	color: #1f2a35;
+	font-size: 13px;
+	font-weight: 800;
 }
 
 .admin-settings-help {
 	margin: -2px 0 0;
-	font-size: 13px;
-	line-height: 1.5;
-	color: #6d7c8b;
 }
 
 .admin-settings-input,
 .admin-settings-checkbox-row {
-	border: 1px solid #d8e1e8;
+	width: 100%;
+	border: 1px solid #cfd9e4;
 	border-radius: 4px;
-	box-sizing: border-box;
 	background: #fff;
+	box-sizing: border-box;
 }
 
 .admin-settings-input {
-	height: 42px;
-	padding: 0 12px;
-	font-size: 14px;
+	height: 38px;
+	padding: 0 10px;
 	color: #1f2a35;
+	font-size: 14px;
 }
 
 .admin-settings-checkbox-row {
 	display: flex;
 	align-items: center;
-	gap: 10px;
-	min-height: 42px;
-	padding: 0 12px;
-	font-size: 14px;
+	gap: 9px;
+	min-height: 38px;
+	padding: 0 10px;
 	color: #1f2a35;
+	font-size: 14px;
 }
 
 .admin-settings-footer {
 	display: flex;
 	justify-content: flex-end;
-	margin-top: 18px;
+	margin-top: 16px;
 }
 
 .admin-empty {
-	padding: 18px;
-	border: 1px dashed #d5dfe8;
-	border-radius: 4px;
+	padding: 16px;
+	border: 1px dashed #cfd9e4;
+	border-radius: 5px;
+	background: #fbfcfd;
+	color: #647283;
 	font-size: 14px;
 	line-height: 1.5;
-	color: #748391;
-	background: #fff;
-}
-
-.admin-system-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-	gap: 12px;
-	margin-top: 18px;
-}
-
-.admin-system-item {
-	padding: 14px 16px;
-	border: 1px solid #e4ebf1;
-	border-radius: 4px;
-	background: #fff;
 }
 
 .admin-system-label {
-	font-size: 12px;
-	font-weight: 700;
-	color: #7a8997;
+	color: #738091;
+	font-size: 11px;
+	font-weight: 800;
 	text-transform: uppercase;
 }
 
 .admin-system-value {
 	margin-top: 6px;
-	font-size: 14px;
-	line-height: 1.45;
 	color: #1f2a35;
+	font-size: 13px;
+	line-height: 1.45;
 	word-break: break-word;
 }
 
 @media (max-width: 720px) {
 	.admin-dashboard {
-		padding: 0 12px 18px;
+		padding: 0 12px 20px;
 	}
 
-	.admin-hero,
+	.admin-hero {
+		grid-template-columns: 1fr;
+		align-items: start;
+		padding: 18px;
+	}
+
+	.admin-role-badges {
+		justify-content: flex-start;
+	}
+
 	.admin-card,
 	.admin-settings-form {
-		padding: 20px 18px;
-	}
-
-	.admin-hero-title {
-		font-size: 28px;
+		padding: 16px;
 	}
 }
 </style>
 
 <div class='admin-dashboard'>
-	<section class='admin-hero'>
-		<h1 class='admin-hero-title'>Админка</h1>
-		<p class='admin-hero-text'>Единая точка входа для управления движком LiteTracker. Панель разделена по ролям: пользователи видят только те вкладки и быстрые действия, на которые у них есть права.</p>
-		<?php if ($roleBadges) { ?>
-		<div class='admin-role-badges'>
-			<?php foreach ($roleBadges as $badge) { ?>
-			<span class='admin-role-badge'><?=$badge;?></span>
+		<section class='admin-hero'>
+			<div>
+				<p class='admin-hero-kicker'>LiteTracker control</p>
+				<h1 class='admin-hero-title'>Админка</h1>
+				<p class='admin-hero-text'>Быстрый доступ к живым разделам, настройкам и служебным действиям. Лишние визуальные блоки убраны, права по-прежнему ограничивают вкладки и операции.</p>
+			</div>
+			<?php if ($roleBadges) { ?>
+			<div class='admin-role-badges'>
+				<?php foreach ($roleBadges as $badge) { ?>
+				<span class='admin-role-badge'><?=$badge;?></span>
+				<?php } ?>
+			</div>
 			<?php } ?>
-		</div>
-		<?php } ?>
-	</section>
+		</section>
 
 	<?php if (!empty($flashMessage['text'])) { ?>
 	<div class='admin-inline-message admin-inline-message-<?=($flashMessage['type'] === 'error' ? 'error' : 'success');?>'>
@@ -1116,6 +1119,12 @@ head('Админка');
 						<input id='admin-setting-<?=$key;?>' type='checkbox' name='<?=$key;?>' value='1'<?=(!empty($value) ? ' checked' : '');?> >
 						<span>Включено</span>
 					</label>
+					<?php } elseif ($field['type'] === 'select') { ?>
+					<select class='admin-settings-input' id='admin-setting-<?=$key;?>' name='<?=$key;?>'>
+						<?php foreach ((array) ($field['options'] ?? array()) as $optionValue => $optionLabel) { ?>
+						<option value='<?=htmlspecialchars((string) $optionValue, ENT_QUOTES, 'UTF-8');?>'<?=((string) $value === (string) $optionValue ? ' selected' : '');?>><?=htmlspecialchars((string) $optionLabel, ENT_QUOTES, 'UTF-8');?></option>
+						<?php } ?>
+					</select>
 					<?php } else { ?>
 					<input class='admin-settings-input' id='admin-setting-<?=$key;?>' type='text' name='<?=$key;?>' value='<?=htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');?>'>
 					<?php } ?>
@@ -1181,16 +1190,89 @@ head('Админка');
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-	var forms = document.querySelectorAll('form[data-admin-confirm]');
-
-	for (var i = 0; i < forms.length; i++) {
-		forms[i].addEventListener('submit', function (event) {
-			var message = this.getAttribute('data-admin-confirm') || '';
-			if (message && !window.confirm(message)) {
-				event.preventDefault();
+	function closestByClass(node, className) {
+		while (node && node !== document) {
+			if (node.classList && node.classList.contains(className)) {
+				return node;
 			}
-		});
+
+			node = node.parentNode;
+		}
+
+		return null;
 	}
+
+	function replaceAdminDashboard(url, pushState) {
+		if (typeof window.fetch !== 'function' || typeof window.DOMParser !== 'function') {
+			window.location.href = url;
+			return;
+		}
+
+		window.fetch(url, {
+			method: 'GET',
+			credentials: 'same-origin',
+			headers: {
+				'X-Requested-With': 'XMLHttpRequest',
+				'Accept': 'text/html'
+			}
+		})
+			.then(function (response) {
+				if (!response.ok) {
+					throw new Error('Request failed');
+				}
+
+				return response.text();
+			})
+			.then(function (html) {
+				var parsed = new window.DOMParser().parseFromString(html, 'text/html');
+				var nextDashboard = parsed.querySelector('.admin-dashboard');
+				var currentDashboard = document.querySelector('.admin-dashboard');
+
+				if (!nextDashboard || !currentDashboard) {
+					throw new Error('Dashboard not found');
+				}
+
+				currentDashboard.innerHTML = nextDashboard.innerHTML;
+				if (pushState) {
+					window.history.pushState({adminAjax: true}, '', url);
+				}
+				document.title = parsed.title || document.title;
+				window.scrollTo(0, 0);
+			})
+			.catch(function () {
+				window.location.href = url;
+			});
+	}
+
+	document.addEventListener('submit', function (event) {
+		var form = event.target;
+		var message = form && form.getAttribute ? (form.getAttribute('data-admin-confirm') || '') : '';
+
+		if (message && !window.confirm(message)) {
+			event.preventDefault();
+		}
+	});
+
+	document.addEventListener('click', function (event) {
+		var link = closestByClass(event.target, 'admin-tab-link');
+		var href;
+
+		if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+			return;
+		}
+
+		href = link.getAttribute('href') || '';
+		if (!href) {
+			return;
+		}
+
+		event.preventDefault();
+		replaceAdminDashboard(href, true);
+	});
+
+	window.addEventListener('popstate', function () {
+		replaceAdminDashboard(window.location.href, false);
+	});
 });
 </script>
 <?php

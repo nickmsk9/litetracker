@@ -117,6 +117,56 @@ function browse_filter_options_split($options, $selectedValues, $limit = 4)
 	return array($visible, $hidden);
 }
 
+function browse_schema_with_actual_options($schema, $baseWhere, $selectedFilters)
+{
+	global $db;
+
+	$columns = array();
+	foreach ($schema as $group => $definition) {
+		if (!empty($definition['column'])) {
+			$columns[$group] = 't.'.$definition['column'];
+		}
+	}
+
+	if (!$columns) {
+		return $schema;
+	}
+
+	$select = array();
+	foreach ($columns as $group => $column) {
+		$select[] = $column.' AS meta_'.$group;
+	}
+
+	$counts = array();
+	$sql = $db->query('SELECT '.implode(', ', $select).' FROM torrents AS t '.($baseWhere ? 'WHERE '.implode(' AND ', $baseWhere) : ''));
+	while ($row = $db->get_row($sql)) {
+		foreach ($schema as $group => $definition) {
+			$key = 'meta_'.$group;
+			$raw = trim((string) ($row[$key] ?? ''));
+			if ($raw === '') {
+				continue;
+			}
+
+			$values = ($group === 'type' ? array($raw) : browse_parse_tags($raw));
+			foreach ($values as $value) {
+				if (!isset($definition['options'][$value])) {
+					continue;
+				}
+				if (!isset($counts[$group][$value])) {
+					$counts[$group][$value] = 0;
+				}
+				$counts[$group][$value]++;
+			}
+		}
+	}
+
+	foreach ($schema as $group => $definition) {
+		$schema[$group]['counts'] = (array) ($counts[$group] ?? array());
+	}
+
+	return $schema;
+}
+
 $search = trim((string) ($_GET['search'] ?? ''));
 $id_category = isset($_GET['id_category']) ? (int) $_GET['id_category'] : 0;
 $sort = trim((string) ($_GET['sort'] ?? 'date'));
@@ -174,19 +224,22 @@ if (!empty($schema['type'])) {
 
 $selectedFilters = browse_collect_selected_filters($schema);
 
-$where = array();
+$baseWhere = array();
 if (!$PRIV['details_banned_view']) {
-	$where[] = 't.banned <> 1';
+	$baseWhere[] = 't.banned <> 1';
 }
 
 if ($id_category > 0) {
-	$where[] = 't.id_category = '.$db->safesql($id_category);
+	$baseWhere[] = 't.id_category = '.$db->safesql($id_category);
 }
 
 if ($search !== '') {
-	$where[] = "t.name LIKE '%".sqlwildcardesc($search)."%'";
+	$baseWhere[] = "t.name LIKE '%".sqlwildcardesc($search)."%'";
 }
 
+$schema = browse_schema_with_actual_options($schema, $baseWhere, $selectedFilters);
+$selectedFilters = browse_collect_selected_filters($schema);
+$where = $baseWhere;
 browse_apply_filter_conditions($where, $schema, $selectedFilters);
 
 $pagerParams = array();
@@ -334,6 +387,18 @@ head('Торренты');
 		</div>
 
 		<aside class="browse-sidebar">
+			<?php if ($categories) { ?>
+			<nav class="browse-filter-panel browse-sidebar-categories" aria-label="Категории торрентов">
+				<div class="browse-filter-title">Категории:</div>
+				<div class="browse-filter-options">
+					<a class="browse-sidebar-category<?=($id_category === 0 ? ' is-active' : '');?>" href="<?=htmlspecialchars(browse_build_url(array('id_category' => null, 'page' => null)), ENT_QUOTES, 'UTF-8');?>">Все торренты</a>
+					<?php foreach ($categories as $category) { ?>
+					<a class="browse-sidebar-category<?=($id_category === (int) $category['id'] ? ' is-active' : '');?>" href="<?=htmlspecialchars(browse_build_url(array('id_category' => (int) $category['id'], 'page' => null)), ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars((string) $category['name'], ENT_QUOTES, 'UTF-8');?></a>
+					<?php } ?>
+				</div>
+			</nav>
+			<?php } ?>
+
 			<form action="browse.php" method="get" class="browse-filter-panel">
 				<?php if ($search !== '') { ?>
 				<input type="hidden" name="search" value="<?=htmlspecialchars($search, ENT_QUOTES, 'UTF-8');?>">
@@ -421,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 
 	function syncViewLinks(view) {
-		var links = document.querySelectorAll('.browse-pagination a, .browse-sort-list a, .browse-categories a');
+		var links = document.querySelectorAll('.browse-pagination a, .browse-sort-list a, .browse-categories a, .browse-sidebar-category');
 		for (var i = 0; i < links.length; i++) {
 			try {
 				var url = new URL(links[i].getAttribute('href'), window.location.href);

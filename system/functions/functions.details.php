@@ -727,54 +727,6 @@ function lt_details_prepare_bookmark($torrentId)
 	);
 }
 
-function lt_details_prepare_comments($torrentId)
-{
-	global $db;
-
-	$torrentId = (int) $torrentId;
-	if ($torrentId <= 0 || !lt_table_exists('comments_torrents')) {
-		return array('count' => 0);
-	}
-
-	$row = $db->super_query("SELECT COUNT(*) AS cnt FROM comments_torrents WHERE id_torrents = ".$torrentId);
-	return array('count' => (int) ($row['cnt'] ?? 0));
-}
-
-function lt_details_prepare_similar_torrents($torrent, $limit = 6)
-{
-	global $db, $PRIV;
-
-	$torrentId = (int) ($torrent['id'] ?? 0);
-	$categoryId = (int) ($torrent['id_category'] ?? 0);
-	$limit = max(1, min(12, (int) $limit));
-	if ($torrentId <= 0 || $categoryId <= 0) {
-		return array();
-	}
-
-	$whereBanned = (empty($PRIV['details_banned_view']) ? ' AND t.banned = 0' : '');
-	$sql = $db->query(
-		"SELECT t.id, t.name, t.added, t.size,
-			COALESCE(trs.seeders, 0) AS seeders,
-			COALESCE(trs.leechers, 0) AS leechers
-		FROM torrents AS t
-		LEFT JOIN (
-			SELECT torrent, SUM(GREATEST(seeders, 0)) AS seeders, SUM(GREATEST(leechers, 0)) AS leechers
-			FROM trackers
-			GROUP BY torrent
-		) AS trs ON trs.torrent = t.id
-		WHERE t.id <> ".$torrentId." AND t.id_category = ".$categoryId.$whereBanned."
-		ORDER BY t.added DESC
-		LIMIT ".$limit
-	);
-
-	$rows = array();
-	while ($row = $db->get_row($sql)) {
-		$rows[] = $row;
-	}
-
-	return $rows;
-}
-
 function lt_details_prepare_description_view($torrent, $categoryName)
 {
 	$parsed = lt_details_parse_description((string) ($torrent['descr'] ?? ''));
@@ -861,7 +813,6 @@ function lt_details_prepare_view_model($torrent, array $rating)
 	$user = ($user ?: array('id' => 0, 'name' => '', 'class' => 0));
 	$trackerView = lt_details_prepare_tracker_rows($torrent);
 	$bookmark = lt_details_prepare_bookmark($id);
-	$comments = lt_details_prepare_comments($id);
 	$description = lt_details_prepare_description_view($torrent, $catNamePlain);
 	$descriptionHtml = $description['description_html'];
 	if ($descriptionHtml === '' && empty($description['has_structured_content'])) {
@@ -936,7 +887,6 @@ function lt_details_prepare_view_model($torrent, array $rating)
 		'category_badge' => lt_details_lower($catNamePlain),
 		'details_created_label' => lt_details_format_date_label($torrent['added'] ?? ''),
 		'details_updated_label' => lt_details_format_date_label($torrent['last_action'] ?? ''),
-		'details_comment_count' => $comments['count'],
 		'details_file_rows' => lt_details_prepare_file_rows($torrent),
 		'details_views_count' => lt_details_register_view($id),
 		'details_rating_votes' => $rating['votes'],
@@ -970,6 +920,5 @@ function lt_details_prepare_view_model($torrent, array $rating)
 		'details_tracker_rows' => $trackerView['rows'],
 		'details_external_tracker_count' => $trackerView['external_count'],
 		'details_tracker_update_href' => $trackerView['update_href'],
-		'details_similar_rows' => lt_details_prepare_similar_torrents($torrent),
 	);
 }

@@ -216,12 +216,7 @@ if ($settingsActiveTabRaw === 'password') {
 								<input id="moderation_downloaded_mb" type="number" name="downloaded_mb" value="0" min="-1000000" max="1000000">
 							</div>
 							<div class="settings-field">
-								<label class="settings-field-label" for="moderation_chat_ban">Чат бан</label>
-								<select id="moderation_chat_ban" name="chat_ban">
-									<option value="0"<?=((int) ($arr['chat_ban'] ?? 0) === 0 ? ' selected' : '');?>>Нет</option>
-									<option value="1"<?=((int) ($arr['chat_ban'] ?? 0) === 1 ? ' selected' : '');?>>Да</option>
-								</select>
-								<label class="settings-field-label" for="moderation_in_group">В группе</label>
+									<label class="settings-field-label" for="moderation_in_group">В группе</label>
 								<select id="moderation_in_group" name="in_group">
 									<option value="0"<?=((int) ($arr['in_group'] ?? 0) === 0 ? ' selected' : '');?>>Нет</option>
 									<option value="1"<?=((int) ($arr['in_group'] ?? 0) === 1 ? ' selected' : '');?>>Да</option>

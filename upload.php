@@ -60,6 +60,106 @@ function lt_upload_default_category_id($categories)
 	return (int) ($categories[0]['id'] ?? 0);
 }
 
+function lt_upload_template_textarea_labels()
+{
+	return array(
+		'Описание',
+		'В ролях',
+		'Треклист',
+		'Системные требования',
+	);
+}
+
+function lt_upload_template_field_type($label)
+{
+	return (in_array(trim((string) $label), lt_upload_template_textarea_labels(), true) ? 'textarea' : 'text');
+}
+
+function lt_upload_template_manual_fields($categoryNameOrKey, $values = array())
+{
+	$template = lt_torrent_description_template($categoryNameOrKey);
+	$items = (array) ($template['items'] ?? array());
+	$result = array();
+	$values = (is_array($values) ? $values : array());
+
+	foreach ($items as $item) {
+		$type = trim((string) ($item['type'] ?? 'field'));
+		$label = trim((string) ($item['label'] ?? ''));
+		$auto = trim((string) ($item['auto'] ?? ''));
+
+		if ($label === '' || $type === 'section' || $auto !== '') {
+			continue;
+		}
+
+		$result[] = array(
+			'label' => $label,
+			'field_type' => lt_upload_template_field_type($label),
+			'value' => (string) ($values[$label] ?? ''),
+		);
+	}
+
+	return $result;
+}
+
+function lt_upload_primary_description_label($categoryNameOrKey)
+{
+	$template = lt_torrent_description_template($categoryNameOrKey);
+	$items = (array) ($template['items'] ?? array());
+
+	foreach ($items as $item) {
+		$type = trim((string) ($item['type'] ?? 'field'));
+		$label = trim((string) ($item['label'] ?? ''));
+		if ($type === 'field' && $label === 'Описание') {
+			return $label;
+		}
+	}
+
+	return '';
+}
+
+function lt_upload_build_description($categoryNameOrKey, $templateValues, $autoValues = array())
+{
+	$template = lt_torrent_description_template($categoryNameOrKey);
+	$items = (array) ($template['items'] ?? array());
+	$templateValues = (is_array($templateValues) ? $templateValues : array());
+	$autoValues = (is_array($autoValues) ? $autoValues : array());
+	$lines = array();
+
+	foreach ($items as $item) {
+		$type = trim((string) ($item['type'] ?? 'field'));
+		$label = trim((string) ($item['label'] ?? ''));
+		$auto = trim((string) ($item['auto'] ?? ''));
+		if ($label === '') {
+			continue;
+		}
+
+		if ($type === 'section') {
+			if ($lines && end($lines) !== '') {
+				$lines[] = '';
+			}
+
+			$lines[] = '[u]'.$label.'[/u]';
+			continue;
+		}
+
+		$value = '';
+		if ($auto !== '' && isset($autoValues[$auto])) {
+			$value = trim((string) $autoValues[$auto]);
+		} else {
+			$value = trim((string) ($templateValues[$label] ?? ''));
+		}
+
+		if (strpos($value, "\n") !== false) {
+			$lines[] = '[b]'.$label.':[/b]'.($value !== '' ? "\n".$value : '');
+			continue;
+		}
+
+		$lines[] = '[b]'.$label.':[/b]'.($value !== '' ? ' '.$value : '');
+	}
+
+	return trim(implode("\n", $lines));
+}
+
 function lt_upload_next_torrent_id()
 {
 	global $db;
@@ -356,9 +456,8 @@ $defaults = array(
 	'catid' => $defaultCategoryId,
 	'content_type' => ($defaultContentType !== '' ? $defaultContentType : 'movie'),
 	'tags' => '',
-	'descr' => lt_torrent_default_description($defaultCategoryName, array(
-		'Тип' => lt_torrent_metadata_option_label('type', ($defaultContentType !== '' ? $defaultContentType : 'movie')),
-	)),
+	'descr' => '',
+	'template_values' => array(),
 );
 
 foreach ($metadataSchema as $group => $definition) {
@@ -371,7 +470,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	$form['catid'] = (int) ($_POST['catid'] ?? 0);
 	$form['content_type'] = trim((string) ($_POST['content_type'] ?? ''));
 	$form['tags'] = trim((string) ($_POST['tags'] ?? ''));
-	$form['descr'] = trim((string) ($_POST['descr'] ?? ''));
+	$form['template_values'] = (isset($_POST['template_values']) && is_array($_POST['template_values']) ? $_POST['template_values'] : array());
 
 	foreach ($metadataSchema as $group => $definition) {
 		if ($group === 'type') {
@@ -398,10 +497,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		err($language['default_1'], $language['upload_25'], 1);
 	}
 
-	if ($form['descr'] === '') {
-		err($language['default_1'], $language['upload_26'], 1);
-	}
-
 	$contentType = lt_torrent_metadata_normalize_values('type', $form['type']);
 	if (!$contentType) {
 		err('Ошибка', 'Выберите тип раздачи.', 1);
@@ -415,6 +510,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		'info' => lt_torrent_metadata_csv('info', $form['info']),
 		'country' => lt_torrent_metadata_csv('country', $form['country']),
 	);
+
+	$autoDescriptionValues = array(
+		'type' => lt_torrent_metadata_option_label('type', $contentType),
+		'genre' => lt_torrent_metadata_format('genre', $metadataValues['genre'] ?? ''),
+		'language' => lt_torrent_metadata_format('language', $metadataValues['language'] ?? ''),
+		'subtitles' => lt_torrent_metadata_format('subtitles', $metadataValues['subtitles'] ?? ''),
+		'country' => lt_torrent_metadata_format('country', $metadataValues['country'] ?? ''),
+	);
+	$primaryDescriptionLabel = lt_upload_primary_description_label((string) ($categoryInfo['name'] ?? ''));
+	if ($primaryDescriptionLabel !== '' && trim((string) ($form['template_values'][$primaryDescriptionLabel] ?? '')) === '') {
+		err($language['default_1'], $language['upload_26'], 1);
+	}
+
+	$form['descr'] = lt_upload_build_description((string) ($categoryInfo['name'] ?? ''), $form['template_values'], $autoDescriptionValues);
+	if ($form['descr'] === '') {
+		err($language['default_1'], $language['upload_26'], 1);
+	}
 
 	$nextId = lt_upload_next_torrent_id();
 	if ($nextId <= 0) {
@@ -525,19 +637,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $form = $defaults;
 $descriptionTemplates = lt_torrent_description_templates();
 $categoryTemplateMap = array();
-$descriptionExampleMap = array();
+$templateFieldExamples = array();
 
 foreach ($categories as $category) {
 	$templateKey = lt_torrent_description_template_key((string) ($category['name'] ?? ''));
 	$categoryTemplateMap[(int) $category['id']] = $templateKey;
-	if (empty($descriptionExampleMap[$templateKey])) {
-		$descriptionExampleMap[$templateKey] = lt_torrent_template_example_lines($templateKey, 5);
+	if (empty($templateFieldExamples[$templateKey])) {
+		$templateFieldExamples[$templateKey] = lt_torrent_template_example_map($templateKey);
 	}
 }
 
 $currentCategoryName = lt_upload_category_name($categories, (int) ($form['catid'] ?? $defaultCategoryId));
 $currentTemplateKey = (string) ($categoryTemplateMap[(int) ($form['catid'] ?? $defaultCategoryId)] ?? 'movies');
-$currentDescriptionExampleLines = (array) ($descriptionExampleMap[$currentTemplateKey] ?? lt_torrent_template_example_lines($currentCategoryName, 5));
+$currentTemplateFields = lt_upload_template_manual_fields($currentCategoryName, (array) ($form['template_values'] ?? array()));
 $currentTypeOptions = lt_torrent_metadata_type_options_for_category($currentCategoryName);
 if ($currentTypeOptions) {
 	$metadataSchema['type']['options'] = $currentTypeOptions;
@@ -577,6 +689,28 @@ head('Загрузить торрент');
 							<option value="<?=(int) $category['id'];?>" data-template-key="<?=htmlspecialchars((string) ($categoryTemplateMap[(int) $category['id']] ?? 'movies'), ENT_QUOTES, 'UTF-8');?>"<?=((int) $form['catid'] === (int) $category['id'] ? ' selected' : '');?>><?=htmlspecialchars((string) $category['name'], ENT_QUOTES, 'UTF-8');?></option>
 							<?php } ?>
 						</select>
+					</div>
+
+					<div class="upload-field">
+						<label class="upload-label">Сведения о релизе</label>
+						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('structured_description'), ENT_QUOTES, 'UTF-8');?></div>
+						<div class="edit-template-fields upload-template-fields" id="upload_template_fields">
+							<?php foreach ($currentTemplateFields as $field) { ?>
+							<div class="edit-template-field<?=($field['field_type'] === 'textarea' ? ' edit-template-field-full' : '');?>" data-template-label="<?=htmlspecialchars($field['label'], ENT_QUOTES, 'UTF-8');?>" data-template-type="<?=htmlspecialchars($field['field_type'], ENT_QUOTES, 'UTF-8');?>">
+								<?php $fieldExample = lt_torrent_template_example_value($currentCategoryName, $field['label']); ?>
+								<label class="upload-label" for="upload_template_<?=md5($field['label']);?>"><?=htmlspecialchars($field['label'], ENT_QUOTES, 'UTF-8');?></label>
+								<?php if ($field['field_type'] === 'textarea') { ?>
+								<textarea id="upload_template_<?=md5($field['label']);?>" class="upload-textarea edit-template-textarea" name="template_values[<?=htmlspecialchars($field['label'], ENT_QUOTES, 'UTF-8');?>]" placeholder="<?=htmlspecialchars($fieldExample, ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars($field['value'], ENT_QUOTES, 'UTF-8');?></textarea>
+								<?php } else { ?>
+								<input id="upload_template_<?=md5($field['label']);?>" class="upload-input" type="text" name="template_values[<?=htmlspecialchars($field['label'], ENT_QUOTES, 'UTF-8');?>]" value="<?=htmlspecialchars($field['value'], ENT_QUOTES, 'UTF-8');?>" placeholder="<?=htmlspecialchars($fieldExample, ENT_QUOTES, 'UTF-8');?>">
+								<?php } ?>
+								<?php if ($fieldExample !== '') { ?>
+								<div class="upload-example-hint">Например: <?=nl2br(htmlspecialchars($fieldExample, ENT_QUOTES, 'UTF-8'));?></div>
+								<?php } ?>
+							</div>
+							<?php } ?>
+						</div>
+						<textarea id="upload_descr" name="descr" hidden><?=htmlspecialchars($form['descr'], ENT_QUOTES, 'UTF-8');?></textarea>
 					</div>
 
 					<?php foreach ($metadataSchema as $group => $definition) { ?>
@@ -623,20 +757,6 @@ head('Загрузить торрент');
 						<input id="upload_tags" class="upload-input" type="text" name="tags" value="<?=htmlspecialchars($form['tags'], ENT_QUOTES, 'UTF-8');?>" placeholder="боевик, 1080p, netflix">
 						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('tags'), ENT_QUOTES, 'UTF-8');?></div>
 					</div>
-
-					<div class="upload-field upload-field-description">
-						<label class="upload-label" for="upload_descr">Описание</label>
-						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('description'), ENT_QUOTES, 'UTF-8');?></div>
-						<textarea id="upload_descr" class="upload-textarea" name="descr" required><?=htmlspecialchars($form['descr'], ENT_QUOTES, 'UTF-8');?></textarea>
-						<div class="upload-example-card">
-							<div class="upload-example-title">Пример заполнения шаблона</div>
-							<div class="upload-example-list" id="upload_description_example">
-								<?php foreach ($currentDescriptionExampleLines as $exampleLine) { ?>
-								<div class="upload-example-line"><?=htmlspecialchars((string) $exampleLine, ENT_QUOTES, 'UTF-8');?></div>
-								<?php } ?>
-							</div>
-						</div>
-					</div>
 				</div>
 			</div>
 
@@ -650,15 +770,15 @@ head('Загрузить торрент');
 (function () {
 	var form = document.querySelector('.upload-form');
 	var categorySelect = document.getElementById('upload_category');
+	var templateFieldsContainer = document.getElementById('upload_template_fields');
 	var descriptionField = document.getElementById('upload_descr');
-	var descriptionExample = document.getElementById('upload_description_example');
 	var typeOptionsContainer = document.getElementById('upload_type_options');
 	var templates = <?=json_encode($descriptionTemplates, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
-	var descriptionExamples = <?=json_encode($descriptionExampleMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
+	var templateExamples = <?=json_encode($templateFieldExamples, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
 	var typeOptions = <?=json_encode($typeOptionsMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
 	var defaultTemplateKey = 'movies';
 
-	if (!form || !categorySelect || !descriptionField || !typeOptionsContainer || !descriptionExample) {
+	if (!form || !categorySelect || !templateFieldsContainer || !descriptionField || !typeOptionsContainer) {
 		return;
 	}
 
@@ -667,6 +787,10 @@ head('Загрузить торрент');
 			.replace(/&/g, '&amp;')
 			.replace(/</g, '&lt;')
 			.replace(/>/g, '&gt;');
+	}
+
+	function escapeAttribute(value) {
+		return escapeHtml(value).replace(/"/g, '&quot;');
 	}
 
 	function selectedCategoryTemplateKey() {
@@ -703,22 +827,48 @@ head('Загрузить торрент');
 		return typeOptions[selectedCategoryTemplateKey()] || {};
 	}
 
+	function currentTemplateExamples() {
+		return templateExamples[selectedCategoryTemplateKey()] || templateExamples[defaultTemplateKey] || {};
+	}
+
+	function templateItems() {
+		var templateKey = selectedCategoryTemplateKey();
+		var template = templates[templateKey] || templates[defaultTemplateKey] || { items: [] };
+		return Array.isArray(template.items) ? template.items : [];
+	}
+
+	function fieldTypeForLabel(label) {
+		return ['Описание', 'В ролях', 'Треклист', 'Системные требования'].indexOf(String(label || '').trim()) !== -1 ? 'textarea' : 'text';
+	}
+
+	function collectTemplateValues() {
+		var values = {};
+		var nodes = templateFieldsContainer.querySelectorAll('[data-template-label]');
+
+		Array.prototype.forEach.call(nodes, function (node) {
+			var label = String(node.getAttribute('data-template-label') || '').trim();
+			var input = node.querySelector('input, textarea');
+			if (!label || !input) {
+				return;
+			}
+
+			values[label] = String(input.value || '');
+		});
+
+		return values;
+	}
+
 	function renderTypeOptions() {
 		var options = currentTypeOptions();
 		var currentInput = form.querySelector('input[name="content_type"]:checked');
 		var currentValue = currentInput ? String(currentInput.value || '') : '';
-		var firstValue = '';
 		var html = '';
 
-		Object.keys(options).forEach(function (value) {
+		Object.keys(options).forEach(function (value, index) {
 			var label = String(options[value] || '').trim();
 			var checked = '';
 
-			if (!firstValue) {
-				firstValue = value;
-			}
-
-			if (currentValue !== '' && currentValue === value) {
+			if ((currentValue !== '' && currentValue === value) || (currentValue === '' && index === 0)) {
 				checked = ' checked';
 			}
 
@@ -729,74 +879,57 @@ head('Загрузить торрент');
 		});
 
 		typeOptionsContainer.innerHTML = html;
-
-		if (!typeOptionsContainer.querySelector('input[name="content_type"]:checked')) {
-			var firstInput = typeOptionsContainer.querySelector('input[name="content_type"]');
-			if (firstInput) {
-				firstInput.checked = true;
-			}
-		}
 	}
 
-	function renderDescriptionExample() {
-		var templateKey = selectedCategoryTemplateKey();
-		var lines = descriptionExamples[templateKey] || descriptionExamples[defaultTemplateKey] || [];
+	function renderTemplateFields() {
+		var values = collectTemplateValues();
+		var examples = currentTemplateExamples();
 		var html = '';
 
-		lines.forEach(function (line) {
-			html += '<div class="upload-example-line">' + escapeHtml(line) + '</div>';
+		templateItems().forEach(function (item) {
+			var itemType = String(item.type || 'field');
+			var label = String(item.label || '').trim();
+			var auto = String(item.auto || '').trim();
+			var fieldType = fieldTypeForLabel(label);
+			var value = String(values[label] || '');
+			var example = String(examples[label] || '');
+			var fieldId = 'upload_template_' + label.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '_');
+
+			if (!label || itemType === 'section' || auto !== '') {
+				return;
+			}
+
+			html += '<div class="edit-template-field' + (fieldType === 'textarea' ? ' edit-template-field-full' : '') + '" data-template-label="' + escapeAttribute(label) + '" data-template-type="' + fieldType + '">';
+			html += '<label class="upload-label" for="' + fieldId + '">' + escapeHtml(label) + '</label>';
+			if (fieldType === 'textarea') {
+				html += '<textarea id="' + fieldId + '" class="upload-textarea edit-template-textarea" name="template_values[' + escapeAttribute(label) + ']" placeholder="' + escapeAttribute(example) + '">' + escapeHtml(value) + '</textarea>';
+			} else {
+				html += '<input id="' + fieldId + '" class="upload-input" type="text" name="template_values[' + escapeAttribute(label) + ']" value="' + escapeAttribute(value) + '" placeholder="' + escapeAttribute(example) + '">';
+			}
+			if (example !== '') {
+				html += '<div class="upload-example-hint">Например: ' + escapeHtml(example).replace(/\n/g, '<br>') + '</div>';
+			}
+			html += '</div>';
 		});
 
-		descriptionExample.innerHTML = html;
-	}
-
-	function parseDescription(text) {
-		var result = {};
-		var currentLabel = '';
-
-		String(text || '').split(/\r?\n/).forEach(function (line) {
-			var fieldMatch = line.match(/^\[b\]([^:\[]+):\[\/b\]\s*(.*)$/i);
-			var sectionMatch = line.match(/^\[u\].+\[\/u\]$/i);
-
-			if (sectionMatch) {
-				currentLabel = '';
-				return;
-			}
-
-			if (fieldMatch) {
-				currentLabel = String(fieldMatch[1] || '').trim();
-				result[currentLabel] = String(fieldMatch[2] || '').trim();
-				return;
-			}
-
-			if (currentLabel === '') {
-				return;
-			}
-
-			result[currentLabel] += (result[currentLabel] !== '' ? '\n' : '') + line;
-		});
-
-		return result;
+		templateFieldsContainer.innerHTML = html;
 	}
 
 	function buildDescription() {
-		var templateKey = selectedCategoryTemplateKey();
-		var template = templates[templateKey] || templates[defaultTemplateKey] || { items: [] };
-		var currentValues = parseDescription(descriptionField.value);
+		var currentValues = collectTemplateValues();
 		var autoValues = {
 			type: selectedRadioText('content_type'),
-			genre: selectedTexts('input[name="genre[]"]:checked'),
-			language: selectedTexts('input[name="language[]"]:checked'),
-			subtitles: selectedTexts('input[name="subtitles[]"]:checked'),
-			country: selectedTexts('input[name="country[]"]:checked')
+			genre: selectedTexts('input[name="genre[]"]:checked').join(', '),
+			language: selectedTexts('input[name="language[]"]:checked').join(', '),
+			subtitles: selectedTexts('input[name="subtitles[]"]:checked').join(', '),
+			country: selectedTexts('input[name="country[]"]:checked').join(', ')
 		};
 		var lines = [];
 
-		(template.items || []).forEach(function (item) {
+		templateItems().forEach(function (item) {
 			var itemType = String(item.type || 'field');
 			var label = String(item.label || '').trim();
 			var value = '';
-			var autoValue = '';
 
 			if (!label) {
 				return;
@@ -810,11 +943,12 @@ head('Загрузить торрент');
 				return;
 			}
 
-			if (item.auto && typeof autoValues[item.auto] !== 'undefined') {
-				autoValue = Array.isArray(autoValues[item.auto]) ? autoValues[item.auto].join(', ') : String(autoValues[item.auto] || '').trim();
+			if (item.auto && typeof autoValues[item.auto] !== 'undefined' && autoValues[item.auto] !== '') {
+				value = autoValues[item.auto];
+			} else {
+				value = String(currentValues[label] || '').trim();
 			}
 
-			value = autoValue !== '' ? autoValue : String(currentValues[label] || '').trim();
 			if (value.indexOf('\n') !== -1) {
 				lines.push('[b]' + label + ':[/b]' + (value !== '' ? '\n' + value : ''));
 				return;
@@ -832,7 +966,11 @@ head('Загрузить торрент');
 
 	categorySelect.addEventListener('change', function () {
 		renderTypeOptions();
-		renderDescriptionExample();
+		renderTemplateFields();
+		syncDescription();
+	});
+
+	templateFieldsContainer.addEventListener('input', function () {
 		syncDescription();
 	});
 
@@ -847,8 +985,11 @@ head('Загрузить торрент');
 		}
 	});
 
+	form.addEventListener('submit', function () {
+		syncDescription();
+	});
+
 	renderTypeOptions();
-	renderDescriptionExample();
 	syncDescription();
 })();
 </script>

@@ -10,7 +10,7 @@
 
 # LiteTracker Engine
 
-LiteTracker Engine is a Docker-ready PHP BitTorrent tracker with a classic web interface, torrent announce/scrape endpoints, user profiles, comments, ratings, bookmarks, chat, moderation tools, and a seeded demo database.
+LiteTracker Engine is a Docker-ready PHP BitTorrent tracker with a classic web interface, torrent announce/scrape endpoints, user profiles, comments, ratings, bookmarks, moderation tools, and a seeded demo database.
 
 Русская версия: [README на русском](#readme-на-русском)
 English version: [English README](#english-readme)
@@ -36,7 +36,7 @@ LiteTracker Engine - это PHP-движок BitTorrent-трекера с лок
 - Учет скачанного/отданного, сидов, личеров и статистики пользователей.
 - Рейтинги релизов, комментарии, ответы и закладки.
 - Профили пользователей, стена профиля, друзья, личные сообщения и черный список.
-- Чат и блоки главной страницы.
+- Блоки главной страницы.
 - Административная панель, роли и права доступа.
 - Модерация комментариев и жалоб на стену профиля.
 - Автоочистка, обновление пиров и проверка внешних трекеров.
@@ -56,7 +56,7 @@ LiteTracker Engine - это PHP-движок BitTorrent-трекера с лок
 
 ```text
 .
-├── ajax/                    # AJAX-обработчики чата, профилей, тегов
+├── ajax/                    # AJAX-обработчики профилей, тегов и служебных действий
 ├── blocks/                  # Блоки боковой панели и главной страницы
 ├── database/                # Основной SQL-дамп
 ├── docker/apache/           # Apache virtual hosts и стартовый скрипт TLS
@@ -322,7 +322,7 @@ The repository includes an SQL dump with demo data, so the application can be st
 
 ```text
 .
-├── ajax/                    # AJAX handlers for chat, profiles, tags
+├── ajax/                    # AJAX handlers for profiles, tags, and service actions
 ├── blocks/                  # Sidebar and homepage blocks
 ├── database/                # Main SQL dump
 ├── docker/apache/           # Apache virtual hosts and TLS startup script

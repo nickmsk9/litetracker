@@ -271,14 +271,17 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 			<section class="details-panel details-gallery-panel">
 				<div class="details-gallery-grid" id="details-gallery">
 					<?php foreach ($screens as $screen) { ?>
-					<div
+					<a
 						class="details-gallery-item"
+						href="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>"
+						target="_blank"
+						rel="noopener"
 						data-details-screenshot-zoom="1"
 						data-zoom-src="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>"
 						title="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>"
 					>
 						<img src="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>" alt="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>">
-					</div>
+					</a>
 					<?php } ?>
 				</div>
 			</section>

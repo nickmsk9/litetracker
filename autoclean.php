@@ -76,12 +76,18 @@ while (list($id) = $db->get_array($peerssql) ) {
 ///////////////////////////////////////////////////////////////////
 //Начисление бонусов
 ///////////////////////////////////////////////////////////////////
-// Начисляем бонусы за активное присутствие на сайте за последний интервал очистки
+// Начисляем бонусы за сидирование или активное присутствие за последний интервал очистки
+$bonus_source = (string) ($config['bonus_source'] ?? 'seeding');
 $bonus_per_hour = (float) ($config['bonus_price'] ?? $config['voice_price'] ?? 0);
 $bonus_per_cleanup = round($bonus_per_hour * ((int) $CRON['autoclean_interval'] / 3600), 2);
 if ($bonus_per_cleanup > 0) {
-	$active_from = $db->safesql(get_date_time(time() - (int) $CRON['autoclean_interval']));
-	$active_users = $db->query("SELECT DISTINCT user_id FROM sessions WHERE user_id > 0 AND last_access >= '".$active_from."'");
+	if ($bonus_source === 'online') {
+		$active_from = $db->safesql(get_date_time(time() - (int) $CRON['autoclean_interval']));
+		$active_users = $db->query("SELECT DISTINCT user_id FROM sessions WHERE user_id > 0 AND last_access >= '".$active_from."'");
+	} else {
+		$active_users = $db->query("SELECT DISTINCT userid AS user_id FROM peers WHERE seeder = 1 AND userid > 0");
+	}
+
 	while ($active_user = $db->get_row($active_users)) {
 		$db->query("UPDATE users SET {$bonusColumn} = ({$bonusColumn} + ".$bonus_per_cleanup.") WHERE id = ".(int) $active_user['user_id']);
 		$memcached->delete('user_'.(int) $active_user['user_id']);

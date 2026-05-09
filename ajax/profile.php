@@ -43,8 +43,7 @@ function profile_ajax_admin_ensure_schema()
 		'support_enabled' => "ALTER TABLE `users` ADD COLUMN `support_enabled` tinyint NOT NULL DEFAULT '0' AFTER `theme_dark`",
 		'support_until' => "ALTER TABLE `users` ADD COLUMN `support_until` datetime DEFAULT NULL AFTER `support_enabled`",
 		'warning_until' => "ALTER TABLE `users` ADD COLUMN `warning_until` datetime DEFAULT NULL AFTER `support_until`",
-		'chat_ban' => "ALTER TABLE `users` ADD COLUMN `chat_ban` tinyint NOT NULL DEFAULT '0' AFTER `warning_until`",
-		'in_group' => "ALTER TABLE `users` ADD COLUMN `in_group` tinyint NOT NULL DEFAULT '0' AFTER `chat_ban`",
+		'in_group' => "ALTER TABLE `users` ADD COLUMN `in_group` tinyint NOT NULL DEFAULT '0' AFTER `warning_until`",
 	);
 
 	foreach ($userColumns as $column => $sql) {
@@ -217,9 +216,7 @@ if ($action === 'moderate_profile') {
 		$updates[] = "warning_until=NULL";
 	}
 
-	$chatBan = ((int) ($_POST['chat_ban'] ?? 0) === 1 ? 1 : 0);
 	$inGroup = ((int) ($_POST['in_group'] ?? 0) === 1 ? 1 : 0);
-	$updates[] = "chat_ban=".$chatBan;
 	$updates[] = "in_group=".$inGroup;
 
 	$uploadedMb = (int) ($_POST['uploaded_mb'] ?? 0);

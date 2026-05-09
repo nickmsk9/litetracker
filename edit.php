@@ -684,7 +684,7 @@ head($language['edit_3'], true);
 					</div>
 
 					<div class="upload-field">
-						<label class="upload-label">Карточка описания</label>
+						<label class="upload-label">Сведения о релизе</label>
 						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('structured_description'), ENT_QUOTES, 'UTF-8');?></div>
 						<div class="edit-template-fields" id="edit_template_fields">
 							<?php foreach ($currentTemplateFields as $field) { ?>

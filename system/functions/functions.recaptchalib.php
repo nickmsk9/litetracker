@@ -95,12 +95,16 @@ if (!function_exists('lt_captcha_get_html')) {
 		$valueId = 'lt-captcha-value-'.$captchaId;
 		$inputId = 'lt-captcha-answer-'.$captchaId;
 
-		$html = '<div class="lt-captcha" role="group" aria-label="CAPTCHA">';
-		$html .= '<div id="'.$valueId.'" class="lt-captcha-value" aria-label="'.htmlspecialchars($captchaCodeLabel, ENT_QUOTES, 'UTF-8').' '.$captchaValue.'">'.$captchaValue.'</div>';
-		$html .= '<input type="hidden" name="'.LT_CAPTCHA_FIELD_ID.'" value="'.$captchaId.'">';
-		$html .= '<div id="'.$hintId.'" class="lt-captcha-label"><label for="'.$inputId.'">'.$captchaLabel.'</label></div>';
-		$html .= '<input id="'.$inputId.'" type="text" name="'.LT_CAPTCHA_FIELD_ANSWER.'" value="" maxlength="'.(int) LT_CAPTCHA_LENGTH.'" autocomplete="off" aria-label="'.htmlspecialchars($captchaLabel, ENT_QUOTES, 'UTF-8').'" aria-describedby="'.$hintId.' '.$valueId.'" required>';
+		$html = '<div class="lt-captcha" role="group" aria-label="CAPTCHA" data-lt-captcha>';
+		$html .= '<div class="lt-captcha-head">';
+		$html .= '<div id="'.$valueId.'" class="lt-captcha-value" aria-label="'.htmlspecialchars($captchaCodeLabel, ENT_QUOTES, 'UTF-8').' '.$captchaValue.'" data-lt-captcha-value>'.$captchaValue.'</div>';
+		$html .= '<button class="lt-captcha-refresh" type="button" data-lt-captcha-refresh>Обновить</button>';
 		$html .= '</div>';
+		$html .= '<input type="hidden" name="'.LT_CAPTCHA_FIELD_ID.'" value="'.$captchaId.'" data-lt-captcha-id>';
+		$html .= '<div id="'.$hintId.'" class="lt-captcha-label"><label for="'.$inputId.'">'.$captchaLabel.'</label></div>';
+		$html .= '<input id="'.$inputId.'" type="text" name="'.LT_CAPTCHA_FIELD_ANSWER.'" value="" maxlength="'.(int) LT_CAPTCHA_LENGTH.'" autocomplete="off" aria-label="'.htmlspecialchars($captchaLabel, ENT_QUOTES, 'UTF-8').'" aria-describedby="'.$hintId.' '.$valueId.'" required data-lt-captcha-answer>';
+		$html .= '</div>';
+		$html .= '<script>(function(){if(window.__ltCaptchaRefreshReady){return;}window.__ltCaptchaRefreshReady=true;document.addEventListener("click",function(event){if(typeof window.fetch!=="function"||!event.target.closest){return;}var button=event.target.closest("[data-lt-captcha-refresh]");if(!button){return;}var box=button.closest("[data-lt-captcha]");if(!box){return;}button.disabled=true;window.fetch("/ajax/captcha.php",{headers:{"X-Requested-With":"XMLHttpRequest","Accept":"application/json"},credentials:"same-origin"}).then(function(response){return response.json();}).then(function(payload){if(!payload||!payload.ok){return;}var value=box.querySelector("[data-lt-captcha-value]");var id=box.querySelector("[data-lt-captcha-id]");var answer=box.querySelector("[data-lt-captcha-answer]");if(value){value.textContent=payload.value;value.setAttribute("aria-label","CAPTCHA "+payload.value);}if(id){id.value=payload.id;}if(answer){answer.value="";answer.focus();}}).catch(function(){}).then(function(){button.disabled=false;});});})();</script>';
 
 		return $html;
 	}
