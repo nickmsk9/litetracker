@@ -1863,6 +1863,9 @@ body.theme-dark .project-help-button:hover {
 .wall-form-controls {
     display: flex;
     justify-content: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
     margin-top: 8px;
 }
 
@@ -1873,6 +1876,25 @@ body.theme-dark .project-help-button:hover {
     font-size: 13px;
     font-weight: 500;
     letter-spacing: 0.01em;
+}
+
+.wall-form-cancel,
+.wall-comment-button.wall-form-cancel {
+    min-height: 32px;
+    padding: 6px 16px;
+    border: 1px solid #d9534f;
+    border-radius: 6px;
+    background: #d9534f;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.wall-form-cancel:hover,
+.wall-comment-button.wall-form-cancel:hover {
+    border-color: #c44743;
+    background: #c44743;
+    color: #ffffff;
 }
 
 .profile-sidebar {
