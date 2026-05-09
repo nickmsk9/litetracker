@@ -6409,6 +6409,97 @@ body.is-mobile .details-bookmark-button {
     font-size: 12px;
 }
 
+.users-admin-stat,
+.wall-report-stat strong {
+    display: block;
+    margin-top: 6px;
+    color: #111827;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.users-admin-stat-text {
+    font-size: 18px;
+    line-height: 1.25;
+}
+
+.users-admin-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 220px;
+}
+
+.users-admin-avatar {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: #eef3f7;
+}
+
+.users-admin-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.users-admin-name {
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.users-admin-status,
+.wall-report-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: #eef3f7;
+    color: #405366;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.users-admin-status-online,
+.wall-report-status-open {
+    background: #edf8ef;
+    color: #235c33;
+}
+
+.wall-report-status-resolved {
+    background: #f4f7fa;
+    color: #647283;
+}
+
+.wall-report-stat {
+    color: inherit;
+    text-decoration: none;
+}
+
+.wall-report-stat:hover,
+.wall-report-stat.is-active {
+    border-color: #b8c9d8;
+    background: #fff;
+    text-decoration: none;
+}
+
+.wall-report-comment {
+    max-width: 520px;
+    color: #1f2a35;
+    line-height: 1.55;
+}
+
+.wall-report-action-form {
+    display: inline-flex;
+    margin: 0;
+}
+
 .release-category-chip {
     display: inline-flex;
     align-items: center;

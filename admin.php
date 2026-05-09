@@ -174,9 +174,43 @@ function admin_dashboard_php_literal($value, $type)
 	return "'".str_replace(array('\\', "'"), array('\\\\', "\\'"), (string) $value)."'";
 }
 
+function admin_dashboard_config_path()
+{
+	return __DIR__.DIRECTORY_SEPARATOR.'system'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'config.php';
+}
+
+function admin_dashboard_display_path($path)
+{
+	$root = rtrim(str_replace('\\', '/', __DIR__), '/');
+	$normalizedPath = str_replace('\\', '/', (string) $path);
+
+	if ($root !== '' && strpos($normalizedPath, $root.'/') === 0) {
+		return substr($normalizedPath, strlen($root) + 1);
+	}
+
+	return $normalizedPath;
+}
+
+function admin_dashboard_ensure_writable($path)
+{
+	if (is_writable($path)) {
+		return true;
+	}
+
+	if (is_file($path)) {
+		@chmod($path, 0664);
+	}
+
+	return is_writable($path);
+}
+
 function admin_dashboard_update_config_values($updates, $fieldMap)
 {
-	$configPath = __DIR__.'/system/config/config.php';
+	$configPath = admin_dashboard_config_path();
+	if (!admin_dashboard_ensure_writable($configPath)) {
+		return 'Файл system/config/config.php недоступен для записи. Проверьте права файла или владельца процесса PHP.';
+	}
+
 	$content = file_get_contents($configPath);
 
 	if ($content === false) {
@@ -584,8 +618,9 @@ if (!empty($PRIV['EDIT_PRIV'])) {
 	}
 }
 
-$configPath = __DIR__.'/system/config/config.php';
-$configWritable = is_writable($configPath);
+$configPath = admin_dashboard_config_path();
+$configDisplayPath = admin_dashboard_display_path($configPath);
+$configWritable = admin_dashboard_ensure_writable($configPath);
 head('Админка');
 ?>
 <style>
@@ -946,6 +981,11 @@ head('Админка');
 	word-break: break-word;
 }
 
+.admin-system-path {
+	font-family: Consolas, Monaco, monospace;
+	font-size: 12px;
+}
+
 @media (max-width: 720px) {
 	.admin-dashboard {
 		padding: 0 12px 20px;
@@ -1013,7 +1053,7 @@ head('Админка');
 		<div class='admin-system-grid'>
 			<div class='admin-system-item'>
 				<div class='admin-system-label'>Конфиг</div>
-				<div class='admin-system-value'><?=htmlspecialchars($configPath, ENT_QUOTES, 'UTF-8');?><br><?=($configWritable ? 'доступен для записи из админки' : 'недоступен для записи, проверьте права файла');?></div>
+				<div class='admin-system-value'><span class='admin-system-path'><?=htmlspecialchars($configDisplayPath, ENT_QUOTES, 'UTF-8');?></span><br><?=($configWritable ? 'доступен для записи из админки' : 'недоступен для записи, проверьте права файла');?></div>
 			</div>
 			<div class='admin-system-item'>
 				<div class='admin-system-label'>CAPTCHA</div>
@@ -1096,7 +1136,7 @@ head('Админка');
 		<h2 class='admin-settings-title'><?=$settingsTab['title'];?></h2>
 		<p class='admin-settings-text'><?=$settingsTab['description'];?></p>
 		<?php if (!$configWritable) { ?>
-		<div class='admin-inline-message admin-inline-message-error' style='margin-top:16px;'>Файл <?=htmlspecialchars($configPath, ENT_QUOTES, 'UTF-8');?> сейчас недоступен для записи, поэтому сохранение настроек не пройдет.</div>
+		<div class='admin-inline-message admin-inline-message-error' style='margin-top:16px;'>Файл <?=htmlspecialchars($configDisplayPath, ENT_QUOTES, 'UTF-8');?> сейчас недоступен для записи, поэтому сохранение настроек не пройдет.</div>
 		<?php } ?>
 		<form method='post' action='admin.php'>
 			<input type='hidden' name='tab' value='<?=$activeTab;?>'>
