@@ -314,7 +314,7 @@ if ($isOwnProfile) {
 			'type' => 'button',
 			'label' => 'Редактировать',
 			'class' => 'profile-card-button',
-			'attributes' => ' data-profile-toggle-editor="1" aria-expanded="false"',
+			'attributes' => ' data-profile-toggle-editor="1" aria-expanded="false" onclick="var p=document.getElementById(\'profile-editor-panel\');if(p){var open=p.hasAttribute(\'hidden\')||p.hidden;p.hidden=!open;if(open){p.removeAttribute(\'hidden\');this.setAttribute(\'aria-expanded\',\'true\');if(p.scrollIntoView){p.scrollIntoView({block:\'nearest\',behavior:\'smooth\'});}}else{p.setAttribute(\'hidden\',\'hidden\');this.setAttribute(\'aria-expanded\',\'false\');}}return false;"',
 		);
 	}
 

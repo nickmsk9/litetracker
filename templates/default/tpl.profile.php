@@ -49,7 +49,7 @@ if (!defined('LITETRACKER')) {
 			<section class="profile-editor-panel" id="profile-editor-panel" hidden>
 				<div class="profile-editor-header">
 					<h2 class="profile-editor-title">Редактирование пользователя</h2>
-					<button class="profile-editor-close" type="button" data-profile-close-editor="1">Закрыть</button>
+					<button class="profile-editor-close" type="button" data-profile-close-editor="1" onclick="var p=document.getElementById('profile-editor-panel');if(p){p.hidden=true;p.setAttribute('hidden','hidden');}var b=document.querySelector('[data-profile-toggle-editor]');if(b){b.setAttribute('aria-expanded','false');}return false;">Закрыть</button>
 				</div>
 
 				<form class="profile-editor-form" id="profile-editor-form" method="post" action="ajax/profile.php">
