@@ -15,6 +15,7 @@ require 'system/init.php';
 $act = (string) ($_GET['act'] ?? '');
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $status = (string) ($_GET['status'] ?? '');
+$GLOBALS['LITETRACKER_HIDE_STANDARD_SIDEBAR'] = true;
 
 function lt_news_format_publication_date($date)
 {
