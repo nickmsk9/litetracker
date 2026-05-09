@@ -5399,10 +5399,6 @@ iframe {
         border-right: 1px solid var(--line);
     }
 
-    .browse-category-tab:first-child {
-        border-left: 0;
-    }
-
     .browse-category-tab:last-child {
         border-right: 0;
     }
@@ -5454,10 +5450,6 @@ iframe {
     .site-header-tools {
         justify-content: space-between;
         margin-left: 0;
-    }
-
-    .site-header-tools-auth {
-        margin-right: 0;
     }
 
     .site-auth-actions {
@@ -6316,10 +6308,6 @@ body.auth-modal-frame {
     padding: 0;
     background: #ffffff;
     overflow: auto;
-}
-
-body.auth-modal-frame .auth-page {
-    padding: 0;
 }
 
 body.auth-modal-frame .auth-layout {

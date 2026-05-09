@@ -110,7 +110,7 @@ if ($action === 'add') {
     }
 
     $insertFields = array('id_user', $objectColumn, 'date', 'text', 'id_user_edit', 'date_edit');
-    $insertValues = array((int)$USER['id'], $objectId, 'NOW()', "'" . $db->safesql($text) . "'", (int)$USER['id'], 'NOW()');
+    $insertValues = array((int)$USER['id'], $objectId, 'NOW()', "'" . $db->safesql($text) . "'", 0, 'NOW()');
 
     if ($supportsThreads) {
         $insertFields[] = 'parent_id';

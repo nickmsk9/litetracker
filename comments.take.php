@@ -141,7 +141,7 @@ if ($act === 'add') {
     }
 
     $insertFields = array('id_user', $object_name, 'date', 'text', 'id_user_edit', 'date_edit');
-    $insertPlaceholders = array($user_id, $object_id, 'NOW()', '?', $user_id, 'NOW()');
+    $insertPlaceholders = array($user_id, $object_id, 'NOW()', '?', 0, 'NOW()');
 
     if ($supportsThreads) {
         $insertFields[] = 'parent_id';

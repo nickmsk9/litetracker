@@ -193,6 +193,24 @@ function lt_comment_deleted_meta($text)
     );
 }
 
+function lt_comment_has_real_edit($comment)
+{
+    $comment = (array) $comment;
+    $editUserId = (int) ($comment['id_user_edit'] ?? 0);
+    $editDate = trim((string) ($comment['date_edit'] ?? ''));
+    $createdDate = trim((string) ($comment['date'] ?? ''));
+
+    if ($editUserId <= 0) {
+        return false;
+    }
+
+    if ($editDate === '' || $editDate === '0000-00-00 00:00:00') {
+        return false;
+    }
+
+    return ($editDate !== $createdDate);
+}
+
 function comments_fetch_rows($type, $objectId, $limit = '', $desc = 0)
 {
     global $db;
@@ -321,7 +339,7 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0)
     }
 
     $commentDate = (!empty($node['date']) ? convent_date($node['date']) : '');
-    $commentEditedLabel = (!empty($node['date_edit']) && $node['date_edit'] !== '0000-00-00 00:00:00')
+    $commentEditedLabel = lt_comment_has_real_edit($node)
         ? (($language['comments_3'] ?? 'Изменено:') . ' ' . convent_date($node['date_edit']))
         : '';
     $commentTextRaw = (string) ($node['text'] ?? '');

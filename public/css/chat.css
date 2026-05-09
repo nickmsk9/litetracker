@@ -14,7 +14,6 @@
 }
 .other:hover
 {
-	/*border-bottom: 1px dotted;*/
 	color: #999999;
 }
 
@@ -29,7 +28,6 @@
 }
 .whisperTo:hover
 {
-	/*border-bottom: 1px dotted #3366CC;*/
 	color: #999999;
 }
 .error
@@ -61,7 +59,6 @@
 }
 .nameOther:hover
 {
-	/*border-bottom: 1px dotted #3d3d3d;*/
 	color: #999999;
 }
 
@@ -89,7 +86,6 @@
 #loginWrap
 {
 	width: 310px;
-	/*height: 234px;*/
 	position: absolute;
 	margin: -150px 0px 0px -155px;
 	left: 50%;
@@ -174,7 +170,6 @@ div#loginForm div.error
 #wrapper
 {
 	width: 880px;
-	/*height: 234px;*/
 	position: absolute;
 	margin: -260px 0px 0px -440px;
 	left: 50%;

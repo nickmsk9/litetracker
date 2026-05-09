@@ -47,7 +47,7 @@ while ($arr = $db->get_row($sql)) {
     $userName   = htmlspecialchars((string) $user['name'], ENT_QUOTES, 'UTF-8');
     $userClass  = (int) $user['class'];
     $commentDate = convent_date($arr['date']);
-    $editDate   = ($arr['date_edit'] !== '0000-00-00 00:00:00')
+    $editDate   = lt_comment_has_real_edit($arr)
                   ? htmlspecialchars($language['comments_3'] . ' ' . convent_date($arr['date_edit']), ENT_QUOTES, 'UTF-8')
                   : '';
     $dateLabel  = ($editDate ?: $commentDate);
