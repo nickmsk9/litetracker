@@ -193,6 +193,7 @@ function profile_href($user, $view = 'profile', $params = array())
 	}
 
 	if (
+		!empty($config['rewrite']) &&
 		!empty($userRow['profile_slug']) &&
 		function_exists('lt_profile_slug_normalize') &&
 		lt_profile_slug_normalize($userRow['profile_slug']) === (string) $userRow['profile_slug']
