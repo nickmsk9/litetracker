@@ -378,7 +378,7 @@ $signupFormAction = 'signup.php'.($isModalView ? '?modal=1' : '');
 				</label>
 
 				<div class="auth-submit-row signup-submit-row<?=($isModalView ? ' auth-modal-footer' : '');?>">
-					<button type="submit"><?=$language['signup_3'];?></button>
+					<button type="submit">Зарегистрироваться</button>
 				</div>
 				<?=lt_csrf_input('signup_form');?>
 			</form>
@@ -416,7 +416,7 @@ $signupValidateUrl = 'signup.php?act=validate'.($isModalView ? '&modal=1' : '');
 		var sendSize = function () {
 			var d = document.documentElement;
 			var b = document.body;
-			var h = Math.max(d ? d.scrollHeight : 0, b ? b.scrollHeight : 0, d ? d.offsetHeight : 0, b ? b.offsetHeight : 0);
+			var h = Math.max(d ? d.scrollHeight : 0, b ? b.scrollHeight : 0);
 			window.parent.postMessage({ type: 'lt-auth-modal-size', height: h }, window.location.origin);
 		};
 		window.addEventListener('load', sendSize);
@@ -474,7 +474,6 @@ $signupValidateUrl = 'signup.php?act=validate'.($isModalView ? '&modal=1' : '');
 	nameInput.addEventListener('input', runValidation);
 	emailInput.addEventListener('input', runValidation);
 	passwordInput.addEventListener('input', runValidation);
-	runValidation();
 })();
 </script>
 <?php if ($isModalView) { ?>

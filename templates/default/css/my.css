@@ -274,22 +274,23 @@ button:hover,
 .site-auth-overlay-panel {
     position: relative;
     width: 100%;
-    min-height: 320px;
     max-height: calc(100vh - 40px);
     background: var(--surface);
-    border-radius: 12px;
+    border-radius: 4px;
     overflow: hidden;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
 }
 
 .site-auth-frame {
     display: block;
     width: 100%;
-    height: 420px;
-    min-height: 320px;
+    height: 330px;
     max-height: calc(100vh - 40px);
     border: 0;
     background: var(--surface);
+}
+
+.site-auth-overlay-dialog[data-auth-kind="signup"] .site-auth-frame {
+    height: 489px;
 }
 
 body.site-auth-modal-open {
@@ -5695,7 +5696,7 @@ body.fluid .wrapper {
 
 .auth-label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
     color: #000000;
     font-size: 13px;
     line-height: 1.35;
@@ -5706,6 +5707,7 @@ body.fluid .wrapper {
 .auth-field select {
     display: block;
     width: 100%;
+    height: 40px;
     min-height: 40px;
     padding: 8px 12px;
     border: 1px solid #cbd7e2;
@@ -5733,6 +5735,10 @@ body.fluid .wrapper {
 
 .auth-captcha-row {
     margin-top: 20px;
+}
+
+.signup-captcha-row {
+    width: 302px;
 }
 
 .auth-captcha-row table,
@@ -5814,7 +5820,7 @@ body.fluid .wrapper {
 }
 
 .signup-live-hint {
-    min-height: 18px;
+    min-height: 0;
     margin-top: 6px;
     font-size: 12px;
     line-height: 1.35;
@@ -5833,7 +5839,7 @@ body.fluid .wrapper {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 24px;
+    gap: 26px;
     margin: 20px -20px 0;
     padding: 20px;
     border-top: 1px solid #d8e1ea;
@@ -5844,13 +5850,13 @@ body.fluid .wrapper {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 39px;
+    min-height: 40px;
     padding: 0 16px;
     border: 1px solid #4d89c5;
     border-radius: 4px;
     background: linear-gradient(180deg, #67a9e7 0%, #3d82c4 100%);
     color: #ffffff;
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 700;
     cursor: pointer;
 }
@@ -5868,7 +5874,7 @@ body.fluid .wrapper {
 .auth-link {
     color: #2f77bb;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 400;
     text-decoration: none;
 }
 
@@ -5940,17 +5946,17 @@ body.auth-modal-frame .login-card {
 }
 
 body.auth-modal-frame .login-card .auth-title {
-    margin-bottom: 14px;
+    margin-bottom: 24px;
 }
 
 body.auth-modal-frame .login-card .auth-grid {
-    gap: 14px;
+    gap: 20px;
 }
 
 body.auth-modal-frame .login-card .auth-footer {
-    margin-top: 14px;
-    padding-top: 14px;
-    padding-bottom: 14px;
+    margin-top: 20px;
+    padding-top: 20px;
+    padding-bottom: 19px;
 }
 
 .site-welcome-banner {
@@ -6042,12 +6048,13 @@ body.auth-modal-frame .signup-title {
 }
 
 body.auth-modal-frame .signup-field .auth-label {
-    margin-bottom: 6px;
+    margin-bottom: 7px;
     font-size: 13px;
 }
 
 body.auth-modal-frame .signup-field input,
 body.auth-modal-frame .signup-field select {
+    height: 40px;
     min-height: 40px;
     padding: 8px 10px;
     font-size: 14px;

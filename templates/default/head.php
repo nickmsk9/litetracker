@@ -182,7 +182,9 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 
 	function setFrameHeight(height) {
 		var numericHeight = Number(height) || defaultFrameHeight;
-		var clampedHeight = Math.max(320, Math.min(maxFrameHeight(), Math.round(numericHeight)));
+		var kind = dialog.getAttribute('data-auth-kind') || 'login';
+		var minHeight = (kind === 'signup' ? 320 : 0);
+		var clampedHeight = Math.max(minHeight, Math.min(maxFrameHeight(), Math.round(numericHeight)));
 		frame.style.height = clampedHeight + 'px';
 	}
 
@@ -247,17 +249,19 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 			return;
 		}
 
-		frame.src = meta.href;
-		setFrameHeight(defaultFrameHeight);
 		frame.title = meta.title;
 		dialog.setAttribute('aria-label', meta.title);
 		dialog.setAttribute('data-auth-kind', meta.kind);
+		frame.src = meta.href;
 		if (meta.kind === 'signup') {
 			setDialogWidth(560);
+			setFrameHeight(defaultFrameHeight);
 		} else if (meta.kind === 'forgot') {
 			setDialogWidth(460);
+			setFrameHeight(defaultFrameHeight);
 		} else {
 			setDialogWidth(292);
+			setFrameHeight(defaultFrameHeight);
 		}
 		overlay.hidden = false;
 		body.classList.add('site-auth-modal-open');
@@ -270,6 +274,7 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 		dialog.removeAttribute('data-auth-kind');
 		dialog.style.width = '';
 		dialog.style.maxWidth = '';
+		frame.style.height = '';
 	}
 
 	window.addEventListener('message', function(event){

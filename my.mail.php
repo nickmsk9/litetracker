@@ -193,6 +193,73 @@ function mail_render_message_html($row, $currentUserId, $currentUserName)
 	return (string) ob_get_clean();
 }
 
+function mail_render_conversation_modal($participant, $conversationTitle, $conversationSubtitle, $messages, $currentUserId, $targetUserId, $systemConversation, $conversationHasOlderMessages, $conversationOlderHref, $blockedByParticipant, $blockedByCurrent, $showAllConversationMessages)
+{
+	$currentUserName = (string) ($GLOBALS['USER']['name'] ?? '');
+	$systemConversation = (bool) $systemConversation;
+	$targetUserId = (int) $targetUserId;
+
+	ob_start();
+	?>
+	<div class="mail-overlay" data-mail-overlay="1">
+		<a class="mail-overlay-close" href="<?=mail_build_href('list');?>" aria-label="Закрыть">&times;</a>
+
+		<div class="mail-modal" role="dialog" aria-modal="true" aria-labelledby="mail-modal-title">
+			<div class="mail-modal-header">
+				<div class="mail-modal-avatar">
+					<img src="<?=mail_avatar_path($participant);?>" alt="<?=htmlspecialchars($conversationTitle, ENT_QUOTES, 'UTF-8');?>" width="40" height="40">
+				</div>
+				<div class="mail-modal-heading">
+					<div class="mail-modal-title" id="mail-modal-title"><?=htmlspecialchars($conversationTitle, ENT_QUOTES, 'UTF-8');?></div>
+					<div class="mail-modal-subtitle"><?=$conversationSubtitle;?></div>
+				</div>
+			</div>
+
+			<div class="mail-modal-body">
+				<div class="mail-modal-stream<?=($systemConversation ? ' mail-modal-stream-system' : '');?>" data-mail-stream="1">
+					<?php if ($conversationHasOlderMessages && $conversationOlderHref !== '') { ?>
+					<a class="mail-modal-history-link" href="<?=$conversationOlderHref;?>" data-mail-load-older="1">Показать более старые сообщения</a>
+					<?php } ?>
+
+					<?php if (!$messages) { ?>
+					<div class="mail-empty-state mail-empty-state-compact"><?=($systemConversation ? 'Системных сообщений пока нет.' : 'Сообщений пока нет. Можно начать диалог прямо сейчас.');?></div>
+					<?php } ?>
+
+					<?php foreach($messages as $row) { ?>
+					<?=mail_render_message_html($row, $currentUserId, $currentUserName);?>
+					<?php } ?>
+				</div>
+
+				<?php if (!$systemConversation) { ?>
+				<?php if ($blockedByParticipant) { ?>
+				<div class="mail-empty-state mail-empty-state-compact">Пользователь добавил вас в ЧС. Отправка новых сообщений недоступна.</div>
+				<?php } elseif ($blockedByCurrent) { ?>
+				<div class="mail-empty-state mail-empty-state-compact">Пользователь находится в вашем ЧС. Уберите его из списка, чтобы написать сообщение.</div>
+				<?php } else { ?>
+				<form class="mail-modal-form" action="<?=mail_build_href('conversation', $targetUserId, false, array('all' => ($showAllConversationMessages ? 1 : null)));?>" method="post" data-mail-reply-form="1">
+					<input type="hidden" name="name" value="Сообщение">
+					<textarea class="mail-modal-textarea" id="mail_reply_text" name="text"><?=htmlspecialchars((string) ($_POST['text'] ?? ''), ENT_QUOTES, 'UTF-8');?></textarea>
+					<div class="mail-modal-actions">
+						<button class="mail-button" type="submit">Отправить</button>
+					</div>
+				</form>
+				<?php } ?>
+				<?php } else { ?>
+				<form class="mail-modal-form mail-modal-form-system" action="#" method="post">
+					<textarea class="mail-modal-textarea" aria-label="Ответ на системное сообщение"></textarea>
+					<div class="mail-modal-actions">
+						<button class="mail-button" type="button">Отправить</button>
+					</div>
+				</form>
+				<?php } ?>
+			</div>
+		</div>
+	</div>
+	<?php
+
+	return (string) ob_get_clean();
+}
+
 $currentUserId = (int) $USER['id'];
 lt_sync_user_unread_messages($currentUserId);
 $act = trim((string) ($_GET['act'] ?? 'list'));
@@ -457,6 +524,14 @@ if ($act === 'conversation') {
 		}
 		die();
 	}
+
+	if (mail_is_ajax_request() && !$_POST) {
+		mail_json_response(true, '', array(
+			'modal_html' => mail_render_conversation_modal($participant, $conversationTitle, $conversationSubtitle, $messages, $currentUserId, $targetUserId, $systemConversation, $conversationHasOlderMessages, $conversationOlderHref, $blockedByParticipant, $blockedByCurrent, $showAllConversationMessages),
+			'partner_id' => (int) $targetUserId,
+			'system' => ($systemConversation ? 1 : 0),
+		));
+	}
 }
 
 head('Мои сообщения');
@@ -476,7 +551,7 @@ if($status === '1') {
 }
 
 $conversations = array();
-$conversationsSql = $db->query("SELECT IF(id_user_in = {$currentUserId}, id_user_out, id_user_in) AS partner_id, MAX(date) AS last_date, COUNT(*) AS total_messages, SUM(IF(id_user_in = {$currentUserId} AND reading = 0 AND delete_in = 0, 1, 0)) AS unread_messages FROM mail WHERE ((id_user_in = {$currentUserId} AND delete_in = 0) OR (id_user_out = {$currentUserId} AND delete_out = 0)) GROUP BY partner_id ORDER BY last_date DESC");
+$conversationsSql = $db->query("SELECT IF(id_user_in = {$currentUserId}, id_user_out, id_user_in) AS partner_id, MAX(date) AS last_date, COUNT(*) AS total_messages, SUM(IF(id_user_in = {$currentUserId} AND reading = 0 AND delete_in = 0, 1, 0)) AS unread_messages FROM mail WHERE ((id_user_in = {$currentUserId} AND delete_in = 0) OR (id_user_out = {$currentUserId} AND delete_out = 0)) GROUP BY partner_id ORDER BY (unread_messages > 0) DESC, last_date DESC");
 
 while($conversation = $db->get_row($conversationsSql)) {
 	$partnerId = (int) $conversation['partner_id'];
@@ -525,18 +600,17 @@ while($conversation = $db->get_row($conversationsSql)) {
 		$partner = $conversation['partner'];
 		$partnerName = (!empty($partner['name']) ? $partner['name'] : 'System');
 		$openHref = mail_build_href('conversation', $conversation['partner_id'], $conversation['system']);
-		$partnerProfileHref = ($conversation['system'] ? $openHref : 'profile.php?id='.(int) $conversation['partner_id']);
 		$countLabel = $conversation['total_messages'].' '.mail_plural($conversation['total_messages'], 'сообщение', 'сообщения', 'сообщений');
 		$isActiveConversation = ($act === 'conversation' && (int) $conversation['partner_id'] === (int) $targetUserId && (bool) $conversation['system'] === (bool) $systemConversation);
 		$hasUnreadMessages = ((int) ($conversation['unread_messages'] ?? 0) > 0);
 		?>
-		<article class="mail-thread-row<?=($isActiveConversation ? ' mail-thread-row-active' : '');?><?=($hasUnreadMessages ? ' mail-thread-row-unread' : '');?>">
+		<article class="mail-thread-row<?=($isActiveConversation ? ' mail-thread-row-active' : '');?><?=($hasUnreadMessages ? ' mail-thread-row-unread' : '');?>" data-mail-thread="1" data-mail-open-href="<?=$openHref;?>" data-mail-partner-id="<?=(int) $conversation['partner_id'];?>" data-mail-system="<?=($conversation['system'] ? 1 : 0);?>" role="button" tabindex="0">
 			<a class="mail-thread-avatar" href="<?=$openHref;?>">
 				<img src="<?=mail_avatar_path($partner);?>" alt="<?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?>" width="40" height="40">
 			</a>
 
 			<div class="mail-thread-main">
-				<a class="mail-thread-name" href="<?=$partnerProfileHref;?>"><?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?></a>
+				<a class="mail-thread-name" href="<?=$openHref;?>"><?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?></a>
 				<div class="mail-thread-status"><?=$conversation['subtitle'];?></div>
 			</div>
 
@@ -552,73 +626,138 @@ while($conversation = $db->get_row($conversationsSql)) {
 	</div>
 
 	<?php if ($act === 'conversation') { ?>
-	<div class="mail-overlay">
-		<a class="mail-overlay-close" href="<?=mail_build_href('list');?>" aria-label="Закрыть">&times;</a>
-
-		<div class="mail-modal" role="dialog" aria-modal="true" aria-labelledby="mail-modal-title">
-			<div class="mail-modal-header">
-				<div class="mail-modal-avatar">
-					<img src="<?=mail_avatar_path($participant);?>" alt="<?=htmlspecialchars($conversationTitle, ENT_QUOTES, 'UTF-8');?>" width="40" height="40">
-				</div>
-				<div class="mail-modal-heading">
-					<div class="mail-modal-title" id="mail-modal-title"><?=htmlspecialchars($conversationTitle, ENT_QUOTES, 'UTF-8');?></div>
-					<div class="mail-modal-subtitle"><?=$conversationSubtitle;?></div>
-				</div>
-			</div>
-
-				<div class="mail-modal-body">
-				<div class="mail-modal-stream<?=($systemConversation ? ' mail-modal-stream-system' : '');?>" data-mail-stream="1">
-					<?php if ($conversationHasOlderMessages && $conversationOlderHref !== '') { ?>
-					<a class="mail-modal-history-link" href="<?=$conversationOlderHref;?>" data-mail-load-older="1">Показать более старые сообщения</a>
-					<?php } ?>
-
-					<?php if (!$messages) { ?>
-					<div class="mail-empty-state mail-empty-state-compact"><?=($systemConversation ? 'Системных сообщений пока нет.' : 'Сообщений пока нет. Можно начать диалог прямо сейчас.');?></div>
-					<?php } ?>
-
-					<?php foreach($messages as $row) { ?>
-					<?=mail_render_message_html($row, $currentUserId, (string) ($USER['name'] ?? ''));?>
-					<?php } ?>
-				</div>
-
-				<?php if (!$systemConversation) { ?>
-				<?php if ($blockedByParticipant) { ?>
-				<div class="mail-empty-state mail-empty-state-compact">Пользователь добавил вас в ЧС. Отправка новых сообщений недоступна.</div>
-				<?php } elseif ($blockedByCurrent) { ?>
-				<div class="mail-empty-state mail-empty-state-compact">Пользователь находится в вашем ЧС. Уберите его из списка, чтобы написать сообщение.</div>
-				<?php } else { ?>
-				<form class="mail-modal-form" action="<?=mail_build_href('conversation', $targetUserId, false, array('all' => ($showAllConversationMessages ? 1 : null)));?>" method="post" data-mail-reply-form="1">
-					<input type="hidden" name="name" value="Сообщение">
-					<textarea class="mail-modal-textarea" id="mail_reply_text" name="text"><?=htmlspecialchars((string) ($_POST['text'] ?? ''), ENT_QUOTES, 'UTF-8');?></textarea>
-					<div class="mail-modal-actions">
-						<button class="mail-button" type="submit">Отправить</button>
-					</div>
-				</form>
-				<?php } ?>
-				<?php } else { ?>
-				<form class="mail-modal-form mail-modal-form-system" action="#" method="post">
-					<textarea class="mail-modal-textarea" aria-label="Ответ на системное сообщение"></textarea>
-					<div class="mail-modal-actions">
-						<button class="mail-button" type="button">Отправить</button>
-					</div>
-				</form>
-				<?php } ?>
-			</div>
-		</div>
-	</div>
+	<?=mail_render_conversation_modal($participant, $conversationTitle, $conversationSubtitle, $messages, $currentUserId, $targetUserId, $systemConversation, $conversationHasOlderMessages, $conversationOlderHref, $blockedByParticipant, $blockedByCurrent, $showAllConversationMessages);?>
 	<?php } ?>
 </div>
 
 <script>
+function mailSetActiveThread(row) {
+	var rows = document.querySelectorAll('[data-mail-thread="1"]');
+	for (var i = 0; i < rows.length; i++) {
+		rows[i].classList.remove('mail-thread-row-active');
+	}
+
+	if (!row) {
+		return;
+	}
+
+	row.classList.add('mail-thread-row-active');
+	row.classList.remove('mail-thread-row-unread');
+	var unread = row.querySelector('.mail-thread-unread');
+	if (unread) {
+		unread.remove();
+	}
+}
+
+function mailCloseOverlay(pushState) {
+	var overlay = document.querySelector('[data-mail-overlay="1"]');
+	if (overlay) {
+		overlay.remove();
+	}
+
+	var rows = document.querySelectorAll('[data-mail-thread="1"]');
+	for (var i = 0; i < rows.length; i++) {
+		rows[i].classList.remove('mail-thread-row-active');
+	}
+
+	if (pushState && window.history && window.history.pushState) {
+		window.history.pushState({ mailList: true }, '', '<?=mail_build_href('list');?>');
+	}
+}
+
+function mailInsertOverlay(html) {
+	var page = document.querySelector('.mail-page');
+	if (!page) {
+		return false;
+	}
+
+	var existing = page.querySelector('[data-mail-overlay="1"]');
+	if (existing) {
+		existing.remove();
+	}
+
+	page.insertAdjacentHTML('beforeend', html);
+	var stream = page.querySelector('[data-mail-stream="1"]');
+	if (stream) {
+		stream.scrollTop = stream.scrollHeight;
+	}
+
+	return true;
+}
+
+function mailOpenConversation(href, row, pushState) {
+	if (!href) {
+		return;
+	}
+
+	if (row && row.getAttribute('data-mail-loading') === '1') {
+		return;
+	}
+
+	if (row) {
+		row.setAttribute('data-mail-loading', '1');
+	}
+
+	fetch(href, {
+		credentials: 'same-origin',
+		headers: {
+			'X-Requested-With': 'XMLHttpRequest',
+			'Accept': 'application/json'
+		}
+	})
+		.then(function (response) {
+			if (!response.ok) {
+				throw new Error('Request failed');
+			}
+			return response.json();
+		})
+		.then(function (payload) {
+			if (!payload || !payload.ok || !payload.modal_html) {
+				throw new Error((payload && payload.message) ? payload.message : 'Не удалось открыть диалог.');
+			}
+
+			if (!mailInsertOverlay(payload.modal_html)) {
+				throw new Error('Не удалось открыть диалог.');
+			}
+
+			mailSetActiveThread(row);
+			if (pushState && window.history && window.history.pushState) {
+				window.history.pushState({ mailConversation: true }, '', href);
+			}
+		})
+		.catch(function () {
+			window.location.href = href;
+		})
+		.finally(function () {
+			if (row) {
+				row.removeAttribute('data-mail-loading');
+			}
+		});
+}
+
 document.addEventListener('click', function (event) {
 	var overlay = event.target.closest('.mail-overlay');
 	if (overlay && !event.target.closest('.mail-modal')) {
 		event.preventDefault();
-		var closeLink = overlay.querySelector('.mail-overlay-close');
-		if (closeLink && closeLink.href) {
-			window.location.href = closeLink.href;
-		}
+		mailCloseOverlay(true);
 		return;
+	}
+
+	var closeLink = event.target.closest('.mail-overlay-close');
+	if (closeLink) {
+		event.preventDefault();
+		mailCloseOverlay(true);
+		return;
+	}
+
+	var threadRow = event.target.closest('[data-mail-thread="1"]');
+	if (threadRow) {
+		var href = threadRow.getAttribute('data-mail-open-href') || '';
+		if (href) {
+			event.preventDefault();
+			mailOpenConversation(href, threadRow, true);
+			return;
+		}
 	}
 
 	var loadOlderLink = event.target.closest('[data-mail-load-older="1"]');
@@ -731,6 +870,39 @@ document.addEventListener('submit', function (event) {
 				button.disabled = false;
 			}
 		});
+});
+
+document.addEventListener('keydown', function (event) {
+	if (event.key !== 'Enter' && event.key !== ' ') {
+		return;
+	}
+
+	var threadRow = event.target.closest('[data-mail-thread="1"]');
+	if (!threadRow || event.target.closest('a, button, input, textarea, select')) {
+		return;
+	}
+
+	var href = threadRow.getAttribute('data-mail-open-href') || '';
+	if (!href) {
+		return;
+	}
+
+	event.preventDefault();
+	mailOpenConversation(href, threadRow, true);
+});
+
+window.addEventListener('popstate', function () {
+	var params = new URLSearchParams(window.location.search || '');
+	if (params.get('act') === 'conversation') {
+		var href = window.location.pathname.replace(/^\//, '') + window.location.search;
+		var id = params.get('id_user') || '0';
+		var system = params.get('system') ? '1' : '0';
+		var row = document.querySelector('[data-mail-thread="1"][data-mail-partner-id="' + id + '"][data-mail-system="' + system + '"]');
+		mailOpenConversation(href, row, false);
+		return;
+	}
+
+	mailCloseOverlay(false);
 });
 </script>
 

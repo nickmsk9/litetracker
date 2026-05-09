@@ -73,7 +73,7 @@ function login_render_end()
 	global $isModalView;
 
 	if ($isModalView) {
-		echo '<script>(function(){if(window.parent===window){return;}var sendSize=function(){var d=document.documentElement;var b=document.body;var h=Math.max(d?d.scrollHeight:0,b?b.scrollHeight:0,d?d.offsetHeight:0,b?b.offsetHeight:0);window.parent.postMessage({type:"lt-auth-modal-size",height:h},window.location.origin);};window.addEventListener("load",sendSize);window.addEventListener("resize",sendSize);document.addEventListener("input",sendSize,true);document.addEventListener("change",sendSize,true);setTimeout(sendSize,0);})();</script>';
+		echo '<script>(function(){if(window.parent===window){return;}var sendSize=function(){var card=document.querySelector(".auth-card");var page=document.querySelector(".auth-page");var target=card||page||document.body;var rect=target&&target.getBoundingClientRect?target.getBoundingClientRect():null;var h=rect?Math.ceil(rect.height)+1:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight);window.parent.postMessage({type:"lt-auth-modal-size",height:h},window.location.origin);};window.addEventListener("load",sendSize);window.addEventListener("resize",sendSize);document.addEventListener("input",sendSize,true);document.addEventListener("change",sendSize,true);setTimeout(sendSize,0);})();</script>';
 		echo '</body></html>';
 		return;
 	}

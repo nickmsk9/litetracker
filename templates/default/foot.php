@@ -47,7 +47,7 @@ $showStandardSidebar = (!defined('LIGHT') && !empty($GLOBALS['LITETRACKER_STANDA
 		<div class="social-links pull-right clearfix">
 			<a target="_blank" href="https://www.facebook.com/animelayer" class="iblock pull-left mr10 s-icons-facebook"></a>
 			<a target="_blank" href="https://twitter.com/animelayer" class="iblock pull-left mr10 s-icons-twitter"></a>
-			<a target="_blank" href="/rss/" class="iblock pull-left s-icons-rss"></a>
+			<a target="_blank" href="/rss.php" class="iblock pull-left s-icons-rss"></a>
 		</div>
 	</div>
 </footer>
