@@ -23,12 +23,9 @@ class rewrite {
 			parse_str($matches[1], $params);
 
 			$userId = (int) ($params['id'] ?? 0);
-			if ($userId <= 0 && !empty($params['slug'])) {
-				$userId = lt_profile_slug_user_id((string) $params['slug']);
-			}
 			if ($userId > 0) {
 				$view = trim((string) ($params['view'] ?? 'profile'));
-				unset($params['id'], $params['slug'], $params['view']);
+				unset($params['id'], $params['view']);
 				return profile_href($userId, $view, $params);
 			}
 		}

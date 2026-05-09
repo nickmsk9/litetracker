@@ -32,10 +32,14 @@ if (!$arr) {
 	err($language['default_1'], $language['profile_1'], 1);
 }
 
+if ((int) $id !== (int) $USER['id']) {
+	header('Location: '.profile_href((int) $id));
+	die();
+}
+
 
 $settingsView = 'general';
 $canManageProfileClass = ((!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) && (int) $id !== (int) $USER['id']);
-$canModerateProfile = ((!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) && (int) $id !== (int) $USER['id']);
 $profileClassOptions = array();
 if ($canManageProfileClass) {
 	foreach (get_classes_list() as $classRow) {
@@ -44,15 +48,6 @@ if ($canManageProfileClass) {
 			$profileClassOptions[] = $classRow;
 		}
 	}
-}
-
-$moderationHistory = array();
-if ($canModerateProfile && lt_table_exists('user_admin_notes')) {
-	$historySql = $db->query("SELECT id, note, created_at, admin_id FROM user_admin_notes WHERE user_id = ".(int) $id." ORDER BY id DESC LIMIT 10");
-	while ($historyRow = $db->get_row($historySql)) {
-		$moderationHistory[] = $historyRow;
-	}
-	$db->free($historySql);
 }
 
 $avatarPath = 'public/images/default_avatar.gif';

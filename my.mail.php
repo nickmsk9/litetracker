@@ -36,6 +36,25 @@ function mail_build_href($act = 'list', $targetUserId = 0, $system = false, $ext
 	return 'my.mail.php?'.http_build_query($params);
 }
 
+function mail_is_ajax_request()
+{
+	return (strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest');
+}
+
+function mail_json_response($ok, $message = '', $extra = array())
+{
+	header('Content-Type: application/json; charset=UTF-8');
+	$payload = array(
+		'ok' => ($ok ? 1 : 0),
+		'message' => (string) $message,
+	);
+	foreach ((array) $extra as $key => $value) {
+		$payload[$key] = $value;
+	}
+	echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+	die();
+}
+
 function mail_partner_id($message, $currentUserId)
 {
 	$currentUserId = (int) $currentUserId;
@@ -133,7 +152,7 @@ function mail_load_message($messageId, $currentUserId)
 
 function mail_mark_system_read($currentUserId)
 {
-	global $db, $USER, $memcached;
+	global $db;
 
 	$currentUserId = (int) $currentUserId;
 	if ($currentUserId <= 0) {
@@ -147,11 +166,7 @@ function mail_mark_system_read($currentUserId)
 		$db->query("UPDATE mail SET reading = '1' WHERE id_user_in = {$currentUserId} AND id_user_out = 0 AND delete_in = 0 AND reading = 0");
 	}
 
-	$totalUnread = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out > 0 AND delete_in = 0 AND reading = 0");
-	$totalUnreadCount = (int) ($totalUnread['c'] ?? 0);
-	$db->query("UPDATE users SET num_messages = {$totalUnreadCount} WHERE id = {$currentUserId}");
-	$USER['num_messages'] = $totalUnreadCount;
-	$memcached->delete('user_'.$currentUserId, 0);
+	lt_sync_user_unread_messages($currentUserId);
 
 	return $unreadCount;
 }
@@ -161,11 +176,12 @@ function mail_render_message_html($row, $currentUserId, $currentUserName)
 	$row = (array) $row;
 	$currentUserId = (int) $currentUserId;
 	$isOutgoing = ((int) ($row['id_user_out'] ?? 0) === $currentUserId);
-	$messageAuthor = ($isOutgoing ? ($currentUserName !== '' ? $currentUserName : 'Вы') : (!empty($row['sender_name']) ? $row['sender_name'] : 'SYSTEM'));
+	$isSystem = ((int) ($row['id_user_out'] ?? 0) === 0);
+	$messageAuthor = ($isSystem ? ($currentUserName !== '' ? $currentUserName : 'SYSTEM') : ($isOutgoing ? ($currentUserName !== '' ? $currentUserName : 'Вы') : (!empty($row['sender_name']) ? $row['sender_name'] : 'SYSTEM')));
 
 	ob_start();
 	?>
-	<div class="mail-modal-message<?=($isOutgoing ? ' mail-modal-message-outgoing' : '');?>">
+	<div class="mail-modal-message<?=($isOutgoing ? ' mail-modal-message-outgoing' : '');?><?=($isSystem ? ' mail-modal-message-system' : '');?>">
 		<div class="mail-modal-message-meta">
 			<span class="mail-modal-message-author"><?=htmlspecialchars($messageAuthor, ENT_QUOTES, 'UTF-8');?></span>
 			<span class="mail-modal-message-date"><?=convent_date($row['date']);?></span>
@@ -178,13 +194,7 @@ function mail_render_message_html($row, $currentUserId, $currentUserName)
 }
 
 $currentUserId = (int) $USER['id'];
-$privateUnreadRow = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out > 0 AND delete_in = 0 AND reading = 0");
-$privateUnreadCount = (int) ($privateUnreadRow['c'] ?? 0);
-if ((int) ($USER['num_messages'] ?? 0) !== $privateUnreadCount) {
-	$db->query("UPDATE users SET num_messages = {$privateUnreadCount} WHERE id = {$currentUserId}");
-	$USER['num_messages'] = $privateUnreadCount;
-	$memcached->delete('user_'.$currentUserId, 0);
-}
+lt_sync_user_unread_messages($currentUserId);
 $act = trim((string) ($_GET['act'] ?? 'list'));
 $messageId = (int) ($_GET['id'] ?? 0);
 $targetUserId = (int) ($_GET['id_user'] ?? 0);
@@ -266,7 +276,7 @@ if ($act === 'del' && $messageId > 0) {
 		$db->query("UPDATE mail SET delete_in = '1' WHERE id = ".$message['id']);
 		$deleteIn = 1;
 
-		if ((int) $message['id_user_out'] > 0 && !(int) $message['reading'] && (int) $USER['num_messages'] > 0) {
+		if (!(int) $message['reading'] && (int) $USER['num_messages'] > 0) {
 			$db->query("UPDATE users SET num_messages = GREATEST(num_messages - 1, 0) WHERE id = ".$currentUserId);
 			$USER['num_messages'] = max(0, (int) $USER['num_messages'] - 1);
 			$memcached->delete('user_'.$currentUserId, 0);
@@ -302,14 +312,14 @@ $conversationOlderHref = '';
 if ($act === 'conversation') {
 	if ($systemConversation) {
 		$participant = array(
-			'id' => 0,
-			'name' => 'SYSTEM',
-			'avatar' => '',
-			'class' => 0,
-			'last_access' => '',
+			'id' => (int) $USER['id'],
+			'name' => (string) $USER['name'],
+			'avatar' => (string) ($USER['avatar'] ?? ''),
+			'class' => (int) ($USER['class'] ?? 0),
+			'last_access' => (string) ($USER['last_access'] ?? ''),
 		);
-		$conversationTitle = 'Системные сообщения';
-		$conversationSubtitle = 'Уведомления от движка и администрации.';
+		$conversationTitle = (string) $USER['name'];
+		$conversationSubtitle = 'Был на сайте '.convent_date($USER['last_access'] ?? '');
 	} else {
 		if ($targetUserId <= 0) {
 			err('Ошибка', 'Получатель не выбран.', 1);
@@ -332,10 +342,16 @@ if ($act === 'conversation') {
 
 	if($_POST && !$systemConversation) {
 		if ($blockedByParticipant) {
+			if (mail_is_ajax_request()) {
+				mail_json_response(false, 'Пользователь добавил вас в ЧС.');
+			}
 			err('Ошибка', 'Пользователь добавил вас в ЧС.', 1);
 		}
 
 		if ($blockedByCurrent) {
+			if (mail_is_ajax_request()) {
+				mail_json_response(false, 'Сначала уберите пользователя из ЧС.');
+			}
 			err('Ошибка', 'Сначала уберите пользователя из ЧС.', 1);
 		}
 
@@ -345,6 +361,9 @@ if ($act === 'conversation') {
 		if ($replyToId > 0) {
 			$sourceMessage = mail_load_message($replyToId, $currentUserId);
 			if(!$sourceMessage) {
+				if (mail_is_ajax_request()) {
+					mail_json_response(false, 'Данного сообщения не существует.');
+				}
 				err('Ошибка', 'Данного сообщения не существует', 1);
 			}
 
@@ -362,12 +381,23 @@ if ($act === 'conversation') {
 
 		$text = trim((string) ($_POST['text'] ?? ''));
 		if($text === '') {
+			if (mail_is_ajax_request()) {
+				mail_json_response(false, 'Вы не ввели текст сообщения.');
+			}
 			err('Ошибка', 'Вы не ввели текст сообщения', 1);
 		}
 
 		$db->query("INSERT INTO mail (name, text, date, id_user_in, id_user_out, delete_in, delete_out) VALUES ('".$db->safesql($subject)."', '".$db->safesql($text)."', NOW(), ".$targetUserId.", ".$currentUserId.", 0, 0)");
+		$newMessageId = (int) $db->insert_id();
 		$db->query("UPDATE users SET num_messages = (num_messages + 1) WHERE id = ".$targetUserId);
 		$memcached->delete('user_'.$targetUserId, 0);
+
+		if (mail_is_ajax_request()) {
+			$newMessage = $db->super_query("SELECT m.*, u.name AS sender_name, u.class AS sender_class, u.avatar AS sender_avatar FROM mail AS m LEFT JOIN users AS u ON u.id = m.id_user_out WHERE m.id = ".$newMessageId." LIMIT 1");
+			mail_json_response(true, 'Сообщение отправлено.', array(
+				'message_html' => mail_render_message_html($newMessage, $currentUserId, (string) ($USER['name'] ?? '')),
+			));
+		}
 
 		header('Location: '.mail_build_href('conversation', $targetUserId, false, array('status' => 1)));
 		die();
@@ -498,8 +528,9 @@ while($conversation = $db->get_row($conversationsSql)) {
 		$partnerProfileHref = ($conversation['system'] ? $openHref : 'profile.php?id='.(int) $conversation['partner_id']);
 		$countLabel = $conversation['total_messages'].' '.mail_plural($conversation['total_messages'], 'сообщение', 'сообщения', 'сообщений');
 		$isActiveConversation = ($act === 'conversation' && (int) $conversation['partner_id'] === (int) $targetUserId && (bool) $conversation['system'] === (bool) $systemConversation);
+		$hasUnreadMessages = ((int) ($conversation['unread_messages'] ?? 0) > 0);
 		?>
-		<article class="mail-thread-row<?=($isActiveConversation ? ' mail-thread-row-active' : '');?>">
+		<article class="mail-thread-row<?=($isActiveConversation ? ' mail-thread-row-active' : '');?><?=($hasUnreadMessages ? ' mail-thread-row-unread' : '');?>">
 			<a class="mail-thread-avatar" href="<?=$openHref;?>">
 				<img src="<?=mail_avatar_path($partner);?>" alt="<?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?>" width="40" height="40">
 			</a>
@@ -510,6 +541,9 @@ while($conversation = $db->get_row($conversationsSql)) {
 			</div>
 
 			<div class="mail-thread-side">
+				<?php if ($hasUnreadMessages) { ?>
+				<div class="mail-thread-unread"><?=(int) $conversation['unread_messages'];?></div>
+				<?php } ?>
 				<div class="mail-thread-count"><?=$countLabel;?></div>
 				<a class="mail-button" href="<?=$openHref;?>"><?=($conversation['system'] ? 'Открыть' : 'Написать');?></a>
 			</div>
@@ -519,7 +553,7 @@ while($conversation = $db->get_row($conversationsSql)) {
 
 	<?php if ($act === 'conversation') { ?>
 	<div class="mail-overlay">
-		<a class="mail-overlay-close" href="<?=mail_build_href('list');?>">&times;</a>
+		<a class="mail-overlay-close" href="<?=mail_build_href('list');?>" aria-label="Закрыть">&times;</a>
 
 		<div class="mail-modal" role="dialog" aria-modal="true" aria-labelledby="mail-modal-title">
 			<div class="mail-modal-header">
@@ -530,13 +564,10 @@ while($conversation = $db->get_row($conversationsSql)) {
 					<div class="mail-modal-title" id="mail-modal-title"><?=htmlspecialchars($conversationTitle, ENT_QUOTES, 'UTF-8');?></div>
 					<div class="mail-modal-subtitle"><?=$conversationSubtitle;?></div>
 				</div>
-				<?php if ($systemConversation) { ?>
-				<a class="mail-button mail-button-secondary" href="<?=mail_build_href('read_system');?>">Прочитано</a>
-				<?php } ?>
 			</div>
 
-			<div class="mail-modal-body">
-				<div class="mail-modal-stream">
+				<div class="mail-modal-body">
+				<div class="mail-modal-stream<?=($systemConversation ? ' mail-modal-stream-system' : '');?>" data-mail-stream="1">
 					<?php if ($conversationHasOlderMessages && $conversationOlderHref !== '') { ?>
 					<a class="mail-modal-history-link" href="<?=$conversationOlderHref;?>" data-mail-load-older="1">Показать более старые сообщения</a>
 					<?php } ?>
@@ -556,7 +587,7 @@ while($conversation = $db->get_row($conversationsSql)) {
 				<?php } elseif ($blockedByCurrent) { ?>
 				<div class="mail-empty-state mail-empty-state-compact">Пользователь находится в вашем ЧС. Уберите его из списка, чтобы написать сообщение.</div>
 				<?php } else { ?>
-				<form class="mail-modal-form" action="<?=mail_build_href('conversation', $targetUserId, false, array('all' => ($showAllConversationMessages ? 1 : null)));?>" method="post">
+				<form class="mail-modal-form" action="<?=mail_build_href('conversation', $targetUserId, false, array('all' => ($showAllConversationMessages ? 1 : null)));?>" method="post" data-mail-reply-form="1">
 					<input type="hidden" name="name" value="Сообщение">
 					<textarea class="mail-modal-textarea" id="mail_reply_text" name="text"><?=htmlspecialchars((string) ($_POST['text'] ?? ''), ENT_QUOTES, 'UTF-8');?></textarea>
 					<div class="mail-modal-actions">
@@ -564,6 +595,13 @@ while($conversation = $db->get_row($conversationsSql)) {
 					</div>
 				</form>
 				<?php } ?>
+				<?php } else { ?>
+				<form class="mail-modal-form mail-modal-form-system" action="#" method="post">
+					<textarea class="mail-modal-textarea" aria-label="Ответ на системное сообщение"></textarea>
+					<div class="mail-modal-actions">
+						<button class="mail-button" type="button">Отправить</button>
+					</div>
+				</form>
 				<?php } ?>
 			</div>
 		</div>
@@ -631,6 +669,67 @@ document.addEventListener('click', function (event) {
 			loadOlderLink.removeAttribute('data-mail-loading');
 			loadOlderLink.classList.remove('mail-modal-history-link-loading');
 			window.location.href = loadOlderLink.href;
+		});
+});
+
+document.addEventListener('submit', function (event) {
+	var form = event.target.closest('[data-mail-reply-form="1"]');
+	if (!form) {
+		return;
+	}
+
+	event.preventDefault();
+
+	var textarea = form.querySelector('textarea[name="text"]');
+	var button = form.querySelector('button[type="submit"]');
+	var stream = document.querySelector('[data-mail-stream="1"]');
+	var formData = new FormData(form);
+
+	if (!textarea || textarea.value.replace(/\s+/g, '') === '') {
+		return;
+	}
+
+	if (button) {
+		button.disabled = true;
+	}
+
+	fetch(form.action, {
+		method: 'POST',
+		body: formData,
+		credentials: 'same-origin',
+		headers: {
+			'X-Requested-With': 'XMLHttpRequest',
+			'Accept': 'application/json'
+		}
+	})
+		.then(function (response) {
+			return response.json();
+		})
+		.then(function (payload) {
+			if (!payload || !payload.ok) {
+				throw new Error((payload && payload.message) ? payload.message : 'Не удалось отправить сообщение.');
+			}
+
+			if (stream && payload.message_html) {
+				var empty = stream.querySelector('.mail-empty-state');
+				if (empty) {
+					empty.remove();
+				}
+				stream.insertAdjacentHTML('beforeend', payload.message_html);
+				stream.scrollTop = stream.scrollHeight;
+			}
+			form.reset();
+			if (textarea) {
+				textarea.focus();
+			}
+		})
+		.catch(function (error) {
+			alert(error.message || 'Не удалось отправить сообщение.');
+		})
+		.finally(function () {
+			if (button) {
+				button.disabled = false;
+			}
 		});
 });
 </script>

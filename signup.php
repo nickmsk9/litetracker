@@ -257,7 +257,7 @@ if($_POST && $signupBlockedMessage === '') {
 		$classId = (!$isDirectorSignup ? signup_default_class_id() : signup_admin_class_id());
 
 		$db->pquery(
-			"INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$signupBonusColumn.", sex, birthday_date, profile_text, website, icq, last_chat, num_messages, num_friends, confirm) VALUES (?, '', ?, ?, '', ?, ?, NOW(), NOW(), '', '0', '0', '0', '300', '1', ?, '', '', '', '0', '0', '0', '1')",
+			"INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$signupBonusColumn.", sex, birthday_date, profile_text, last_chat, num_messages, num_friends, confirm) VALUES (?, '', ?, ?, '', ?, ?, NOW(), NOW(), '', '0', '0', '0', '300', '1', ?, '', '0', '0', '0', '1')",
 			'sssiss',
 			[$signupName, $signupEmail, $passwordHash, ip2long_db(getip()), $classId, $birthdayDate]
 		);

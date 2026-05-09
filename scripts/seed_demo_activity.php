@@ -230,9 +230,9 @@ function demo_seed_insert_user($db, $user)
 
 	$db->query(
 		"INSERT INTO users
-		(name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, bad_rating, money, bonus, sex, birthday_date, profile_text, notify_comments, download_local_retracker, theme_dark, website, icq, banned, last_chat, num_messages, num_friends, voice, confirm)
+		(name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, bad_rating, money, bonus, sex, birthday_date, profile_text, notify_comments, download_local_retracker, theme_dark, banned, last_chat, num_messages, num_friends, voice, confirm)
 		VALUES
-		('{$name}', '', '{$email}', '".$db->safesql($passwordHash)."', '', {$ip}, 1, '{$lastAccess}', '{$added}', '{$passkey}', ".(int) $user['uploaded'].", ".(int) $user['downloaded'].", 0, ".(int) $user['money'].", ".(float) $user['bonus'].", 1, '{$birthday}', '{$profileText}', 1, 1, 0, '', '', 0, 0, 0, 0, ".(float) $user['bonus'].", 1)"
+		('{$name}', '', '{$email}', '".$db->safesql($passwordHash)."', '', {$ip}, 1, '{$lastAccess}', '{$added}', '{$passkey}', ".(int) $user['uploaded'].", ".(int) $user['downloaded'].", 0, ".(int) $user['money'].", ".(float) $user['bonus'].", 1, '{$birthday}', '{$profileText}', 1, 1, 0, 0, 0, 0, 0, ".(float) $user['bonus'].", 1)"
 	);
 
 	return array(

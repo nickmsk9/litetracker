@@ -32,6 +32,43 @@ function get_user_info($id) {
 	return $row;
 }
 
+function lt_unread_messages_count($userId)
+{
+	global $db;
+
+	$userId = (int) $userId;
+	if ($userId <= 0 || !lt_table_exists('mail')) {
+		return 0;
+	}
+
+	$row = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = ".$userId." AND delete_in = 0 AND reading = 0");
+
+	return (int) ($row['c'] ?? 0);
+}
+
+function lt_sync_user_unread_messages($userId)
+{
+	global $db, $memcached, $USER;
+
+	$userId = (int) $userId;
+	if ($userId <= 0 || !lt_table_exists('users')) {
+		return 0;
+	}
+
+	$count = lt_unread_messages_count($userId);
+	$isCurrentUser = (!empty($USER['id']) && (int) $USER['id'] === $userId);
+	$currentStoredCount = ($isCurrentUser ? (int) ($USER['num_messages'] ?? -1) : null);
+	if (!$isCurrentUser || $currentStoredCount !== $count) {
+		$db->query("UPDATE users SET num_messages = ".$count." WHERE id = ".$userId);
+		$memcached->delete('user_'.$userId, 0);
+	}
+	if ($isCurrentUser) {
+		$USER['num_messages'] = $count;
+	}
+
+	return $count;
+}
+
 function lt_table_exists($tableName)
 {
 	global $db;
@@ -80,45 +117,6 @@ function lt_column_exists($tableName, $columnName)
 	return $cache[$key];
 }
 
-function lt_profile_slug_normalize($slug)
-{
-	$slug = trim((string) $slug);
-	$slug = function_exists('mb_strtolower') ? mb_strtolower($slug, 'UTF-8') : strtolower($slug);
-	$slug = preg_replace('~\s+~u', '-', $slug);
-	$slug = preg_replace('~[^a-z0-9_-]+~iu', '', $slug);
-	$slug = trim($slug, '-_');
-
-	return substr($slug, 0, 64);
-}
-
-function lt_profile_slug_is_reserved($slug)
-{
-	$reserved = array(
-		'admin', 'ajax', 'announce', 'api', 'assets', 'avatars', 'bonus', 'browse', 'categories',
-		'check_release', 'complaint', 'copyright', 'details', 'disclaimer', 'donate', 'download',
-		'edit', 'edit_priv', 'exit', 'faq', 'feedback', 'index', 'language', 'login', 'messages',
-		'multitracker_accounts', 'news', 'notify', 'profile', 'rating', 'rules', 'scrape',
-		'search_query', 'sessions', 'shop', 'signup', 'static', 'upload', 'user', 'user_add',
-		'users', 'u', 'wall_reports',
-	);
-
-	return in_array(lt_profile_slug_normalize($slug), $reserved, true);
-}
-
-function lt_profile_slug_user_id($slug)
-{
-	global $db;
-
-	$slug = lt_profile_slug_normalize($slug);
-	if ($slug === '' || !lt_table_exists('users') || !lt_column_exists('users', 'profile_slug')) {
-		return 0;
-	}
-
-	$row = $db->psuper_query("SELECT id FROM users WHERE profile_slug = ? LIMIT 1", 's', [$slug]);
-
-	return (int) ($row['id'] ?? 0);
-}
-
 function profile_public_mask()
 {
 	static $mask = null;
@@ -164,8 +162,6 @@ function profile_user_id_from_public($publicId)
 
 function profile_href($user, $view = 'profile', $params = array())
 {
-	global $config;
-
 	$userId = 0;
 	$userRow = array();
 
@@ -190,21 +186,6 @@ function profile_href($user, $view = 'profile', $params = array())
 
 	if (!$userRow) {
 		$userRow = get_user_info($userId);
-	}
-
-	if (
-		!empty($config['rewrite']) &&
-		!empty($userRow['profile_slug']) &&
-		function_exists('lt_profile_slug_normalize') &&
-		lt_profile_slug_normalize($userRow['profile_slug']) === (string) $userRow['profile_slug']
-	) {
-		$slug = rawurlencode((string) $userRow['profile_slug']);
-		$path = '/'.$slug;
-		if ($view !== 'profile') {
-			$path .= '/'.$view;
-		}
-		$query = http_build_query($extraParams);
-		return $path.($query !== '' ? '?'.$query : '');
 	}
 
 	$params = array('id' => $userId);
@@ -1384,9 +1365,7 @@ function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {
 	}
 	$user_out = (int) $user_out;
 	$db->pquery("INSERT INTO mail(name, text, id_user_in, id_user_out, date, delete_in, delete_out) VALUES (?, ?, ".$user_in.", ".$user_out.", NOW(), 0, 0)", 'ss', [$name, $text]);
-	if ($user_out > 0) {
-		$db->query("UPDATE users SET num_messages=(num_messages+1) WHERE id=".$user_in);
-	}
+	$db->query("UPDATE users SET num_messages=(num_messages+1) WHERE id=".$user_in);
 	$memcached->delete("user_".$user_in);
 	return 1;
 }

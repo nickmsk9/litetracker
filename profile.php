@@ -182,18 +182,10 @@ function profile_calculate_bonus_exchange($selectedOption, $currentBonus, $bonus
 
 $profileView = profile_normalize_view($_GET['view'] ?? 'profile');
 $profilePublicId = trim((string) ($_GET['uid'] ?? ''));
-$profileSlug = trim((string) ($_GET['slug'] ?? ''));
 $id = 0;
 
 if ($profilePublicId !== '') {
 	$id = profile_user_id_from_public($profilePublicId);
-	if (!$id) {
-		err($language['default_1'], $language['profile_1'], 1);
-	}
-}
-
-if (!$id && $profileSlug !== '') {
-	$id = lt_profile_slug_user_id($profileSlug);
 	if (!$id) {
 		err($language['default_1'], $language['profile_1'], 1);
 	}
@@ -219,8 +211,13 @@ if (!$db->num_rows()) {
 $arr = $db->get_row();
 $id = (int) $arr['id'];
 $isOwnProfile = ($USER && (int) $USER['id'] === $id);
-$canEditProfile = ($isOwnProfile || !empty($PRIV['setting_user']));
-$canViewBonus = ($isOwnProfile || !empty($PRIV['setting_user']));
+$canManageThisProfile = false;
+if (!$isOwnProfile && $USER && (!empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV']))) {
+	$targetPriv = get_priv_info((int) ($arr['class'] ?? 0));
+	$canManageThisProfile = (empty($targetPriv['EDIT_PRIV']) || !empty($PRIV['EDIT_PRIV']));
+}
+$canEditProfile = ($isOwnProfile || $canManageThisProfile);
+$canViewBonus = ($isOwnProfile || $canManageThisProfile);
 
 if (!$isOwnProfile && $profileView !== 'profile') {
 	header('Location: '.profile_href($id));
@@ -312,6 +309,15 @@ if ($isOwnProfile) {
 		'class' => 'profile-card-button',
 	);
 } elseif ($profileCanMessage) {
+	if ($canManageThisProfile) {
+		$profileActions[] = array(
+			'type' => 'button',
+			'label' => 'Редактировать',
+			'class' => 'profile-card-button',
+			'attributes' => ' data-profile-toggle-editor="1" aria-expanded="false"',
+		);
+	}
+
 	$profileActions[] = array(
 		'type' => 'link',
 		'label' => 'Написать сообщение',
@@ -369,6 +375,31 @@ $profileStats = array(
 	'downloaded' => mksize((int) ($arr['downloaded'] ?? 0)),
 	'uploaded' => mksize((int) ($arr['uploaded'] ?? 0)),
 );
+
+$profileEditorClassOptions = array();
+$profileEditorHistory = array();
+$profileEditorTransferUnit = 1024 * 1024 * 1024;
+$profileEditorUploadedGb = round(((int) ($arr['uploaded'] ?? 0)) / $profileEditorTransferUnit, 3);
+$profileEditorDownloadedGb = round(((int) ($arr['downloaded'] ?? 0)) / $profileEditorTransferUnit, 3);
+$profileEditorBonusColumn = (lt_column_exists('users', 'bonus') ? 'bonus' : 'voice');
+$profileEditorBonusValue = (float) ($arr[$profileEditorBonusColumn] ?? 0);
+
+if ($canManageThisProfile) {
+	foreach (get_classes_list() as $classRow) {
+		$classPriv = get_priv_info((int) $classRow['id']);
+		if (empty($classPriv['EDIT_PRIV']) || !empty($PRIV['EDIT_PRIV'])) {
+			$profileEditorClassOptions[] = $classRow;
+		}
+	}
+
+	if (lt_table_exists('user_admin_notes')) {
+		$historySql = $db->query("SELECT id, note, created_at, admin_id FROM user_admin_notes WHERE user_id = ".(int) $id." ORDER BY id DESC LIMIT 10");
+		while ($historyRow = $db->get_row($historySql)) {
+			$profileEditorHistory[] = $historyRow;
+		}
+		$db->free($historySql);
+	}
+}
 
 $currentUserWallAvatar = 'public/images/default_avatar.gif';
 if ($USER && !empty($USER['avatar']) && is_file('public/avatars/small/'.$USER['avatar'])) {

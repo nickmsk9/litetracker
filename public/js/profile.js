@@ -54,6 +54,9 @@
     var modalTextarea = document.getElementById('profile-message-text');
     var modalForm = document.getElementById('profile-message-form');
     var blacklistButton = document.querySelector('[data-profile-toggle-blacklist]');
+    var editorPanel = document.getElementById('profile-editor-panel');
+    var editorForm = document.getElementById('profile-editor-form');
+    var editorToggle = document.querySelector('[data-profile-toggle-editor]');
 
     function showNotice(message, isError) {
       if (!ajaxMessage) {
@@ -63,6 +66,79 @@
       ajaxMessage.textContent = message || '';
       ajaxMessage.className = 'profile-inline-message profile-inline-message-' + (isError ? 'error' : 'success');
       ajaxMessage.hidden = !message;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function setText(selector, value) {
+      var element = document.querySelector(selector);
+      if (element) {
+        element.textContent = value || '';
+      }
+    }
+
+    function setHtml(selector, value) {
+      var element = document.querySelector(selector);
+      if (element) {
+        element.innerHTML = value || '';
+      }
+    }
+
+    function openEditor() {
+      if (!editorPanel) {
+        return;
+      }
+
+      editorPanel.hidden = false;
+      editorPanel.removeAttribute('hidden');
+      if (editorToggle) {
+        editorToggle.setAttribute('aria-expanded', 'true');
+      }
+      if (typeof editorPanel.scrollIntoView === 'function') {
+        try {
+          editorPanel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } catch (error) {
+          editorPanel.scrollIntoView();
+        }
+      }
+    }
+
+    function closeEditor() {
+      if (!editorPanel) {
+        return;
+      }
+
+      editorPanel.hidden = true;
+      editorPanel.setAttribute('hidden', 'hidden');
+      if (editorToggle) {
+        editorToggle.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    function appendHistory(payload) {
+      var notes = payload && payload.history_notes;
+      var history = document.querySelector('[data-profile-editor-history]');
+      var html = '';
+
+      if (!history || !notes || !notes.length) {
+        return;
+      }
+
+      for (var i = 0; i < notes.length; i++) {
+        html += '<div class="settings-history-item">'
+          + '<div class="settings-history-meta">' + escapeHtml(payload.history_date || '') + ' · admin #' + escapeHtml(payload.history_admin || '') + '</div>'
+          + '<div class="settings-history-text">' + escapeHtml(notes[i]).replace(/\n/g, '<br>') + '</div>'
+          + '</div>';
+      }
+
+      history.insertAdjacentHTML('afterbegin', html);
     }
 
     function openModal() {
@@ -122,6 +198,21 @@
           showNotice(message, true);
         });
       }
+
+      if (event.target.closest('[data-profile-toggle-editor]')) {
+        event.preventDefault();
+        if (editorPanel && editorPanel.hidden) {
+          openEditor();
+        } else {
+          closeEditor();
+        }
+        return;
+      }
+
+      if (event.target.closest('[data-profile-close-editor]')) {
+        event.preventDefault();
+        closeEditor();
+      }
     });
 
     if (modalForm) {
@@ -135,6 +226,27 @@
           modalForm.reset();
           closeModal();
           showNotice(payload.message || 'Сообщение отправлено.');
+        }, function (message) {
+          showNotice(message, true);
+        });
+      });
+    }
+
+    if (editorForm) {
+      editorForm.addEventListener('submit', function (event) {
+        var formData = new FormData(editorForm);
+
+        event.preventDefault();
+        formData.append('action', 'moderate_profile');
+
+        sendRequest(formData, function (payload) {
+          setHtml('[data-profile-display-name]', payload.display_name_html || '');
+          setText('[data-profile-display-class]', payload.class_name || '');
+          setText('[data-profile-display-uploaded]', payload.uploaded || '');
+          setText('[data-profile-display-downloaded]', payload.downloaded || '');
+          setText('[data-profile-display-bonus]', payload.bonus || '');
+          appendHistory(payload);
+          showNotice(payload.message || 'Изменения сохранены.');
         }, function (message) {
           showNotice(message, true);
         });

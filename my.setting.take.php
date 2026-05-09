@@ -174,6 +174,11 @@ if (!$arr) {
 	err($language['default_1'], $language['profile_1'], 1);
 }
 
+if ((int) $id !== (int) $USER['id']) {
+	header('Location: '.profile_href((int) $id));
+	die();
+}
+
 $act = trim((string) ($_GET['act'] ?? ''));
 $settingsProfileScope = 'settings_profile_'.$id;
 $settingsPasswordScope = 'settings_password_'.$id;
@@ -282,8 +287,6 @@ $sex = ((int) ($_POST['sex'] ?? 1) == 1 ? '1' : '0');
 if($arr['sex'] != $sex) {
 	$update[] = "sex='".$sex."'";
 }
-
-// Removed website validation/update block as per instructions
 
 $birthdayDay = trim((string) ($_POST['birthday_day'] ?? ''));
 $birthdayMonth = trim((string) ($_POST['birthday_month'] ?? ''));

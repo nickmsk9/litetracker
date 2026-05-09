@@ -22,9 +22,9 @@ if (!defined('LITETRACKER')) {
 				</div>
 
 				<div class="profile-card-main">
-					<h1 class="profile-card-name"><?=get_user_color((int) ($arr['class'] ?? 0), $profileName, $arr);?></h1>
+					<h1 class="profile-card-name" data-profile-display-name="1"><?=get_user_color((int) ($arr['class'] ?? 0), $profileName, $arr);?></h1>
 					<div class="profile-status <?=$profileStatusClass;?>"><?=$profileStatusLabel;?></div>
-					<div class="profile-rank-line">Класс: <strong><?=get_user_class_name((int) ($arr['class'] ?? 0));?></strong></div>
+					<div class="profile-rank-line">Класс: <strong data-profile-display-class="1"><?=get_user_class_name((int) ($arr['class'] ?? 0));?></strong></div>
 
 					<?php if ($isOwnProfile && $profileAbout !== '') { ?>
 					<div class="profile-card-text"><?=$profileAbout;?></div>
@@ -45,6 +45,95 @@ if (!defined('LITETRACKER')) {
 			</section>
 
 			<?php if ($profileView === 'profile') { ?>
+			<?php if (!empty($canManageThisProfile)) { ?>
+			<section class="profile-editor-panel" id="profile-editor-panel" hidden>
+				<div class="profile-editor-header">
+					<h2 class="profile-editor-title">Редактирование пользователя</h2>
+					<button class="profile-editor-close" type="button" data-profile-close-editor="1">Закрыть</button>
+				</div>
+
+				<form class="profile-editor-form" id="profile-editor-form" method="post" action="ajax/profile.php">
+					<div class="profile-editor-grid">
+						<div class="settings-field">
+							<label class="settings-field-label" for="profile_editor_name">Ник</label>
+							<input id="profile_editor_name" type="text" name="name" value="<?=htmlspecialchars((string) ($arr['name'] ?? ''), ENT_QUOTES, 'UTF-8');?>" maxlength="12">
+						</div>
+						<div class="settings-field">
+							<label class="settings-field-label" for="profile_editor_email">E-mail</label>
+							<input id="profile_editor_email" type="email" name="email" value="<?=htmlspecialchars((string) ($arr['email'] ?? ''), ENT_QUOTES, 'UTF-8');?>" maxlength="200">
+						</div>
+						<div class="settings-field">
+							<label class="settings-field-label" for="profile_editor_class">Класс</label>
+							<select id="profile_editor_class" name="class">
+								<?php foreach ($profileEditorClassOptions as $classRow) { ?>
+								<option value="<?=(int) $classRow['id'];?>"<?=((int) ($arr['class'] ?? 0) === (int) $classRow['id'] ? ' selected' : '');?>><?=htmlspecialchars((string) $classRow['NAME'], ENT_QUOTES, 'UTF-8');?></option>
+								<?php } ?>
+							</select>
+						</div>
+						<div class="settings-field">
+							<label class="settings-field-label" for="profile_editor_enabled">Включен</label>
+							<select id="profile_editor_enabled" name="enabled">
+								<option value="1"<?=((int) ($arr['banned'] ?? 0) === 0 ? ' selected' : '');?>>Да</option>
+								<option value="0"<?=((int) ($arr['banned'] ?? 0) !== 0 ? ' selected' : '');?>>Нет</option>
+							</select>
+						</div>
+						<div class="settings-field">
+							<label class="settings-field-label" for="profile_editor_uploaded_gb">Раздача, GB</label>
+							<input id="profile_editor_uploaded_gb" type="number" name="uploaded_gb" value="<?=htmlspecialchars((string) $profileEditorUploadedGb, ENT_QUOTES, 'UTF-8');?>" min="0" step="0.001">
+						</div>
+						<div class="settings-field">
+							<label class="settings-field-label" for="profile_editor_downloaded_gb">Скачано, GB</label>
+							<input id="profile_editor_downloaded_gb" type="number" name="downloaded_gb" value="<?=htmlspecialchars((string) $profileEditorDownloadedGb, ENT_QUOTES, 'UTF-8');?>" min="0" step="0.001">
+						</div>
+						<div class="settings-field">
+							<label class="settings-field-label" for="profile_editor_bonus">Бонусы</label>
+							<input id="profile_editor_bonus" type="number" name="bonus_value" value="<?=htmlspecialchars((string) $profileEditorBonusValue, ENT_QUOTES, 'UTF-8');?>" min="0" step="0.001">
+						</div>
+						<div class="settings-field">
+							<label class="settings-field-label" for="profile_editor_money">Монеты</label>
+							<input id="profile_editor_money" type="number" name="money" value="<?=htmlspecialchars((string) (int) ($arr['money'] ?? 0), ENT_QUOTES, 'UTF-8');?>" min="0" step="1">
+						</div>
+						<div class="settings-field">
+							<label class="settings-field-label" for="profile_editor_sex">Пол</label>
+							<select id="profile_editor_sex" name="sex">
+								<option value="1"<?=((int) ($arr['sex'] ?? 1) === 1 ? ' selected' : '');?>>Мужской</option>
+								<option value="0"<?=((int) ($arr['sex'] ?? 1) === 0 ? ' selected' : '');?>>Женский</option>
+							</select>
+						</div>
+						<div class="settings-field profile-editor-checks">
+							<label class="settings-checkbox"><input type="checkbox" name="notify_comments" value="1"<?=(!empty($arr['notify_comments']) ? ' checked' : '');?>> Уведомлять о комментариях</label>
+							<label class="settings-checkbox"><input type="checkbox" name="download_local_retracker" value="1"<?=(!isset($arr['download_local_retracker']) || !empty($arr['download_local_retracker']) ? ' checked' : '');?>> Локальный retracker</label>
+							<label class="settings-checkbox"><input type="checkbox" name="theme_dark" value="1"<?=(!empty($arr['theme_dark']) ? ' checked' : '');?>> Темная тема</label>
+							<label class="settings-checkbox"><input type="checkbox" name="bad_rating" value="1"<?=(!empty($arr['bad_rating']) ? ' checked' : '');?>> Плохой рейтинг</label>
+							<label class="settings-checkbox"><input type="checkbox" name="confirm" value="1"<?=(!empty($arr['confirm']) ? ' checked' : '');?>> Аккаунт подтвержден</label>
+							<label class="settings-checkbox"><input type="checkbox" name="reset_birthday" value="1"> Сбросить день рождения</label>
+							<label class="settings-checkbox"><input type="checkbox" name="reset_passkey" value="1"> Сбросить passkey</label>
+						</div>
+						<div class="settings-field settings-field-full">
+							<label class="settings-field-label" for="profile_editor_note">Заметка / комментарий в ЛС</label>
+							<textarea class="settings-textarea" id="profile_editor_note" name="note"></textarea>
+						</div>
+					</div>
+
+					<div class="profile-editor-actions">
+						<button class="profile-card-button" type="submit">Сохранить</button>
+					</div>
+					<input type="hidden" name="user_id" value="<?=(int) $id;?>">
+				</form>
+
+				<?php if (!empty($profileEditorHistory)) { ?>
+				<div class="profile-editor-history" data-profile-editor-history="1">
+					<?php foreach ($profileEditorHistory as $historyItem) { ?>
+					<div class="settings-history-item">
+						<div class="settings-history-meta"><?=convent_date((string) ($historyItem['created_at'] ?? ''));?> · admin #<?=(int) ($historyItem['admin_id'] ?? 0);?></div>
+						<div class="settings-history-text"><?=nl2br(htmlspecialchars((string) ($historyItem['note'] ?? ''), ENT_QUOTES, 'UTF-8'));?></div>
+					</div>
+					<?php } ?>
+				</div>
+				<?php } ?>
+			</section>
+			<?php } ?>
+
 			<section class="profile-wall">
 				<div class="profile-wall-header">
 					<h2 class="profile-wall-title">Стена пользователя</h2>
@@ -161,7 +250,7 @@ if (!defined('LITETRACKER')) {
 
 			<section class="profile-sidebar-card">
 				<h2 class="profile-sidebar-stats-title">Статистика</h2>
-				<div class="profile-sidebar-stat-bonus">Бонус: <strong><?=template_format_number($profileStats['bonus']);?></strong></div>
+				<div class="profile-sidebar-stat-bonus">Бонус: <strong data-profile-display-bonus="1"><?=template_format_number($profileStats['bonus']);?></strong></div>
 
 				<div class="profile-sidebar-stat-peers">
 					<span class="profile-sidebar-stat-peer"><img src="public/images/up.png" alt="" width="10" height="10"> <?=$profileStats['seeders'];?></span>
@@ -170,8 +259,8 @@ if (!defined('LITETRACKER')) {
 				</div>
 
 				<div class="profile-sidebar-stat-transfer">
-					<div class="profile-sidebar-stat-transfer-item profile-sidebar-stat-transfer-down"><?=$profileStats['downloaded'];?></div>
-					<div class="profile-sidebar-stat-transfer-item profile-sidebar-stat-transfer-up"><?=$profileStats['uploaded'];?></div>
+					<div class="profile-sidebar-stat-transfer-item profile-sidebar-stat-transfer-down" data-profile-display-downloaded="1"><?=$profileStats['downloaded'];?></div>
+					<div class="profile-sidebar-stat-transfer-item profile-sidebar-stat-transfer-up" data-profile-display-uploaded="1"><?=$profileStats['uploaded'];?></div>
 				</div>
 			</section>
 			<?php } else { ?>
@@ -205,4 +294,4 @@ if (!defined('LITETRACKER')) {
 </div>
 <?php } ?>
 
-<script type="text/javascript" src="public/js/profile.js"></script>
+<script type="text/javascript" src="public/js/profile.js?v=<?=@filemtime('public/js/profile.js');?>"></script>

@@ -38,6 +38,11 @@ $birthdayPhpMonthDayFormat = 'm-d';
 $defaultBirthdayBonusAmount = 150;
 $birthdayMessageSubject = 'С днём рождения!';
 $birthdayMessageTemplate = 'Поздравляем с днём рождения! Начислено бонусов: [b]%s[/b].';
+$autoPromotionMinAgeDays = 14;
+$autoPromotionMinUploaded = 10 * 1024 * 1024 * 1024;
+$autoPromotionMinRatio = 1.05;
+$autoPromotionMessageSubject = 'Автоматическое повышение';
+$autoPromotionMessageTemplate = 'Наши поздравления, вы были авто-повышены до ранга [b]%s[/b].';
 
 
 //Autoclean system
@@ -135,6 +140,86 @@ if ($birthdayBonusAmount > 0) {
 		$db->query("INSERT INTO birthday_rewards (user_id, reward_year, created_at) VALUES (".$userId.", ".$currentYear.", NOW())");
 		send_msg($birthdayMessageSubject, sprintf($birthdayMessageTemplate, number_format($birthdayBonusAmount, 0, '.', ' ')), $userId, 0);
 		$memcached->delete('user_'.$userId);
+	}
+}
+
+///////////////////////////////////////////////////////////////////
+//Автоповышение пользователей
+///////////////////////////////////////////////////////////////////
+$signupClass = $db->super_query("SELECT id FROM priv WHERE SIGNUP = 1 ORDER BY id ASC LIMIT 1");
+$signupClassId = (int) ($signupClass['id'] ?? 0);
+
+if ($signupClassId > 0) {
+	$autoPromotionTarget = $db->super_query(
+		"SELECT id, NAME
+		 FROM priv
+		 WHERE id <> ".$signupClassId."
+		   AND upload = 1
+		   AND download_torrent = 1
+		   AND download_magnet = 1
+		   AND comments_edit = 0
+		   AND comments_delete = 0
+		   AND setting_user = 0
+		   AND EDIT_PRIV = 0
+		   AND users_view = 0
+		   AND user_add = 0
+		 ORDER BY id ASC
+		 LIMIT 1"
+	);
+	$autoPromotionTargetId = (int) ($autoPromotionTarget['id'] ?? 0);
+
+	if ($autoPromotionTargetId > 0) {
+		$db->query(
+			"CREATE TABLE IF NOT EXISTS `user_auto_promotions` (
+				`id` int unsigned NOT NULL AUTO_INCREMENT,
+				`user_id` int unsigned NOT NULL,
+				`from_class` int unsigned NOT NULL,
+				`to_class` int unsigned NOT NULL,
+				`created_at` datetime NOT NULL,
+				PRIMARY KEY (`id`),
+				UNIQUE KEY `user_to_class` (`user_id`, `to_class`)
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin"
+		);
+
+		$eligibleUsers = $db->query(
+			"SELECT id, uploaded, downloaded
+			 FROM users
+			 WHERE class = ".$signupClassId."
+			   AND banned = 0
+			   AND confirm = 1
+			   AND bad_rating = 0
+			   AND added <= DATE_SUB(NOW(), INTERVAL ".$autoPromotionMinAgeDays." DAY)
+			   AND uploaded >= ".$autoPromotionMinUploaded
+		);
+
+		while ($promotionUser = $db->get_row($eligibleUsers)) {
+			$promotionUserId = (int) ($promotionUser['id'] ?? 0);
+			if ($promotionUserId <= 0) {
+				continue;
+			}
+
+			$downloaded = (int) ($promotionUser['downloaded'] ?? 0);
+			$uploaded = (int) ($promotionUser['uploaded'] ?? 0);
+			$ratio = ($downloaded > 0 ? ($uploaded / $downloaded) : $autoPromotionMinRatio);
+			if ($ratio < $autoPromotionMinRatio) {
+				continue;
+			}
+
+			$alreadyPromoted = $db->super_query("SELECT id FROM user_auto_promotions WHERE user_id = ".$promotionUserId." AND to_class = ".$autoPromotionTargetId." LIMIT 1");
+			if (!empty($alreadyPromoted['id'])) {
+				continue;
+			}
+
+			$db->query("UPDATE users SET class = ".$autoPromotionTargetId." WHERE id = ".$promotionUserId." AND class = ".$signupClassId);
+			if ($db->affected_rows() > 0) {
+				$db->query("INSERT INTO user_auto_promotions (user_id, from_class, to_class, created_at) VALUES (".$promotionUserId.", ".$signupClassId.", ".$autoPromotionTargetId.", NOW())");
+				if (lt_table_exists('user_admin_notes')) {
+					$db->query("INSERT INTO user_admin_notes (user_id, admin_id, note, created_at) VALUES (".$promotionUserId.", 0, 'Автоповышение: ".(int) $signupClassId." -> ".$db->safesql((string) $autoPromotionTarget['NAME'])."', NOW())");
+				}
+				send_msg($autoPromotionMessageSubject, sprintf($autoPromotionMessageTemplate, $autoPromotionTarget['NAME']), $promotionUserId, 0);
+				$memcached->delete('user_'.$promotionUserId);
+			}
+		}
 	}
 }
 

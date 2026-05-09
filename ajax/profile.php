@@ -39,19 +39,6 @@ function profile_ajax_admin_ensure_schema()
 		return;
 	}
 
-	$userColumns = array(
-		'support_enabled' => "ALTER TABLE `users` ADD COLUMN `support_enabled` tinyint NOT NULL DEFAULT '0' AFTER `theme_dark`",
-		'support_until' => "ALTER TABLE `users` ADD COLUMN `support_until` datetime DEFAULT NULL AFTER `support_enabled`",
-		'warning_until' => "ALTER TABLE `users` ADD COLUMN `warning_until` datetime DEFAULT NULL AFTER `support_until`",
-		'in_group' => "ALTER TABLE `users` ADD COLUMN `in_group` tinyint NOT NULL DEFAULT '0' AFTER `warning_until`",
-	);
-
-	foreach ($userColumns as $column => $sql) {
-		if (!lt_column_exists('users', $column)) {
-			$db->query($sql);
-		}
-	}
-
 	$db->query(
 		"CREATE TABLE IF NOT EXISTS `user_admin_notes` (
 			`id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -168,16 +155,47 @@ if ($action === 'moderate_profile') {
 		profile_ajax_response(false, 'Пользователь не найден.');
 	}
 
+	$targetPriv = get_priv_info((int) ($target['class'] ?? 0));
+	if (!empty($targetPriv['EDIT_PRIV']) && empty($PRIV['EDIT_PRIV'])) {
+		profile_ajax_response(false, 'Недостаточно прав для редактирования этого пользователя.');
+	}
+
+	$bonusColumn = (lt_column_exists('users', 'bonus') ? 'bonus' : 'voice');
 	$updates = array();
+	$historyNotes = array();
 	$name = trim((string) ($_POST['name'] ?? $target['name']));
 	if ($name !== '' && $name !== (string) $target['name']) {
 		if (!validusername($name)) {
 			profile_ajax_response(false, 'Некорректный ник.');
 		}
+		if (strlen($name) > 12) {
+			profile_ajax_response(false, 'Ник слишком длинный.');
+		}
+		$nameExists = $db->psuper_query("SELECT id FROM users WHERE name = ? AND id <> ? LIMIT 1", 'si', [$name, $userId]);
+		if (!empty($nameExists['id'])) {
+			profile_ajax_response(false, 'Такой ник уже занят.');
+		}
 		$updates[] = "name='".$db->safesql($name)."'";
+		$historyNotes[] = 'Ник изменен: '.$target['name'].' -> '.$name;
+	}
+
+	$email = trim((string) ($_POST['email'] ?? $target['email']));
+	if ($email !== (string) ($target['email'] ?? '')) {
+		if ($email !== '' && !validemail($email)) {
+			profile_ajax_response(false, 'Некорректный E-mail.');
+		}
+		if ($email !== '') {
+			$emailExists = $db->psuper_query("SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1", 'si', [$email, $userId]);
+			if (!empty($emailExists['id'])) {
+				profile_ajax_response(false, 'Такой E-mail уже занят.');
+			}
+		}
+		$updates[] = "email='".$db->safesql($email)."'";
 	}
 
 	$classId = (int) ($_POST['class'] ?? $target['class']);
+	$classChanged = false;
+	$classInfo = array();
 	if ($classId > 0 && $classId !== (int) $target['class']) {
 		$classInfo = $db->super_query("SELECT id, NAME, EDIT_PRIV FROM priv WHERE id = ".$classId." LIMIT 1");
 		if (empty($classInfo['id'])) {
@@ -187,10 +205,23 @@ if ($action === 'moderate_profile') {
 			profile_ajax_response(false, 'Нельзя назначить этот класс.');
 		}
 		$updates[] = "class=".$classId;
+		$classChanged = true;
+		$oldClassName = get_user_class_name((int) $target['class']);
+		$newClassName = (string) ($classInfo['NAME'] ?? ('#'.$classId));
+		$historyNotes[] = 'Класс изменен: '.$oldClassName.' -> '.$newClassName;
 	}
 
 	$enabled = ((int) ($_POST['enabled'] ?? 1) === 1 ? 1 : 0);
 	$updates[] = "banned=".($enabled ? 0 : 1);
+
+	$sex = ((int) ($_POST['sex'] ?? ($target['sex'] ?? 1)) === 1 ? 1 : 0);
+	$updates[] = "sex=".$sex;
+
+	$updates[] = "notify_comments=".(!empty($_POST['notify_comments']) ? 1 : 0);
+	$updates[] = "download_local_retracker=".(!empty($_POST['download_local_retracker']) ? 1 : 0);
+	$updates[] = "theme_dark=".(!empty($_POST['theme_dark']) ? 1 : 0);
+	$updates[] = "bad_rating=".(!empty($_POST['bad_rating']) ? 1 : 0);
+	$updates[] = "confirm=".(!empty($_POST['confirm']) ? 1 : 0);
 
 	if (!empty($_POST['reset_birthday'])) {
 		$updates[] = "birthday_date=NULL";
@@ -200,24 +231,25 @@ if ($action === 'moderate_profile') {
 		$updates[] = "bad_rating=0";
 	}
 
-	$supportEnabled = ((int) ($_POST['support_enabled'] ?? 0) === 1 ? 1 : 0);
-	$updates[] = "support_enabled=".$supportEnabled;
-	$supportUntil = trim((string) ($_POST['support_until'] ?? ''));
-	if ($supportUntil !== '' && preg_match('~^\d{4}-\d{2}-\d{2}$~', $supportUntil)) {
-		$updates[] = "support_until='".$db->safesql($supportUntil.' 23:59:59')."'";
-	} elseif ($supportEnabled === 0) {
-		$updates[] = "support_until=NULL";
+	$uploadedGb = str_replace(',', '.', trim((string) ($_POST['uploaded_gb'] ?? '')));
+	if ($uploadedGb !== '' && is_numeric($uploadedGb)) {
+		$updates[] = "uploaded=".max(0, (int) round(((float) $uploadedGb) * 1024 * 1024 * 1024));
 	}
 
-	$warningUntil = trim((string) ($_POST['warning_until'] ?? ''));
-	if ($warningUntil !== '' && preg_match('~^\d{4}-\d{2}-\d{2}$~', $warningUntil)) {
-		$updates[] = "warning_until='".$db->safesql($warningUntil.' 23:59:59')."'";
-	} else {
-		$updates[] = "warning_until=NULL";
+	$downloadedGb = str_replace(',', '.', trim((string) ($_POST['downloaded_gb'] ?? '')));
+	if ($downloadedGb !== '' && is_numeric($downloadedGb)) {
+		$updates[] = "downloaded=".max(0, (int) round(((float) $downloadedGb) * 1024 * 1024 * 1024));
 	}
 
-	$inGroup = ((int) ($_POST['in_group'] ?? 0) === 1 ? 1 : 0);
-	$updates[] = "in_group=".$inGroup;
+	$bonusValue = str_replace(',', '.', trim((string) ($_POST['bonus_value'] ?? '')));
+	if ($bonusValue !== '' && is_numeric($bonusValue)) {
+		$updates[] = $bonusColumn."=".max(0, (float) $bonusValue);
+	}
+
+	$money = trim((string) ($_POST['money'] ?? ''));
+	if ($money !== '' && preg_match('~^-?\d+$~', $money)) {
+		$updates[] = "money=".max(0, (int) $money);
+	}
 
 	$uploadedMb = (int) ($_POST['uploaded_mb'] ?? 0);
 	$downloadedMb = (int) ($_POST['downloaded_mb'] ?? 0);
@@ -247,16 +279,41 @@ if ($action === 'moderate_profile') {
 		$db->query("UPDATE users SET ".implode(', ', array_unique($updates))." WHERE id = ".$userId);
 	}
 
-	if ($note !== '' && lt_table_exists('user_admin_notes')) {
-		$db->query(
-			"INSERT INTO user_admin_notes (user_id, admin_id, note, created_at)
-			 VALUES (".$userId.", ".(int) ($USER['id'] ?? 0).", '".$db->safesql($note)."', NOW())"
-		);
+	if ($classChanged && !empty($classInfo['NAME'])) {
+		send_msg($language['setting_76'] ?? 'Изменение класса', sprintf($language['setting_77'] ?? 'Ваш класс изменен на [b]%s[/b].', $classInfo['NAME']), $userId, 0);
+	}
+
+	if ($note !== '') {
+		$historyNotes[] = $note;
 		send_msg('Комментарий модератора', $note, $userId, (int) ($USER['id'] ?? 0));
 	}
 
+	foreach ($historyNotes as $historyNote) {
+		$historyNote = trim((string) $historyNote);
+		if ($historyNote === '' || !lt_table_exists('user_admin_notes')) {
+			continue;
+		}
+		$db->query(
+			"INSERT INTO user_admin_notes (user_id, admin_id, note, created_at)
+			 VALUES (".$userId.", ".(int) ($USER['id'] ?? 0).", '".$db->safesql($historyNote)."', NOW())"
+		);
+	}
+
 	$memcached->delete('user_'.$userId, 0);
-	profile_ajax_response(true, 'Изменения сохранены.', array('reload' => 1));
+	$updated = $db->super_query("SELECT * FROM users WHERE id = ".$userId." LIMIT 1");
+	$updatedName = htmlspecialchars((string) ($updated['name'] ?? $target['name']), ENT_QUOTES, 'UTF-8');
+	$updatedClass = (int) ($updated['class'] ?? $target['class']);
+	profile_ajax_response(true, 'Изменения сохранены.', array(
+		'reload' => 0,
+		'display_name_html' => get_user_color($updatedClass, $updatedName, $updated),
+		'class_name' => get_user_class_name($updatedClass),
+		'uploaded' => mksize((int) ($updated['uploaded'] ?? 0)),
+		'downloaded' => mksize((int) ($updated['downloaded'] ?? 0)),
+		'bonus' => number_format((float) ($updated[$bonusColumn] ?? 0), 2, '.', ' '),
+		'history_notes' => $historyNotes,
+		'history_date' => convent_date(get_date_time()),
+		'history_admin' => (int) ($USER['id'] ?? 0),
+	));
 }
 
 profile_ajax_response(false, 'Неизвестное действие.');

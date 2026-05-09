@@ -45,6 +45,9 @@ $bonusSourceText = ($bonusSource === 'online' ? 'нахождение онлай
 $bonusPerHour = (float) ($config['bonus_price'] ?? $config['voice_price'] ?? 0);
 $announceInterval = (int) ($config['announce_interval'] ?? 1800);
 $maxImageSize = mksize((float) ($config['max_size_image'] ?? 0));
+$autoPromotionMinAgeDays = 14;
+$autoPromotionMinUploaded = 10 * 1024 * 1024 * 1024;
+$autoPromotionMinRatio = 1.05;
 
 $classItems = array();
 foreach ((array) get_classes_list() as $classMeta) {
@@ -161,6 +164,7 @@ lt_static_page_render('Правила', array(
 			array(
 				'Класс пользователя определяет не “звание”, а реальные права: просмотр релизов, скачивание, загрузка, модерация, админские разделы, управление профилями и служебные инструменты.',
 				'Права классов настраиваются в edit_priv.php. Администратор может менять состав прав без изменения кода.',
+				'Автоповышение выполняет фоновое задание <strong>autoclean.php</strong>. Обычный подтвержденный и не заблокированный пользователь без плохого рейтинга повышается, если аккаунту не меньше <strong>'.number_format($autoPromotionMinAgeDays).' дней</strong>, раздача не меньше <strong>'.mksize($autoPromotionMinUploaded).'</strong>, а ratio не ниже <strong>'.number_format($autoPromotionMinRatio, 2, '.', ' ').'</strong>. После повышения пользователь получает системное сообщение.',
 			),
 			($classItems ? $classItems : array('Классы пока не настроены.'))
 		),

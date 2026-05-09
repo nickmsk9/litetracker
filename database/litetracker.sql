@@ -165,7 +165,7 @@ CREATE TABLE `comments_torrents` (
 
 LOCK TABLES `comments_torrents` WRITE;
 /*!40000 ALTER TABLE `comments_torrents` DISABLE KEYS */;
-INSERT INTO `comments_torrents` VALUES (1,1,2,'2026-05-08 15:05:12','тест комментария',0,2,'2026-05-08 15:05:12'),(2,1,2,'2026-05-08 15:05:19','Комментарий удалён пользователем сайта',1,2,'2026-05-08 15:22:07'),(3,1,2,'2026-05-08 15:21:58','че',2,2,'2026-05-08 15:21:58'),(4,1,2,'2026-05-08 15:22:01','а',1,2,'2026-05-08 15:22:01'),(5,1,2,'2026-05-08 15:22:02','ку',0,2,'2026-05-08 15:22:02'),(6,1,2,'2026-05-08 15:29:19','Комментарий удалён администрацией сайта',0,1,'2026-05-08 18:49:34'),(7,1,1,'2026-05-08 15:43:20','что такое?',6,1,'2026-05-08 15:43:20'),(8,1,1,'2026-05-08 18:35:53','mariko?',5,1,'2026-05-08 18:35:53'),(9,1,1,'2026-05-08 18:50:41','ничего',7,1,'2026-05-08 18:50:41'),(10,1,1,'2026-05-09 08:30:59','ку',9,1,'2026-05-09 08:30:59'),(11,1,1,'2026-05-09 08:31:02','Куку',0,1,'2026-05-09 08:31:02'),(12,1,1,'2026-05-09 08:57:21','Задача: безопасно найти и удалить только реально неиспользуемый CSS, не меняя внешний вид сайта.\r\n\r\nВАЖНО:\r\n\r\n- Не переписывай CSS.\r\n\r\n- Не оптимизируй дизайн.\r\n\r\n- Не меняй HTML/PHP/JS.\r\n\r\n- Не переименовывай классы.\r\n\r\n- Не объединяй разные компоненты.\r\n\r\n- Не меняй цвета, отступы, шрифты, размеры, border-radius, hover, responsive rules.\r\n\r\n- Главная цель — удалить только мёртвый CSS, который точно нигде не используется.\r\n\r\nРаботай только с CSS-файлами:\r\n\r\n- templates/default/css/my.css\r\n\r\n- public/css/chat.css\r\n\r\n- public/css/mail.css\r\n\r\n- public/css/torrenttable.css\r\n\r\n- public/css/lightbox.css\r\n\r\nПеред началом:\r\n\r\n1. Выполни `git status --short`.\r\n\r\n2. Если есть незакоммиченные изменения — покажи их и остановись.\r\n\r\n3. Не продолжай чистку, пока рабочее дерево не чистое.\r\n\r\nЧто нужно сделать:\r\n\r\n1. Собери все CSS-селекторы из указанных CSS-файлов:\r\n\r\n   - классы `.class`\r\n\r\n   - id `#id`\r\n\r\n   - составные селекторы\r\n\r\n   - hover/focus/active/disabled состояния\r\n\r\n   - media query правила\r\n\r\n2. Проверь использование каждого класса и id во всём проекте:\r\n\r\n   - *.php\r\n\r\n   - *.tpl.php\r\n\r\n   - *.js\r\n\r\n   - *.html\r\n\r\n   - templates/default/*\r\n\r\n   - public/js/*\r\n\r\n   - ajax/*\r\n\r\n   - blocks/*\r\n\r\n   - modules/*\r\n\r\n   - system/*\r\n\r\n   - include/*\r\n\r\n   - admin/*\r\n\r\n   - public/*\r\n\r\n3. Учитывай динамическое использование:\r\n\r\n   - классы, собираемые в PHP через строки;\r\n\r\n   - классы, добавляемые JavaScript через `addClass`, `classList.add`, `toggleClass`, `removeClass`;\r\n\r\n   - классы, приходящие из AJAX-ответов;\r\n\r\n   - классы в шаблонах `tpl.*.php`;\r\n\r\n   - классы для комментариев, рейтинга, профиля, чата, модальных окон, lightbox;\r\n\r\n   - классы внешних библиотек;\r\n\r\n   - классы, которые могут использоваться в BBCode/описаниях/пользовательском контенте.\r\n\r\n4. Раздели найденные кандидаты на 3 группы:\r\n\r\nГруппа A — 100% безопасно удалить:\r\n\r\n- селектор отсутствует во всём проекте;\r\n\r\n- не найден в PHP-строках;\r\n\r\n- не найден в JS;\r\n\r\n- не относится к динамическим компонентам;\r\n\r\n- не относится к внешним библиотекам;\r\n\r\n- не относится к chat/lightbox/rating/comments/upload/editor;\r\n\r\n- не используется как часть составного селектора;\r\n\r\n- удаление не влияет на другие селекторы.\r\n\r\nГруппа B — сомнительно, не удалять:\r\n\r\n- селектор не найден напрямую, но может появляться динамически;\r\n\r\n- селектор относится к чату, AJAX, рейтингу, комментариям, lightbox, editor, upload/edit формам;\r\n\r\n- селектор похож на старый, но нет полной уверенности;\r\n\r\n- селектор связан с id-блоками или legacy-разметкой.\r\n\r\nГруппа C — точно оставить:\r\n\r\n- селектор найден в PHP/JS/HTML;\r\n\r\n- селектор используется в шаблонах;\r\n\r\n- селектор используется в JS;\r\n\r\n- селектор является hover/focus/active состоянием используемого класса;\r\n\r\n- селектор относится к внешней библиотеке.\r\n\r\nУдалять разрешено только селекторы из группы A.\r\n\r\nЗапрещено удалять:\r\n\r\n- `.wall-*`\r\n\r\n- `.comment-*`\r\n\r\n- `.rating-*`\r\n\r\n- `#rate*`\r\n\r\n- `.browse-*`\r\n\r\n- `.torrent-*`\r\n\r\n- `.details-*`\r\n\r\n- `.profile-*`\r\n\r\n- `.upload-*`\r\n\r\n- `.editor-*`\r\n\r\n- `.modal-*`\r\n\r\n- `.lightbox-*`\r\n\r\n- `.mail-*`, если нет полной уверенности\r\n\r\n- любые правила из lightbox.css, если они относятся к работе lightbox\r\n\r\n- любые правила из chat.css, если они могут использоваться AJAX-чатиками\r\n\r\n- media queries, если внутри есть хотя бы один используемый селектор\r\n\r\nПорядок работы:\r\n\r\n1. Сначала сделай отчёт, ничего не меняя:\r\n\r\n   - CSS-файл;\r\n\r\n   - селектор;\r\n\r\n   - найдено использование или нет;\r\n\r\n   - где искал;\r\n\r\n   - причина, почему можно удалить или нельзя;\r\n\r\n   - категория A/B/C.\r\n\r\n2. После отчёта удали только группу A.\r\n\r\n3. После удаления покажи:\r\n\r\n   - полный `git diff`;\r\n\r\n   - сколько строк было/стало в каждом CSS-файле;\r\n\r\n   - список удалённых селекторов;\r\n\r\n   - список селекторов, которые НЕ удалил из-за риска;\r\n\r\n   - список файлов, которые изменились.\r\n\r\n4. После удаления проверь:\r\n\r\n   - нет синтаксических ошибок CSS;\r\n\r\n   - PHP/JS файлы не изменялись;\r\n\r\n   - не удалены используемые hover/focus/active состояния;\r\n\r\n   - не удалены media query правила с используемыми селекторами.\r\n\r\n5. В конце остановись. Не делай второй проход и не оптимизируй CSS дальше без отдельной команды.\r\n\r\nГлавное правило:\r\n\r\nЕсли есть хоть малейшее сомнение — НЕ УДАЛЯЙ.\r\n\r\nЛучше оставить лишний CSS, чем сломать внешний вид сайта.',0,0,'2026-05-09 08:57:21'),(13,1,1,'2026-05-09 08:58:29','да',12,0,'2026-05-09 08:58:29');
+INSERT INTO `comments_torrents` VALUES (1,1,2,'2026-05-08 15:05:12','тест комментария',0,2,'2026-05-08 15:05:12'),(2,1,2,'2026-05-08 15:05:19','Комментарий удалён пользователем сайта',1,2,'2026-05-08 15:22:07'),(3,1,2,'2026-05-08 15:21:58','че',2,2,'2026-05-08 15:21:58'),(4,1,2,'2026-05-08 15:22:01','а',1,2,'2026-05-08 15:22:01'),(5,1,2,'2026-05-08 15:22:02','ку',0,2,'2026-05-08 15:22:02'),(6,1,2,'2026-05-08 15:29:19','Комментарий удалён администрацией сайта',0,1,'2026-05-08 18:49:34'),(7,1,1,'2026-05-08 15:43:20','что такое?',6,1,'2026-05-08 15:43:20'),(8,1,1,'2026-05-08 18:35:53','mariko?',5,1,'2026-05-08 18:35:53'),(9,1,1,'2026-05-08 18:50:41','ничего',7,1,'2026-05-08 18:50:41'),(10,1,1,'2026-05-09 08:30:59','ку',9,1,'2026-05-09 08:30:59'),(11,1,1,'2026-05-09 08:31:02','Куку',0,1,'2026-05-09 08:31:02'),(12,1,1,'2026-05-09 08:57:21','Комментарий удалён пользователем сайта',0,1,'2026-05-09 17:36:51'),(13,1,1,'2026-05-09 08:58:29','да',12,0,'2026-05-09 08:58:29');
 /*!40000 ALTER TABLE `comments_torrents` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `comments_users`;
@@ -182,12 +182,12 @@ CREATE TABLE `comments_users` (
   `date_edit` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_users_parent` (`id_users`,`parent_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=18 DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=19 DEFAULT CHARSET=cp1251 COLLATE=cp1251_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `comments_users` WRITE;
 /*!40000 ALTER TABLE `comments_users` DISABLE KEYS */;
-INSERT INTO `comments_users` VALUES (1,1,1,'2026-05-07 18:50:59','давайте тут будут комментарии',0,0,NULL),(2,1,1,'2026-05-07 18:51:09','&#128513;',0,0,NULL),(3,1,1,'2026-05-07 18:51:14','давайте!',1,0,NULL),(4,2,2,'2026-05-08 14:44:32','&#128512;',0,0,NULL),(5,2,2,'2026-05-08 14:44:32','23423',0,2,'2026-05-08 15:00:39'),(6,1,2,'2026-05-08 14:44:50','что',3,0,NULL),(7,1,2,'2026-05-08 14:44:50','что',3,0,NULL),(8,2,2,'2026-05-08 15:03:15','ываыва',0,2,'2026-05-08 15:03:15'),(9,2,2,'2026-05-08 15:03:16','ываыв',0,2,'2026-05-08 15:03:16'),(10,2,2,'2026-05-08 15:03:17','ываы',0,2,'2026-05-08 15:03:17'),(11,2,2,'2026-05-08 15:03:18','ываы',0,2,'2026-05-08 15:03:18'),(12,2,2,'2026-05-08 15:03:20','ываыв',10,2,'2026-05-08 15:03:20'),(13,2,2,'2026-05-08 15:03:25','ываы',9,2,'2026-05-08 15:03:25'),(14,2,2,'2026-05-08 15:12:21','че',12,2,'2026-05-08 15:12:21'),(15,1,1,'2026-05-09 08:48:09','ничего',7,1,'2026-05-09 08:48:09'),(16,1,1,'2026-05-09 08:48:14','куку',0,1,'2026-05-09 08:48:14'),(17,1,1,'2026-05-09 08:48:19',':)',0,1,'2026-05-09 08:48:19');
+INSERT INTO `comments_users` VALUES (1,1,1,'2026-05-07 18:50:59','давайте тут будут комментарии',0,0,NULL),(2,1,1,'2026-05-07 18:51:09','&#128513;',0,0,NULL),(3,1,1,'2026-05-07 18:51:14','давайте!',1,0,NULL),(4,2,2,'2026-05-08 14:44:32','&#128512;',0,0,NULL),(5,2,2,'2026-05-08 14:44:32','23423',0,2,'2026-05-08 15:00:39'),(6,1,2,'2026-05-08 14:44:50','что',3,0,NULL),(7,1,2,'2026-05-08 14:44:50','что',3,0,NULL),(8,2,2,'2026-05-08 15:03:15','ываыва',0,2,'2026-05-08 15:03:15'),(9,2,2,'2026-05-08 15:03:16','ываыв',0,2,'2026-05-08 15:03:16'),(10,2,2,'2026-05-08 15:03:17','ываы',0,2,'2026-05-08 15:03:17'),(11,2,2,'2026-05-08 15:03:18','ываы',0,2,'2026-05-08 15:03:18'),(12,2,2,'2026-05-08 15:03:20','ываыв',10,2,'2026-05-08 15:03:20'),(13,2,2,'2026-05-08 15:03:25','ываы',9,2,'2026-05-08 15:03:25'),(14,2,2,'2026-05-08 15:12:21','че',12,2,'2026-05-08 15:12:21'),(15,1,1,'2026-05-09 08:48:09','ничего',7,1,'2026-05-09 08:48:09'),(16,1,1,'2026-05-09 08:48:14','куку',0,1,'2026-05-09 08:48:14'),(17,1,1,'2026-05-09 08:48:19',':)',0,1,'2026-05-09 08:48:19'),(18,3,3,'2026-05-09 18:00:46','великая китайская стена',0,0,'2026-05-09 18:00:46');
 /*!40000 ALTER TABLE `comments_users` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `comments_users_reports`;
@@ -208,11 +208,12 @@ CREATE TABLE `comments_users_reports` (
   KEY `status_created` (`status`,`created_at`),
   KEY `comment_reporter` (`comment_id`,`reporter_user_id`),
   KEY `object_comment` (`object_id`,`comment_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `comments_users_reports` WRITE;
 /*!40000 ALTER TABLE `comments_users_reports` DISABLE KEYS */;
+INSERT INTO `comments_users_reports` VALUES (1,6,1,2,1,'что','resolved','2026-05-09 17:40:53','2026-05-09 17:57:38',1);
 /*!40000 ALTER TABLE `comments_users_reports` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `confirm`;
@@ -245,7 +246,7 @@ CREATE TABLE `cron` (
 
 LOCK TABLES `cron` WRITE;
 /*!40000 ALTER TABLE `cron` DISABLE KEYS */;
-INSERT INTO `cron` VALUES ('autoclean_interval',1000),('autoclean_last',1777907575),('multi_remote',1),('remotecheck_interval',600),('remote_torrents',30),('remotepeers_cleantime',10800),('remote_lastchecked',0),('in_remotecheck',0),('num_checked',360),('last_remotecheck',1778309455),('multi_timeout',100);
+INSERT INTO `cron` VALUES ('autoclean_interval',1000),('autoclean_last',1777907575),('multi_remote',1),('remotecheck_interval',600),('remote_torrents',30),('remotepeers_cleantime',10800),('remote_lastchecked',0),('in_remotecheck',0),('num_checked',364),('last_remotecheck',1778339440),('multi_timeout',100);
 /*!40000 ALTER TABLE `cron` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `faq`;
@@ -332,12 +333,12 @@ CREATE TABLE `mail` (
   `delete_out` smallint NOT NULL,
   `reading` smallint NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
+) ENGINE=MyISAM AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `mail` WRITE;
 /*!40000 ALTER TABLE `mail` DISABLE KEYS */;
-INSERT INTO `mail` VALUES (1,'Добро пожаловать!','Спасибо за регистрацию на LiteTracker! Заполните профиль, ознакомьтесь с правилами и начинайте пользоваться сайтом.','2026-05-08 14:44:27',2,0,0,0,1),(2,'Обратная связь: Ошибки на сайте','Тема: [b]Ошибки на сайте[/b]\nОтправитель: [b]nickmsk98[/b] (ID 2)\nIP: 192.168.65.1\n\nног','2026-05-08 15:15:21',1,2,0,0,1),(3,'Сообщение','да','2026-05-08 15:29:40',1,2,0,0,1),(4,'укеук','уклею','2026-05-09 09:48:07',1,0,0,0,0);
+INSERT INTO `mail` VALUES (1,'Добро пожаловать!','Спасибо за регистрацию на LiteTracker! Заполните профиль, ознакомьтесь с правилами и начинайте пользоваться сайтом.','2026-05-08 14:44:27',2,0,0,0,1),(2,'Обратная связь: Ошибки на сайте','Тема: [b]Ошибки на сайте[/b]\nОтправитель: [b]nickmsk98[/b] (ID 2)\nIP: 192.168.65.1\n\nног','2026-05-08 15:15:21',1,2,0,0,1),(3,'Сообщение','да','2026-05-08 15:29:40',1,2,0,0,1),(4,'укеук','уклею','2026-05-09 09:48:07',1,0,0,0,1),(5,'Новая жалоба на комментарий','Поступила новая жалоба на комментарий стены профиля.\nОтправитель: [b]admin[/b]\n[url=wall_reports.php?id=1]Открыть жалобу[/url]\n[url=profile.php?id=1#wall-comment-6]Открыть комментарий[/url]','2026-05-09 17:40:53',1,0,0,0,1),(6,'Ваш класс был изменен','Администрация изменила ваш класс на \"Администраторы\"','2026-05-09 17:54:05',2,0,0,0,0),(7,'Сообщение','привет','2026-05-09 17:58:10',2,1,0,0,0),(8,'Сообщение','как твои дела?','2026-05-09 17:58:15',2,1,0,0,0),(9,'Добро пожаловать!','Спасибо за регистрацию на LiteTracker! Заполните профиль, ознакомьтесь с правилами и начинайте пользоваться сайтом.','2026-05-09 17:59:16',3,0,0,0,1),(10,'Обратная связь: Реклама на сайте','Тема: [b]Реклама на сайте[/b]\nОтправитель: [b]webnet[/b] (ID 3)\nIP: 192.168.65.1\n\nя хчаыфлаоывалыфдваждфываф','2026-05-09 18:03:27',1,3,0,0,1),(11,'Обратная связь: Реклама на сайте','Тема: [b]Реклама на сайте[/b]\nОтправитель: [b]webnet[/b] (ID 3)\nIP: 192.168.65.1\n\nя хчаыфлаоывалыфдваждфываф','2026-05-09 18:03:27',2,3,0,0,0),(12,'Ваш класс был изменен','Администрация изменила ваш класс на \"VIP\"','2026-05-09 18:04:29',3,0,0,0,0);
 /*!40000 ALTER TABLE `mail` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `news`;
@@ -543,12 +544,12 @@ CREATE TABLE `sessions` (
   UNIQUE KEY `session_id` (`session_id`),
   KEY `idx_sessions_user_access` (`user_id`,`last_access`),
   KEY `idx_sessions_last_access` (`last_access`)
-) ENGINE=MyISAM AUTO_INCREMENT=28 DEFAULT CHARSET=cp1251;
+) ENGINE=MyISAM AUTO_INCREMENT=38 DEFAULT CHARSET=cp1251;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `sessions` WRITE;
 /*!40000 ALTER TABLE `sessions` DISABLE KEYS */;
-INSERT INTO `sessions` VALUES (1,'cfeb7f7a71e2924e22bc498b5fa3ac55',-1,'2026-05-03 13:21:35',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(2,'477ad948299b8fc08c1edae2b8accea1',1,'2026-05-04 18:14:43',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(3,'4419cd46a2c17e5b261d3fa4b79c831e',-1,'2026-05-04 18:12:34',-1062715135,'curl/8.7.1','/index.php'),(4,'6d2a1e1d9e1277da15506290d80c99ef',-1,'2026-05-04 18:12:42',2130706433,'','/profile.php'),(5,'c1d890cd0410ff2a9bb87e3f0b710c51',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/shop.php'),(6,'af21a6b3223d81458ef7f3784f1cf86b',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/index.php'),(7,'870f06414b12fdfd5e1352db79df33a7',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/profile.php'),(8,'38d500d2c5ab1f31d23dd07215e01cb9',1,'2026-05-07 20:15:50',-1185611747,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/browse.php'),(9,'d034ddc9c15e4307e1f626339c0a8d77',1,'2026-05-08 15:42:48',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(10,'8634e0ea774b829ff52cf60c00673aa6',-1,'2026-05-08 15:12:47',-1062715135,'curl/8.7.1','/index.php'),(11,'06811ddf3458e66442a1a420f01fa209',-1,'2026-05-08 15:14:15',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/146.0.0.0 Safari/537.36','/index.php'),(12,'b8756136bd13de1d6765fe92c836668b',-1,'2026-05-08 15:17:37',-1062715135,'curl/8.7.1','/ajax/comments.php'),(13,'19b56a6751f476747a85bbd2d27e7e96',-1,'2026-05-08 15:17:45',-1062715135,'curl/8.7.1','/ajax/comments.php'),(14,'200aeb3af522b67dcbf619fd5df1fc41',-1,'2026-05-08 15:17:53',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/146.0.0.0 Safari/537.36','/index.php'),(15,'c8f504baaeca657e0b87d404fbebe46d',-1,'2026-05-08 15:29:01',-1062715135,'curl/8.7.1','/details.php'),(16,'c3aa91056c445b2522068bc079d90b7d',-1,'2026-05-08 15:29:01',-1062715135,'curl/8.7.1','/details.php'),(17,'4234a099fed63088c76cfd7f5a4a2234',-1,'2026-05-08 15:29:26',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/146.0.0.0 Safari/537.36','/details.php'),(18,'fb81c94b7a062ec25feb2ac7020a2362',-1,'2026-05-08 15:30:20',-1062715135,'curl/8.7.1','/details.php'),(19,'1f5b91b72d306ee94b4c07faff60789c',-1,'2026-05-08 15:40:20',-1062715135,'curl/8.7.1','/index.php'),(20,'f294d7d550cec6468b5cd0bc9c8e2aaa',-1,'2026-05-08 15:40:20',-1062715135,'curl/8.7.1','/details.php'),(21,'0730316a2d94a9dbb18b2cf5426ed4f7',-1,'2026-05-08 15:40:28',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/146.0.0.0 Safari/537.36','/index.php'),(22,'091b07b0e218f25cd90d9f478a8730b8',1,'2026-05-08 18:50:17',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/browse.php'),(23,'49928f95e0b9099e51886124b3413b5c',-1,'2026-05-08 18:24:32',-1062715135,'curl/8.7.1','/index.php'),(24,'1d941d6bd646900f28e4e21d9d38b9e6',-1,'2026-05-08 18:24:32',-1062715135,'curl/8.7.1','/index.php'),(25,'d6394b0bcea9935397e7abaeb968ddea',-1,'2026-05-08 18:29:43',-1062715135,'curl/8.7.1','/index.php'),(26,'18658ad22fc7da23451498b5e64a6ae2',-1,'2026-05-08 18:31:39',-1062715135,'curl/8.7.1','/index.php'),(27,'cd44a01e8982235d26de8b81f9341874',1,'2026-05-09 09:52:40',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/rules.php');
+INSERT INTO `sessions` VALUES (1,'cfeb7f7a71e2924e22bc498b5fa3ac55',-1,'2026-05-03 13:21:35',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(2,'477ad948299b8fc08c1edae2b8accea1',1,'2026-05-04 18:14:43',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(3,'4419cd46a2c17e5b261d3fa4b79c831e',-1,'2026-05-04 18:12:34',-1062715135,'curl/8.7.1','/index.php'),(4,'6d2a1e1d9e1277da15506290d80c99ef',-1,'2026-05-04 18:12:42',2130706433,'','/profile.php'),(5,'c1d890cd0410ff2a9bb87e3f0b710c51',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/shop.php'),(6,'af21a6b3223d81458ef7f3784f1cf86b',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/index.php'),(7,'870f06414b12fdfd5e1352db79df33a7',-1,'2026-05-04 18:13:26',-1062715135,'curl/8.7.1','/profile.php'),(8,'38d500d2c5ab1f31d23dd07215e01cb9',1,'2026-05-07 20:15:50',-1185611747,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/browse.php'),(9,'d034ddc9c15e4307e1f626339c0a8d77',1,'2026-05-08 15:42:48',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/index.php'),(10,'8634e0ea774b829ff52cf60c00673aa6',-1,'2026-05-08 15:12:47',-1062715135,'curl/8.7.1','/index.php'),(11,'06811ddf3458e66442a1a420f01fa209',-1,'2026-05-08 15:14:15',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/146.0.0.0 Safari/537.36','/index.php'),(12,'b8756136bd13de1d6765fe92c836668b',-1,'2026-05-08 15:17:37',-1062715135,'curl/8.7.1','/ajax/comments.php'),(13,'19b56a6751f476747a85bbd2d27e7e96',-1,'2026-05-08 15:17:45',-1062715135,'curl/8.7.1','/ajax/comments.php'),(14,'200aeb3af522b67dcbf619fd5df1fc41',-1,'2026-05-08 15:17:53',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/146.0.0.0 Safari/537.36','/index.php'),(15,'c8f504baaeca657e0b87d404fbebe46d',-1,'2026-05-08 15:29:01',-1062715135,'curl/8.7.1','/details.php'),(16,'c3aa91056c445b2522068bc079d90b7d',-1,'2026-05-08 15:29:01',-1062715135,'curl/8.7.1','/details.php'),(17,'4234a099fed63088c76cfd7f5a4a2234',-1,'2026-05-08 15:29:26',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/146.0.0.0 Safari/537.36','/details.php'),(18,'fb81c94b7a062ec25feb2ac7020a2362',-1,'2026-05-08 15:30:20',-1062715135,'curl/8.7.1','/details.php'),(19,'1f5b91b72d306ee94b4c07faff60789c',-1,'2026-05-08 15:40:20',-1062715135,'curl/8.7.1','/index.php'),(20,'f294d7d550cec6468b5cd0bc9c8e2aaa',-1,'2026-05-08 15:40:20',-1062715135,'curl/8.7.1','/details.php'),(21,'0730316a2d94a9dbb18b2cf5426ed4f7',-1,'2026-05-08 15:40:28',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/146.0.0.0 Safari/537.36','/index.php'),(22,'091b07b0e218f25cd90d9f478a8730b8',1,'2026-05-08 18:50:17',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/browse.php'),(23,'49928f95e0b9099e51886124b3413b5c',-1,'2026-05-08 18:24:32',-1062715135,'curl/8.7.1','/index.php'),(24,'1d941d6bd646900f28e4e21d9d38b9e6',-1,'2026-05-08 18:24:32',-1062715135,'curl/8.7.1','/index.php'),(25,'d6394b0bcea9935397e7abaeb968ddea',-1,'2026-05-08 18:29:43',-1062715135,'curl/8.7.1','/index.php'),(26,'18658ad22fc7da23451498b5e64a6ae2',-1,'2026-05-08 18:31:39',-1062715135,'curl/8.7.1','/index.php'),(27,'cd44a01e8982235d26de8b81f9341874',1,'2026-05-09 09:52:40',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/rules.php'),(28,'6d5b32721fe5d064004a7bfad3eee0e8',1,'2026-05-09 18:06:01',-1062715135,'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15','/my.mail.php'),(29,'0e3ac280bf73fc800108624600bbc957',-1,'2026-05-09 17:52:22',-1062715135,'curl/8.7.1','/rules.php'),(30,'7030d2e04a40a01f64091209a3111384',-1,'2026-05-09 17:52:26',-1062715135,'curl/8.7.1','/profile.php'),(31,'cdb59c5f2a8ec1076d994f020118919f',-1,'2026-05-09 18:04:02',-1062715135,'curl/8.7.1','/profile.php'),(32,'84cd8a301cdb2dcaea72d45cfffa3f44',-1,'2026-05-09 18:04:02',-1062715135,'curl/8.7.1','/my.setting.php'),(33,'c4d1b614f98682115d4c0cd8fad29a49',-1,'2026-05-09 18:04:41',-1062715135,'curl/8.7.1','/profile.php'),(34,'bdfbc5451c7006aa0c0ce3dfe4bd7c5d',-1,'2026-05-09 18:12:34',-1062715135,'curl/8.7.1','/my.mail.php'),(35,'820956700b079bde70d099a88d0f5d6a',-1,'2026-05-09 18:12:34',-1062715135,'curl/8.7.1','/profile.php'),(36,'228941e4982e10d36dbb993cb2db05a3',-1,'2026-05-09 18:12:56',-1062715135,'curl/8.7.1','/login.php'),(37,'27633e428a44b5e74cd82d365b77bc0c',-1,'2026-05-09 18:13:19',-1062715135,'curl/8.7.1','/profile.php');
 /*!40000 ALTER TABLE `sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `shop`;
@@ -641,12 +642,12 @@ CREATE TABLE `torrent_views` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `torrent_visitor` (`torrent_id`,`visitor_hash`),
   KEY `torrent_id` (`torrent_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb3;
+) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `torrent_views` WRITE;
 /*!40000 ALTER TABLE `torrent_views` DISABLE KEYS */;
-INSERT INTO `torrent_views` VALUES (1,1,2,'33e75dafbd31084454d70392eda234536c511411','2026-05-08 15:04:36'),(2,1,0,'323215e3023f98f76abdced31e99a85a8573cfbd','2026-05-08 15:29:01'),(3,1,0,'322d0acc3b23f818d3918852dfff7097fd59e745','2026-05-08 15:29:26'),(4,1,1,'9bbb375c78e35e2cfb54f2e9ae2712d6207b3da9','2026-05-08 15:43:11'),(5,1,0,'841dc65f009b15758b77e1bc611754b705068172','2026-05-09 09:12:01');
+INSERT INTO `torrent_views` VALUES (1,1,2,'33e75dafbd31084454d70392eda234536c511411','2026-05-08 15:04:36'),(2,1,0,'323215e3023f98f76abdced31e99a85a8573cfbd','2026-05-08 15:29:01'),(3,1,0,'322d0acc3b23f818d3918852dfff7097fd59e745','2026-05-08 15:29:26'),(4,1,1,'9bbb375c78e35e2cfb54f2e9ae2712d6207b3da9','2026-05-08 15:43:11'),(5,1,0,'841dc65f009b15758b77e1bc611754b705068172','2026-05-09 09:12:01'),(6,1,3,'5d9dc7d8b26969c20a0bd2b0820ae2a729a6114a','2026-05-09 18:03:33');
 /*!40000 ALTER TABLE `torrent_views` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `torrents`;
@@ -718,8 +719,27 @@ CREATE TABLE `trackers` (
 
 LOCK TABLES `trackers` WRITE;
 /*!40000 ALTER TABLE `trackers` DISABLE KEYS */;
-INSERT INTO `trackers` VALUES (1,1,'localhost',0,0,1778309575,''),(2,1,'http://tr2.torrent4me.com/ann?uk=cAETnuUKbT',304,3,1778305544,'ok_announce'),(3,1,'http://tr2.tor4me.info/ann?uk=cAETnuUKbT',304,3,1778305543,'ok_announce'),(4,1,'http://tr2.tor2me.info/ann?uk=cAETnuUKbT',0,0,1778305543,'failed:no_benc_result_or_timeout_announce'),(5,1,'http://retracker.local/announce',0,0,1778305543,'failed:no_benc_result_or_timeout_announce');
+INSERT INTO `trackers` VALUES (1,1,'localhost',0,0,1778339620,''),(2,1,'http://tr2.torrent4me.com/ann?uk=cAETnuUKbT',0,0,1778337634,'failed:no_benc_result_or_timeout_announce'),(3,1,'http://tr2.tor4me.info/ann?uk=cAETnuUKbT',424,4,1778337635,'ok_announce'),(4,1,'http://tr2.tor2me.info/ann?uk=cAETnuUKbT',0,0,1778337635,'failed:no_benc_result_or_timeout_announce'),(5,1,'http://retracker.local/announce',0,0,1778337639,'failed:no_benc_result_or_timeout_announce');
 /*!40000 ALTER TABLE `trackers` ENABLE KEYS */;
+UNLOCK TABLES;
+DROP TABLE IF EXISTS `user_admin_notes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_admin_notes` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
+  `admin_id` int unsigned NOT NULL,
+  `note` text COLLATE utf8mb3_bin NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_created` (`user_id`,`created_at`)
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `user_admin_notes` WRITE;
+/*!40000 ALTER TABLE `user_admin_notes` DISABLE KEYS */;
+INSERT INTO `user_admin_notes` VALUES (1,3,1,'Класс изменен: Пользователи -> VIP','2026-05-09 18:04:29');
+/*!40000 ALTER TABLE `user_admin_notes` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -747,9 +767,6 @@ CREATE TABLE `users` (
   `notify_comments` tinyint NOT NULL DEFAULT '0',
   `download_local_retracker` tinyint NOT NULL DEFAULT '1',
   `theme_dark` tinyint NOT NULL DEFAULT '0',
-  `profile_slug` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL DEFAULT '',
-  `website` text CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
-  `icq` varchar(12) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `banned` smallint NOT NULL DEFAULT '0',
   `last_chat` int NOT NULL,
   `num_messages` int NOT NULL,
@@ -758,14 +775,13 @@ CREATE TABLE `users` (
   `confirm` smallint NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `name` (`name`),
-  KEY `email` (`email`),
-  KEY `idx_users_profile_slug` (`profile_slug`)
-) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
+  KEY `email` (`email`)
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','1_1778169081_0c7d3930.jpg','admin@admin.com','$2y$12$3ImCq59OZWwh3exrrcbtYOzvSD6sSoGU6WULEyr09QtgMPbJ8HiwW','',-1062715135,6,'2026-05-09 09:48:07','2026-05-04 18:14:43','ec932acf7c4e32b1f8f26ea1911bc30a',107232985350,0,0,0,861.182,1,'2009-04-04','',0,1,0,'anminchd','','',0,0,0,0,0,1),(2,'nickmsk98','2_1778242020_4b6bbe01.jpg','sdfqwerfqwe@yandex.ru','$2y$12$i4wsRAw0O49PAiPM7vRI4u5QwJ7B8kjbtgTPKLA0/2n6fy0i1WHbm','',-1062715135,1,'2026-05-08 15:42:28','2026-05-08 14:44:27','52f0cf008ee335c101ebc51b32d2644c',21475910221,0,0,0,916.741,1,'2008-05-04','',0,1,0,'','','',0,0,0,0,0,1);
+INSERT INTO `users` VALUES (1,'admin','1_1778169081_0c7d3930.jpg','admin@admin.com','$2y$12$3ImCq59OZWwh3exrrcbtYOzvSD6sSoGU6WULEyr09QtgMPbJ8HiwW','',-1062715135,6,'2026-05-09 17:58:44','2026-05-04 18:14:43','ec932acf7c4e32b1f8f26ea1911bc30a',107232985350,0,0,0,861.182,1,'2009-04-04','',0,1,0,0,0,0,0,0,1),(2,'nickmsk98','2_1778242020_4b6bbe01.jpg','sdfqwerfqwe@yandex.ru','$2y$12$i4wsRAw0O49PAiPM7vRI4u5QwJ7B8kjbtgTPKLA0/2n6fy0i1WHbm','',-1062715135,5,'2026-05-08 15:42:28','2026-05-08 14:44:27','52f0cf008ee335c101ebc51b32d2644c',21475910222,0,0,0,916.741,1,'2008-05-04','',0,1,0,0,0,4,0,0,1),(3,'webnet','3_1778338915_b2845127.jpg','fomalexus@yandex.ru','$2y$12$H1JKWqeQVL.WlrZ/KoxUqekUVEJ98wBwAkeDhGinU0oO6mhAzrDOy','',-1062715135,2,'2026-05-09 17:59:16','2026-05-09 17:59:16','01cb44447933a574453a8b5a83ce7578',0,0,0,0,300,1,'2007-04-06','',0,1,0,0,0,1,0,0,1);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `users_blacklist`;

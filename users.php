@@ -210,9 +210,6 @@ head('Пользователи');
 								<?php if ((int) $USER['id'] !== $userId) { ?>
 								<a class="lt-admin-link-button lt-admin-button-secondary" href="my.mail.php?act=conversation&amp;id_user=<?=$userId;?>">Сообщение</a>
 								<?php } ?>
-								<?php if ((int) $USER['id'] === $userId || !empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV'])) { ?>
-								<a class="lt-admin-link-button" href="my.setting.php?id=<?=$userId;?>">Настройки</a>
-								<?php } ?>
 							</div>
 						</td>
 					</tr>
