@@ -81,13 +81,7 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 	<header class="site-header">
 		<div class="site-topbar">
 			<a class="site-brand" href="index.php">
-				<span class="site-brand-mark">
-					<img src="templates/<?=$tpl;?>/images/ubllogo1.png" alt="LiteTracker" width="27" height="20">
-				</span>
-				<span class="site-brand-copy">
-					<strong><?=htmlspecialchars($config['sitename'], ENT_QUOTES, 'UTF-8');?></strong>
-					<small>Торрент-трекер</small>
-				</span>
+				<img class="site-brand-image" src="templates/<?=$tpl;?>/images/forgithub.png" alt="LiteTracker" width="1223" height="220">
 			</a>
 
 			<nav class="site-nav" aria-label="Основная навигация">
