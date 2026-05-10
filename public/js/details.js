@@ -118,6 +118,161 @@
     });
   }
 
+  function initRatingControl() {
+    var root = document.querySelector('[data-details-rating]');
+    if (!root || typeof window.fetch !== 'function') {
+      return;
+    }
+
+    var isLoading = false;
+    var endpoint = root.getAttribute('data-rating-endpoint') || 'api/ratings.php';
+    var torrentId = root.getAttribute('data-torrent-id') || '';
+    var csrf = root.getAttribute('data-rating-csrf') || '';
+    var starsBox = root.querySelector('[data-details-rating-stars]');
+    var fill = root.querySelector('[data-details-rating-fill]');
+    var count = root.querySelector('[data-details-rating-count]');
+    var message = root.querySelector('[data-details-rating-message]');
+    var control = root.querySelector('[data-details-rating-control]');
+
+    function showMessage(text, isError) {
+      if (!message) {
+        return;
+      }
+
+      message.textContent = text || '';
+      message.hidden = !text;
+      message.classList.toggle('details-rating-note-error', !!isError);
+    }
+
+    function setSelectedRating(userRating) {
+      var stars = root.querySelectorAll('[data-details-rating-star]');
+
+      if (control) {
+        control.classList.remove('details-rating-vote');
+        control.classList.add('details-rating-voted');
+        control.setAttribute('aria-label', 'Вы оценили на ' + userRating + ' из 5');
+      }
+
+      Array.prototype.forEach.call(stars, function (star) {
+        var value = parseInt(star.getAttribute('data-rating-value') || '0', 10);
+
+        star.classList.remove('details-rating-vote-star');
+        star.classList.add('details-rating-voted-star');
+        star.classList.toggle('details-rating-voted-star-selected', value === userRating);
+
+        if (!star.getAttribute('role')) {
+          star.setAttribute('role', 'button');
+        }
+        if (!star.getAttribute('tabindex')) {
+          star.setAttribute('tabindex', '0');
+        }
+      });
+    }
+
+    function applyPayload(payload) {
+      var ratingAvg = parseFloat(payload.rating_avg || 0);
+      var ratingCount = parseInt(payload.rating_count || 0, 10);
+      var userRating = parseInt(payload.user_rating || 0, 10);
+      var percent = Math.max(0, Math.min(100, (ratingAvg / 5) * 100));
+
+      if (fill) {
+        fill.style.width = percent + '%';
+      }
+
+      if (starsBox) {
+        starsBox.setAttribute('aria-label', 'Рейтинг ' + ratingAvg.toFixed(1));
+      }
+
+      if (count) {
+        count.textContent = '(' + ratingCount.toLocaleString('ru-RU') + ' оценок)';
+      }
+
+      root.setAttribute('data-user-rating', String(userRating));
+      if (userRating > 0) {
+        setSelectedRating(userRating);
+      }
+
+      showMessage(payload.message || 'Рейтинг сохранён.', false);
+    }
+
+    function sendRating(value) {
+      var body;
+
+      if (isLoading) {
+        return;
+      }
+
+      if (!torrentId || !csrf || value < 1 || value > 5) {
+        showMessage('Не удалось отправить оценку.', true);
+        return;
+      }
+
+      isLoading = true;
+      root.setAttribute('data-rating-loading', '1');
+      body = new URLSearchParams();
+      body.set('torrent_id', torrentId);
+      body.set('rating', String(value));
+      body.set('csrf_token', csrf);
+
+      window.fetch(endpoint, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'X-CSRF-Token': csrf
+        },
+        body: body.toString()
+      })
+        .then(function (response) {
+          return response.json().catch(function () {
+            throw new Error('Не удалось обработать ответ сервера.');
+          });
+        })
+        .then(function (payload) {
+          if (!payload || !payload.ok) {
+            throw new Error((payload && payload.message) ? payload.message : 'Не удалось сохранить рейтинг.');
+          }
+
+          applyPayload(payload);
+        })
+        .catch(function (error) {
+          showMessage(error && error.message ? error.message : 'Не удалось сохранить рейтинг.', true);
+        })
+        .finally(function () {
+          isLoading = false;
+          root.removeAttribute('data-rating-loading');
+        });
+    }
+
+    root.addEventListener('click', function (event) {
+      var star = event.target.closest('[data-details-rating-star]');
+      var value;
+
+      if (!star || !root.contains(star)) {
+        return;
+      }
+
+      event.preventDefault();
+      value = parseInt(star.getAttribute('data-rating-value') || '0', 10);
+      sendRating(value);
+    });
+
+    root.addEventListener('keydown', function (event) {
+      var star = event.target.closest('[data-details-rating-star]');
+      var value;
+
+      if (!star || !root.contains(star) || (event.key !== 'Enter' && event.key !== ' ')) {
+        return;
+      }
+
+      event.preventDefault();
+      value = parseInt(star.getAttribute('data-rating-value') || '0', 10);
+      sendRating(value);
+    });
+  }
+
   function initScreenshotZoom() {
     var items = document.querySelectorAll('[data-details-screenshot-zoom]');
 
@@ -222,6 +377,7 @@
     initScreenshotZoom();
     initBookmarkButton();
     initTrackerRefreshButton();
+    initRatingControl();
     initPostTts();
   });
 })();

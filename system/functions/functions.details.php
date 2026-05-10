@@ -464,60 +464,77 @@ function lt_details_prepare_rating($torrentId)
 	);
 }
 
+function lt_details_rating_stats($torrentId, $userId = 0)
+{
+	global $db;
+
+	$torrentId = (int) $torrentId;
+	$userId = (int) $userId;
+	$result = array(
+		'rating_avg' => 0.0,
+		'rating_count' => 0,
+		'user_rating' => 0,
+	);
+
+	if ($torrentId <= 0 || !lt_details_rating_table_ready()) {
+		return $result;
+	}
+
+	$userRatingSelect = ($userId > 0 ? ', MAX(CASE WHEN user_id = '.$userId.' THEN rating ELSE 0 END) AS user_rating' : '');
+	$row = $db->super_query(
+		"SELECT COUNT(*) AS cnt, COALESCE(SUM(rating), 0) AS total_rating".$userRatingSelect."
+		 FROM torrent_ratings
+		 WHERE torrent_id = ".$torrentId
+	);
+
+	$count = (int) ($row['cnt'] ?? 0);
+	$total = (float) ($row['total_rating'] ?? 0);
+
+	$result['rating_count'] = $count;
+	$result['rating_avg'] = ($count > 0 ? round($total / $count, 1) : 0.0);
+	$result['user_rating'] = ($userId > 0 ? (int) ($row['user_rating'] ?? 0) : 0);
+
+	return $result;
+}
+
+function lt_details_save_rating($torrentId, $userId, $ratingValue)
+{
+	global $db, $memcached;
+
+	$torrentId = (int) $torrentId;
+	$userId = (int) $userId;
+	$ratingValue = (int) $ratingValue;
+
+	if ($torrentId <= 0 || $userId <= 0 || $ratingValue < 1 || $ratingValue > 5) {
+		return false;
+	}
+
+	if (!lt_details_rating_table_ready()) {
+		return false;
+	}
+
+	$ip = $db->safesql((string) getip());
+	$db->query(
+		"INSERT INTO torrent_ratings (torrent_id, user_id, rating, ip, date)
+		 VALUES (".$torrentId.", ".$userId.", ".$ratingValue.", '".$ip."', NOW())
+		 ON DUPLICATE KEY UPDATE rating = ".$ratingValue.", ip = '".$ip."', date = NOW()"
+	);
+
+	lt_set_cookie('lt_torrent_rating_'.$torrentId, (string) $ratingValue, time() + 31536000, false, 'Lax');
+	if (is_object($memcached) && method_exists($memcached, 'delete')) {
+		$memcached->delete('torrent_'.$torrentId, 0);
+	}
+
+	return lt_details_rating_stats($torrentId, $userId);
+}
+
 function lt_details_handle_rating_request($torrentId, array &$rating)
 {
-	global $db, $USER, $memcached;
-
 	if (!isset($_GET['rating'])) {
 		return;
 	}
 
-	$torrentId = (int) $torrentId;
-	$ratingValue = (int) $_GET['rating'];
-
-	if (!$USER) {
-		header('Location: login.php?referer='.rawurlencode('details.php?id='.$torrentId));
-		die();
-	}
-
-	if ($ratingValue < 1 || $ratingValue > 5 || empty($rating['table_ready'])) {
-		header('Location: details.php?id='.$torrentId);
-		die();
-	}
-
-	$db->query(
-		"INSERT INTO torrent_ratings (torrent_id, user_id, rating, ip, date)
-		SELECT
-			".$torrentId.",
-			".(int) $USER['id'].",
-			".$ratingValue.",
-			'".$db->safesql((string) getip())."',
-			NOW()
-		FROM DUAL
-		WHERE NOT EXISTS (
-			SELECT 1 FROM torrent_ratings
-			WHERE torrent_id = ".$torrentId." AND user_id = ".(int) $USER['id']."
-			LIMIT 1
-		)"
-	);
-
-	$ratedState = 'exists';
-	if ((int) $db->affected_rows() > 0) {
-		$rating['user_value'] = $ratingValue;
-		$ratedState = '1';
-	} else {
-		$existingRating = $db->super_query(
-			"SELECT rating FROM torrent_ratings WHERE torrent_id = ".$torrentId." AND user_id = ".(int) $USER['id']." LIMIT 1"
-		);
-		$rating['user_value'] = (int) ($existingRating['rating'] ?? 0);
-	}
-
-	if ((int) $rating['user_value'] > 0) {
-		lt_set_cookie($rating['cookie_name'], (string) (int) $rating['user_value'], time() + 31536000, false, 'Lax');
-	}
-	$memcached->delete('torrent_'.$torrentId, 0);
-	header('Location: details.php?id='.$torrentId.'&rated='.$ratedState);
-	die();
+	$rating['feedback'] = 'Оценка теперь сохраняется без перезагрузки страницы.';
 }
 
 function lt_details_prepare_file_rows($torrent)

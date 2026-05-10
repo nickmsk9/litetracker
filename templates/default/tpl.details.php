@@ -72,31 +72,36 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 			<?php } ?>
 
 			<section class="details-panel details-meta-panel">
-				<div class="details-rating-row">
+				<div
+					class="details-rating-row"
+					data-details-rating="1"
+					data-torrent-id="<?=(int) $id;?>"
+					data-rating-csrf="<?=htmlspecialchars(lt_csrf_token('rating_torrent_'.(int) $id), ENT_QUOTES, 'UTF-8');?>"
+					data-rating-endpoint="api/ratings.php"
+					data-user-rating="<?=(int) $details_rating_user_value;?>"
+				>
 					<div class="details-rating-block">
-						<div class="details-rating-stars" aria-label="Рейтинг <?=htmlspecialchars(number_format($details_rating_score, 1), ENT_QUOTES, 'UTF-8');?>">
+						<div class="details-rating-stars" data-details-rating-stars="1" aria-label="Рейтинг <?=htmlspecialchars(number_format($details_rating_score, 1), ENT_QUOTES, 'UTF-8');?>">
 							<span class="details-rating-stars-base">★★★★★</span>
-							<span class="details-rating-stars-fill" style="width: <?=$detailsRatingPercent;?>%;">★★★★★</span>
+							<span class="details-rating-stars-fill" data-details-rating-fill="1" style="width: <?=$detailsRatingPercent;?>%;">★★★★★</span>
 							<?php if ($details_rating_can_vote) { ?>
-							<span class="details-rating-vote" aria-label="Оцените раздачу">
+							<span class="details-rating-vote" data-details-rating-control="1" aria-label="Оцените раздачу">
 							<?php for ($ratingIndex = 1; $ratingIndex <= 5; $ratingIndex++) { ?>
-							<a class="details-rating-vote-star" href="details.php?id=<?=(int) $id;?>&amp;rating=<?=$ratingIndex;?>" aria-label="Оценить на <?=$ratingIndex;?> из 5">★</a>
+							<a class="details-rating-vote-star" href="details.php?id=<?=(int) $id;?>&amp;rating=<?=$ratingIndex;?>" data-details-rating-star="1" data-rating-value="<?=$ratingIndex;?>" aria-label="Оценить на <?=$ratingIndex;?> из 5">★</a>
 							<?php } ?>
 							</span>
 							<?php } elseif ((int) $details_rating_user_value > 0) { ?>
-							<span class="details-rating-voted" aria-label="Вы оценили на <?=(int) $details_rating_user_value;?> из 5">
+							<span class="details-rating-voted" data-details-rating-control="1" aria-label="Вы оценили на <?=(int) $details_rating_user_value;?> из 5">
 							<?php for ($ratingIndex = 1; $ratingIndex <= 5; $ratingIndex++) { ?>
-							<span class="details-rating-voted-star<?=((int) $details_rating_user_value === $ratingIndex ? ' details-rating-voted-star-selected' : '');?>">★</span>
+							<span class="details-rating-voted-star<?=((int) $details_rating_user_value === $ratingIndex ? ' details-rating-voted-star-selected' : '');?>" data-details-rating-star="1" data-rating-value="<?=$ratingIndex;?>" role="button" tabindex="0" aria-label="Оценить на <?=$ratingIndex;?> из 5">★</span>
 							<?php } ?>
 							</span>
 							<?php } ?>
 						</div>
 					</div>
 					<div class="details-rating-meta">
-						<div class="details-rating-count">(<?=number_format((int) $details_rating_votes);?> оценок)</div>
-						<?php if ($details_rating_feedback !== '') { ?>
-						<div class="details-rating-note"><?=htmlspecialchars($details_rating_feedback, ENT_QUOTES, 'UTF-8');?></div>
-						<?php } ?>
+						<div class="details-rating-count" data-details-rating-count="1">(<?=number_format((int) $details_rating_votes);?> оценок)</div>
+						<div class="details-rating-note" data-details-rating-message="1"<?=($details_rating_feedback === '' ? ' hidden' : '');?>><?=htmlspecialchars($details_rating_feedback, ENT_QUOTES, 'UTF-8');?></div>
 					</div>
 				</div>
 

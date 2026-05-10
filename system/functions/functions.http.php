@@ -50,6 +50,101 @@ if (!function_exists('lt_json_error')) {
 	}
 }
 
+if (!function_exists('api_json_success')) {
+	function api_json_success(array $data = []): void
+	{
+		unset($data['ok']);
+		lt_json_response(array_merge([
+			'ok' => 1,
+		], $data), 200);
+	}
+}
+
+if (!function_exists('api_json_error')) {
+	function api_json_error(string $message, int $status = 400, array $extra = []): void
+	{
+		unset($extra['ok'], $extra['message']);
+		lt_json_response(array_merge([
+			'ok' => 0,
+			'message' => $message,
+		], $extra), $status);
+	}
+}
+
+if (!function_exists('api_require_login')) {
+	function api_require_login(): void
+	{
+		global $USER;
+
+		if (empty($USER['id'])) {
+			api_json_error('Требуется авторизация.', 401);
+		}
+	}
+}
+
+if (!function_exists('api_require_post')) {
+	function api_require_post(): void
+	{
+		if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+			header('Allow: POST');
+			api_json_error('Метод запроса не поддерживается.', 405);
+		}
+	}
+}
+
+if (!function_exists('api_csrf_token_from_request')) {
+	function api_csrf_token_from_request(): string
+	{
+		$headers = [
+			'HTTP_X_CSRF_TOKEN',
+			'HTTP_X_CSRFTOKEN',
+			'HTTP_X_LITETRACKER_CSRF',
+		];
+
+		foreach ($headers as $header) {
+			$value = trim((string) ($_SERVER[$header] ?? ''));
+			if ($value !== '') {
+				return $value;
+			}
+		}
+
+		return trim((string) ($_POST['csrf_token'] ?? $_GET['csrf_token'] ?? ''));
+	}
+}
+
+if (!function_exists('api_require_csrf')) {
+	function api_require_csrf(string $scope = 'default'): void
+	{
+		if (!lt_csrf_validate($scope, api_csrf_token_from_request())) {
+			api_json_error('Защитный токен устарел. Обновите страницу и попробуйте снова.', 403);
+		}
+	}
+}
+
+if (!function_exists('api_rate_limit')) {
+	function api_rate_limit(string $key, int $limit, int $period): array
+	{
+		global $USER;
+
+		$identifier = (!empty($USER['id']) ? 'user:'.(int) $USER['id'] : 'ip:'.($_SERVER['REMOTE_ADDR'] ?? 'cli'));
+		$result = lt_rate_limit_hit($key, $identifier, $limit, $period);
+
+		if (!empty($result['blocked'])) {
+			$retryAfter = max(1, (int) ($result['reset_at'] ?? time()) - time());
+			header('Retry-After: '.$retryAfter);
+			api_json_error('Слишком много запросов. Повторите попытку позже.', 429, [
+				'rate_limit' => [
+					'limit' => (int) ($result['limit'] ?? $limit),
+					'remaining' => 0,
+					'reset_at' => (int) ($result['reset_at'] ?? 0),
+				],
+			]);
+		}
+
+		return $result;
+	}
+}
+
 if (!function_exists('lt_redirect')) {
 	function lt_redirect(string $url): void
 	{
