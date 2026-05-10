@@ -55,6 +55,53 @@ function mail_json_response($ok, $message = '', $extra = array())
 	die();
 }
 
+function mail_action_error($message, $status = 400)
+{
+	if (mail_is_ajax_request()) {
+		api_json_error($message, (int) $status);
+	}
+
+	err('Ошибка', $message, 1);
+}
+
+function mail_require_post_action()
+{
+	if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST') {
+		return;
+	}
+
+	if (mail_is_ajax_request()) {
+		api_json_error('Метод запроса не поддерживается.', 405);
+	}
+
+	header('Location: '.mail_build_href('list', 0, false, array('status' => 6)));
+	die();
+}
+
+function mail_require_csrf_action()
+{
+	if (lt_csrf_validate('mail_action')) {
+		return;
+	}
+
+	mail_action_error('Защитный токен устарел. Обновите страницу и попробуйте снова.', 403);
+}
+
+function mail_rate_limit_send()
+{
+	global $USER;
+
+	$identifier = (!empty($USER['id']) ? 'user:'.(int) $USER['id'] : 'ip:'.($_SERVER['REMOTE_ADDR'] ?? 'cli'));
+	$result = lt_rate_limit_hit('mail_send', $identifier, 10, 60);
+	if (!empty($result['blocked'])) {
+		$retryAfter = max(1, (int) ($result['reset_at'] ?? time()) - time());
+		header('Retry-After: '.$retryAfter);
+		mail_action_error('Слишком много сообщений. Повторите попытку позже.', 429);
+	}
+
+	return $result;
+}
+
 function mail_partner_id($message, $currentUserId)
 {
 	$currentUserId = (int) $currentUserId;
@@ -171,6 +218,37 @@ function mail_mark_system_read($currentUserId)
 	return $unreadCount;
 }
 
+function mail_mark_conversation_read($currentUserId, $targetUserId, $systemConversation = false)
+{
+	global $db, $USER, $memcached;
+
+	$currentUserId = (int) $currentUserId;
+	$targetUserId = (int) $targetUserId;
+	if ($currentUserId <= 0) {
+		return 0;
+	}
+
+	if ($systemConversation) {
+		return mail_mark_system_read($currentUserId);
+	}
+
+	if ($targetUserId <= 0 || $targetUserId === $currentUserId) {
+		return 0;
+	}
+
+	$unread = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out = {$targetUserId} AND delete_in = 0 AND reading = 0");
+	$unreadCount = (int) ($unread['c'] ?? 0);
+
+	if ($unreadCount > 0) {
+		$db->query("UPDATE mail SET reading = '1' WHERE id_user_in = {$currentUserId} AND id_user_out = {$targetUserId} AND delete_in = 0 AND reading = 0");
+		$db->query("UPDATE users SET num_messages = GREATEST(num_messages - {$unreadCount}, 0) WHERE id = {$currentUserId}");
+		$USER['num_messages'] = max(0, (int) ($USER['num_messages'] ?? 0) - $unreadCount);
+		$memcached->delete('user_'.$currentUserId, 0);
+	}
+
+	return $unreadCount;
+}
+
 function mail_render_message_html($row, $currentUserId, $currentUserName)
 {
 	$row = (array) $row;
@@ -243,6 +321,7 @@ function mail_render_conversation_modal($participant, $conversationTitle, $conve
 				<?php } else { ?>
 				<form class="mail-modal-form" action="<?=mail_build_href('conversation', $targetUserId, false, array('all' => ($showAllConversationMessages ? 1 : null)));?>" method="post" data-mail-reply-form="1">
 					<input type="hidden" name="name" value="Сообщение">
+					<?=lt_csrf_input('mail_action');?>
 					<textarea class="mail-modal-textarea" id="mail_reply_text" name="text"><?=htmlspecialchars((string) ($_POST['text'] ?? ''), ENT_QUOTES, 'UTF-8');?></textarea>
 					<div class="mail-modal-actions">
 						<button class="mail-button" type="submit">Отправить</button>
@@ -267,6 +346,8 @@ function mail_render_conversation_modal($participant, $conversationTitle, $conve
 
 $currentUserId = (int) $USER['id'];
 lt_sync_user_unread_messages($currentUserId);
+$requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+$postAct = trim((string) ($_POST['act'] ?? ''));
 $act = trim((string) ($_GET['act'] ?? 'list'));
 $messageId = (int) ($_GET['id'] ?? 0);
 $targetUserId = (int) ($_GET['id_user'] ?? 0);
@@ -287,9 +368,12 @@ if ($act === 'send') {
 	$act = 'conversation';
 }
 
-if ($act === 'read_system') {
-	mail_mark_system_read($currentUserId);
-	header('Location: '.mail_build_href('conversation', 0, true, array('status' => 5)));
+if (in_array($act, array('read_system', 'restore', 'del'), true) && $requestMethod !== 'POST') {
+	if (mail_is_ajax_request()) {
+		api_json_error('Метод запроса не поддерживается.', 405);
+	}
+
+	header('Location: '.mail_build_href('list', 0, false, array('status' => 6)));
 	die();
 }
 
@@ -306,10 +390,48 @@ if ($act === 'view' && $messageId > 0) {
 	die();
 }
 
-if ($act === 'restore' && $messageId > 0) {
+if ($postAct === 'read_system') {
+	mail_require_post_action();
+	mail_require_csrf_action();
+	mail_mark_system_read($currentUserId);
+
+	if (mail_is_ajax_request()) {
+		mail_json_response(true, 'Системные сообщения отмечены прочитанными.', array(
+			'unread_messages' => (int) ($USER['num_messages'] ?? 0),
+		));
+	}
+
+	header('Location: '.mail_build_href('conversation', 0, true, array('status' => 5)));
+	die();
+}
+
+if ($postAct === 'mark_read') {
+	mail_require_post_action();
+	mail_require_csrf_action();
+
+	$markTargetUserId = (int) ($_POST['id_user'] ?? 0);
+	$markSystemConversation = !empty($_POST['system']);
+	$markedCount = mail_mark_conversation_read($currentUserId, $markTargetUserId, $markSystemConversation);
+
+	if (mail_is_ajax_request()) {
+		mail_json_response(true, 'Диалог отмечен прочитанным.', array(
+			'marked_count' => $markedCount,
+			'unread_messages' => (int) ($USER['num_messages'] ?? 0),
+		));
+	}
+
+	header('Location: '.mail_build_href('conversation', $markTargetUserId, $markSystemConversation));
+	die();
+}
+
+if ($postAct === 'restore') {
+	mail_require_post_action();
+	mail_require_csrf_action();
+
+	$messageId = (int) ($_POST['id'] ?? 0);
 	$message = mail_load_message($messageId, $currentUserId);
 	if(!$message) {
-		err('Ошибка', 'Данного сообщения не существует', 1);
+		mail_action_error('Данного сообщения не существует.', 404);
 	}
 
 	$targetUserId = mail_partner_id($message, $currentUserId);
@@ -328,14 +450,24 @@ if ($act === 'restore' && $messageId > 0) {
 		$db->query("UPDATE mail SET delete_out = '0' WHERE id = ".$message['id']);
 	}
 
+	if (mail_is_ajax_request()) {
+		mail_json_response(true, 'Сообщение восстановлено.', array(
+			'href' => mail_build_href('conversation', $targetUserId, $systemConversation, array('status' => 4)),
+		));
+	}
+
 	header('Location: '.mail_build_href('conversation', $targetUserId, $systemConversation, array('status' => 4)));
 	die();
 }
 
-if ($act === 'del' && $messageId > 0) {
+if ($postAct === 'del') {
+	mail_require_post_action();
+	mail_require_csrf_action();
+
+	$messageId = (int) ($_POST['id'] ?? 0);
 	$message = mail_load_message($messageId, $currentUserId);
 	if(!$message) {
-		err('Ошибка', 'Данного сообщения не существует', 1);
+		mail_action_error('Данного сообщения не существует.', 404);
 	}
 
 	$targetUserId = mail_partner_id($message, $currentUserId);
@@ -362,8 +494,19 @@ if ($act === 'del' && $messageId > 0) {
 
 	if ($deleteIn === 1 && $deleteOut === 1) {
 		$db->query("DELETE FROM mail WHERE id = ".$message['id']);
+		if (mail_is_ajax_request()) {
+			mail_json_response(true, 'Сообщение окончательно удалено.', array(
+				'href' => mail_build_href('list', 0, false, array('status' => 2)),
+			));
+		}
 		header('Location: '.mail_build_href('list', 0, false, array('status' => 2)));
 		die();
+	}
+
+	if (mail_is_ajax_request()) {
+		mail_json_response(true, 'Сообщение скрыто из списка.', array(
+			'href' => mail_build_href('conversation', $targetUserId, $systemConversation, array('status' => 3, 'id_message' => $message['id'])),
+		));
 	}
 
 	header('Location: '.mail_build_href('conversation', $targetUserId, $systemConversation, array('status' => 3, 'id_message' => $message['id'])));
@@ -413,6 +556,10 @@ if ($act === 'conversation') {
 	}
 
 	if($_POST && !$systemConversation) {
+		mail_require_post_action();
+		mail_require_csrf_action();
+		mail_rate_limit_send();
+
 		if ($blockedByParticipant) {
 			if (mail_is_ajax_request()) {
 				mail_json_response(false, 'Пользователь добавил вас в ЧС.');
@@ -475,20 +622,6 @@ if ($act === 'conversation') {
 		die();
 	}
 
-	if ($systemConversation) {
-		mail_mark_system_read($currentUserId);
-	} else {
-		$unread = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out = {$targetUserId} AND delete_in = 0 AND reading = 0");
-		$unreadCount = (int) ($unread['c'] ?? 0);
-
-		if ($unreadCount > 0) {
-			$db->query("UPDATE mail SET reading = '1' WHERE id_user_in = {$currentUserId} AND id_user_out = {$targetUserId} AND delete_in = 0 AND reading = 0");
-			$db->query("UPDATE users SET num_messages = GREATEST(num_messages - {$unreadCount}, 0) WHERE id = {$currentUserId}");
-			$USER['num_messages'] = max(0, (int) $USER['num_messages'] - $unreadCount);
-			$memcached->delete('user_'.$currentUserId, 0);
-		}
-	}
-
 	$conversationWhere = mail_conversation_where($currentUserId, $targetUserId, $systemConversation, 'm');
 	$totalMessagesRow = $db->super_query("SELECT COUNT(*) AS c FROM mail AS m WHERE ".$conversationWhere);
 	$totalMessagesCount = (int) ($totalMessagesRow['c'] ?? 0);
@@ -547,12 +680,19 @@ if($status === '1') {
 } elseif($status === '2') {
 	msg('Успешно', 'Сообщение окончательно удалено.');
 } elseif($status === '3' && $statusMessageId > 0) {
-	$restoreLink = mail_build_href('restore', $targetUserId, $systemConversation, array('id' => $statusMessageId));
-	msg('Успешно', 'Сообщение скрыто из списка. <a href="'.$restoreLink.'">Восстановить</a>');
+	$restoreForm = '<form method="post" action="my.mail.php" style="display:inline;">'
+		.lt_csrf_input('mail_action')
+		.'<input type="hidden" name="act" value="restore">'
+		.'<input type="hidden" name="id" value="'.$statusMessageId.'">'
+		.'<button type="submit" style="background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;">Восстановить</button>'
+		.'</form>';
+	msg('Успешно', 'Сообщение скрыто из списка. '.$restoreForm);
 } elseif($status === '4') {
 	msg('Успешно', 'Сообщение восстановлено.');
 } elseif($status === '5') {
 	msg('Успешно', 'Системные сообщения отмечены прочитанными.');
+} elseif($status === '6') {
+	msg('Ошибка', 'Действие требует отправки формы.');
 }
 
 $conversations = array();
@@ -637,6 +777,8 @@ while($conversation = $db->get_row($conversationsSql)) {
 </div>
 
 <script>
+var mailCsrfToken = '<?=htmlspecialchars(lt_csrf_token('mail_action'), ENT_QUOTES, 'UTF-8');?>';
+
 function mailSetActiveThread(row) {
 	var rows = document.querySelectorAll('[data-mail-thread="1"]');
 	for (var i = 0; i < rows.length; i++) {
@@ -648,11 +790,42 @@ function mailSetActiveThread(row) {
 	}
 
 	row.classList.add('mail-thread-row-active');
-	row.classList.remove('mail-thread-row-unread');
-	var unread = row.querySelector('.mail-thread-unread');
-	if (unread) {
-		unread.remove();
-	}
+}
+
+function mailMarkConversationRead(partnerId, system, row) {
+	var formData = new FormData();
+	formData.append('act', 'mark_read');
+	formData.append('id_user', partnerId || '0');
+	formData.append('system', system ? '1' : '0');
+	formData.append('csrf_token', mailCsrfToken);
+
+	fetch('my.mail.php', {
+		method: 'POST',
+		body: formData,
+		credentials: 'same-origin',
+		headers: {
+			'X-Requested-With': 'XMLHttpRequest',
+			'Accept': 'application/json',
+			'X-CSRF-Token': mailCsrfToken
+		}
+	})
+		.then(function (response) {
+			return response.json();
+		})
+		.then(function (payload) {
+			if (!payload || !payload.ok) {
+				return;
+			}
+
+			if (row) {
+				row.classList.remove('mail-thread-row-unread');
+				var unread = row.querySelector('.mail-thread-unread');
+				if (unread) {
+					unread.remove();
+				}
+			}
+		})
+		.catch(function () {});
 }
 
 function mailCloseOverlay(pushState) {
@@ -708,7 +881,8 @@ function mailOpenConversation(href, row, pushState) {
 		credentials: 'same-origin',
 		headers: {
 			'X-Requested-With': 'XMLHttpRequest',
-			'Accept': 'application/json'
+			'Accept': 'application/json',
+			'X-CSRF-Token': mailCsrfToken
 		}
 	})
 		.then(function (response) {
@@ -727,6 +901,7 @@ function mailOpenConversation(href, row, pushState) {
 			}
 
 			mailSetActiveThread(row);
+			mailMarkConversationRead(payload.partner_id || 0, !!payload.system, row);
 			if (pushState && window.history && window.history.pushState) {
 				window.history.pushState({ mailConversation: true }, '', href);
 			}
@@ -848,7 +1023,8 @@ document.addEventListener('submit', function (event) {
 		credentials: 'same-origin',
 		headers: {
 			'X-Requested-With': 'XMLHttpRequest',
-			'Accept': 'application/json'
+			'Accept': 'application/json',
+			'X-CSRF-Token': mailCsrfToken
 		}
 	})
 		.then(function (response) {
@@ -913,6 +1089,15 @@ window.addEventListener('popstate', function () {
 	}
 
 	mailCloseOverlay(false);
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+	var row = document.querySelector('[data-mail-thread="1"].mail-thread-row-active');
+	if (!row) {
+		return;
+	}
+
+	mailMarkConversationRead(row.getAttribute('data-mail-partner-id') || '0', row.getAttribute('data-mail-system') === '1', row);
 });
 </script>
 
