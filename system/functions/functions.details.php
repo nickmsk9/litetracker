@@ -273,8 +273,7 @@ function lt_details_rating_table_ready()
 	}
 
 	$tableName = 'torrent_ratings';
-	$row = $db->super_query("SHOW TABLES LIKE '".$db->safesql($tableName)."'");
-	if (!empty($row)) {
+	if (lt_table_exists($tableName)) {
 		$ready = true;
 		return true;
 	}
@@ -293,8 +292,8 @@ function lt_details_rating_table_ready()
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3"
 	);
 
-	$row = $db->super_query("SHOW TABLES LIKE '".$db->safesql($tableName)."'");
-	$ready = !empty($row);
+	lt_schema_cache_delete(lt_schema_table_cache_key($tableName));
+	$ready = lt_table_exists($tableName, true);
 
 	return $ready;
 }
@@ -327,8 +326,8 @@ function lt_details_views_table_ready()
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3"
 	);
 
-	$row = $db->super_query("SHOW TABLES LIKE '".$db->safesql($tableName)."'");
-	$ready = !empty($row);
+	lt_schema_cache_delete(lt_schema_table_cache_key($tableName));
+	$ready = lt_table_exists($tableName, true);
 	return $ready;
 }
 
@@ -418,28 +417,25 @@ function lt_details_prepare_rating($torrentId)
 	$cookieName = 'lt_torrent_rating_'.$torrentId;
 	$tableReady = lt_details_rating_table_ready();
 	$userValue = 0;
-
-	if ($tableReady && !empty($USER['id'])) {
-		$row = $db->super_query(
-			"SELECT rating FROM torrent_ratings WHERE torrent_id = ".$torrentId." AND user_id = ".(int) $USER['id']." LIMIT 1"
-		);
-		$userValue = (int) ($row['rating'] ?? 0);
-	}
-
-	if ($userValue <= 0 && empty($USER['id'])) {
-		$userValue = (int) ($_COOKIE[$cookieName] ?? 0);
-	}
-
 	$votes = 0;
 	$score = 0;
+
 	if ($tableReady) {
+		$userRatingSelect = (!empty($USER['id']) ? ', MAX(CASE WHEN user_id = '.(int) $USER['id'].' THEN rating ELSE 0 END) AS user_rating' : '');
 		$stats = $db->super_query(
-			"SELECT COUNT(*) AS cnt, COALESCE(SUM(rating), 0) AS total_rating FROM torrent_ratings WHERE torrent_id = ".$torrentId
+			"SELECT COUNT(*) AS cnt, COALESCE(SUM(rating), 0) AS total_rating".$userRatingSelect." FROM torrent_ratings WHERE torrent_id = ".$torrentId
 		);
 		$votes = (int) ($stats['cnt'] ?? 0);
 		if ($votes > 0) {
 			$score = round(((float) ($stats['total_rating'] ?? 0) / $votes), 1);
 		}
+		if (!empty($USER['id'])) {
+			$userValue = (int) ($stats['user_rating'] ?? 0);
+		}
+	}
+
+	if ($userValue <= 0 && empty($USER['id'])) {
+		$userValue = (int) ($_COOKIE[$cookieName] ?? 0);
 	}
 
 	$feedback = '';
@@ -657,6 +653,21 @@ function lt_details_render_trackers_page($torrentId)
 	die();
 }
 
+function lt_details_can_manage_trackers($torrent)
+{
+	global $USER, $PRIV;
+
+	if (empty($USER['id'])) {
+		return false;
+	}
+
+	if ((int) ($torrent['id_user'] ?? 0) === (int) $USER['id']) {
+		return true;
+	}
+
+	return (!empty($PRIV['edit_release']) || !empty($PRIV['EDIT_PRIV']));
+}
+
 function lt_details_prepare_tracker_rows($torrent)
 {
 	global $db;
@@ -693,7 +704,7 @@ function lt_details_prepare_tracker_rows($torrent)
 	return array(
 		'rows' => $rows,
 		'external_count' => $externalCount,
-		'update_href' => 'update.peers.php?id='.$torrentId.'&return='.rawurlencode('details.php?id='.$torrentId),
+		'update_href' => (lt_details_can_manage_trackers($torrent) ? 'update.peers.php?id='.$torrentId.'&return='.rawurlencode('details.php?id='.$torrentId) : ''),
 	);
 }
 

@@ -1,5 +1,34 @@
 <?php
 
+function lt_cache_debug_stats()
+{
+	if (empty($GLOBALS['lt_cache_debug_stats']) || !is_array($GLOBALS['lt_cache_debug_stats'])) {
+		$GLOBALS['lt_cache_debug_stats'] = array(
+			'hits' => 0,
+			'misses' => 0,
+			'sets' => 0,
+			'deletes' => 0,
+			'errors' => 0,
+		);
+	}
+
+	return $GLOBALS['lt_cache_debug_stats'];
+}
+
+function lt_cache_debug_count($counter, $amount = 1)
+{
+	$counter = (string) $counter;
+	if (empty($GLOBALS['lt_cache_debug_stats']) || !is_array($GLOBALS['lt_cache_debug_stats'])) {
+		lt_cache_debug_stats();
+	}
+
+	if (!array_key_exists($counter, $GLOBALS['lt_cache_debug_stats'])) {
+		$GLOBALS['lt_cache_debug_stats'][$counter] = 0;
+	}
+
+	$GLOBALS['lt_cache_debug_stats'][$counter] += (int) $amount;
+}
+
 function lt_create_cache_driver()
 {
 	global $config;
@@ -19,6 +48,10 @@ function lt_create_cache_driver()
 		if ($memcached->connect($host, $port, $memcachedConfig)) {
 			return $memcached;
 		}
+
+		lt_cache_debug_count('errors');
+	} elseif ($driver === 'memcached') {
+		lt_cache_debug_count('errors');
 	}
 
 	return new Filecache();

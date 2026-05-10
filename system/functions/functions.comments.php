@@ -52,11 +52,14 @@ function comments_ensure_thread_support($type)
         return false;
     }
 
-    if (!lt_column_exists($tableName, 'parent_id')) {
+    $hasParentColumn = lt_column_exists($tableName, 'parent_id');
+    if (!$hasParentColumn) {
         $db->query("ALTER TABLE `".$tableName."` ADD COLUMN `parent_id` int NOT NULL DEFAULT '0' AFTER `text`");
+        lt_schema_cache_delete(lt_schema_column_cache_key($tableName, 'parent_id'));
+        $hasParentColumn = lt_column_exists($tableName, 'parent_id', true);
     }
 
-    $ready[$type] = lt_column_exists($tableName, 'parent_id');
+    $ready[$type] = $hasParentColumn;
 
     return $ready[$type];
 }
@@ -76,9 +79,7 @@ function comments_reports_ensure_table()
     }
 
     $tableName = comments_reports_table_name();
-    $tableExists = $db->super_query("SHOW TABLES LIKE '".$db->safesql($tableName)."'");
-
-    if (empty($tableExists)) {
+    if (!lt_table_exists($tableName)) {
         $db->query(
             "CREATE TABLE IF NOT EXISTS `".$tableName."` (
                 `id` int NOT NULL AUTO_INCREMENT,
@@ -98,6 +99,7 @@ function comments_reports_ensure_table()
                 KEY `object_comment` (`comment_type`, `object_id`, `comment_id`)
             ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin"
         );
+        lt_schema_cache_delete(lt_schema_table_cache_key($tableName));
     }
 
     $ready = true;
@@ -295,6 +297,92 @@ function comments_build_tree_branch($parentId, $comments, $childrenMap)
     return $result;
 }
 
+function comments_preload_users($rows)
+{
+    global $db, $memcached;
+
+    $ids = array();
+    foreach ((array) $rows as $row) {
+        $userId = (int) ($row['id_user'] ?? 0);
+        if ($userId > 0) {
+            $ids[$userId] = $userId;
+        }
+    }
+
+    if (!$ids) {
+        return array();
+    }
+
+    $users = array();
+    $missingIds = array();
+    foreach ($ids as $userId) {
+        $cachedUser = (is_object($memcached) && method_exists($memcached, 'get') ? $memcached->get('user_'.$userId) : false);
+        if (is_array($cachedUser) && !empty($cachedUser['id'])) {
+            $users[(int) $cachedUser['id']] = $cachedUser;
+            continue;
+        }
+
+        $missingIds[$userId] = $userId;
+    }
+
+    if (!$missingIds) {
+        return $users;
+    }
+
+    $sql = $db->query("SELECT * FROM users WHERE id IN (".implode(',', $missingIds).")");
+    while ($user = $db->get_row($sql)) {
+        $users[(int) $user['id']] = $user;
+        if (is_object($memcached) && method_exists($memcached, 'set')) {
+            $memcached->set('user_'.(int) $user['id'], $user, 0, rand(1500, 3000));
+        }
+    }
+    $db->free($sql);
+
+    return $users;
+}
+
+function comments_preload_privileges($usersById)
+{
+    $classes = array(0 => 0);
+    foreach ((array) $usersById as $user) {
+        $class = (int) ($user['class'] ?? 0);
+        $classes[$class] = $class;
+    }
+
+    $privileges = array();
+    foreach ($classes as $class) {
+        if ($class <= 0) {
+            $privileges[$class] = array(
+                'NAME' => 'Гость',
+                'COLOR' => '000000',
+                'EDIT_PRIV' => 0,
+            );
+            continue;
+        }
+
+        $privileges[$class] = get_priv_info($class);
+    }
+
+    return $privileges;
+}
+
+function comments_user_color_html($class, $username, $privilegesByClass)
+{
+    $class = (int) $class;
+    $priv = (array) ($privilegesByClass[$class] ?? array());
+    if (!$priv) {
+        $priv = array(
+            'NAME' => 'Гость',
+            'COLOR' => '000000',
+            'EDIT_PRIV' => 0,
+        );
+    }
+
+    $nameHtml = (!empty($priv['EDIT_PRIV']) ? '<span class="lt-emoji-font">'.$username.'</span>' : $username);
+
+    return '<font title="'.htmlspecialchars((string) ($priv['NAME'] ?? ''), ENT_QUOTES, 'UTF-8').'" style="color:#'.htmlspecialchars((string) ($priv['COLOR'] ?? '000000'), ENT_QUOTES, 'UTF-8').'">'.$nameHtml.'</font>';
+}
+
 function comments_user_can_edit($commentUserId, $commentDate, $type = '')
 {
     global $USER, $PRIV;
@@ -315,7 +403,7 @@ function comments_user_can_edit($commentUserId, $commentDate, $type = '')
     return ($commentTs && $commentTs >= (time() - 3600));
 }
 
-function comments_render_node($node, $type, $objectId, $file, $level = 0)
+function comments_render_node($node, $type, $objectId, $file, $level = 0, $context = array())
 {
     global $USER, $PRIV, $language;
 
@@ -324,11 +412,13 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0)
     $level = max(0, (int) $level);
     $commentId = (int) ($node['id'] ?? 0);
     $commentUserId = (int) ($node['id_user'] ?? 0);
-    $commentUser = get_user_info($commentUserId);
+    $usersById = (array) ($context['users_by_id'] ?? array());
+    $privilegesByClass = (array) ($context['privileges_by_class'] ?? array());
+    $commentUser = (array) ($usersById[$commentUserId] ?? array());
     $commentUserName = (string) ($commentUser['name'] ?? 'Unknown');
     $commentUserNameSafe = htmlspecialchars($commentUserName, ENT_QUOTES, 'UTF-8');
-    $commentAuthorHtml = get_user_color((int) ($commentUser['class'] ?? 0), $commentUserNameSafe);
-    $commentProfileHref = profile_href($commentUserId);
+    $commentAuthorHtml = comments_user_color_html((int) ($commentUser['class'] ?? 0), $commentUserNameSafe, $privilegesByClass);
+    $commentProfileHref = ($commentUser ? profile_href($commentUser) : ($commentUserId > 0 ? 'profile.php?id='.$commentUserId : 'profile.php'));
     $rootDir = dirname(__DIR__, 2);
     $commentAvatarPath = 'public/images/default_avatar.gif';
 
@@ -401,7 +491,7 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0)
     if ($children) {
         echo '<div class="wall-comment-children">';
         foreach ($children as $childNode) {
-            comments_render_node($childNode, $type, $objectId, $file, $level + 1);
+            comments_render_node($childNode, $type, $objectId, $file, $level + 1, $context);
         }
         echo '</div>';
     }
@@ -416,6 +506,11 @@ function comments_render_list_html($type, $objectId, $file = '', $desc = 0, $lim
     $objectId = (int) $objectId;
     $rows = comments_fetch_rows($type, $objectId, $limit, $desc);
     $tree = comments_build_tree($rows);
+    $usersById = comments_preload_users($rows);
+    $context = array(
+        'users_by_id' => $usersById,
+        'privileges_by_class' => comments_preload_privileges($usersById),
+    );
 
     ob_start();
     echo '<div class="comment-stream'.($type === 'users' ? ' wall-comments-list' : ' torrent-comments-list').'" data-comment-stream="1">';
@@ -424,7 +519,7 @@ function comments_render_list_html($type, $objectId, $file = '', $desc = 0, $lim
         echo '<div class="'.($type === 'users' ? 'wall-comment-empty' : 'torrent-comment-empty').'">'.($type === 'users' ? 'На стене пока нет комментариев.' : 'Комментариев пока нет.').'</div>';
     } else {
         foreach ($tree as $node) {
-            comments_render_node($node, $type, $objectId, $file, 0);
+            comments_render_node($node, $type, $objectId, $file, 0, $context);
         }
     }
 
@@ -451,15 +546,16 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
 
     $tableName = comments_table_name($type);
     $objectColumn = comments_object_column($type);
-    $countRow = $db->super_query("SELECT COUNT(*) AS cnt FROM `{$tableName}` WHERE `{$objectColumn}` = {$object_id}");
-    $count = isset($countRow['cnt']) ? (int) $countRow['cnt'] : 0;
     $threaded = comments_supports_threads($type);
+    $count = 0;
     $pagertop = '';
     $pagerbottom = '';
     $limit = '';
     $showPager = false;
 
     if (!$threaded) {
+        $countRow = $db->super_query("SELECT COUNT(*) AS cnt FROM `{$tableName}` WHERE `{$objectColumn}` = {$object_id}");
+        $count = isset($countRow['cnt']) ? (int) $countRow['cnt'] : 0;
         list($pagertop, $pagerbottom, $limit) = pager('20', $count, $file . 'id=' . $object_id . '&', array('lastpagedefault' => 1));
         $showPager = ($count > 20);
     }
@@ -573,9 +669,7 @@ function user_wall_reports_ensure_table()
     }
 
     $tableName = user_wall_reports_table_name();
-    $tableExists = $db->super_query("SHOW TABLES LIKE '".$db->safesql($tableName)."'");
-
-    if (empty($tableExists)) {
+    if (!lt_table_exists($tableName)) {
         $db->query(
             "CREATE TABLE IF NOT EXISTS `".$tableName."` (
                 `id` int NOT NULL AUTO_INCREMENT,
@@ -594,6 +688,7 @@ function user_wall_reports_ensure_table()
                 KEY `object_comment` (`object_id`, `comment_id`)
             ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin"
         );
+        lt_schema_cache_delete(lt_schema_table_cache_key($tableName));
     }
 
     $ready = true;

@@ -62,21 +62,35 @@ class Filecache {
 	//Получение списка
 	function get($file) {
 		if (!$this->enabled() || !$this->ensureDirectory()) {
+			if (function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('errors');
+				lt_cache_debug_count('misses');
+			}
 			return false;
 		}
 
 		$shell = $this->getPath($file);
 
 		if (array_key_exists($shell, $this->memory)) {
+			if (function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('hits');
+			}
 			return $this->memory[$shell];
 		}
 
 		if (!file_exists($shell) || !is_readable($shell) || filesize($shell) <= 0) {
+			if (function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('misses');
+			}
 			return false;
 		}
 
 		$content = file_get_contents($shell);
 		if ($content === false || $content === '') {
+			if (function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('errors');
+				lt_cache_debug_count('misses');
+			}
 			return false;
 		}
 
@@ -84,25 +98,44 @@ class Filecache {
 		if (is_array($payload) && array_key_exists('expires_at', $payload) && array_key_exists('value', $payload)) {
 			if ((int) $payload['expires_at'] < time()) {
 				$this->delete($file);
+				if (function_exists('lt_cache_debug_count')) {
+					lt_cache_debug_count('misses');
+				}
 				return false;
 			}
 
 			$this->memory[$shell] = $payload['value'];
+			if (function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('hits');
+			}
 			return $payload['value'];
 		}
 
 		if ((time() - $this->getDefaultTtl()) < filemtime($shell)) {
 			$this->memory[$shell] = $payload;
+			if (function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('hits');
+			}
 			return $payload;
 		}
 
 		$this->delete($file);
+		if (function_exists('lt_cache_debug_count')) {
+			lt_cache_debug_count('misses');
+		}
 		return false;
 	}
 
 	//Запись
 	function set($file, $data, $flagsOrExpiration = 0, $expiration = 0) {
+		if (function_exists('lt_cache_debug_count')) {
+			lt_cache_debug_count('sets');
+		}
+
 		if (!$this->enabled() || !$this->ensureDirectory()) {
+			if (function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('errors');
+			}
 			return false;
 		}
 
@@ -114,6 +147,9 @@ class Filecache {
 
 		$fh = fopen($shell, 'c');
 		if (!$fh) {
+			if (function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('errors');
+			}
 			return false;
 		}
 
@@ -128,6 +164,8 @@ class Filecache {
 
 		if ($result) {
 			$this->memory[$shell] = $data;
+		} elseif (function_exists('lt_cache_debug_count')) {
+			lt_cache_debug_count('errors');
 		}
 
 		return $result;
@@ -135,11 +173,19 @@ class Filecache {
 
 	//Удаление
 	function delete($file  , $time = 0) {
+		if (function_exists('lt_cache_debug_count')) {
+			lt_cache_debug_count('deletes');
+		}
+
 		$shell = $this->getPath($file);
 		unset($this->memory[$shell]);
 
 		if (file_exists($shell)) {
-			return unlink($shell);
+			$result = unlink($shell);
+			if (!$result && function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('errors');
+			}
+			return $result;
 		}
 
 		return false;

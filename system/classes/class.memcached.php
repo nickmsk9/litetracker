@@ -67,32 +67,70 @@ class MemcachedCache
 
 	function get($key) {
 		if (!$this->connected) {
+			if (function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('errors');
+				lt_cache_debug_count('misses');
+			}
 			return false;
 		}
 
 		$value = $this->client->get($key);
 
 		if ($this->client->getResultCode() === Memcached::RES_NOTFOUND) {
+			if (function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('misses');
+			}
 			return false;
+		}
+
+		if ($this->client->getResultCode() !== Memcached::RES_SUCCESS && function_exists('lt_cache_debug_count')) {
+			lt_cache_debug_count('errors');
+		} elseif (function_exists('lt_cache_debug_count')) {
+			lt_cache_debug_count('hits');
 		}
 
 		return $value;
 	}
 
 	function set($key, $value, $flagsOrExpiration = 0, $expiration = 0) {
+		if (function_exists('lt_cache_debug_count')) {
+			lt_cache_debug_count('sets');
+		}
+
 		if (!$this->connected) {
+			if (function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('errors');
+			}
 			return false;
 		}
 
 		$ttl = (int) ($expiration ?: $flagsOrExpiration);
-		return $this->client->set($key, $value, $ttl);
+		$result = $this->client->set($key, $value, $ttl);
+		if (!$result && function_exists('lt_cache_debug_count')) {
+			lt_cache_debug_count('errors');
+		}
+
+		return $result;
 	}
 
 	function delete($key, $timeout = 0) {
+		if (function_exists('lt_cache_debug_count')) {
+			lt_cache_debug_count('deletes');
+		}
+
 		if (!$this->connected) {
+			if (function_exists('lt_cache_debug_count')) {
+				lt_cache_debug_count('errors');
+			}
 			return false;
 		}
 
-		return $this->client->delete($key);
+		$result = $this->client->delete($key);
+		$code = $this->client->getResultCode();
+		if (!$result && $code !== Memcached::RES_NOTFOUND && function_exists('lt_cache_debug_count')) {
+			lt_cache_debug_count('errors');
+		}
+
+		return $result;
 	}
 }

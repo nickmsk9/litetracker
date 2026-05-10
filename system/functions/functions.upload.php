@@ -861,7 +861,89 @@ function lt_torrent_prepare_browse_sections($torrent, $categoryName = '')
 	);
 }
 
-function lt_torrent_prepare_browse_card($torrent, $category = array(), $user = array())
+function lt_torrent_preload_author_users($rows)
+{
+	global $db, $memcached;
+
+	$ids = array();
+	foreach ((array) $rows as $row) {
+		$userId = (int) ($row['id_user'] ?? 0);
+		if ($userId > 0) {
+			$ids[$userId] = $userId;
+		}
+	}
+
+	if (!$ids) {
+		return array();
+	}
+
+	$users = array();
+	$missingIds = array();
+	foreach ($ids as $userId) {
+		$cachedUser = (is_object($memcached) && method_exists($memcached, 'get') ? $memcached->get('user_'.$userId) : false);
+		if (is_array($cachedUser) && !empty($cachedUser['id'])) {
+			$users[(int) $cachedUser['id']] = $cachedUser;
+			continue;
+		}
+
+		$missingIds[$userId] = $userId;
+	}
+
+	if (!$missingIds) {
+		return $users;
+	}
+
+	$sql = $db->query("SELECT * FROM users WHERE id IN (".implode(',', $missingIds).")");
+	while ($user = $db->get_row($sql)) {
+		$users[(int) $user['id']] = $user;
+		if (is_object($memcached) && method_exists($memcached, 'set')) {
+			$memcached->set('user_'.(int) $user['id'], $user, 0, rand(1500, 3000));
+		}
+	}
+	$db->free($sql);
+
+	return $users;
+}
+
+function lt_torrent_preload_author_privileges($usersById)
+{
+	$classes = array(0 => 0);
+	foreach ((array) $usersById as $user) {
+		$class = (int) ($user['class'] ?? 0);
+		$classes[$class] = $class;
+	}
+
+	$privileges = array();
+	foreach ($classes as $class) {
+		if ($class <= 0) {
+			$privileges[$class] = array(
+				'NAME' => 'Гость',
+				'COLOR' => '000000',
+				'EDIT_PRIV' => 0,
+			);
+			continue;
+		}
+
+		$privileges[$class] = get_priv_info($class);
+	}
+
+	return $privileges;
+}
+
+function lt_torrent_user_color_html($class, $username, $privilegesByClass = array())
+{
+	$class = (int) $class;
+	$priv = (array) ($privilegesByClass[$class] ?? array());
+	if (!$priv) {
+		return get_user_color($class, $username);
+	}
+
+	$nameHtml = (!empty($priv['EDIT_PRIV']) ? '<span class="lt-emoji-font">'.$username.'</span>' : $username);
+
+	return '<font title="'.htmlspecialchars((string) ($priv['NAME'] ?? ''), ENT_QUOTES, 'UTF-8').'" style="color:#'.htmlspecialchars((string) ($priv['COLOR'] ?? '000000'), ENT_QUOTES, 'UTF-8').'">'.$nameHtml.'</font>';
+}
+
+function lt_torrent_prepare_browse_card($torrent, $category = array(), $user = array(), $privilegesByClass = array())
 {
 	$torrentId = (int) ($torrent['id'] ?? 0);
 	$categoryName = trim((string) ($category['name'] ?? 'Без категории'));
@@ -888,8 +970,8 @@ function lt_torrent_prepare_browse_card($torrent, $category = array(), $user = a
 			'is_multitracker' => !empty($torrent['multi']),
 			'external_tracker_count' => max(0, (int) ($torrent['external_tracker_count'] ?? 0)),
 			'size' => mksize((float) ($torrent['size'] ?? 0)),
-			'user_href' => profile_href($userId),
-			'user_html' => get_user_color($userClass, htmlspecialchars($userName, ENT_QUOTES, 'UTF-8')),
+			'user_href' => profile_href($user ?: $userId),
+			'user_html' => lt_torrent_user_color_html($userClass, htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'), $privilegesByClass),
 			'updated_label' => lt_torrent_format_date_label($updatedAt),
 			'is_banned' => !empty($torrent['banned']),
 		),

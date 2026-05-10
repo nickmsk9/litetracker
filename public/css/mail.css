@@ -190,6 +190,7 @@
 	flex: 0 0 40px;
 	width: 40px;
 	height: 40px;
+	display: block;
 }
 
 .mail-modal-heading {
@@ -203,6 +204,15 @@
 	font-weight: 700;
 	line-height: 1.25;
 	word-break: break-word;
+}
+
+.mail-modal-title-link {
+	display: inline-block;
+	text-decoration: none;
+}
+
+.mail-modal-title-link:hover {
+	color: #2f6fad;
 }
 
 .mail-modal-subtitle {

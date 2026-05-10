@@ -116,13 +116,16 @@ while ($row = $db->get_row($sql)) {
 	$rows[] = $row;
 }
 
-function home_render_torrent_cards($rows, $categoriesById)
+$torrentAuthorsById = lt_torrent_preload_author_users($rows);
+$torrentAuthorPrivilegesByClass = lt_torrent_preload_author_privileges($torrentAuthorsById);
+
+function home_render_torrent_cards($rows, $categoriesById, $usersById, $privilegesByClass)
 {
 	ob_start();
 	foreach ($rows as $row) {
 		$category = (!empty($categoriesById[(int) $row['id_category']]) ? $categoriesById[(int) $row['id_category']] : array('id' => 0, 'name' => 'Без категории', 'image' => ''));
-		$user = get_user_info((int) $row['id_user']);
-		$torrentCard = lt_torrent_prepare_browse_card($row, $category, $user);
+		$user = (array) ($usersById[(int) $row['id_user']] ?? array());
+		$torrentCard = lt_torrent_prepare_browse_card($row, $category, $user, $privilegesByClass);
 		include __DIR__.'/templates/default/tpl.torrent.card.php';
 	}
 
@@ -138,7 +141,7 @@ $nextPageUrl = ($nextPage !== null ? home_build_url(array('page' => $nextPage, '
 if ($isAjaxLoad) {
 	header('Content-Type: application/json; charset=utf-8');
 	echo json_encode(array(
-		'html' => home_render_torrent_cards($rows, $categoriesById),
+		'html' => home_render_torrent_cards($rows, $categoriesById, $torrentAuthorsById, $torrentAuthorPrivilegesByClass),
 		'nextPage' => $nextPage,
 		'nextUrl' => $nextPageUrl,
 		'paginationHtml' => $pagerbottom ?: $pagertop,
@@ -182,7 +185,7 @@ head('Главная');
 
 		<?php if ($rows) { ?>
 		<div class="browse-torrent-list home-torrent-list" data-browse-list data-view="<?=$view;?>">
-			<?=home_render_torrent_cards($rows, $categoriesById);?>
+			<?=home_render_torrent_cards($rows, $categoriesById, $torrentAuthorsById, $torrentAuthorPrivilegesByClass);?>
 		</div>
 		<?php } else { ?>
 		<div class="browse-empty-state">Торренты не найдены.</div>

@@ -163,12 +163,69 @@
       document.body.classList.remove('profile-modal-open');
     }
 
+    function loadProfileTab(href, pushState) {
+      var currentPage = document.querySelector('[data-profile-page]');
+      var currentPrimary = currentPage ? currentPage.querySelector('.profile-primary') : null;
+      var currentSidebar = currentPage ? currentPage.querySelector('.profile-sidebar') : null;
+
+      if (!currentPage || !currentPrimary || !currentSidebar || !href) {
+        window.location.href = href;
+        return;
+      }
+
+      fetch(href, {
+        credentials: 'same-origin',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'text/html'
+        }
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error('Request failed');
+          }
+
+          return response.text();
+        })
+        .then(function (html) {
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+          var nextPage = doc.querySelector('[data-profile-page]');
+          var nextPrimary = nextPage ? nextPage.querySelector('.profile-primary') : null;
+          var nextSidebar = nextPage ? nextPage.querySelector('.profile-sidebar') : null;
+
+          if (!nextPrimary || !nextSidebar) {
+            throw new Error('Invalid profile response');
+          }
+
+          currentPrimary.innerHTML = nextPrimary.innerHTML;
+          currentSidebar.innerHTML = nextSidebar.innerHTML;
+
+          if (doc.title) {
+            document.title = doc.title;
+          }
+
+          if (pushState && window.history && window.history.pushState) {
+            window.history.pushState({ profileAjaxTab: true }, '', href);
+          }
+        })
+        .catch(function () {
+          window.location.href = href;
+        });
+    }
+
     document.addEventListener('click', function (event) {
+      var profileTabLink = event.target.closest('.profile-sidebar-link');
       var openButton = event.target.closest('[data-profile-open-message]');
       var closeButton = event.target.closest('[data-profile-close-message]');
       var backdrop = event.target.closest('.profile-modal-backdrop');
       var isBackdropClick = backdrop && event.target === backdrop;
       var formData;
+
+      if (profileTabLink && profileTabLink.href && profileTabLink.href.indexOf('profile.php') !== -1 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+        event.preventDefault();
+        loadProfileTab(profileTabLink.href, true);
+        return;
+      }
 
       if (openButton) {
         event.preventDefault();
@@ -256,6 +313,12 @@
     document.addEventListener('keydown', function (event) {
       if (event.key === 'Escape' && modal && !modal.hidden) {
         closeModal();
+      }
+    });
+
+    window.addEventListener('popstate', function () {
+      if (window.location.href.indexOf('profile.php') !== -1) {
+        loadProfileTab(window.location.href, false);
       }
     });
   });

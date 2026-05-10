@@ -293,6 +293,9 @@ while ($row = $db->get_row($sql)) {
 	$rows[] = $row;
 }
 
+$torrentAuthorsById = lt_torrent_preload_author_users($rows);
+$torrentAuthorPrivilegesByClass = lt_torrent_preload_author_privileges($torrentAuthorsById);
+
 $canUpload = ($USER && !empty($PRIV['upload']));
 
 head('Торренты');
@@ -371,8 +374,8 @@ head('Торренты');
 					<?php
 					$torrentId = (int) $row['id'];
 					$category = (!empty($categoriesById[(int) $row['id_category']]) ? $categoriesById[(int) $row['id_category']] : array('id' => 0, 'name' => 'Без категории', 'image' => ''));
-					$user = get_user_info((int) $row['id_user']);
-					$torrentCard = lt_torrent_prepare_browse_card($row, $category, $user);
+					$user = (array) ($torrentAuthorsById[(int) $row['id_user']] ?? array());
+					$torrentCard = lt_torrent_prepare_browse_card($row, $category, $user, $torrentAuthorPrivilegesByClass);
 					?>
 					<?php include __DIR__.'/templates/default/tpl.torrent.card.php'; ?>
 					<?php } ?>

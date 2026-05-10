@@ -10,7 +10,8 @@
 defined('CMS')        || define('CMS', true);
 defined('DB_PREFIX')  || define('DB_PREFIX', '');
 defined('COOKIE_SALT') || define('COOKIE_SALT', 'test-cookie-salt');
-defined('DEGUB_SQL')  || define('DEGUB_SQL', false);
+defined('DEBUG')      || define('DEBUG', false);
+defined('DEBUG_SQL')  || define('DEBUG_SQL', false);
 defined('COLLATE')    || define('COLLATE', 'utf8mb4');
 
 // ---------------------------------------------------------------------------

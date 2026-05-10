@@ -69,52 +69,127 @@ function lt_sync_user_unread_messages($userId)
 	return $count;
 }
 
-function lt_table_exists($tableName)
+function lt_table_exists($tableName, $refresh = false)
 {
 	global $db;
 	static $cache = array();
 
-	$tableName = preg_replace('~[^a-z0-9_]~i', '', (string) $tableName);
+	$tableName = lt_schema_identifier($tableName);
 	if ($tableName === '') {
 		return false;
 	}
 
-	if (array_key_exists($tableName, $cache)) {
+	$refresh = (bool) $refresh;
+
+	if (!$refresh && array_key_exists($tableName, $cache)) {
 		return $cache[$tableName];
 	}
 
-	$row = $db->super_query("SHOW TABLES LIKE '".$db->safesql($tableName)."'");
+	$cacheKey = lt_schema_table_cache_key($tableName);
+	$cached = (!$refresh ? lt_schema_cache_get($cacheKey) : false);
+	if (!$refresh && is_array($cached) && array_key_exists('exists', $cached)) {
+		$cache[$tableName] = (bool) $cached['exists'];
+		return $cache[$tableName];
+	}
+
+	$sql = $db->query("SHOW TABLES LIKE '".$db->safesql($tableName)."'", 0);
+	if ($sql === false) {
+		$cache[$tableName] = false;
+		return false;
+	}
+
+	$row = $db->get_row($sql);
+	$db->free($sql);
 	$cache[$tableName] = !empty($row);
+	lt_schema_cache_set($cacheKey, array('exists' => $cache[$tableName]));
 
 	return $cache[$tableName];
 }
 
-function lt_column_exists($tableName, $columnName)
+function lt_column_exists($tableName, $columnName, $refresh = false)
 {
 	global $db;
 	static $cache = array();
 
-	$tableName = preg_replace('~[^a-z0-9_]~i', '', (string) $tableName);
-	$columnName = preg_replace('~[^a-z0-9_]~i', '', (string) $columnName);
+	$tableName = lt_schema_identifier($tableName);
+	$columnName = lt_schema_identifier($columnName);
 
 	if ($tableName === '' || $columnName === '') {
 		return false;
 	}
 
+	$refresh = (bool) $refresh;
+
 	$key = $tableName.'.'.$columnName;
-	if (array_key_exists($key, $cache) && $cache[$key] !== false) {
+	if (!$refresh && array_key_exists($key, $cache)) {
 		return $cache[$key];
 	}
 
-	if (!lt_table_exists($tableName)) {
+	if (!lt_table_exists($tableName, $refresh)) {
 		$cache[$key] = false;
 		return false;
 	}
 
-	$row = $db->super_query("SHOW COLUMNS FROM `".$tableName."` LIKE '".$db->safesql($columnName)."'");
+	$cacheKey = lt_schema_column_cache_key($tableName, $columnName);
+	$cached = (!$refresh ? lt_schema_cache_get($cacheKey) : false);
+	if (!$refresh && is_array($cached) && array_key_exists('exists', $cached)) {
+		$cache[$key] = (bool) $cached['exists'];
+		return $cache[$key];
+	}
+
+	$sql = $db->query("SHOW COLUMNS FROM `".$tableName."` LIKE '".$db->safesql($columnName)."'", 0);
+	if ($sql === false) {
+		$cache[$key] = false;
+		return false;
+	}
+
+	$row = $db->get_row($sql);
+	$db->free($sql);
 	$cache[$key] = !empty($row['Field']);
+	lt_schema_cache_set($cacheKey, array('exists' => $cache[$key]));
 
 	return $cache[$key];
+}
+
+function lt_schema_identifier($value)
+{
+	$value = trim((string) $value);
+
+	return (preg_match('~^[a-zA-Z0-9_]+$~', $value) ? $value : '');
+}
+
+function lt_schema_cache_ttl()
+{
+	return 6 * 60 * 60;
+}
+
+function lt_schema_table_cache_key($tableName)
+{
+	return 'schema:table:'.$tableName.':exists';
+}
+
+function lt_schema_column_cache_key($tableName, $columnName)
+{
+	return 'schema:column:'.$tableName.':'.$columnName.':exists';
+}
+
+function lt_schema_cache_get($key)
+{
+	return (function_exists('lt_cache_get') ? lt_cache_get($key, 'schema') : false);
+}
+
+function lt_schema_cache_set($key, $value)
+{
+	if (function_exists('lt_cache_set')) {
+		lt_cache_set($key, $value, lt_schema_cache_ttl(), 'schema');
+	}
+}
+
+function lt_schema_cache_delete($key)
+{
+	if (function_exists('lt_cache_delete')) {
+		lt_cache_delete($key, 'schema');
+	}
 }
 
 function profile_public_mask()
@@ -413,14 +488,7 @@ function foot($light = false) {
 	//Подключаем шаблон
 	require 'templates/'.$tpl.'/foot.php';
 
-	//DEGUB SQL
-	$showSqlDebug = (DEGUB_SQL || admin_dashboard_can_access(($USER ?? null), ($PRIV ?? null)));
-	if($showSqlDebug) {
-		foreach($db->query_list AS $res) {
-			echo '<b>'.$res['num'].' - ('.(round($res['time'] , 1) >= 0.6 ? '<font color="red">'.$res['time'].'</font>' : '<font color="green">'.$res['time'].'</font>' ).')</b>'.' - '.$res['query'].'<br><br>';
-		}
-
-	}
+	lt_debug_render_panel();
 
 	if(!$config['crontab']) {
 		//Autoclean system
@@ -432,6 +500,118 @@ function foot($light = false) {
 			echo '<img width="0px" height="0px" alt="" title="" src="update.peers.php"/>';
 		}
 	}
+}
+
+function lt_debug_enabled()
+{
+	return ((defined('DEBUG') && DEBUG) || (defined('DEBUG_SQL') && DEBUG_SQL));
+}
+
+function lt_debug_panel_allowed()
+{
+	return (lt_debug_enabled() && function_exists('admin_dashboard_can_access') && admin_dashboard_can_access(($GLOBALS['USER'] ?? null), ($GLOBALS['PRIV'] ?? null)));
+}
+
+function lt_debug_format_bytes($bytes)
+{
+	$bytes = (float) $bytes;
+	$units = array('B', 'KB', 'MB', 'GB');
+	$unit = 0;
+
+	while ($bytes >= 1024 && $unit < count($units) - 1) {
+		$bytes /= 1024;
+		$unit++;
+	}
+
+	return number_format($bytes, ($unit === 0 ? 0 : 2), '.', ' ').' '.$units[$unit];
+}
+
+function lt_debug_mask_text($value)
+{
+	$value = (string) $value;
+	$value = preg_replace('/([a-z0-9._%+\-]+)@([a-z0-9.\-]+\.[a-z]{2,})/i', '[email masked]', $value);
+	$value = preg_replace('/((?:passkey|password|email|session|cookie|csrf|token|id_password)=)([^&\s]+)/i', '$1[masked]', $value);
+	$value = preg_replace('/\b[0-9a-f]{32}\b/i', '[hash32 masked]', $value);
+
+	return $value;
+}
+
+function lt_debug_render_panel()
+{
+	if (!lt_debug_panel_allowed()) {
+		return;
+	}
+
+	$db = ($GLOBALS['db'] ?? null);
+	if (!is_object($db)) {
+		return;
+	}
+
+	$cacheStats = function_exists('lt_cache_debug_stats') ? lt_cache_debug_stats() : array();
+	$cacheStats += array(
+		'hits' => 0,
+		'misses' => 0,
+		'sets' => 0,
+		'deletes' => 0,
+		'errors' => 0,
+	);
+
+	$pageUrl = (string) ($_SERVER['REQUEST_URI'] ?? 'CLI');
+	$pageUrl = lt_debug_mask_text($pageUrl);
+	$queryList = (array) ($db->query_list ?? array());
+	$slowQueries = array();
+	foreach ($queryList as $queryInfo) {
+		if (!empty($queryInfo['slow']) || (float) ($queryInfo['time'] ?? 0) > 0.05) {
+			$slowQueries[] = $queryInfo;
+		}
+	}
+
+	echo '<div style="margin:24px auto 12px;max-width:1180px;padding:12px;border:1px solid #c8d3df;background:#f7fafc;color:#1f2933;font:12px/1.45 Arial, sans-serif;text-align:left;">';
+	echo '<div style="font-weight:bold;margin-bottom:8px;">LiteTracker Debug Panel</div>';
+	echo '<div>Page URL: <code>'.htmlspecialchars($pageUrl, ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>SQL queries count: <b>'.(int) ($db->query_num ?? count($queryList)).'</b></div>';
+	echo '<div>Total SQL time: <b>'.number_format((float) ($db->MySQL_time_taken ?? 0), 6, '.', '').' sec</b></div>';
+	echo '<div>Memory usage: <b>'.lt_debug_format_bytes(memory_get_usage(true)).'</b>; peak: <b>'.lt_debug_format_bytes(memory_get_peak_usage(true)).'</b></div>';
+	echo '<div>Cache hits/misses/sets/deletes/errors: <b>'.(int) $cacheStats['hits'].'</b> / <b>'.(int) $cacheStats['misses'].'</b> / <b>'.(int) $cacheStats['sets'].'</b> / <b>'.(int) $cacheStats['deletes'].'</b> / <b>'.(int) $cacheStats['errors'].'</b></div>';
+
+	if (!empty($db->sql_errors)) {
+		echo '<div style="margin-top:8px;color:#991b1b;font-weight:bold;">SQL errors: '.count((array) $db->sql_errors).'</div>';
+	}
+
+	if ($slowQueries) {
+		echo '<div style="margin-top:8px;color:#991b1b;font-weight:bold;">Slow queries &gt; 0.05 sec: '.count($slowQueries).'</div>';
+	}
+
+	if ($queryList) {
+		echo '<details open style="margin-top:10px;"><summary style="cursor:pointer;font-weight:bold;">SQL queries</summary>';
+		echo '<ol style="margin:8px 0 0 22px;padding:0;">';
+		foreach ($queryList as $queryInfo) {
+			$time = (float) ($queryInfo['time'] ?? 0);
+			$isSlow = (!empty($queryInfo['slow']) || $time > 0.05);
+			$error = (string) ($queryInfo['error'] ?? '');
+			$itemStyle = $isSlow ? 'background:#fff1f2;border-left:3px solid #e11d48;padding:4px 6px;margin-bottom:6px;' : 'padding:4px 6px;margin-bottom:6px;';
+			if ($error !== '') {
+				$itemStyle = 'background:#fef2f2;border-left:3px solid #991b1b;padding:4px 6px;margin-bottom:6px;';
+			}
+
+			echo '<li style="'.$itemStyle.'">';
+			echo '<span style="font-weight:bold;">'.number_format($time, 6, '.', '').' sec</span>';
+			if ($isSlow) {
+				echo ' <span style="color:#991b1b;font-weight:bold;">slow</span>';
+			}
+			if ($error !== '') {
+				echo ' <span style="color:#991b1b;font-weight:bold;">SQL error '.(int) ($queryInfo['error_num'] ?? 0).'</span>';
+			}
+			echo '<pre style="white-space:pre-wrap;word-break:break-word;margin:4px 0 0;font:12px/1.35 Consolas, monospace;">'.htmlspecialchars((string) ($queryInfo['query'] ?? ''), ENT_QUOTES, 'UTF-8').'</pre>';
+			if ($error !== '') {
+				echo '<div style="color:#991b1b;">'.htmlspecialchars($error, ENT_QUOTES, 'UTF-8').'</div>';
+			}
+			echo '</li>';
+		}
+		echo '</ol></details>';
+	}
+
+	echo '</div>';
 }
 
 function stdfoot($light = false)

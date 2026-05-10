@@ -198,6 +198,7 @@ function mail_render_conversation_modal($participant, $conversationTitle, $conve
 	$currentUserName = (string) ($GLOBALS['USER']['name'] ?? '');
 	$systemConversation = (bool) $systemConversation;
 	$targetUserId = (int) $targetUserId;
+	$participantProfileHref = (!$systemConversation && $targetUserId > 0 ? profile_href($participant ?: $targetUserId) : '');
 
 	ob_start();
 	?>
@@ -206,11 +207,15 @@ function mail_render_conversation_modal($participant, $conversationTitle, $conve
 
 		<div class="mail-modal" role="dialog" aria-modal="true" aria-labelledby="mail-modal-title">
 			<div class="mail-modal-header">
-				<div class="mail-modal-avatar">
+				<<?=($participantProfileHref !== '' ? 'a' : 'div');?> class="mail-modal-avatar"<?=($participantProfileHref !== '' ? ' href="'.htmlspecialchars($participantProfileHref, ENT_QUOTES, 'UTF-8').'" data-mail-profile-link="1"' : '');?>>
 					<img src="<?=mail_avatar_path($participant);?>" alt="<?=htmlspecialchars($conversationTitle, ENT_QUOTES, 'UTF-8');?>" width="40" height="40">
-				</div>
+				</<?=($participantProfileHref !== '' ? 'a' : 'div');?>>
 				<div class="mail-modal-heading">
+					<?php if ($participantProfileHref !== '') { ?>
+					<a class="mail-modal-title mail-modal-title-link" id="mail-modal-title" href="<?=htmlspecialchars($participantProfileHref, ENT_QUOTES, 'UTF-8');?>" data-mail-profile-link="1"><?=htmlspecialchars($conversationTitle, ENT_QUOTES, 'UTF-8');?></a>
+					<?php } else { ?>
 					<div class="mail-modal-title" id="mail-modal-title"><?=htmlspecialchars($conversationTitle, ENT_QUOTES, 'UTF-8');?></div>
+					<?php } ?>
 					<div class="mail-modal-subtitle"><?=$conversationSubtitle;?></div>
 				</div>
 			</div>
@@ -600,17 +605,18 @@ while($conversation = $db->get_row($conversationsSql)) {
 		$partner = $conversation['partner'];
 		$partnerName = (!empty($partner['name']) ? $partner['name'] : 'System');
 		$openHref = mail_build_href('conversation', $conversation['partner_id'], $conversation['system']);
+		$profileHref = (!$conversation['system'] && (int) $conversation['partner_id'] > 0 ? profile_href($partner ?: (int) $conversation['partner_id']) : $openHref);
 		$countLabel = $conversation['total_messages'].' '.mail_plural($conversation['total_messages'], 'сообщение', 'сообщения', 'сообщений');
 		$isActiveConversation = ($act === 'conversation' && (int) $conversation['partner_id'] === (int) $targetUserId && (bool) $conversation['system'] === (bool) $systemConversation);
 		$hasUnreadMessages = ((int) ($conversation['unread_messages'] ?? 0) > 0);
 		?>
 		<article class="mail-thread-row<?=($isActiveConversation ? ' mail-thread-row-active' : '');?><?=($hasUnreadMessages ? ' mail-thread-row-unread' : '');?>" data-mail-thread="1" data-mail-open-href="<?=$openHref;?>" data-mail-partner-id="<?=(int) $conversation['partner_id'];?>" data-mail-system="<?=($conversation['system'] ? 1 : 0);?>" role="button" tabindex="0">
-			<a class="mail-thread-avatar" href="<?=$openHref;?>">
+			<a class="mail-thread-avatar" href="<?=htmlspecialchars($profileHref, ENT_QUOTES, 'UTF-8');?>"<?=(!$conversation['system'] ? ' data-mail-profile-link="1"' : '');?>>
 				<img src="<?=mail_avatar_path($partner);?>" alt="<?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?>" width="40" height="40">
 			</a>
 
 			<div class="mail-thread-main">
-				<a class="mail-thread-name" href="<?=$openHref;?>"><?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?></a>
+				<a class="mail-thread-name" href="<?=htmlspecialchars($profileHref, ENT_QUOTES, 'UTF-8');?>"<?=(!$conversation['system'] ? ' data-mail-profile-link="1"' : '');?>><?=htmlspecialchars($partnerName, ENT_QUOTES, 'UTF-8');?></a>
 				<div class="mail-thread-status"><?=$conversation['subtitle'];?></div>
 			</div>
 
@@ -752,6 +758,10 @@ document.addEventListener('click', function (event) {
 
 	var threadRow = event.target.closest('[data-mail-thread="1"]');
 	if (threadRow) {
+		if (event.target.closest('[data-mail-profile-link="1"]')) {
+			return;
+		}
+
 		var href = threadRow.getAttribute('data-mail-open-href') || '';
 		if (href) {
 			event.preventDefault();

@@ -21,6 +21,8 @@ class db
 	public $mysql_extend = 'MySQLi';
 	public $MySQL_time_taken = 0;
 	public $query_id = false;
+	public $sql_errors = array();
+	public $slow_query_threshold = 0.05;
 
 	function connect($db_user, $db_pass, $db_name, $db_location = 'localhost', $show_error=1)
 	{
@@ -58,24 +60,27 @@ class db
 
 		if(!$this->connected) $this->connect(DBUSER, DBPASS, DBNAME, DBHOST);
 
-		if(!($this->query_id = mysqli_query($this->db_id, $query) )) {
+		$this->query_id = mysqli_query($this->db_id, $query);
+		$elapsed = $this->get_real_time() - $time_before;
+		$error = '';
+		$error_num = 0;
 
+		if(!$this->query_id) {
 			$this->mysql_error = mysqli_error($this->db_id);
 			$this->mysql_error_num = mysqli_errno($this->db_id);
+			$error = $this->mysql_error;
+			$error_num = $this->mysql_error_num;
+		}
 
+		$this->MySQL_time_taken += $elapsed;
+		$this->query_num ++;
+		$this->record_query($query, $elapsed, $error, $error_num);
+
+		if(!$this->query_id) {
 			if($show_error) {
 				$this->display_error($this->mysql_error, $this->mysql_error_num, $query);
 			}
 		}
-
-		$this->MySQL_time_taken += $this->get_real_time() - $time_before;
-
-		if(DEGUB_SQL || (function_exists('admin_dashboard_can_access') && admin_dashboard_can_access(($GLOBALS['USER'] ?? null), ($GLOBALS['PRIV'] ?? null)))) {
-			$this->query_list[] = array( 'time'  => ($this->get_real_time() - $time_before),
-									'query' => $query,
-									'num'   => (count($this->query_list) + 1));
-		}
-		$this->query_num ++;
 
 		return $this->query_id;
 	}
@@ -180,6 +185,10 @@ class db
 		if (!$stmt) {
 			$this->mysql_error     = mysqli_error($this->db_id);
 			$this->mysql_error_num = mysqli_errno($this->db_id);
+			$elapsed = $this->get_real_time() - $time_before;
+			$this->MySQL_time_taken += $elapsed;
+			$this->query_num++;
+			$this->record_query($this->interpolate_prepared_sql($sql, $params), $elapsed, $this->mysql_error, $this->mysql_error_num);
 			if ($show_error) {
 				$this->display_error($this->mysql_error, $this->mysql_error_num, $sql);
 			}
@@ -196,6 +205,10 @@ class db
 		if (!mysqli_stmt_execute($stmt)) {
 			$this->mysql_error     = mysqli_stmt_error($stmt);
 			$this->mysql_error_num = mysqli_stmt_errno($stmt);
+			$elapsed = $this->get_real_time() - $time_before;
+			$this->MySQL_time_taken += $elapsed;
+			$this->query_num++;
+			$this->record_query($this->interpolate_prepared_sql($sql, $params), $elapsed, $this->mysql_error, $this->mysql_error_num);
 			mysqli_stmt_close($stmt);
 			if ($show_error) {
 				$this->display_error($this->mysql_error, $this->mysql_error_num, $sql);
@@ -207,15 +220,7 @@ class db
 		$this->MySQL_time_taken += $elapsed;
 		$this->query_num++;
 
-		if (defined('DEGUB_SQL') && (DEGUB_SQL || (function_exists('admin_dashboard_can_access') && admin_dashboard_can_access(($GLOBALS['USER'] ?? null), ($GLOBALS['PRIV'] ?? null))))) {
-			$idx = 0;
-			$debugSql = preg_replace_callback('/\?/', function ($m) use ($params, &$idx) {
-				$val = ($params[$idx] ?? '?');
-				$idx++;
-				return (is_string($val) ? "'".str_replace("'", "\\'", $val)."'" : (string) $val);
-			}, $sql);
-			$this->query_list[] = array('time' => $elapsed, 'query' => $debugSql, 'num' => (count($this->query_list) + 1));
-		}
+		$this->record_query($this->interpolate_prepared_sql($sql, $params), $elapsed);
 
 		$result = mysqli_stmt_get_result($stmt);
 		mysqli_stmt_close($stmt);
@@ -277,6 +282,136 @@ class db
 	{
 		list($seconds, $microSeconds) = explode(' ', microtime());
 		return ((float)$seconds + (float)$microSeconds);
+	}
+
+	function record_query($query, $elapsed, $error = '', $error_num = 0)
+	{
+		$entry = array(
+			'time' => (float) $elapsed,
+			'query' => $this->mask_debug_sql($query),
+			'num' => (count($this->query_list) + 1),
+			'slow' => ((float) $elapsed > (float) $this->slow_query_threshold),
+			'error' => (string) $error,
+			'error_num' => (int) $error_num,
+		);
+
+		$this->query_list[] = $entry;
+
+		if ($error !== '') {
+			$this->sql_errors[] = $entry;
+		}
+	}
+
+	function interpolate_prepared_sql($sql, array $params = array())
+	{
+		if (!$params) {
+			return $sql;
+		}
+
+		$idx = 0;
+		return preg_replace_callback('/\?/', function ($m) use ($params, &$idx) {
+			$val = ($params[$idx] ?? '?');
+			$idx++;
+
+			if ($val === null) {
+				return 'NULL';
+			}
+
+			if (is_int($val) || is_float($val)) {
+				return (string) $val;
+			}
+
+			return "'".str_replace("'", "\\'", (string) $val)."'";
+		}, $sql);
+	}
+
+	function mask_debug_sql($query)
+	{
+		$query = (string) $query;
+		$sensitive = '(passkey|password|password_code|email|session_id|cookie|csrf_token|token|id_password)';
+
+		$query = preg_replace_callback('/(INSERT\s+INTO\s+`?[\w]+`?\s*\()(.*?)(\)\s*VALUES\s*\()(.*?)(\))/is', function ($matches) use ($sensitive) {
+			$columns = $this->split_sql_csv($matches[2]);
+			$values = $this->split_sql_csv($matches[4]);
+
+			if (!$columns || !$values || count($columns) !== count($values)) {
+				return $matches[0];
+			}
+
+			foreach ($columns as $index => $column) {
+				$column = trim((string) $column, " \t\n\r\0\x0B`");
+				if (preg_match('/^'.$sensitive.'$/i', $column)) {
+					$values[$index] = '[masked]';
+				}
+			}
+
+			return $matches[1].implode(', ', $columns).$matches[3].implode(', ', $values).$matches[5];
+		}, $query);
+
+		$query = preg_replace('/([a-z0-9._%+\-]+)@([a-z0-9.\-]+\.[a-z]{2,})/i', '[email masked]', $query);
+		$query = preg_replace('/\$2y\$[0-9]{2}\$[^\'"\s,)]+/i', '[password-hash masked]', $query);
+		$query = preg_replace('/\$argon2(?:i|id)\$[^\'"\s,)]+/i', '[password-hash masked]', $query);
+		$query = preg_replace('/\b[0-9a-f]{32}\b/i', '[hash32 masked]', $query);
+
+		$query = preg_replace('/(\b'.$sensitive.'\b\s*=\s*)(\'[^\']*\'|"[^"]*"|[^\s,;)]+)/i', '$1[masked]', $query);
+		$query = preg_replace('/(\b'.$sensitive.'\b\s+(?:LIKE|IN)\s*)(\([^)]+\)|\'[^\']*\'|"[^"]*")/i', '$1[masked]', $query);
+
+		return $query;
+	}
+
+	function split_sql_csv($value)
+	{
+		$value = (string) $value;
+		$parts = array();
+		$current = '';
+		$quote = '';
+		$depth = 0;
+		$length = strlen($value);
+
+		for ($i = 0; $i < $length; $i++) {
+			$char = $value[$i];
+			$prev = ($i > 0 ? $value[$i - 1] : '');
+
+			if ($quote !== '') {
+				$current .= $char;
+				if ($char === $quote && $prev !== '\\') {
+					$quote = '';
+				}
+				continue;
+			}
+
+			if ($char === '\'' || $char === '"') {
+				$quote = $char;
+				$current .= $char;
+				continue;
+			}
+
+			if ($char === '(') {
+				$depth++;
+				$current .= $char;
+				continue;
+			}
+
+			if ($char === ')' && $depth > 0) {
+				$depth--;
+				$current .= $char;
+				continue;
+			}
+
+			if ($char === ',' && $depth === 0) {
+				$parts[] = trim($current);
+				$current = '';
+				continue;
+			}
+
+			$current .= $char;
+		}
+
+		if (trim($current) !== '') {
+			$parts[] = trim($current);
+		}
+
+		return $parts;
 	}
 
 	function display_error($error, $error_num, $query = '')
