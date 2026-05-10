@@ -168,6 +168,14 @@ function browse_schema_with_actual_options($schema, $baseWhere, $selectedFilters
 }
 
 $search = trim((string) ($_GET['search'] ?? ''));
+$activeTagRaw = trim((string) ($_GET['tag'] ?? ''));
+$activeTagParts = ($activeTagRaw !== '' ? lt_torrent_tags_from_string($activeTagRaw) : array());
+$activeTag = trim((string) ($activeTagParts[0] ?? ''));
+if ($activeTag !== '') {
+	$_GET['tag'] = $activeTag;
+} else {
+	unset($_GET['tag']);
+}
 $id_category = isset($_GET['id_category']) ? (int) $_GET['id_category'] : 0;
 $sort = trim((string) ($_GET['sort'] ?? 'date'));
 $view = (string) ($_GET['view'] ?? 'compact');
@@ -237,6 +245,10 @@ if ($search !== '') {
 	$baseWhere[] = "t.name LIKE '%".sqlwildcardesc($search)."%'";
 }
 
+if ($activeTag !== '') {
+	$baseWhere[] = "FIND_IN_SET('".$db->safesql($activeTag)."', t.tags) > 0";
+}
+
 $schema = browse_schema_with_actual_options($schema, $baseWhere, $selectedFilters);
 $selectedFilters = browse_collect_selected_filters($schema);
 $where = $baseWhere;
@@ -245,6 +257,9 @@ browse_apply_filter_conditions($where, $schema, $selectedFilters);
 $pagerParams = array();
 if ($search !== '') {
 	$pagerParams['search'] = $search;
+}
+if ($activeTag !== '') {
+	$pagerParams['tag'] = $activeTag;
 }
 if ($id_category > 0) {
 	$pagerParams['id_category'] = $id_category;
@@ -295,6 +310,7 @@ while ($row = $db->get_row($sql)) {
 
 $torrentAuthorsById = lt_torrent_preload_author_users($rows);
 $torrentAuthorPrivilegesByClass = lt_torrent_preload_author_privileges($torrentAuthorsById);
+$popularTags = lt_tags_popular(30);
 
 $canUpload = ($USER && !empty($PRIV['upload']));
 
@@ -326,6 +342,9 @@ head('Торренты');
 					<?php if ($id_category > 0) { ?>
 					<input type="hidden" name="id_category" value="<?=$id_category;?>">
 					<?php } ?>
+					<?php if ($activeTag !== '') { ?>
+					<input type="hidden" name="tag" value="<?=htmlspecialchars($activeTag, ENT_QUOTES, 'UTF-8');?>">
+					<?php } ?>
 					<input type="hidden" name="view" value="<?=htmlspecialchars($view, ENT_QUOTES, 'UTF-8');?>" data-browse-view-input>
 					<?php foreach ($selectedFilters as $group => $values) { ?>
 						<?php foreach ($values as $value) { ?>
@@ -345,6 +364,28 @@ head('Торренты');
 				<?php foreach ($categories as $category) { ?>
 				<a class="browse-category-tab<?=($id_category === (int) $category['id'] ? ' is-active' : '');?>" href="<?=htmlspecialchars(browse_build_url(array('id_category' => (int) $category['id'], 'page' => null)), ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars((string) $category['name'], ENT_QUOTES, 'UTF-8');?></a>
 				<?php } ?>
+			</nav>
+			<?php } ?>
+
+			<?php if ($popularTags) { ?>
+			<nav class="browse-panel browse-tag-cloud" aria-label="Популярные теги">
+				<div class="browse-tag-cloud-title">Популярные теги</div>
+				<div class="browse-tag-cloud-list">
+					<?php foreach ($popularTags as $popularTag) { ?>
+					<?php
+					$tagName = (string) ($popularTag['name'] ?? '');
+					if ($tagName === '') {
+						continue;
+					}
+					$tagCount = (int) ($popularTag['count'] ?? 0);
+					$isActiveTag = (function_exists('mb_strtolower') ? mb_strtolower($tagName, 'UTF-8') === mb_strtolower($activeTag, 'UTF-8') : strtolower($tagName) === strtolower($activeTag));
+					?>
+					<a class="browse-tag-chip<?=($isActiveTag ? ' is-active' : '');?>" href="<?=htmlspecialchars(browse_build_url(array('tag' => $tagName, 'page' => null)), ENT_QUOTES, 'UTF-8');?>" rel="tag">
+						<span><?=htmlspecialchars($tagName, ENT_QUOTES, 'UTF-8');?></span>
+						<?php if ($tagCount > 0) { ?><span class="browse-tag-count"><?=$tagCount;?></span><?php } ?>
+					</a>
+					<?php } ?>
+				</div>
 			</nav>
 			<?php } ?>
 
@@ -405,6 +446,9 @@ head('Торренты');
 			<form action="browse.php" method="get" class="browse-filter-panel">
 				<?php if ($search !== '') { ?>
 				<input type="hidden" name="search" value="<?=htmlspecialchars($search, ENT_QUOTES, 'UTF-8');?>">
+				<?php } ?>
+				<?php if ($activeTag !== '') { ?>
+				<input type="hidden" name="tag" value="<?=htmlspecialchars($activeTag, ENT_QUOTES, 'UTF-8');?>">
 				<?php } ?>
 				<?php if ($id_category > 0) { ?>
 				<input type="hidden" name="id_category" value="<?=$id_category;?>">
@@ -489,7 +533,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 
 	function syncViewLinks(view) {
-		var links = document.querySelectorAll('.browse-pagination a, .browse-sort-list a, .browse-categories a, .browse-sidebar-category');
+		var links = document.querySelectorAll('.browse-pagination a, .browse-sort-list a, .browse-categories a, .browse-sidebar-category, .browse-tag-chip');
 		for (var i = 0; i < links.length; i++) {
 			try {
 				var url = new URL(links[i].getAttribute('href'), window.location.href);

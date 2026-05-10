@@ -150,6 +150,8 @@ if ($isAjaxLoad) {
 	die();
 }
 
+$popularTags = lt_tags_popular(30);
+
 head('Главная');
 ?>
 <div class="home-torrents-page">
@@ -159,6 +161,27 @@ head('Главная');
 			<?php foreach ($categories as $category) { ?>
 			<a class="browse-category-tab<?=($id_category === (int) $category['id'] ? ' is-active' : '');?>" href="<?=htmlspecialchars(home_build_url(array('id_category' => (int) $category['id'], 'page' => null)), ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars((string) $category['name'], ENT_QUOTES, 'UTF-8');?></a>
 			<?php } ?>
+	</nav>
+	<?php } ?>
+
+	<?php if ($popularTags) { ?>
+	<nav class="browse-panel browse-tag-cloud" aria-label="Популярные теги">
+		<div class="browse-tag-cloud-title">Популярные теги</div>
+		<div class="browse-tag-cloud-list">
+			<?php foreach ($popularTags as $popularTag) { ?>
+			<?php
+			$tagName = (string) ($popularTag['name'] ?? '');
+			if ($tagName === '') {
+				continue;
+			}
+			$tagCount = (int) ($popularTag['count'] ?? 0);
+			?>
+			<a class="browse-tag-chip" href="browse.php?tag=<?=urlencode($tagName);?>" rel="tag">
+				<span><?=htmlspecialchars($tagName, ENT_QUOTES, 'UTF-8');?></span>
+				<?php if ($tagCount > 0) { ?><span class="browse-tag-count"><?=$tagCount;?></span><?php } ?>
+			</a>
+			<?php } ?>
+		</div>
 	</nav>
 	<?php } ?>
 

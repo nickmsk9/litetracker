@@ -50,6 +50,53 @@ function get_tags()
 	return $arr;
 }
 
+function lt_tags_popular($limit = 30)
+{
+	global $memcached, $db;
+
+	$limit = max(1, min(100, (int) $limit));
+	$cacheKey = 'tags:popular:'.$limit;
+	$ttl = 600;
+
+	$cached = false;
+	if (isset($memcached) && is_object($memcached) && method_exists($memcached, 'get')) {
+		$cached = $memcached->get($cacheKey);
+	}
+
+	if (is_array($cached)) {
+		return $cached;
+	}
+
+	$tags = array();
+	if (!function_exists('lt_table_exists') || lt_table_exists('tags')) {
+		$sql = $db->query("SELECT name, SUM(howmuch) AS tag_count
+			FROM tags
+			WHERE name <> '' AND howmuch > 0
+			GROUP BY name
+			ORDER BY tag_count DESC, name ASC
+			LIMIT ".$limit);
+
+		while ($row = $db->get_row($sql)) {
+			$name = trim((string) ($row['name'] ?? ''));
+			if ($name === '') {
+				continue;
+			}
+
+			$tags[] = array(
+				'name' => $name,
+				'count' => (int) ($row['tag_count'] ?? 0),
+			);
+		}
+		$db->free($sql);
+	}
+
+	if (isset($memcached) && is_object($memcached) && method_exists($memcached, 'set')) {
+		$memcached->set($cacheKey, $tags, 0, $ttl);
+	}
+
+	return $tags;
+}
+
 function cloud($small, $big, $colour = true)
 {
 	$tags = get_tags();
@@ -73,9 +120,9 @@ function cloud($small, $big, $colour = true)
 				$size = $small + ($count - $minimum_count) * ($big - $small) / $spread;
 				$colours = array('#003EFF', '#0000FF', '#7EB6FF', '#0099CC', '#62B1F6');
 
-				$cloud[] = "<a href=\"browse.php?search=";
+				$cloud[] = "<a href=\"browse.php?tag=";
 				$cloud[] = urlencode($tag);
-				$cloud[] = "&type=tags\" style=\"" . ($colour ? "color:" . $colours[mt_rand(0, 4)] . "; " : "") . "font-size:" . floor($size) . "px;\" rel=\"tag\" title=\"Содержится в " . (int)$count . " торрентах\">";
+				$cloud[] = "\" style=\"" . ($colour ? "color:" . $colours[mt_rand(0, 4)] . "; " : "") . "font-size:" . floor($size) . "px;\" rel=\"tag\" title=\"Содержится в " . (int)$count . " торрентах\">";
 				$cloud[] = htmlentities($tag, ENT_QUOTES, 'UTF-8') . "(" . (int)$count . ")</a>\n";
 			}
 		}
@@ -132,7 +179,7 @@ function tags_echo($addtags)
 			continue;
 		}
 
-		$result[] = "<a style=\"font-weight:normal;\" href=\"browse.php?search=" . urlencode($tag) . "&type=tags\">" . htmlspecialchars_uni($tag) . "</a>";
+		$result[] = "<a style=\"font-weight:normal;\" href=\"browse.php?tag=" . urlencode($tag) . "\">" . htmlspecialchars_uni($tag) . "</a>";
 	}
 
 	if (!empty($result)) {

@@ -649,6 +649,7 @@ $currentCover = trim((string) ($arr['image'] ?? ''));
 head($language['edit_3'], true);
 ?>
 <script type="text/javascript" src="public/js/tagto.js"></script>
+<script type="text/javascript" src="/public/js/tags-suggest.js"></script>
 
 <div class="upload-page upload-page-edit">
 	<section class="upload-shell edit-shell">
@@ -800,7 +801,7 @@ head($language['edit_3'], true);
 
 					<div class="upload-field">
 						<label class="upload-label" for="edit_tags"><?=$language['upload_12'];?></label>
-						<input id="edit_tags" class="upload-input" type="text" name="tags" value="<?=htmlspecialchars(lt_torrent_tags_to_string((string) $arr['tags']), ENT_QUOTES, 'UTF-8');?>" placeholder="через запятую">
+						<input id="edit_tags" class="upload-input" type="text" name="tags" value="<?=htmlspecialchars(lt_torrent_tags_to_string((string) $arr['tags']), ENT_QUOTES, 'UTF-8');?>" placeholder="через запятую" data-tags-suggest data-tags-suggest-url="/api/tags_suggest.php">
 						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('tags'), ENT_QUOTES, 'UTF-8');?></div>
 						<div class="upload-hint" id="from">
 							<?php if (!$tagSuggestions) { ?>

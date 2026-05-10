@@ -754,7 +754,7 @@ head('Загрузить торрент');
 
 					<div class="upload-field">
 						<label class="upload-label" for="upload_tags">Тэги</label>
-						<input id="upload_tags" class="upload-input" type="text" name="tags" value="<?=htmlspecialchars($form['tags'], ENT_QUOTES, 'UTF-8');?>" placeholder="боевик, 1080p, netflix">
+						<input id="upload_tags" class="upload-input" type="text" name="tags" value="<?=htmlspecialchars($form['tags'], ENT_QUOTES, 'UTF-8');?>" placeholder="боевик, 1080p, netflix" data-tags-suggest data-tags-suggest-url="/api/tags_suggest.php">
 						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('tags'), ENT_QUOTES, 'UTF-8');?></div>
 					</div>
 				</div>
@@ -766,6 +766,7 @@ head('Загрузить торрент');
 		</form>
 	</section>
 </div>
+<script type="text/javascript" src="/public/js/tags-suggest.js"></script>
 <script>
 (function () {
 	var form = document.querySelector('.upload-form');
