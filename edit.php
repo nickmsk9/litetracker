@@ -650,6 +650,9 @@ head($language['edit_3'], true);
 ?>
 <script type="text/javascript" src="public/js/tagto.js"></script>
 <script type="text/javascript" src="/public/js/tags-suggest.js"></script>
+<?php if (!empty($config['metadata_grabber_enabled'])) { ?>
+<script type="text/javascript" src="/public/js/metadata-search.js"></script>
+<?php } ?>
 
 <div class="upload-page upload-page-edit">
 	<section class="upload-shell edit-shell">
@@ -704,6 +707,16 @@ head($language['edit_3'], true);
 							<?php } ?>
 						</div>
 						<textarea id="edit_descr" name="descr" hidden><?=htmlspecialchars((string) ($arr['descr'] ?? ''), ENT_QUOTES, 'UTF-8');?></textarea>
+						<?php if (!empty($config['metadata_grabber_enabled'])) { ?>
+						<div class="metadata-search" data-metadata-search-root data-metadata-endpoint="/api/metadata_search.php" data-metadata-csrf="<?=htmlspecialchars(lt_csrf_token('metadata_search'), ENT_QUOTES, 'UTF-8');?>">
+							<div class="metadata-search-row">
+								<button class="metadata-search-button" type="button" data-metadata-search-button>🔎 Найти описание</button>
+								<span class="metadata-search-note">Экспериментально: проверьте данные перед публикацией.</span>
+							</div>
+							<div class="metadata-search-status" data-metadata-search-status aria-live="polite"></div>
+							<div class="metadata-search-results" data-metadata-search-results></div>
+						</div>
+						<?php } ?>
 					</div>
 
 					<?php foreach ($metadataSchema as $group => $definition) { ?>

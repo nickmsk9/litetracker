@@ -49,6 +49,7 @@ require __DIR__ . '/config/config.mysql.php';
 require __DIR__ . '/functions/functions.php';
 require __DIR__ . '/functions/functions.http.php';
 require __DIR__ . '/functions/functions.upload.php';
+require __DIR__ . '/functions/functions.metadata.php';
 
 
 

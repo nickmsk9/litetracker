@@ -4838,6 +4838,136 @@ iframe {
     line-height: 1.45;
 }
 
+.metadata-search {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--surface-alt);
+}
+
+.metadata-search-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+}
+
+.metadata-search-button,
+.metadata-result-insert {
+    min-height: 30px;
+    padding: 6px 12px;
+    border: 1px solid #8797a0;
+    border-radius: 4px;
+    background: #8ea0aa;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.metadata-search-button:hover,
+.metadata-result-insert:hover {
+    background: #7f919b;
+    color: #ffffff;
+}
+
+.metadata-search-button:disabled {
+    opacity: 0.72;
+    cursor: wait;
+}
+
+.metadata-search-note,
+.metadata-search-status,
+.metadata-result-meta,
+.metadata-result-original {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.metadata-search-status {
+    margin-top: 8px;
+}
+
+.metadata-search-status.is-error {
+    color: #c95a4b;
+}
+
+.metadata-search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.metadata-result {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--surface);
+}
+
+.metadata-result-no-poster {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.metadata-result-poster {
+    width: 64px;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 4px;
+    background: var(--surface-solid);
+}
+
+.metadata-result-title {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.metadata-result-body {
+    min-width: 0;
+}
+
+.metadata-result-description {
+    display: -webkit-box;
+    margin-top: 6px;
+    overflow: hidden;
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.45;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.metadata-result-source {
+    display: inline-block;
+    max-width: 100%;
+    margin-top: 4px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.metadata-result-warning {
+    margin-top: 6px;
+    color: #c95a4b;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.metadata-result-actions {
+    margin-top: 8px;
+}
+
+.metadata-result-insert {
+    margin-top: 8px;
+}
+
 .upload-example-card {
     margin-top: 12px;
     padding: 12px 14px;

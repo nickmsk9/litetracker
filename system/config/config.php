@@ -62,6 +62,7 @@ $ltMailPassword = trim((string) lt_env_value('LITETRACKER_MAIL_PASSWORD', ''));
 $ltWmzNumber = trim((string) lt_env_value('LITETRACKER_WMZ_NUMBER', ''));
 $ltWmrNumber = trim((string) lt_env_value('LITETRACKER_WMR_NUMBER', ''));
 $ltAnnounceConnectivityProbe = lt_env_bool('LITETRACKER_ANNOUNCE_CONNECTIVITY_PROBE', 0);
+$ltMetadataGrabberEnabled = lt_env_bool('LITETRACKER_METADATA_GRABBER_ENABLED', 1);
 if ($ltAnnouncePath === '') {
 	$ltAnnouncePath = '/announce.php';
 }
@@ -98,6 +99,7 @@ $config  = array(
 'local_retracker_url' => $ltLocalRetrackerUrl , //Локальный retracker для torrent-файлов; при необходимости можно изменить в конфиге
 'announce_interval' => 30*60 ,
 'remote_tracker_timeout' => $ltRemoteTrackerTimeout ,
+'metadata_grabber_enabled' => $ltMetadataGrabberEnabled,
 'timezone' => $ltTimezone,
 'mysql_timezone_offset' => $ltMysqlTimezoneOffset,
 
