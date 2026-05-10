@@ -238,14 +238,19 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 						<?php } ?>
 					</div>
 					<div class="details-tracker-summary">
-						<span>Внешних трекеров: <?=number_format((int) $details_external_tracker_count);?></span>
-						<span>Пиры в списках учитывают локальный и внешний announce.</span>
+						<span>Внешние трекеры: <?=number_format((int) ($details_tracker_summary['total'] ?? $details_external_tracker_count));?></span>
+						<span>Работают: <?=number_format((int) ($details_tracker_summary['working'] ?? 0));?></span>
+						<span>Не отвечают: <?=number_format((int) ($details_tracker_summary['not_responding'] ?? 0));?></span>
+						<span>Сиды: <?=number_format((int) ($details_tracker_summary['seeders'] ?? 0));?></span>
+						<span>Личи: <?=number_format((int) ($details_tracker_summary['leechers'] ?? 0));?></span>
+						<span>Последняя проверка: <?=htmlspecialchars((string) ($details_tracker_summary['lastchecked'] ?? 'ещё не проверялся'), ENT_QUOTES, 'UTF-8');?></span>
 					</div>
 					<div class="details-trackers-wrap">
 						<table class="details-trackers-table">
 							<thead>
 								<tr>
 									<th>Трекер</th>
+									<th>Статус</th>
 									<th>Раздают</th>
 									<th>Качают</th>
 									<th>Проверка</th>
@@ -255,10 +260,16 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 								<?php foreach ($details_tracker_rows as $trackerRow) { ?>
 								<tr>
 									<td>
-										<div class="details-tracker-url"><?=htmlspecialchars((string) ($trackerRow['tracker'] ?? ''), ENT_QUOTES, 'UTF-8');?></div>
-										<?php if (!empty($trackerRow['state'])) { ?>
-										<div class="details-tracker-state"><?=htmlspecialchars((string) $trackerRow['state'], ENT_QUOTES, 'UTF-8');?></div>
-										<?php } ?>
+										<div
+											class="details-tracker-url"
+											<?=(!empty($trackerRow['tracker_title']) ? 'title="'.htmlspecialchars((string) $trackerRow['tracker_title'], ENT_QUOTES, 'UTF-8').'"' : '');?>
+										><?=htmlspecialchars((string) ($trackerRow['tracker'] ?? ''), ENT_QUOTES, 'UTF-8');?></div>
+									</td>
+									<td>
+										<span
+											class="details-tracker-status <?=htmlspecialchars((string) ($trackerRow['state_class'] ?? ''), ENT_QUOTES, 'UTF-8');?>"
+											<?=(!empty($trackerRow['state_title']) ? 'title="'.htmlspecialchars((string) $trackerRow['state_title'], ENT_QUOTES, 'UTF-8').'"' : '');?>
+										><?=htmlspecialchars((string) ($trackerRow['state'] ?? 'Ошибка проверки'), ENT_QUOTES, 'UTF-8');?></span>
 									</td>
 									<td><?=htmlspecialchars((string) ($trackerRow['seeders'] ?? '0'), ENT_QUOTES, 'UTF-8');?></td>
 									<td><?=htmlspecialchars((string) ($trackerRow['leechers'] ?? '0'), ENT_QUOTES, 'UTF-8');?></td>

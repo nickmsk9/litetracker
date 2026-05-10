@@ -45,16 +45,18 @@ $messagesCount = 0;
 if ($USER) {
 	$messagesCount = lt_sync_user_unread_messages((int) $USER['id']);
 }
+$notificationsUnreadCount = 0;
+if ($USER) {
+	$notificationsUnreadCount = lt_notifications_unread_count((int) $USER['id']);
+}
 $openWallReportsCount = 0;
 if ($USER && user_wall_reports_can_moderate()) {
 	user_wall_reports_ensure_table();
 	$openWallReportsRow = $db->super_query("SELECT COUNT(*) AS c FROM `".user_wall_reports_table_name()."` WHERE status = 'open'");
 	$openWallReportsCount = (int) ($openWallReportsRow['c'] ?? 0);
 }
-$alertCount = max($messagesCount, $openWallReportsCount);
-$alertBadge = ($alertCount > 99 ? '99+' : (string) $alertCount);
-$messagesHref = ($openWallReportsCount > 0 ? 'notify.php' : 'my.mail.php');
-$messagesLabel = 'Уведомления'.($alertCount > 0 ? ': '.$alertBadge : '');
+$notificationBadge = ($notificationsUnreadCount > 99 ? '99+' : (string) $notificationsUnreadCount);
+$notificationsLabel = 'Уведомления'.($notificationsUnreadCount > 0 ? ': '.$notificationBadge : '');
 $requestUri = ltrim((string) ($_SERVER['REQUEST_URI'] ?? ''), '/');
 $loginHref = 'login.php';
 if ($requestUri !== '' && strpos($requestUri, 'login.php') !== 0) {
@@ -101,14 +103,31 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 
 			<div class="site-header-tools<?=($USER ? ' site-header-tools-auth' : '');?>">
 				<?php if ($USER) { ?>
-				<a class="site-alert-button<?=($alertCount > 0 ? ' site-alert-button-active' : '');?>" href="<?=$messagesHref;?>" aria-label="<?=htmlspecialchars($messagesLabel, ENT_QUOTES, 'UTF-8');?>">
-					<svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true">
-						<path d="M12 3a5 5 0 0 0-5 5v2.42c0 .8-.32 1.56-.88 2.12L4.3 14.36a1 1 0 0 0 .7 1.71h14a1 1 0 0 0 .7-1.71l-1.82-1.82A3 3 0 0 1 17 10.42V8a5 5 0 0 0-5-5Zm0 18a3 3 0 0 0 2.82-2H9.18A3 3 0 0 0 12 21Z" fill="currentColor"/>
-					</svg>
-					<?php if ($alertCount > 0) { ?>
-					<span class="site-alert-badge"><?=$alertBadge;?></span>
-					<?php } ?>
-				</a>
+				<div
+					class="site-notifications"
+					data-notifications-root
+					data-notifications-csrf="<?=htmlspecialchars(lt_csrf_token('notifications_action'), ENT_QUOTES, 'UTF-8');?>"
+					data-notifications-count-url="/api/notifications/count.php"
+					data-notifications-list-url="/api/notifications/list.php?limit=8"
+					data-notifications-mark-all-url="/api/notifications/mark_all_read.php"
+					data-notifications-archive-url="/api/notifications/archive.php"
+				>
+					<a class="site-alert-button<?=($notificationsUnreadCount > 0 ? ' site-alert-button-active' : '');?>" href="notifications.php" aria-label="<?=htmlspecialchars($notificationsLabel, ENT_QUOTES, 'UTF-8');?>" data-notifications-toggle>
+						<svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true">
+							<path d="M12 3a5 5 0 0 0-5 5v2.42c0 .8-.32 1.56-.88 2.12L4.3 14.36a1 1 0 0 0 .7 1.71h14a1 1 0 0 0 .7-1.71l-1.82-1.82A3 3 0 0 1 17 10.42V8a5 5 0 0 0-5-5Zm0 18a3 3 0 0 0 2.82-2H9.18A3 3 0 0 0 12 21Z" fill="currentColor"/>
+						</svg>
+						<span class="site-alert-badge" data-notifications-badge<?=($notificationsUnreadCount <= 0 ? ' hidden' : '');?>><?=$notificationBadge;?></span>
+					</a>
+					<div class="site-notifications-dropdown" data-notifications-dropdown hidden>
+						<div class="site-notifications-head">
+							<strong>Уведомления</strong>
+							<button type="button" data-notifications-mark-all>Прочитать всё</button>
+						</div>
+						<div class="site-notifications-list" data-notifications-list></div>
+						<div class="site-notifications-empty" data-notifications-empty hidden>Уведомлений пока нет.</div>
+						<a class="site-notifications-all" href="notifications.php">Все уведомления</a>
+					</div>
+				</div>
 
 				<details class="site-user-dropdown">
 					<summary class="site-user-summary">

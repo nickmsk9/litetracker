@@ -163,6 +163,9 @@ if ($act === 'add') {
         err($language['default_1'], $language['comments_15'], 1);
     }
 
+    $newCommentId = (int) $db->insert_id();
+    lt_notifications_handle_comment_added($type, $object_id, $newCommentId, $parentId, (int) $USER['id']);
+
     if ($type === 'users' && $USER['id'] != $object_id) {
         $wallOwner = $db->super_query("SELECT id, name, notify_comments FROM users WHERE id=" . (int) $object_id);
         if (!empty($wallOwner['id']) && !empty($wallOwner['notify_comments'])) {
@@ -262,6 +265,7 @@ if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
     $deletedByAdmin = (!empty($PRIV['comments_delete']) && ((int) $USER['id'] !== (int) $arr['id_user'] || $type === 'users'));
     $deletedText = lt_comment_deleted_placeholder($deletedByAdmin);
     $db->pquery("UPDATE `{$table_name}` SET text = ?, id_user_edit = ".(int) $USER['id'].", date_edit = NOW() WHERE id = {$id_comment} AND `{$object_name}` = {$object_id}", 's', [$deletedText], 0);
+    lt_notifications_handle_comment_deleted($type, $object_id, $id_comment, (int) $arr['id_user'], (int) $USER['id'], $deletedByAdmin);
 
     header('Location:' . comment_return_url($file, $object_id, 'status=3'));
     die();

@@ -148,6 +148,7 @@ if ($action === 'add') {
     }
 
     $newId = (int)$db->insert_id();
+    lt_notifications_handle_comment_added($type, $objectId, $newId, $parentId, (int)$USER['id']);
 
     // Notify wall owner if needed
     if ($type === 'users' && (int)$USER['id'] !== $objectId) {
@@ -256,6 +257,7 @@ if ($action === 'delete') {
     $deletedByAdmin = (!empty($PRIV['comments_delete']) && ((int)$USER['id'] !== (int)$comment['id_user'] || $type === 'users'));
     $deletedText    = $db->safesql(lt_comment_deleted_placeholder($deletedByAdmin));
     $db->query("UPDATE `{$tableName}` SET text = '{$deletedText}', id_user_edit = " . (int)$USER['id'] . ", date_edit = NOW() WHERE id = {$commentId} AND `{$objectColumn}` = {$objectId}");
+    lt_notifications_handle_comment_deleted($type, $objectId, $commentId, (int)$comment['id_user'], (int)$USER['id'], $deletedByAdmin);
 
     ajax_cm_response(1, 'Комментарий удалён.', array(
         'html'       => ajax_cm_stream_html($type, $objectId, $file),

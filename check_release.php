@@ -61,9 +61,11 @@ if($_POST['act'] == 'banned') {
 		//Блокируем/Разблокируем
 		if($arr['banned']) {
 			$db->query("UPDATE torrents SET banned=0 WHERE id=".$id);
+			lt_notifications_handle_torrent_status((int) $arr['id_user'], (int) $USER['id'], $id, (string) $arr['name'], 'approved');
 			$banned['unbanned']++;
 		}else {
 			$db->query("UPDATE torrents SET banned=1 WHERE id=".$id);
+			lt_notifications_handle_torrent_status((int) $arr['id_user'], (int) $USER['id'], $id, (string) $arr['name'], 'hidden');
 			$banned['banned']++;
 		}
 
@@ -162,6 +164,7 @@ if($_POST['act'] == 'delete') {
 		$db->query("DELETE FROM trackers WHERE torrent=".$id);
 		$db->query("DELETE FROM peers WHERE torrent=".$id);
 		$db->query("DELETE FROM snatched WHERE torrent=".$id);
+		lt_notifications_handle_torrent_status((int) $arr['id_user'], (int) $USER['id'], $id, (string) $arr['name'], 'deleted');
 
 		$i++;
 	}

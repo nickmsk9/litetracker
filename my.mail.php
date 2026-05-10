@@ -610,6 +610,7 @@ if ($act === 'conversation') {
 		$newMessageId = (int) $db->insert_id();
 		$db->query("UPDATE users SET num_messages = (num_messages + 1) WHERE id = ".$targetUserId);
 		$memcached->delete('user_'.$targetUserId, 0);
+		lt_notifications_handle_private_message($targetUserId, $currentUserId, $newMessageId, $subject);
 
 		if (mail_is_ajax_request()) {
 			$newMessage = $db->super_query("SELECT m.*, u.name AS sender_name, u.class AS sender_class, u.avatar AS sender_avatar FROM mail AS m LEFT JOIN users AS u ON u.id = m.id_user_out WHERE m.id = ".$newMessageId." LIMIT 1");

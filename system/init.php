@@ -67,6 +67,9 @@ require __DIR__ . '/classes/class.ipcheck.php';
 //Функционал комментирования
 require __DIR__ . '/functions/functions.comments.php';
 
+//Функционал уведомлений
+require __DIR__ . '/functions/functions.notifications.php';
+
 //CAPTCHA
 require __DIR__ . '/functions/functions.recaptchalib.php';
 

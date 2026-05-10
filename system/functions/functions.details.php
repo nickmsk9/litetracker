@@ -654,14 +654,18 @@ function lt_details_render_trackers_page($torrentId)
 	begin_frame('Информация о трекерах');
 	msg('Данные могут не соответствовать настоящим', '<a href="javascript:history.go(-1);">Вернуться к деталям</a>');
 	echo '<table>';
-	echo '<tr><td><b>Трекер</b></td><td><b>Раздают</b></td><td><b>Качают</b></td><td><b>Дата обновление</b></td></tr>';
+	echo '<tr><td><b>Трекер</b></td><td><b>Раздают</b></td><td><b>Качают</b></td><td><b>Дата обновления</b></td><td><b>Статус</b></td></tr>';
 
 	while ($row = $db->get_row($sql)) {
+		$trackerUrl = (string) ($row['tracker'] ?? '');
+		$status = lt_details_normalize_tracker_state($trackerUrl, (string) ($row['state'] ?? ''));
+		$title = lt_details_can_view_raw_tracker_data() ? $trackerUrl : '';
 		echo '<tr>';
-		echo '<td>'.$row['tracker'].'</td>';
-		echo '<td>'.$row['seeders'].'</td>';
-		echo '<td>'.$row['leechers'].'</td>';
+		echo '<td'.($title !== '' ? ' title="'.htmlspecialchars($title, ENT_QUOTES, 'UTF-8').'"' : '').'>'.htmlspecialchars(lt_details_public_tracker_url($trackerUrl), ENT_QUOTES, 'UTF-8').'</td>';
+		echo '<td>'.(int) $row['seeders'].'</td>';
+		echo '<td>'.(int) $row['leechers'].'</td>';
 		echo '<td>'.convent_date(get_date_time($row['lastchecked'])).'</td>';
+		echo '<td>'.htmlspecialchars($status['label'], ENT_QUOTES, 'UTF-8').'</td>';
 		echo '</tr>';
 	}
 
@@ -669,6 +673,13 @@ function lt_details_render_trackers_page($torrentId)
 	end_frame();
 	foot();
 	die();
+}
+
+function lt_details_can_view_raw_tracker_data()
+{
+	global $PRIV;
+
+	return (!empty($PRIV['edit_release']) || !empty($PRIV['EDIT_PRIV']));
 }
 
 function lt_details_can_manage_trackers($torrent)
@@ -686,6 +697,76 @@ function lt_details_can_manage_trackers($torrent)
 	return (!empty($PRIV['edit_release']) || !empty($PRIV['EDIT_PRIV']));
 }
 
+function lt_details_public_tracker_url($url)
+{
+	$url = trim((string) $url);
+	if ($url === '') {
+		return '';
+	}
+
+	$parts = @parse_url($url);
+	if (is_array($parts) && !empty($parts['host'])) {
+		$display = $parts['host'];
+		if (!empty($parts['port'])) {
+			$display .= ':'.(int) $parts['port'];
+		}
+		if (!empty($parts['path'])) {
+			$display .= $parts['path'];
+		}
+		return $display;
+	}
+
+	$withoutQuery = preg_replace('/[?#].*$/', '', $url);
+	return preg_replace('/([?&](?:passkey|uk|key|token|auth|pid|uid)=)[^&]*/i', '$1********', (string) $withoutQuery);
+}
+
+function lt_details_tracker_host($url)
+{
+	$parts = @parse_url(trim((string) $url));
+	return strtolower((string) (is_array($parts) ? ($parts['host'] ?? '') : ''));
+}
+
+function lt_details_normalize_tracker_state($trackerUrl, $state)
+{
+	$state = trim((string) $state);
+	$host = lt_details_tracker_host($trackerUrl);
+	if ($host === 'retracker.local') {
+		return array(
+			'label' => 'Локальный retracker',
+			'class' => 'details-tracker-status-local',
+			'title' => 'Может работать только внутри сети провайдера',
+			'is_working' => false,
+			'is_local' => true,
+		);
+	}
+
+	$map = array(
+		'ok_announce' => array('Работает', 'details-tracker-status-ok', true),
+		'failed:no_benc_result_or_timeout_announce' => array('Не отвечает', 'details-tracker-status-error', false),
+		'failed:timeout' => array('Таймаут', 'details-tracker-status-error', false),
+		'failed:invalid_response' => array('Неверный ответ', 'details-tracker-status-error', false),
+		'failed:private_or_passkey' => array('Приватный трекер', 'details-tracker-status-private', false),
+	);
+
+	if (isset($map[$state])) {
+		return array(
+			'label' => $map[$state][0],
+			'class' => $map[$state][1],
+			'title' => '',
+			'is_working' => $map[$state][2],
+			'is_local' => false,
+		);
+	}
+
+	return array(
+		'label' => 'Ошибка проверки',
+		'class' => 'details-tracker-status-error',
+		'title' => '',
+		'is_working' => false,
+		'is_local' => false,
+	);
+}
+
 function lt_details_prepare_tracker_rows($torrent)
 {
 	global $db;
@@ -693,15 +774,26 @@ function lt_details_prepare_tracker_rows($torrent)
 	$torrentId = (int) ($torrent['id'] ?? 0);
 	$rows = array();
 	$externalCount = (int) ($torrent['external_tracker_count'] ?? 0);
+	$summary = array(
+		'total' => $externalCount,
+		'working' => 0,
+		'not_responding' => 0,
+		'seeders' => 0,
+		'leechers' => 0,
+		'lastchecked' => 'ещё не проверялся',
+	);
 
 	if ($torrentId <= 0 || $externalCount <= 0) {
 		return array(
 			'rows' => $rows,
 			'external_count' => $externalCount,
+			'summary' => $summary,
 			'update_href' => '',
 		);
 	}
 
+	$canViewRaw = lt_details_can_view_raw_tracker_data();
+	$lastCheckedMax = 0;
 	$trackerSql = $db->query(
 		"SELECT tracker, GREATEST(seeders, 0) AS seeders, GREATEST(leechers, 0) AS leechers, lastchecked, state
 		FROM trackers
@@ -710,18 +802,47 @@ function lt_details_prepare_tracker_rows($torrent)
 	);
 	while ($trackerRow = $db->get_row($trackerSql)) {
 		$lastChecked = (int) ($trackerRow['lastchecked'] ?? 0);
+		$trackerUrl = (string) ($trackerRow['tracker'] ?? '');
+		$stateRaw = trim((string) ($trackerRow['state'] ?? ''));
+		$status = lt_details_normalize_tracker_state($trackerUrl, $stateRaw);
+		$seeders = max(0, (int) ($trackerRow['seeders'] ?? 0));
+		$leechers = max(0, (int) ($trackerRow['leechers'] ?? 0));
+		$summary['seeders'] += $seeders;
+		$summary['leechers'] += $leechers;
+		if (!empty($status['is_working'])) {
+			$summary['working']++;
+		} elseif (empty($status['is_local'])) {
+			$summary['not_responding']++;
+		}
+		if ($lastChecked > $lastCheckedMax) {
+			$lastCheckedMax = $lastChecked;
+		}
+		$titleParts = array();
+		if (!empty($status['title'])) {
+			$titleParts[] = $status['title'];
+		}
+		if ($canViewRaw && $stateRaw !== '' && $status['label'] === 'Ошибка проверки') {
+			$titleParts[] = 'Код проверки: '.$stateRaw;
+		}
 		$rows[] = array(
-			'tracker' => (string) ($trackerRow['tracker'] ?? ''),
-			'seeders' => number_format(max(0, (int) ($trackerRow['seeders'] ?? 0))),
-			'leechers' => number_format(max(0, (int) ($trackerRow['leechers'] ?? 0))),
+			'tracker' => lt_details_public_tracker_url($trackerUrl),
+			'tracker_title' => ($canViewRaw ? $trackerUrl : ''),
+			'seeders' => number_format($seeders),
+			'leechers' => number_format($leechers),
 			'lastchecked' => ($lastChecked > 0 ? convent_date(get_date_time($lastChecked)) : 'ещё не проверялся'),
-			'state' => trim((string) ($trackerRow['state'] ?? '')),
+			'state' => $status['label'],
+			'state_class' => $status['class'],
+			'state_title' => implode(' · ', $titleParts),
 		);
+	}
+	if ($lastCheckedMax > 0) {
+		$summary['lastchecked'] = convent_date(get_date_time($lastCheckedMax));
 	}
 
 	return array(
 		'rows' => $rows,
 		'external_count' => $externalCount,
+		'summary' => $summary,
 		'update_href' => (lt_details_can_manage_trackers($torrent) ? 'update.peers.php?id='.$torrentId.'&return='.rawurlencode('details.php?id='.$torrentId) : ''),
 	);
 }
@@ -948,6 +1069,7 @@ function lt_details_prepare_view_model($torrent, array $rating)
 		'details_has_update' => (!empty($torrent['last_action']) && $torrent['last_action'] !== '0000-00-00 00:00:00' && $torrent['last_action'] !== $torrent['added']),
 		'details_tracker_rows' => $trackerView['rows'],
 		'details_external_tracker_count' => $trackerView['external_count'],
+		'details_tracker_summary' => $trackerView['summary'],
 		'details_tracker_update_href' => $trackerView['update_href'],
 	);
 }

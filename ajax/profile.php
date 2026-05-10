@@ -286,6 +286,7 @@ if ($action === 'moderate_profile') {
 	if ($note !== '') {
 		$historyNotes[] = $note;
 		send_msg('Комментарий модератора', $note, $userId, (int) ($USER['id'] ?? 0));
+		lt_notifications_handle_moderator_note($userId, (int) ($USER['id'] ?? 0), $note);
 	}
 
 	foreach ($historyNotes as $historyNote) {
