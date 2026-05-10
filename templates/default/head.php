@@ -12,7 +12,16 @@ $mainNav = array(
     array('href' => 'browse.php?act=all', 'label' => 'Торренты'),
 );
 
-if ($USER && admin_dashboard_can_access($USER, $PRIV)) {
+$showAdminNav = ($USER && admin_dashboard_can_access($USER, $PRIV) && (
+    !empty($PRIV['edit_release'])
+    || !empty($PRIV['edit_banned'])
+    || !empty($PRIV['comments_edit'])
+    || !empty($PRIV['comments_delete'])
+    || !empty($PRIV['faq_moderate'])
+    || !empty($PRIV['EDIT_PRIV'])
+));
+
+if ($showAdminNav) {
     $mainNav[] = array('href' => 'admin.php', 'label' => 'Админка');
 }
 

@@ -509,7 +509,7 @@ function lt_debug_enabled()
 
 function lt_debug_panel_allowed()
 {
-	return (lt_debug_enabled() && function_exists('admin_dashboard_can_access') && admin_dashboard_can_access(($GLOBALS['USER'] ?? null), ($GLOBALS['PRIV'] ?? null)));
+	return (lt_debug_enabled() && function_exists('admin_dashboard_is_superadmin') && admin_dashboard_is_superadmin(($GLOBALS['USER'] ?? null), ($GLOBALS['PRIV'] ?? null)));
 }
 
 function lt_debug_format_bytes($bytes)
