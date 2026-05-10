@@ -396,12 +396,13 @@ function lt_details_check_access($torrent)
 {
 	global $USER, $PRIV, $language;
 
-	if (!empty($USER) && empty($PRIV['details_view'])) {
-		err($language['default_1'], $language['details_29'], 1);
-	}
-
 	if (empty($torrent['id'])) {
 		err($language['default_1'], $language['details_19'], 1);
+	}
+
+	$isOwner = (!empty($USER['id']) && (int) ($torrent['id_user'] ?? 0) === (int) $USER['id']);
+	if (!empty($USER) && empty($PRIV['details_view']) && !$isOwner) {
+		err($language['default_1'], $language['details_29'], 1);
 	}
 
 	if (!empty($torrent['banned']) && empty($PRIV['details_banned_view'])) {
