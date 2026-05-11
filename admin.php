@@ -1801,7 +1801,7 @@ head('Админка');
 		</form>
 	</section>
 	<?php } elseif ($activeTab === 'migrations') { ?>
-	<?php 
+	<?php
 	lt_migrations_ensure_table();
 	$allMigrations = lt_migrations_full_list();
 	$dryRunResult = $_SESSION['admin_migrations_dryrun'] ?? null;
@@ -1812,7 +1812,7 @@ head('Админка');
 	<section class='admin-card'>
 		<h2 class='admin-card-title'>Управление миграциями БД</h2>
 		<p class='admin-card-text'>Отслеживание, проверка и применение SQL-миграций. Все миграции находятся в папке database/migrations и сортируются по названию.</p>
-		
+
 		<div class='admin-inline-message admin-inline-message-error' style='margin-top:16px;'>
 			<strong>⚠ Важно:</strong> перед применением миграций обязательно сделайте резервную копию базы данных!
 		</div>
@@ -1840,7 +1840,7 @@ head('Админка');
 		<?php } ?>
 
 		<h3 style='margin-top:20px; margin-bottom:10px; font-size:16px; font-weight:800;'>Список миграций</h3>
-		
+
 		<?php if (!$allMigrations) { ?>
 		<div class='admin-empty'>В папке database/migrations нет файлов миграций.</div>
 		<?php } else { ?>
@@ -1848,7 +1848,7 @@ head('Админка');
 			<input type='hidden' name='tab' value='migrations'>
 			<input type='hidden' name='admin_action' value='migrations'>
 			<?=lt_csrf_input('admin_dashboard');?>
-			
+
 			<div class='lt-admin-table-wrap' style='margin-bottom:16px;'>
 				<table class='lt-admin-table' style='font-size:12px;'>
 					<thead>
@@ -1938,7 +1938,7 @@ head('Админка');
 	document.addEventListener('DOMContentLoaded', function() {
 		var selectAllCheckbox = document.getElementById('select-all-migrations');
 		var migrationCheckboxes = document.querySelectorAll('.migration-checkbox');
-		
+
 		if (selectAllCheckbox) {
 			selectAllCheckbox.addEventListener('change', function() {
 				migrationCheckboxes.forEach(function(checkbox) {
