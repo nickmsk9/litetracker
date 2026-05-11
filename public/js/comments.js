@@ -285,13 +285,13 @@
             this.notice("Ошибка обновления комментариев. Попробуйте еще раз.", true);
             return;
         }
-        
+
         newStream = tmp.querySelector("[data-comment-stream]");
         if (!newStream && !streamHtml.includes("data-comment-stream")) {
             // Fallback: treat entire content as stream if no wrapper
             newStream = tmp;
         }
-        
+
         stream.innerHTML = newStream ? newStream.innerHTML : streamHtml;
         this.normalizeMainForm();
 
@@ -594,7 +594,9 @@
 
     CommentThread.prototype.submitReaction = function (button) {
         var comment = closest(button, ".wall-comment");
-        var commentId = button.getAttribute("data-comment-id") || (comment ? comment.getAttribute("data-comment-id") || "0" : "0");
+        var commentId =
+            button.getAttribute("data-comment-id") ||
+            (comment ? comment.getAttribute("data-comment-id") || "0" : "0");
         var reaction = button.getAttribute("data-comment-react") || "";
         var csrfToken = button.getAttribute("data-csrf-token") || "";
         var formData = new FormData();
@@ -619,32 +621,36 @@
             formData,
             function (payload) {
                 button.disabled = false;
-                
+
                 // Update counts and state without full re-render
-                if (payload.comment_id && payload.likes !== undefined && payload.dislikes !== undefined) {
+                if (
+                    payload.comment_id &&
+                    payload.likes !== undefined &&
+                    payload.dislikes !== undefined
+                ) {
                     var likeBtn = comment.querySelector('[data-comment-react="like"]');
                     var dislikeBtn = comment.querySelector('[data-comment-react="dislike"]');
-                    
+
                     if (likeBtn) {
-                        var likesSpan = likeBtn.querySelector('.comment-reaction-count');
+                        var likesSpan = likeBtn.querySelector(".comment-reaction-count");
                         if (likesSpan) likesSpan.textContent = payload.likes;
-                        if (payload.reaction === 'like') {
-                            likeBtn.classList.add('comment-reaction-active');
+                        if (payload.reaction === "like") {
+                            likeBtn.classList.add("comment-reaction-active");
                         } else {
-                            likeBtn.classList.remove('comment-reaction-active');
+                            likeBtn.classList.remove("comment-reaction-active");
                         }
                     }
-                    
+
                     if (dislikeBtn) {
-                        var dislikesSpan = dislikeBtn.querySelector('.comment-reaction-count');
+                        var dislikesSpan = dislikeBtn.querySelector(".comment-reaction-count");
                         if (dislikesSpan) dislikesSpan.textContent = payload.dislikes;
-                        if (payload.reaction === 'dislike') {
-                            dislikeBtn.classList.add('comment-reaction-active');
+                        if (payload.reaction === "dislike") {
+                            dislikeBtn.classList.add("comment-reaction-active");
                         } else {
-                            dislikeBtn.classList.remove('comment-reaction-active');
+                            dislikeBtn.classList.remove("comment-reaction-active");
                         }
                     }
-                    
+
                     self.notice(payload.message || "Реакция сохранена.");
                 } else {
                     // Fallback: full re-render if partial update not available
@@ -694,9 +700,11 @@
             '<div class="comment-history-modal-header">' +
             '<div class="comment-history-title">История изменений комментария</div>' +
             '<button type="button" class="comment-history-modal-close" data-comment-history-close="1" aria-label="Закрыть">&times;</button>' +
-            '</div>' +
-            '<div class="comment-history-list">' + historyHtml + '</div>' +
-            '</div>';
+            "</div>" +
+            '<div class="comment-history-list">' +
+            historyHtml +
+            "</div>" +
+            "</div>";
 
         onKeydown = function (event) {
             if (event.key === "Escape") {
@@ -713,7 +721,10 @@
         };
 
         backdrop.addEventListener("click", function (event) {
-            if (event.target === backdrop || closest(event.target, "[data-comment-history-close]")) {
+            if (
+                event.target === backdrop ||
+                closest(event.target, "[data-comment-history-close]")
+            ) {
                 closeModal();
             }
         });
@@ -729,7 +740,9 @@
 
     CommentThread.prototype.showHistory = function (button) {
         var comment = closest(button, ".wall-comment");
-        var commentId = button.getAttribute("data-comment-id") || (comment ? comment.getAttribute("data-comment-id") || "0" : "0");
+        var commentId =
+            button.getAttribute("data-comment-id") ||
+            (comment ? comment.getAttribute("data-comment-id") || "0" : "0");
         var csrfToken = button.getAttribute("data-csrf-token") || "";
         var formData = new FormData();
         var self = this;
@@ -745,7 +758,8 @@
             this.endpoint,
             formData,
             function (payload) {
-                var historyHtml = payload.html || "<div class=\"comment-history-empty\">Истории правок нет.</div>";
+                var historyHtml =
+                    payload.html || '<div class="comment-history-empty">Истории правок нет.</div>';
                 self.openHistoryDialog(historyHtml);
             },
             function (message) {
@@ -769,10 +783,13 @@
         var comment;
 
         // DEBUG: Log reaction button detection
-        if (target.getAttribute('data-comment-react')) {
-            console.log('[REACT-DEBUG] Target has data-comment-react:', target.getAttribute('data-comment-react'));
-            console.log('[REACT-DEBUG] reactBtn found:', !!reactBtn);
-            console.log('[REACT-DEBUG] this.root:', this.root);
+        if (target.getAttribute("data-comment-react")) {
+            console.log(
+                "[REACT-DEBUG] Target has data-comment-react:",
+                target.getAttribute("data-comment-react"),
+            );
+            console.log("[REACT-DEBUG] reactBtn found:", !!reactBtn);
+            console.log("[REACT-DEBUG] this.root:", this.root);
         }
 
         if (refreshBtn && this.root.contains(refreshBtn)) {
@@ -816,7 +833,10 @@
         }
 
         if (reactBtn && this.root.contains(reactBtn)) {
-                        console.log('[REACT-DEBUG] Calling submitReaction for:', reactBtn.getAttribute('data-comment-react'));
+            console.log(
+                "[REACT-DEBUG] Calling submitReaction for:",
+                reactBtn.getAttribute("data-comment-react"),
+            );
             event.preventDefault();
             this.submitReaction(reactBtn);
             return;
