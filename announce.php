@@ -26,6 +26,7 @@ $no_peer_id = !empty($request['no_peer_id']);
 $GUEST = ($passkey === '' ? 1 : 0);
 $ip = getip();
 $ip_ban = ip2long_db($ip);
+$announce_interval = (int) ($config['announce_interval'] ?? 1800);
 
 if (!$GUEST && strlen($passkey) !== 32) {
 	err(sprintf($language['announce_3'], strlen($passkey), $passkey));
@@ -39,6 +40,14 @@ announce_apply_rate_limit(
 	'Слишком много announce-запросов. Повторите попытку чуть позже.'
 );
 
+announce_apply_rate_limit(
+	'announce_ip',
+	'ip:'.$ip,
+	600,
+	300,
+	'Слишком много запросов с вашего IP. Повторите попытку чуть позже.'
+);
+
 $ban_resource = announce_fetch_ip_ban($ip_ban);
 if (!empty($ban_resource)) {
 	err('Please note, your IP ('.long2ip($ip_ban).') has been banned '.convent_date($ban_resource['date']).'');
@@ -47,12 +56,16 @@ if (!empty($ban_resource)) {
 $rsize = announce_numwant(50);
 $agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
-if (!$port || $port > 0xffff) {
+if (!$port || $port < 1 || $port > 0xffff) {
 	err($language['announce_4']);
 }
 
-if ($event === '') {
-	$event = '';
+if (!announce_validate_event($event)) {
+	err('Invalid event parameter.');
+}
+
+if (!announce_validate_stats($uploaded, $downloaded, $left)) {
+	err('Invalid statistics (possible tracker abuse).');
 }
 
 $seeder = ($left === 0 ? '1' : '0');
@@ -77,17 +90,27 @@ if (empty($torrent['id'])) {
 	err($language['announce_7']);
 }
 
+$torrent_size = (int) ($torrent['size'] ?? 0);
+if ($torrent_size > 0 && $left > $torrent_size) {
+	err('Invalid left value (greater than torrent size).');
+}
+
 $torrentid = (int) $torrent['id'];
 $numpeers = (int) ($torrent['numpeers'] ?? 0);
 $fields = "seeder, peer_id, ip, port, uploaded, downloaded, userid, UNIX_TIMESTAMP(last_action) AS prevts, UNIX_TIMESTAMP(NOW()) AS nowts, last_action";
-$limitSql = ($numpeers > $rsize ? 'ORDER BY last_action DESC LIMIT '.$rsize : '');
+$peerPoolLimit = max(100, min(1000, $rsize * 4));
+if ($numpeers > 0) {
+	$peerPoolLimit = min($peerPoolLimit, $numpeers);
+}
+$limitSql = 'ORDER BY last_action DESC LIMIT '.$peerPoolLimit;
 $peers_sql = announce_fetch_peer_rows($torrentid, $fields, $limitSql);
 
-$resp = "d" . benc_str("interval") . "i" . $config['announce_interval'] . "e" . benc_str("peers") . ($compact ? '' : 'l');
+$resp = "d" . benc_str("interval") . "i" . $announce_interval . "e" . benc_str("peers") . ($compact ? '' : 'l');
 $plist = '';
 $trupdateset = array();
 $self = null;
 $userid = 0;
+$peer_candidates = array();
 
 while ($row = $db->get_row($peers_sql)) {
 	if ((string) ($row['peer_id'] ?? '') === $peer_id) {
@@ -95,6 +118,18 @@ while ($row = $db->get_row($peers_sql)) {
 		$self = $row;
 		continue;
 	}
+
+	$peer_candidates[] = $row;
+}
+
+if ($peer_candidates) {
+	shuffle($peer_candidates);
+	if (count($peer_candidates) > $rsize) {
+		$peer_candidates = array_slice($peer_candidates, 0, $rsize);
+	}
+}
+
+foreach ($peer_candidates as $row) {
 
 	if ($compact) {
 		$peer_ip = explode('.', (string) $row['ip']);
@@ -143,13 +178,17 @@ if (!$GUEST) {
 
 		$az = announce_fetch_user_stats_by_passkey($passkey);
 		if (empty($az['id'])) {
-			err(sprintf($language['announce_10'], $config['sitename']));
+			err(sprintf($language['announce_10'], (string) ($config['sitename'] ?? 'LiteTracker')));
 		}
 
 		$PRIV = get_priv_info((int) $az['class']);
 		$userid = (int) $az['id'];
 
 	} else {
+		if (!announce_validate_stats($uploaded, $downloaded, $left)) {
+			err('Invalid statistics (possible tracker abuse).');
+		}
+
 		$upthis = max(0, $uploaded - (int) $self['uploaded']);
 		$downthis = max(0, $downloaded - (int) $self['downloaded']);
 
@@ -175,10 +214,22 @@ if ($event === 'stopped') {
 		}
 	}
 } else {
-	if ($event === 'completed') {
-		$snatch_updateset[] = "finished = 1";
-		$snatch_updateset[] = "completedat = ".$dt;
-		$updateset[] = 'completed = completed + 1';
+	if ($event === 'completed' && $left === 0) {
+		$can_count_completed = true;
+		if ($userid > 0) {
+			$snatched_state = announce_super_query('SELECT finished FROM snatched WHERE torrent = '.$torrentid.' AND userid = '.(int) $userid.' LIMIT 1');
+			$can_count_completed = empty($snatched_state['finished']);
+		} elseif ($self !== null && !empty($self['seeder'])) {
+			$can_count_completed = false;
+		}
+
+		if ($can_count_completed) {
+			$snatch_updateset[] = "finished = 1";
+			$snatch_updateset[] = "completedat = ".$dt;
+			$updateset[] = 'completed = completed + 1';
+		}
+	} elseif ($event === 'completed' && $left !== 0) {
+		err('Invalid completed event (torrent not fully downloaded).');
 	}
 
 	if ($self !== null) {
@@ -253,10 +304,12 @@ if ($seeder === '1') {
 
 if ($trupdateset) {
 	announce_safe_query('UPDATE trackers SET ' . join(", ", $trupdateset) . ' WHERE torrent = '.$torrentid.' AND tracker="localhost"');
+	lt_cache_delete('torrent:'.$info_hash_hex, 'announce');
 }
 
 if ($updateset) {
 	announce_safe_query('UPDATE torrents SET ' . join(", ", $updateset) . ' WHERE id = '.$torrentid);
+	lt_cache_delete('torrent:'.$info_hash_hex, 'announce');
 }
 
 if ($userid > 0 && $snatch_updateset) {

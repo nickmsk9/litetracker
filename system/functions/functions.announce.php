@@ -33,7 +33,7 @@ function announce_ensure_string_length($value, $length, $label)
 	$length = (int) $length;
 
 	if (strlen($value) !== $length) {
-		err(sprintf($GLOBALS['language']['announce_2'], $label, strlen($value), urlencode($value)));
+		err(sprintf($GLOBALS['language']['announce_2'], $label, strlen($value), 'REDACTED'));
 	}
 
 	return $value;
@@ -69,11 +69,11 @@ function announce_numwant($default = 50)
 {
 	foreach (array('num want', 'numwant', 'num_want') as $key) {
 		if (isset($_GET[$key])) {
-			return max(1, (int) $_GET[$key]);
+			return max(1, min(200, (int) $_GET[$key]));
 		}
 	}
 
-	return max(1, (int) $default);
+	return max(1, min(200, (int) $default));
 }
 
 function announce_apply_rate_limit($scope, $identifier, $limit, $windowSeconds, $message)
@@ -181,7 +181,7 @@ function announce_fetch_torrent($infoHashHex)
 		400,
 		function () use ($infoHashHex) {
 			return announce_super_query(
-				'SELECT torrents.id, torrents.banned, (trackers.seeders + trackers.leechers) AS numpeers, UNIX_TIMESTAMP(torrents.added) AS ts
+				'SELECT torrents.id, torrents.banned, torrents.size, (trackers.seeders + trackers.leechers) AS numpeers, UNIX_TIMESTAMP(torrents.added) AS ts
 				 FROM torrents
 				 LEFT JOIN trackers ON torrents.id = trackers.torrent
 				 WHERE torrents.infohash = '.announce_escape($infoHashHex).' AND trackers.tracker = "localhost"
@@ -215,6 +215,45 @@ function announce_count_peers_by_passkey($torrentId, $passkey)
 	$row = announce_super_query("SELECT COUNT(*) AS cnt FROM peers WHERE torrent = ".(int) $torrentId." AND passkey = ".announce_escape($passkey));
 
 	return (int) ($row['cnt'] ?? 0);
+}
+
+/**
+ * Validate announce statistics (anti-cheat basic checks)
+ */
+function announce_validate_stats($uploaded, $downloaded, $left)
+{
+	$uploaded = (int) $uploaded;
+	$downloaded = (int) $downloaded;
+	$left = (int) $left;
+
+	if ($uploaded < 0 || $downloaded < 0 || $left < 0) {
+		return false;
+	}
+
+	if ($uploaded > 1099511627776) {
+		return false;
+	}
+
+	if ($downloaded > 1099511627776) {
+		return false;
+	}
+
+	if ($left < 0 || $left > 1099511627776) {
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Validate announce event parameter
+ */
+function announce_validate_event($event)
+{
+	$event = trim((string) $event);
+	$valid_events = array('', 'started', 'stopped', 'completed');
+
+	return in_array($event, $valid_events, true);
 }
 /**
  * Checks that user client was not banned. Dies on false
