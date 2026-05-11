@@ -94,6 +94,7 @@
         this.file = root.getAttribute("data-file") || "";
         this.endpoint = root.getAttribute("data-endpoint") || AJAX_URL;
         this.refreshUrl = root.getAttribute("data-refresh-url") || this.endpoint;
+        this.sort = root.getAttribute("data-comments-sort") || "old";
     }
 
     CommentThread.prototype.notice = function (message, isError) {
@@ -312,6 +313,10 @@
         if (!formData.has("file")) {
             formData.append("file", this.file);
         }
+
+        if (!formData.has("comments_sort")) {
+            formData.append("comments_sort", this.sort || "old");
+        }
     };
 
     CommentThread.prototype.activateReply = function (button) {
@@ -342,8 +347,10 @@
         var editLink = commentEl.querySelector("[data-wall-edit]");
         var commentId = commentEl.getAttribute("data-comment-id") || "0";
         var csrfToken = editLink ? editLink.getAttribute("data-csrf-token") || "" : "";
+        var requireReason = editLink && editLink.getAttribute("data-require-reason") === "1";
         var form;
         var textarea;
+        var reasonInput;
         var controls;
         var saveBtn;
         var cancelBtn;
@@ -365,6 +372,14 @@
         textarea.className = "wall-inline-editor-textarea";
         textarea.value = sourceEl.value;
         form.appendChild(textarea);
+
+        if (requireReason) {
+            reasonInput = document.createElement("input");
+            reasonInput.className = "wall-inline-editor-reason";
+            reasonInput.type = "text";
+            reasonInput.placeholder = "Причина правки";
+            form.appendChild(reasonInput);
+        }
 
         controls = document.createElement("div");
         controls.className = "wall-inline-editor-actions";
@@ -403,6 +418,9 @@
             formData.append("action", "edit");
             formData.append("comment_id", commentId);
             formData.append("text", textarea.value);
+            if (reasonInput) {
+                formData.append("edit_reason", reasonInput.value || "");
+            }
             if (csrfToken) {
                 formData.append("csrf_token", csrfToken);
             }
@@ -447,6 +465,21 @@
                 self.notice(message, true);
             },
         );
+    };
+
+    CommentThread.prototype.setSort = function (sort) {
+        var url;
+
+        this.sort = sort || "old";
+        this.root.setAttribute("data-comments-sort", this.sort);
+
+        if (window.history && window.history.replaceState) {
+            url = new URL(window.location.href);
+            url.searchParams.set("comments_sort", this.sort);
+            window.history.replaceState({}, "", url.toString());
+        }
+
+        this.refresh();
     };
 
     CommentThread.prototype.submitAdd = function (form) {
@@ -507,11 +540,22 @@
             return;
         }
 
+        if (options.reasonField) {
+            options.reason = window.prompt(options.reasonPrompt || "Укажите причину:", "") || "";
+            if (options.requireReason && !options.reason.trim()) {
+                this.notice("Укажите причину.", true);
+                return;
+            }
+        }
+
         formData = new FormData();
         formData.append("action", action);
         formData.append("comment_id", commentId);
         if (csrfToken) {
             formData.append("csrf_token", csrfToken);
+        }
+        if (options.reasonField) {
+            formData.append(options.reasonField, options.reason || "");
         }
         this.fillBasePayload(formData);
 
@@ -535,6 +579,86 @@
         );
     };
 
+    CommentThread.prototype.submitReaction = function (button) {
+        var comment = closest(button, ".wall-comment");
+        var commentId = button.getAttribute("data-comment-id") || (comment ? comment.getAttribute("data-comment-id") || "0" : "0");
+        var reaction = button.getAttribute("data-comment-react") || "";
+        var csrfToken = button.getAttribute("data-csrf-token") || "";
+        var formData = new FormData();
+        var self = this;
+
+        if (!comment || commentId === "0") {
+            return;
+        }
+
+        formData.append("action", "react");
+        formData.append("comment_id", commentId);
+        formData.append("reaction", reaction);
+        if (csrfToken) {
+            formData.append("csrf_token", csrfToken);
+        }
+        this.fillBasePayload(formData);
+
+        sendAjax(
+            this.endpoint,
+            formData,
+            function (payload) {
+                if (payload.html) {
+                    self.refreshStream(payload.html || "", payload.comment_id || commentId);
+                }
+                self.notice(payload.message || "Реакция сохранена.");
+            },
+            function (message) {
+                self.notice(message, true);
+            },
+        );
+    };
+
+    CommentThread.prototype.submitPin = function (button) {
+        var action = button.getAttribute("data-pin-action") || "pin";
+        this.submitCommentAction(action, button, {
+            confirm: action === "pin" ? "Закрепить этот комментарий?" : "Открепить комментарий?",
+            success: action === "pin" ? "Комментарий закреплён." : "Комментарий откреплён.",
+        });
+    };
+
+    CommentThread.prototype.submitRestore = function (button) {
+        this.submitCommentAction("restore", button, {
+            confirm: "Восстановить комментарий?",
+            success: "Комментарий восстановлен.",
+        });
+    };
+
+    CommentThread.prototype.showHistory = function (button) {
+        var comment = closest(button, ".wall-comment");
+        var commentId = button.getAttribute("data-comment-id") || (comment ? comment.getAttribute("data-comment-id") || "0" : "0");
+        var csrfToken = button.getAttribute("data-csrf-token") || "";
+        var formData = new FormData();
+        var self = this;
+
+        formData.append("action", "history");
+        formData.append("comment_id", commentId);
+        if (csrfToken) {
+            formData.append("csrf_token", csrfToken);
+        }
+        this.fillBasePayload(formData);
+
+        sendAjax(
+            this.endpoint,
+            formData,
+            function (payload) {
+                if (window.LiteTracker && window.LiteTracker.ui && typeof window.LiteTracker.ui.alert === "function") {
+                    window.LiteTracker.ui.alert(payload.html || "Истории правок нет.");
+                } else {
+                    window.alert((payload.html || "Истории правок нет.").replace(/<[^>]+>/g, "\n"));
+                }
+            },
+            function (message) {
+                self.notice(message, true);
+            },
+        );
+    };
+
     CommentThread.prototype.handleClick = function (event) {
         var target = event.target;
         var replyBtn = closest(target, "[data-comment-reply], [data-wall-reply]");
@@ -543,6 +667,10 @@
         var deleteBtn = closest(target, "[data-wall-delete]");
         var reportBtn = closest(target, "[data-wall-report]");
         var refreshBtn = closest(target, "[data-comment-refresh]");
+        var reactBtn = closest(target, "[data-comment-react]");
+        var pinBtn = closest(target, "[data-wall-pin]");
+        var restoreBtn = closest(target, "[data-wall-restore]");
+        var historyBtn = closest(target, "[data-wall-history]");
         var comment;
 
         if (refreshBtn && this.root.contains(refreshBtn)) {
@@ -578,7 +706,34 @@
             this.submitCommentAction("delete", deleteBtn, {
                 confirm: "Удалить комментарий?",
                 success: "Комментарий удалён.",
+                reasonField: "delete_reason",
+                reasonPrompt: "Причина удаления:",
+                requireReason: deleteBtn.getAttribute("data-require-reason") === "1",
             });
+            return;
+        }
+
+        if (reactBtn && this.root.contains(reactBtn)) {
+            event.preventDefault();
+            this.submitReaction(reactBtn);
+            return;
+        }
+
+        if (pinBtn && this.root.contains(pinBtn)) {
+            event.preventDefault();
+            this.submitPin(pinBtn);
+            return;
+        }
+
+        if (restoreBtn && this.root.contains(restoreBtn)) {
+            event.preventDefault();
+            this.submitRestore(restoreBtn);
+            return;
+        }
+
+        if (historyBtn && this.root.contains(historyBtn)) {
+            event.preventDefault();
+            this.showHistory(historyBtn);
             return;
         }
 
@@ -589,6 +744,16 @@
                 success: "Жалоба отправлена.",
             });
         }
+    };
+
+    CommentThread.prototype.handleChange = function (event) {
+        var sortSelect = closest(event.target, "[data-comment-sort]");
+
+        if (!sortSelect || !this.root.contains(sortSelect)) {
+            return;
+        }
+
+        this.setSort(sortSelect.value || "old");
     };
 
     CommentThread.prototype.handleSubmit = function (event) {
@@ -612,6 +777,9 @@
         });
         this.root.addEventListener("submit", function (event) {
             self.handleSubmit(event);
+        });
+        this.root.addEventListener("change", function (event) {
+            self.handleChange(event);
         });
     };
 

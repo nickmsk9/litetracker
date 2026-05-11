@@ -139,7 +139,7 @@ if (!defined('LITETRACKER')) {
 					<h2 class="profile-wall-title">Стена пользователя</h2>
 				</div>
 
-				<div class="profile-wall-body comment-thread-root" data-comment-thread="1" data-comment-type="users" data-object-id="<?=$id;?>" data-file="profile.php?id=<?=$id;?>&amp;" data-endpoint="ajax/comments.php">
+				<div class="profile-wall-body comment-thread-root" data-comment-thread="1" data-comment-type="users" data-object-id="<?=$id;?>" data-file="profile.php?id=<?=$id;?>&amp;" data-endpoint="ajax/comments.php" data-comments-sort="<?=htmlspecialchars(comments_current_sort(), ENT_QUOTES, 'UTF-8');?>">
 					<div class="comment-ajax-notice" data-comment-notice="1" hidden></div>
 					<div id="profile-wall-comments"><?=$wallCommentsHtml;?></div>
 

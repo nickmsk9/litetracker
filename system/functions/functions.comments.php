@@ -107,6 +107,148 @@ function comments_reports_ensure_table()
     return true;
 }
 
+function comments_index_exists($tableName, $indexName)
+{
+    global $db;
+
+    $tableName = preg_replace('~[^a-z0-9_]~i', '', (string) $tableName);
+    $indexName = trim((string) $indexName);
+    if ($tableName === '' || $indexName === '') {
+        return false;
+    }
+
+    $sql = $db->query("SHOW INDEX FROM `".$tableName."` WHERE Key_name = '".$db->safesql($indexName)."'", 0);
+    if ($sql === false) {
+        return false;
+    }
+
+    $row = $db->get_row($sql);
+    $db->free($sql);
+
+    return !empty($row);
+}
+
+function comments_ensure_modern_tables()
+{
+    global $db;
+    static $ready = null;
+
+    if ($ready !== null) {
+        return $ready;
+    }
+
+    if (!lt_table_exists('comment_pins')) {
+        $db->query(
+            "CREATE TABLE IF NOT EXISTS `comment_pins` (
+                `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `context_type` VARCHAR(32) NOT NULL,
+                `context_id` INT UNSIGNED NOT NULL,
+                `comment_id` INT UNSIGNED NOT NULL,
+                `pinned_by` INT UNSIGNED NOT NULL,
+                `pinned_at` DATETIME NOT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `context_pin` (`context_type`, `context_id`),
+                KEY `comment_pin` (`context_type`, `comment_id`)
+            ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin",
+            0
+        );
+        lt_schema_cache_delete(lt_schema_table_cache_key('comment_pins'));
+    }
+
+    if (!lt_table_exists('comment_reactions')) {
+        $db->query(
+            "CREATE TABLE IF NOT EXISTS `comment_reactions` (
+                `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `context_type` VARCHAR(32) NOT NULL,
+                `comment_id` INT UNSIGNED NOT NULL,
+                `user_id` INT UNSIGNED NOT NULL,
+                `reaction` VARCHAR(16) NOT NULL,
+                `created_at` DATETIME NOT NULL,
+                `updated_at` DATETIME NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `user_comment_reaction` (`context_type`, `comment_id`, `user_id`),
+                KEY `comment_reaction` (`context_type`, `comment_id`, `reaction`)
+            ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin",
+            0
+        );
+        lt_schema_cache_delete(lt_schema_table_cache_key('comment_reactions'));
+    }
+
+    if (!lt_table_exists('comment_edit_history')) {
+        $db->query(
+            "CREATE TABLE IF NOT EXISTS `comment_edit_history` (
+                `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `context_type` VARCHAR(32) NOT NULL,
+                `comment_id` INT UNSIGNED NOT NULL,
+                `editor_id` INT UNSIGNED NOT NULL,
+                `old_text` TEXT NULL,
+                `new_text` TEXT NULL,
+                `edited_at` DATETIME NOT NULL,
+                `edit_reason` TEXT NULL,
+                PRIMARY KEY (`id`),
+                KEY `comment_history` (`context_type`, `comment_id`, `edited_at`),
+                KEY `editor_history` (`editor_id`, `edited_at`)
+            ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin",
+            0
+        );
+        lt_schema_cache_delete(lt_schema_table_cache_key('comment_edit_history'));
+    }
+
+    $ready = (lt_table_exists('comment_pins', true) && lt_table_exists('comment_reactions', true) && lt_table_exists('comment_edit_history', true));
+    return $ready;
+}
+
+function comments_ensure_moderation_columns($type)
+{
+    global $db;
+    static $ready = array();
+
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    if ($type === '') {
+        return false;
+    }
+
+    if (array_key_exists($type, $ready)) {
+        return $ready[$type];
+    }
+
+    $tableName = comments_table_name($type);
+    if (!lt_table_exists($tableName)) {
+        $ready[$type] = false;
+        return false;
+    }
+
+    $columns = array(
+        'is_deleted' => "ALTER TABLE `".$tableName."` ADD COLUMN `is_deleted` TINYINT(1) NOT NULL DEFAULT 0",
+        'deleted_by' => "ALTER TABLE `".$tableName."` ADD COLUMN `deleted_by` INT UNSIGNED NULL",
+        'deleted_at' => "ALTER TABLE `".$tableName."` ADD COLUMN `deleted_at` DATETIME NULL",
+        'delete_reason' => "ALTER TABLE `".$tableName."` ADD COLUMN `delete_reason` TEXT NULL",
+    );
+
+    foreach ($columns as $column => $sql) {
+        if (!lt_column_exists($tableName, $column)) {
+            $db->query($sql, 0);
+            lt_schema_cache_delete(lt_schema_column_cache_key($tableName, $column));
+        }
+    }
+
+    $indexName = 'idx_'.$tableName.'_deleted';
+    if (!comments_index_exists($tableName, $indexName)) {
+        $db->query("ALTER TABLE `".$tableName."` ADD KEY `".$indexName."` (`is_deleted`, `date`)", 0);
+    }
+
+    $ready[$type] = lt_column_exists($tableName, 'is_deleted', true);
+    return $ready[$type];
+}
+
+function comments_ensure_modern_schema($type = '')
+{
+    comments_ensure_modern_tables();
+    if ($type !== '') {
+        comments_ensure_moderation_columns($type);
+    }
+}
+
 // Форма добавления комментария
 function addComment($type = '', $object_id = '', $file = '')
 {
@@ -195,6 +337,89 @@ function lt_comment_deleted_meta($text)
     );
 }
 
+function lt_comment_deleted_meta_from_row($comment)
+{
+    $comment = (array) $comment;
+    $legacy = lt_comment_deleted_meta((string) ($comment['text'] ?? ''));
+    $isDeleted = (!empty($comment['is_deleted']) || !empty($legacy['is_deleted']));
+    $deletedByAdmin = (!empty($legacy['is_admin']) || (int) ($comment['deleted_by'] ?? 0) > 0);
+    $message = ($isDeleted ? lt_comment_deleted_placeholder($deletedByAdmin) : '');
+
+    return array(
+        'is_deleted' => $isDeleted,
+        'message' => $message,
+        'is_admin' => $deletedByAdmin,
+        'reason' => trim((string) ($comment['delete_reason'] ?? '')),
+        'deleted_by' => (int) ($comment['deleted_by'] ?? 0),
+        'deleted_at' => (string) ($comment['deleted_at'] ?? ''),
+    );
+}
+
+function comments_sort_mode($sort = '')
+{
+    $sort = trim((string) $sort);
+    return (in_array($sort, array('new', 'old', 'popular'), true) ? $sort : 'old');
+}
+
+function comments_current_sort()
+{
+    return comments_sort_mode($_REQUEST['comments_sort'] ?? $_GET['comments_sort'] ?? 'old');
+}
+
+function comments_user_can_moderate()
+{
+    global $PRIV;
+
+    return (!empty($PRIV['comments_edit']) || !empty($PRIV['comments_delete']) || !empty($PRIV['EDIT_PRIV']) || !empty($PRIV['setting_user']));
+}
+
+function lt_comment_notify_reply($type, $objectId, $commentId, $parentId, $actorId)
+{
+    if (function_exists('lt_notifications_handle_comment_added')) {
+        lt_notifications_handle_comment_added($type, $objectId, $commentId, $parentId, $actorId);
+    }
+}
+
+function lt_comment_notify_torrent_owner($type, $objectId, $commentId, $parentId, $actorId)
+{
+    // Covered by lt_notifications_handle_comment_added() when notifications are enabled.
+}
+
+function lt_comment_notify_pinned($type, $objectId, $commentId, $commentUserId, $actorId)
+{
+    if (function_exists('lt_notifications_handle_comment_pinned')) {
+        lt_notifications_handle_comment_pinned($type, $objectId, $commentId, $commentUserId, $actorId);
+    }
+}
+
+function lt_comment_notify_deleted($type, $objectId, $commentId, $commentUserId, $actorId, $deletedByAdmin)
+{
+    if (function_exists('lt_notifications_handle_comment_deleted')) {
+        lt_notifications_handle_comment_deleted($type, $objectId, $commentId, $commentUserId, $actorId, $deletedByAdmin);
+    }
+}
+
+function comments_context_url($type, $objectId, $commentId = 0)
+{
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $objectId = (int) $objectId;
+    $commentId = (int) $commentId;
+
+    if ($type === 'torrents') {
+        return 'details.php?id='.$objectId.($commentId > 0 ? '#wall-comment-'.$commentId : '');
+    }
+
+    if ($type === 'users') {
+        return profile_href($objectId).($commentId > 0 ? '#wall-comment-'.$commentId : '');
+    }
+
+    if ($type === 'news') {
+        return 'news.php?id='.$objectId.($commentId > 0 ? '#wall-comment-'.$commentId : '');
+    }
+
+    return ($commentId > 0 ? '#wall-comment-'.$commentId : '');
+}
+
 function lt_comment_has_real_edit($comment)
 {
     $comment = (array) $comment;
@@ -213,7 +438,248 @@ function lt_comment_has_real_edit($comment)
     return ($editDate !== $createdDate);
 }
 
-function comments_fetch_rows($type, $objectId, $limit = '', $desc = 0)
+function comments_validate_text($text, $user = array())
+{
+    $text = trim((string) $text);
+    $plain = trim(preg_replace('/\s+/u', ' ', strip_tags($text)));
+    $length = function_exists('mb_strlen') ? mb_strlen($plain, 'UTF-8') : strlen($plain);
+
+    if ($length < 2) {
+        return 'Комментарий слишком короткий.';
+    }
+
+    if ($length > 5000) {
+        return 'Комментарий слишком длинный. Максимум 5000 символов.';
+    }
+
+    if (preg_match_all('~https?://|www\.~i', $text, $m) > 5) {
+        return 'Слишком много ссылок в одном комментарии.';
+    }
+
+    return '';
+}
+
+function comments_is_duplicate_recent($type, $objectId, $userId, $text)
+{
+    global $db;
+
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $objectId = (int) $objectId;
+    $userId = (int) $userId;
+    $text = trim((string) $text);
+    if ($type === '' || $objectId <= 0 || $userId <= 0 || $text === '') {
+        return false;
+    }
+
+    $tableName = comments_table_name($type);
+    $objectColumn = comments_object_column($type);
+    $row = $db->super_query(
+        "SELECT text
+         FROM `{$tableName}`
+         WHERE `{$objectColumn}` = {$objectId}
+           AND id_user = {$userId}
+         ORDER BY date DESC, id DESC
+         LIMIT 1"
+    );
+
+    return (trim((string) ($row['text'] ?? '')) === $text);
+}
+
+function comments_history_add($type, $commentId, $editorId, $oldText, $newText, $reason = '')
+{
+    global $db;
+
+    comments_ensure_modern_tables();
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $commentId = (int) $commentId;
+    $editorId = (int) $editorId;
+    if ($type === '' || $commentId <= 0 || $editorId <= 0) {
+        return false;
+    }
+
+    $db->query(
+        "INSERT INTO comment_edit_history
+            (context_type, comment_id, editor_id, old_text, new_text, edited_at, edit_reason)
+         VALUES (
+            '".$db->safesql($type)."',
+            {$commentId},
+            {$editorId},
+            '".$db->safesql((string) $oldText)."',
+            '".$db->safesql((string) $newText)."',
+            NOW(),
+            ".(trim((string) $reason) !== '' ? "'".$db->safesql((string) $reason)."'" : 'NULL')."
+         )",
+        0
+    );
+
+    return true;
+}
+
+function comments_history_fetch($type, $commentId)
+{
+    global $db;
+
+    comments_ensure_modern_tables();
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $commentId = (int) $commentId;
+    if ($type === '' || $commentId <= 0) {
+        return array();
+    }
+
+    $sql = $db->query(
+        "SELECT h.*, u.name AS editor_name
+         FROM comment_edit_history AS h
+         LEFT JOIN users AS u ON u.id = h.editor_id
+         WHERE h.context_type = '".$db->safesql($type)."'
+           AND h.comment_id = {$commentId}
+         ORDER BY h.edited_at DESC, h.id DESC
+         LIMIT 50",
+        0
+    );
+
+    $rows = array();
+    if ($sql) {
+        while ($row = $db->get_row($sql)) {
+            $rows[] = $row;
+        }
+        $db->free($sql);
+    }
+
+    return $rows;
+}
+
+function comments_pinned_row($type, $objectId)
+{
+    global $db;
+
+    comments_ensure_modern_tables();
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $objectId = (int) $objectId;
+    if ($type === '' || $objectId <= 0) {
+        return array();
+    }
+
+    return $db->super_query(
+        "SELECT *
+         FROM comment_pins
+         WHERE context_type = '".$db->safesql($type)."'
+           AND context_id = {$objectId}
+         LIMIT 1"
+    );
+}
+
+function comments_set_pin($type, $objectId, $commentId, $moderatorId)
+{
+    global $db;
+
+    comments_ensure_modern_schema($type);
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $objectId = (int) $objectId;
+    $commentId = (int) $commentId;
+    $moderatorId = (int) $moderatorId;
+    if ($type === '' || $objectId <= 0 || $commentId <= 0 || $moderatorId <= 0) {
+        return false;
+    }
+
+    $db->query(
+        "REPLACE INTO comment_pins
+            (context_type, context_id, comment_id, pinned_by, pinned_at)
+         VALUES (
+            '".$db->safesql($type)."',
+            {$objectId},
+            {$commentId},
+            {$moderatorId},
+            NOW()
+         )",
+        0
+    );
+
+    return true;
+}
+
+function comments_unpin($type, $objectId)
+{
+    global $db;
+
+    comments_ensure_modern_tables();
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $objectId = (int) $objectId;
+    if ($type === '' || $objectId <= 0) {
+        return false;
+    }
+
+    $db->query("DELETE FROM comment_pins WHERE context_type = '".$db->safesql($type)."' AND context_id = {$objectId}", 0);
+    return true;
+}
+
+function comments_reaction_counts($type, $commentIds, $userId = 0)
+{
+    global $db;
+
+    comments_ensure_modern_tables();
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $ids = array();
+    foreach ((array) $commentIds as $id) {
+        $id = (int) $id;
+        if ($id > 0) {
+            $ids[$id] = $id;
+        }
+    }
+
+    if ($type === '' || !$ids) {
+        return array();
+    }
+
+    $result = array();
+    foreach ($ids as $id) {
+        $result[$id] = array('like' => 0, 'dislike' => 0, 'user' => '');
+    }
+
+    $sql = $db->query(
+        "SELECT comment_id, reaction, COUNT(*) AS c
+         FROM comment_reactions
+         WHERE context_type = '".$db->safesql($type)."'
+           AND comment_id IN (".implode(',', $ids).")
+           AND reaction IN ('like', 'dislike')
+         GROUP BY comment_id, reaction",
+        0
+    );
+    if ($sql) {
+        while ($row = $db->get_row($sql)) {
+            $commentId = (int) ($row['comment_id'] ?? 0);
+            $reaction = (string) ($row['reaction'] ?? '');
+            if (isset($result[$commentId][$reaction])) {
+                $result[$commentId][$reaction] = (int) ($row['c'] ?? 0);
+            }
+        }
+        $db->free($sql);
+    }
+
+    $userId = (int) $userId;
+    if ($userId > 0) {
+        $sql = $db->query(
+            "SELECT comment_id, reaction
+             FROM comment_reactions
+             WHERE context_type = '".$db->safesql($type)."'
+               AND comment_id IN (".implode(',', $ids).")
+               AND user_id = {$userId}",
+            0
+        );
+        if ($sql) {
+            while ($row = $db->get_row($sql)) {
+                $commentId = (int) ($row['comment_id'] ?? 0);
+                if (isset($result[$commentId])) {
+                    $result[$commentId]['user'] = (string) ($row['reaction'] ?? '');
+                }
+            }
+            $db->free($sql);
+        }
+    }
+
+    return $result;
+}
+
+function comments_fetch_rows($type, $objectId, $limit = '', $desc = 0, $sort = '')
 {
     global $db;
 
@@ -221,36 +687,56 @@ function comments_fetch_rows($type, $objectId, $limit = '', $desc = 0)
     $objectId = (int) $objectId;
     $desc = (int) $desc;
     $limit = trim((string) $limit);
+    $sort = comments_sort_mode($sort !== '' ? $sort : ($desc ? 'new' : 'old'));
 
     if ($type === '' || $objectId <= 0) {
         return array();
     }
 
     comments_ensure_thread_support($type);
+    comments_ensure_modern_schema($type);
 
     $tableName = comments_table_name($type);
     $objectColumn = comments_object_column($type);
     $parentSelect = (comments_supports_threads($type) ? 'parent_id' : '0 AS parent_id');
 
     $sql = $db->query(
-        "SELECT id, `{$objectColumn}` AS object_id, id_user, date, text, id_user_edit, date_edit, {$parentSelect}
+        "SELECT id, `{$objectColumn}` AS object_id, id_user, date, text, id_user_edit, date_edit, {$parentSelect},
+                is_deleted, deleted_by, deleted_at, delete_reason
          FROM `{$tableName}`
          WHERE `{$objectColumn}` = {$objectId}
-         ORDER BY date " . ($desc ? 'DESC' : 'ASC') . ", id " . ($desc ? 'DESC' : 'ASC') . "
+         ORDER BY date ASC, id ASC
          {$limit}"
     );
 
     $rows = array();
+    $ids = array();
     while ($row = $db->get_row($sql)) {
+        $row['like_count'] = 0;
+        $row['dislike_count'] = 0;
+        $row['user_reaction'] = '';
+        $ids[] = (int) ($row['id'] ?? 0);
         $rows[] = $row;
+    }
+
+    $reactionCounts = comments_reaction_counts($type, $ids, (int) ($GLOBALS['USER']['id'] ?? 0));
+    foreach ($rows as $idx => $row) {
+        $commentId = (int) ($row['id'] ?? 0);
+        if (!empty($reactionCounts[$commentId])) {
+            $rows[$idx]['like_count'] = (int) ($reactionCounts[$commentId]['like'] ?? 0);
+            $rows[$idx]['dislike_count'] = (int) ($reactionCounts[$commentId]['dislike'] ?? 0);
+            $rows[$idx]['user_reaction'] = (string) ($reactionCounts[$commentId]['user'] ?? '');
+        }
+        $rows[$idx]['comment_score'] = (int) $rows[$idx]['like_count'] - (int) $rows[$idx]['dislike_count'];
     }
 
     return $rows;
 }
 
-function comments_build_tree($rows)
+function comments_build_tree($rows, $sort = 'old')
 {
     $comments = array();
+    $sort = comments_sort_mode($sort);
     foreach ((array) $rows as $row) {
         $commentId = (int) ($row['id'] ?? 0);
         if ($commentId <= 0) {
@@ -276,13 +762,33 @@ function comments_build_tree($rows)
         $childrenMap[$parentId][] = $commentId;
     }
 
-    return comments_build_tree_branch(0, $comments, $childrenMap);
+    return comments_build_tree_branch(0, $comments, $childrenMap, $sort);
 }
 
-function comments_build_tree_branch($parentId, $comments, $childrenMap)
+function comments_build_tree_branch($parentId, $comments, $childrenMap, $sort = 'old')
 {
     $result = array();
     $childrenIds = $childrenMap[$parentId] ?? array();
+    $sort = comments_sort_mode($sort);
+
+    usort($childrenIds, function ($a, $b) use ($comments, $parentId, $sort) {
+        $left = (array) ($comments[$a] ?? array());
+        $right = (array) ($comments[$b] ?? array());
+        $leftTime = strtotime((string) ($left['date'] ?? '')) ?: 0;
+        $rightTime = strtotime((string) ($right['date'] ?? '')) ?: 0;
+
+        if ((int) $parentId === 0 && $sort === 'new') {
+            return ($rightTime <=> $leftTime) ?: ((int) $b <=> (int) $a);
+        }
+
+        if ((int) $parentId === 0 && $sort === 'popular') {
+            $leftScore = (int) ($left['comment_score'] ?? 0);
+            $rightScore = (int) ($right['comment_score'] ?? 0);
+            return ($rightScore <=> $leftScore) ?: ($rightTime <=> $leftTime) ?: ((int) $b <=> (int) $a);
+        }
+
+        return ($leftTime <=> $rightTime) ?: ((int) $a <=> (int) $b);
+    });
 
     foreach ($childrenIds as $commentId) {
         if (empty($comments[$commentId])) {
@@ -290,7 +796,7 @@ function comments_build_tree_branch($parentId, $comments, $childrenMap)
         }
 
         $node = $comments[$commentId];
-        $node['children'] = comments_build_tree_branch($commentId, $comments, $childrenMap);
+        $node['children'] = comments_build_tree_branch($commentId, $comments, $childrenMap, $sort);
         $result[] = $node;
     }
 
@@ -414,6 +920,9 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0, $conte
     $commentUserId = (int) ($node['id_user'] ?? 0);
     $usersById = (array) ($context['users_by_id'] ?? array());
     $privilegesByClass = (array) ($context['privileges_by_class'] ?? array());
+    $pinnedCommentId = (int) ($context['pinned_comment_id'] ?? 0);
+    $isPinned = ($pinnedCommentId > 0 && $pinnedCommentId === $commentId);
+    $isPinnedClone = !empty($context['pinned_clone']);
     $commentUser = (array) ($usersById[$commentUserId] ?? array());
     $commentUserName = (string) ($commentUser['name'] ?? 'Unknown');
     $commentUserNameSafe = htmlspecialchars($commentUserName, ENT_QUOTES, 'UTF-8');
@@ -433,27 +942,38 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0, $conte
         ? (($language['comments_3'] ?? 'Изменено:') . ' ' . convent_date($node['date_edit']))
         : '';
     $commentTextRaw = (string) ($node['text'] ?? '');
-    $commentDeletedMeta = lt_comment_deleted_meta($commentTextRaw);
+    $commentDeletedMeta = lt_comment_deleted_meta_from_row($node);
     $commentDeleted = !empty($commentDeletedMeta['is_deleted']);
     $commentTextHtml = ($commentDeleted
         ? '<span class="comment-entry-deleted-label">'.htmlspecialchars($commentDeletedMeta['message'], ENT_QUOTES, 'UTF-8').'</span>'
         : cleanhtml($commentTextRaw));
+    if ($commentDeleted && trim((string) ($commentDeletedMeta['reason'] ?? '')) !== '' && (comments_user_can_moderate() || (int) ($USER['id'] ?? 0) === $commentUserId)) {
+        $commentTextHtml .= '<div class="comment-delete-reason">Причина: '.htmlspecialchars((string) $commentDeletedMeta['reason'], ENT_QUOTES, 'UTF-8').'</div>';
+    }
     $children = (!empty($node['children']) && is_array($node['children']) ? $node['children'] : array());
     $commentCanReply = (!empty($USER['id']) && !$commentDeleted);
     $commentCanEdit = (!empty($USER['id']) && !$commentDeleted && comments_user_can_edit($commentUserId, (string) ($node['date'] ?? ''), $type));
     $commentCanDelete = (!empty($USER['id']) && !$commentDeleted && (!empty($PRIV['comments_delete']) || ($type !== 'users' && (int) $USER['id'] === $commentUserId)));
     $commentCanReport = (!empty($USER['id']) && (int) $USER['id'] !== $commentUserId && !$commentDeleted);
-    $commentHasSideActions = ($commentCanEdit || $commentCanDelete || $commentCanReport);
+    $commentCanModerate = comments_user_can_moderate();
+    $commentCanPin = ($commentCanModerate && !$commentDeleted);
+    $commentCanRestore = ($commentCanModerate && $commentDeleted);
+    $commentCanReact = (!empty($USER['id']) && !$commentDeleted && (int) $USER['id'] !== $commentUserId);
+    $commentHasHistory = ($commentCanModerate && lt_comment_has_real_edit($node));
+    $commentHasSideActions = ($commentCanEdit || $commentCanDelete || $commentCanReport || $commentCanPin || $commentCanRestore || $commentHasHistory);
     $csrfTokenRaw = lt_csrf_token('comments_'.$type.'_'.$objectId);
     $csrfToken = rawurlencode($csrfTokenRaw);
     $csrfTokenSafe = htmlspecialchars($csrfTokenRaw, ENT_QUOTES, 'UTF-8');
-    echo '<article class="wall-comment comment-entry'.($children ? ' wall-comment-has-children' : '').($commentDeleted ? ' comment-entry-deleted' : '').'" id="wall-comment-'.$commentId.'" data-comment-id="'.$commentId.'" data-comment-type="'.htmlspecialchars($type, ENT_QUOTES, 'UTF-8').'" data-comment-object-id="'.$objectId.'" data-wall-level="'.$level.'">';
+    echo '<article class="wall-comment comment-entry'.($children ? ' wall-comment-has-children' : '').($commentDeleted ? ' comment-entry-deleted' : '').($isPinned ? ' comment-entry-pinned' : '').($isPinnedClone ? ' comment-entry-pinned-clone' : '').'" id="'.($isPinnedClone ? 'wall-comment-pinned-'.$commentId : 'wall-comment-'.$commentId).'" data-comment-id="'.$commentId.'" data-comment-type="'.htmlspecialchars($type, ENT_QUOTES, 'UTF-8').'" data-comment-object-id="'.$objectId.'" data-wall-level="'.$level.'">';
     echo '<a class="wall-comment-avatar comment-entry-avatar" href="'.$commentProfileHref.'">';
     echo '<img src="'.$commentAvatarPath.'" alt="'.$commentUserNameSafe.'" width="28" height="28">';
     echo '</a>';
     echo '<div class="wall-comment-body comment-entry-body'.($commentHasSideActions ? ' comment-entry-body-has-side-actions' : '').'">';
     echo '<div class="wall-comment-meta comment-entry-meta">';
     echo '<a class="wall-comment-author comment-entry-author" href="'.$commentProfileHref.'">'.$commentAuthorHtml.'</a>';
+    if ($isPinned || $isPinnedClone) {
+        echo '<span class="comment-pinned-badge">Закреплено</span>';
+    }
     echo '<span class="wall-comment-date comment-entry-date">'.htmlspecialchars(($commentEditedLabel !== '' ? $commentEditedLabel : $commentDate), ENT_QUOTES, 'UTF-8').'</span>';
     echo '</div>';
 
@@ -468,11 +988,24 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0, $conte
         }
 
         if ($commentCanEdit) {
-            echo '<a class="comment-side-button comment-side-button-edit" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=edit&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-edit="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">'.htmlspecialchars((string) ($language['comments_4'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8').'</a>';
+            echo '<a class="comment-side-button comment-side-button-edit" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=edit&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-edit="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'" data-require-reason="'.($commentCanModerate && (int) ($USER['id'] ?? 0) !== $commentUserId ? '1' : '0').'">'.htmlspecialchars((string) ($language['comments_4'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8').'</a>';
         }
 
         if ($commentCanDelete) {
-            echo '<a class="comment-side-button comment-side-button-delete" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=delete&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-delete="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">'.htmlspecialchars((string) ($language['comments_5'] ?? 'Удалить'), ENT_QUOTES, 'UTF-8').'</a>';
+            echo '<a class="comment-side-button comment-side-button-delete" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=delete&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-delete="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'" data-require-reason="'.(!empty($PRIV['comments_delete']) && ((int) ($USER['id'] ?? 0) !== $commentUserId || $type === 'users') ? '1' : '0').'">'.htmlspecialchars((string) ($language['comments_5'] ?? 'Удалить'), ENT_QUOTES, 'UTF-8').'</a>';
+        }
+
+        if ($commentCanPin) {
+            $pinAction = ($isPinned ? 'unpin' : 'pin');
+            echo '<a class="comment-side-button comment-side-button-pin" href="#" data-wall-pin="1" data-pin-action="'.$pinAction.'" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">'.($isPinned ? 'Открепить' : 'Закрепить').'</a>';
+        }
+
+        if ($commentCanRestore) {
+            echo '<a class="comment-side-button comment-side-button-restore" href="#" data-wall-restore="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">Восстановить</a>';
+        }
+
+        if ($commentHasHistory) {
+            echo '<a class="comment-side-button comment-side-button-history" href="#" data-wall-history="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">История</a>';
         }
 
         echo '</div>';
@@ -484,6 +1017,14 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0, $conte
 
     if ($commentCanReply) {
         echo '<div class="wall-comment-actions comment-entry-actions">';
+        if ($commentCanReact) {
+            $likeActive = ((string) ($node['user_reaction'] ?? '') === 'like');
+            $dislikeActive = ((string) ($node['user_reaction'] ?? '') === 'dislike');
+            echo '<button class="wall-comment-button comment-reaction-button'.($likeActive ? ' comment-reaction-active' : '').'" type="button" data-comment-react="like" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">Нравится <span>'.(int) ($node['like_count'] ?? 0).'</span></button>';
+            echo '<button class="wall-comment-button comment-reaction-button'.($dislikeActive ? ' comment-reaction-active' : '').'" type="button" data-comment-react="dislike" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">Не нравится <span>'.(int) ($node['dislike_count'] ?? 0).'</span></button>';
+        } else {
+            echo '<span class="comment-reaction-summary">+'.(int) ($node['like_count'] ?? 0).' / -'.(int) ($node['dislike_count'] ?? 0).'</span>';
+        }
         echo '<button class="wall-comment-button comment-reply-button" type="button" data-comment-reply="1" data-wall-reply="1" data-comment-id="'.$commentId.'" data-author-name="'.$commentUserNameSafe.'">Ответить</button>';
         echo '</div>';
     }
@@ -500,25 +1041,53 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0, $conte
     echo '</article>';
 }
 
-function comments_render_list_html($type, $objectId, $file = '', $desc = 0, $limit = '')
+function comments_render_list_html($type, $objectId, $file = '', $desc = 0, $limit = '', $sort = '')
 {
     $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
     $objectId = (int) $objectId;
-    $rows = comments_fetch_rows($type, $objectId, $limit, $desc);
-    $tree = comments_build_tree($rows);
+    $sort = comments_sort_mode($sort !== '' ? $sort : ($desc ? 'new' : comments_current_sort()));
+    $rows = comments_fetch_rows($type, $objectId, $limit, $desc, $sort);
+    $tree = comments_build_tree($rows, $sort);
     $usersById = comments_preload_users($rows);
+    $pinned = comments_pinned_row($type, $objectId);
+    $pinnedCommentId = (int) ($pinned['comment_id'] ?? 0);
+    $rowsById = array();
+    foreach ($rows as $row) {
+        $rowsById[(int) ($row['id'] ?? 0)] = $row;
+    }
     $context = array(
         'users_by_id' => $usersById,
         'privileges_by_class' => comments_preload_privileges($usersById),
+        'pinned_comment_id' => $pinnedCommentId,
     );
 
     ob_start();
     echo '<div class="comment-stream'.($type === 'users' ? ' wall-comments-list' : ' torrent-comments-list').'" data-comment-stream="1">';
+    echo '<div class="comment-toolbar">';
+    echo '<label class="comment-sort-label">Сортировка <select class="comment-sort-select" data-comment-sort="1">';
+    foreach (array('old' => 'Старые', 'new' => 'Новые', 'popular' => 'Популярные') as $sortKey => $sortLabel) {
+        echo '<option value="'.$sortKey.'"'.($sort === $sortKey ? ' selected' : '').'>'.$sortLabel.'</option>';
+    }
+    echo '</select></label>';
+    echo '</div>';
+
+    if ($pinnedCommentId > 0 && !empty($rowsById[$pinnedCommentId])) {
+        $pinnedNode = $rowsById[$pinnedCommentId];
+        $pinnedNode['children'] = array();
+        $pinnedContext = $context;
+        $pinnedContext['pinned_clone'] = true;
+        echo '<div class="comment-pinned-block">';
+        comments_render_node($pinnedNode, $type, $objectId, $file, 0, $pinnedContext);
+        echo '</div>';
+    }
 
     if (!$tree) {
         echo '<div class="'.($type === 'users' ? 'wall-comment-empty' : 'torrent-comment-empty').'">'.($type === 'users' ? 'На стене пока нет комментариев.' : 'Комментариев пока нет.').'</div>';
     } else {
         foreach ($tree as $node) {
+            if ((int) ($node['id'] ?? 0) === $pinnedCommentId) {
+                continue;
+            }
             comments_render_node($node, $type, $objectId, $file, 0, $context);
         }
     }
@@ -537,6 +1106,7 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
     $object_id = (int) $object_id;
     $file = (string) $file;
     $desc = (int) $desc;
+    $sort = comments_current_sort();
 
     if ($type === '' || $object_id <= 0) {
         return;
@@ -561,14 +1131,14 @@ function listComment($type = '', $object_id = '', $file = '', $desc = 0)
     }
 
     $fileSafe = htmlspecialchars($file, ENT_QUOTES, 'UTF-8');
-    echo '<div class="comment-thread-root" data-comment-thread="1" data-comment-type="'.htmlspecialchars($type, ENT_QUOTES, 'UTF-8').'" data-object-id="'.$object_id.'" data-file="'.$fileSafe.'" data-endpoint="ajax/comments.php">';
+    echo '<div class="comment-thread-root" data-comment-thread="1" data-comment-type="'.htmlspecialchars($type, ENT_QUOTES, 'UTF-8').'" data-object-id="'.$object_id.'" data-file="'.$fileSafe.'" data-endpoint="ajax/comments.php" data-comments-sort="'.htmlspecialchars($sort, ENT_QUOTES, 'UTF-8').'">';
     echo '<div class="comment-ajax-notice" data-comment-notice="1" hidden></div>';
 
     if ($showPager) {
         echo $pagertop;
     }
 
-    echo comments_render_list_html($type, $object_id, $file, $desc, $limit);
+    echo comments_render_list_html($type, $object_id, $file, $desc, $limit, $sort);
 
     if ($showPager) {
         echo $pagerbottom;
