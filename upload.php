@@ -436,6 +436,8 @@ if (!$PRIV['upload']) {
 	err($language['default_1'], $language['upload_41'], 1);
 }
 
+lt_torrent_status_ensure_schema();
+
 $metadataSchema = lt_torrent_metadata_schema();
 $categories = lt_upload_categories_list();
 $defaultCategoryId = lt_upload_default_category_id($categories);
@@ -615,6 +617,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 	lt_upload_save_tags($form['catid'], $tags);
 
+	if (lt_torrent_can_auto_approve($USER)) {
+		lt_torrent_set_status($id, 'approved', (int) $USER['id'], '');
+	} else {
+		lt_torrent_submit_for_review($id, true);
+	}
+
 	if (!lt_upload_ensure_directory('public/downloads/torrents/')) {
 		err('Ошибка', 'Не удалось подготовить каталог для torrent-файлов.', 1);
 	}
@@ -630,7 +638,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	$memcached->delete('tags');
 	$memcached->delete('taggenrelist_'.$form['catid']);
 
-	header('Location:/details.php?id='.$id);
+	header('Location:/details.php?id='.$id.(!lt_torrent_can_auto_approve($USER) ? '&moderation=pending' : ''));
 	die();
 }
 

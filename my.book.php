@@ -213,7 +213,8 @@ foreach ($categories as $category) {
 	$categoriesById[(int) $category['id']] = $category;
 }
 
-$countRow = $db->super_query("SELECT COUNT(*) AS c FROM books AS b INNER JOIN torrents AS t ON b.id_torrent = t.id WHERE b.id_user=".(int) $USER['id']);
+$bookmarkStatusSql = lt_torrent_status_filter_sql($USER, 't');
+$countRow = $db->super_query("SELECT COUNT(*) AS c FROM books AS b INNER JOIN torrents AS t ON b.id_torrent = t.id WHERE b.id_user=".(int) $USER['id']." AND ".$bookmarkStatusSql);
 $count = (int) ($countRow['c'] ?? 0);
 $pagerParams = array(
 	'sort' => $sort,
@@ -232,7 +233,7 @@ $sql = $db->query("SELECT t.*,
 	FROM books AS b
 	INNER JOIN torrents AS t ON b.id_torrent = t.id
 	LEFT JOIN trackers AS tr ON tr.torrent = t.id
-	WHERE b.id_user=".(int) $USER['id']."
+	WHERE b.id_user=".(int) $USER['id']." AND ".$bookmarkStatusSql."
 	GROUP BY t.id
 	ORDER BY ".$sortOptions[$sort]['order']."
 	".$limit);

@@ -240,7 +240,11 @@ if ($act === 'del' && !empty($_GET['id'])) {
 
 			$db->query("UPDATE torrents SET id_category=".$location." WHERE id_category=".$id);
 		} else {
-			$db->query("DELETE FROM torrents WHERE id_category=".$id);
+			lt_torrent_status_ensure_schema();
+			$db->query("UPDATE torrents SET status='deleted', status_reason='Категория удалена', reviewed_by=".(int) $USER['id'].", reviewed_at=NOW(), deleted_at=NOW() WHERE id_category=".$id);
+			if (lt_column_exists('torrents', 'banned')) {
+				$db->query("UPDATE torrents SET banned='1' WHERE id_category=".$id);
+			}
 		}
 
 		$db->query("DELETE FROM categories WHERE id=".$id);
@@ -266,10 +270,10 @@ if ($act === 'del' && !empty($_GET['id'])) {
 				<div class="lt-admin-field">
 					<label class="lt-admin-label" for="delete-location">Что сделать с релизами</label>
 					<select class="lt-admin-select" id="delete-location" name="location">
-						<option value="0">Удалить релизы вместе с категорией</option>
+						<option value="0">Мягко удалить релизы вместе с категорией</option>
 						<?=lt_admin_categories_options(0, $id);?>
 					</select>
-					<div class="lt-admin-help">Безопасный вариант: выбрать новую категорию и перенести релизы туда. Удаление релизов необратимо.</div>
+					<div class="lt-admin-help">Безопасный вариант: выбрать новую категорию и перенести релизы туда. Без переноса релизы получат soft delete, файлы не удаляются.</div>
 				</div>
 				<div class="lt-admin-actions">
 					<button class="lt-admin-button lt-admin-danger" type="submit">Удалить категорию</button>

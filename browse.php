@@ -233,7 +233,8 @@ if (!empty($schema['type'])) {
 $selectedFilters = browse_collect_selected_filters($schema);
 
 $baseWhere = array();
-if (!$PRIV['details_banned_view']) {
+$baseWhere[] = lt_torrent_status_filter_sql($USER, 't');
+if (!$PRIV['details_banned_view'] && !lt_torrent_can_moderate($USER)) {
 	$baseWhere[] = 't.banned <> 1';
 }
 

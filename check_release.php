@@ -58,14 +58,12 @@ if($_POST['act'] == 'banned') {
 		//Получаем данные
 		$arr = $db->get_row();
 
-		//Блокируем/Разблокируем
-		if($arr['banned']) {
-			$db->query("UPDATE torrents SET banned=0 WHERE id=".$id);
-			lt_notifications_handle_torrent_status((int) $arr['id_user'], (int) $USER['id'], $id, (string) $arr['name'], 'approved');
+		//Скрываем/восстанавливаем без физического удаления
+		if(lt_torrent_status_normalize($arr['status'] ?? 'approved') === 'hidden' || $arr['banned']) {
+			lt_torrent_set_status($id, 'approved', (int) $USER['id'], '');
 			$banned['unbanned']++;
 		}else {
-			$db->query("UPDATE torrents SET banned=1 WHERE id=".$id);
-			lt_notifications_handle_torrent_status((int) $arr['id_user'], (int) $USER['id'], $id, (string) $arr['name'], 'hidden');
+			lt_torrent_set_status($id, 'hidden', (int) $USER['id'], 'Скрыто массовым действием');
 			$banned['banned']++;
 		}
 
@@ -135,36 +133,8 @@ if($_POST['act'] == 'delete') {
 		//Получаем данные
 		$arr = $db->get_row();
 
-		//Удаляем торрент - файл
-		$torrentPath = 'public/downloads/torrents/'.$id.'.torrent';
-		if (is_file($torrentPath)) {
-			unlink($torrentPath);
-		}
-
-		//Удаляем картинку
-		if($arr['image']) {
-			$imagePath = 'public/downloads/images/'.$arr['image'];
-			if (is_file($imagePath)) {
-				unlink($imagePath);
-			}
-		}
-
-		//Удаляем скринщоты
-		for($z = 1 ; $z <= 4 ; $z++) {
-			if(!empty($arr['screen_'.$z])) {
-				$screenPath = 'public/downloads/images/'.$arr['screen_'.$z];
-				if (is_file($screenPath)) {
-					unlink($screenPath);
-				}
-			}
-		}
-
-		//Удаление из базы всех данных
-		$db->query("DELETE FROM torrents WHERE id=".$id);
-		$db->query("DELETE FROM trackers WHERE torrent=".$id);
-		$db->query("DELETE FROM peers WHERE torrent=".$id);
-		$db->query("DELETE FROM snatched WHERE torrent=".$id);
-		lt_notifications_handle_torrent_status((int) $arr['id_user'], (int) $USER['id'], $id, (string) $arr['name'], 'deleted');
+		//Soft delete: не удаляем torrent-файл, скриншоты, infohash и связанные данные.
+		lt_torrent_set_status($id, 'deleted', (int) $USER['id'], 'Мягкое удаление массовым действием');
 
 		$i++;
 	}

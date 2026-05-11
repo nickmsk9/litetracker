@@ -137,6 +137,7 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 						<span class="details-meta-icon" aria-hidden="true">
 							<svg viewBox="0 0 16 16"><path d="M13.6 3.1 6.3 10.4 2.4 6.5l1.3-1.3 2.6 2.6 6-6Z" fill="currentColor"/></svg>
 						</span>
+						<span class="details-date-label">Завершили:</span>
 						<span><?=$completed;?></span>
 					</span>
 				</div>
@@ -148,6 +149,20 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 				</div>
 
 			</section>
+
+			<?php if (!empty($details_moderation['show'])) { ?>
+			<section class="details-panel details-moderation-panel">
+				<h2 class="details-section-title">Модерация</h2>
+				<dl class="details-info-list details-moderation-list">
+					<?php foreach ((array) ($details_moderation['items'] ?? array()) as $item) { ?>
+					<div class="details-info-row">
+						<dt><?=htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');?>:</dt>
+						<dd><?=lt_details_render_text_html((string) ($item['value'] ?? ''));?></dd>
+					</div>
+					<?php } ?>
+				</dl>
+			</section>
+			<?php } ?>
 
 			<section class="details-panel details-info-panel">
 				<div class="details-section-group">

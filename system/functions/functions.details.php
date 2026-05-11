@@ -405,9 +405,62 @@ function lt_details_check_access($torrent)
 		err($language['default_1'], $language['details_29'], 1);
 	}
 
-	if (!empty($torrent['banned']) && empty($PRIV['details_banned_view'])) {
+	if (!lt_torrent_can_view($torrent, $USER)) {
+		http_response_code(404);
+		err($language['default_1'], $language['details_19'], 1);
+	}
+
+	if (!empty($torrent['banned']) && empty($PRIV['details_banned_view']) && lt_torrent_status_normalize($torrent['status'] ?? 'approved') === 'approved') {
 		err($language['default_1'], $language['details_20'], 1);
 	}
+}
+
+function lt_details_prepare_moderation_view($torrent, $viewerCanModerate, $isOwner)
+{
+	$status = lt_torrent_status_normalize($torrent['status'] ?? 'approved');
+	$reason = trim((string) ($torrent['status_reason'] ?? ''));
+	$reviewedBy = lt_torrent_reviewed_by_user($torrent);
+	$reviewedName = trim((string) ($reviewedBy['name'] ?? ''));
+	$reviewedById = (int) ($reviewedBy['id'] ?? 0);
+	$ownerId = lt_torrent_owner_id($torrent);
+	$items = array(
+		array('label' => 'Статус', 'value' => lt_torrent_status_label($status)),
+	);
+
+	if ($status === 'approved') {
+		if ($reviewedById > 0 && $reviewedById === $ownerId) {
+			$items[] = array('label' => 'Проверка', 'value' => 'автоматически');
+			$items[] = array('label' => 'Пользователь', 'value' => $reviewedName);
+		} elseif ($reviewedName !== '') {
+			$items[] = array('label' => 'Проверил', 'value' => $reviewedName);
+		}
+		if (!empty($torrent['reviewed_at']) && $torrent['reviewed_at'] !== '0000-00-00 00:00:00') {
+			$items[] = array('label' => 'Проверено', 'value' => convent_date((string) $torrent['reviewed_at']));
+		}
+	} elseif ($status === 'pending') {
+		if (!empty($torrent['submitted_at']) && $torrent['submitted_at'] !== '0000-00-00 00:00:00') {
+			$items[] = array('label' => 'Отправлено', 'value' => convent_date((string) $torrent['submitted_at']));
+		}
+	} elseif (in_array($status, array('need_fix', 'rejected', 'hidden'), true)) {
+		if ($reason !== '' && ($viewerCanModerate || $isOwner || $status === 'hidden')) {
+			$items[] = array('label' => 'Причина', 'value' => $reason);
+		}
+		if ($viewerCanModerate && $reviewedName !== '') {
+			$items[] = array('label' => 'Проверил', 'value' => $reviewedName);
+		}
+	} elseif ($status === 'deleted' && $viewerCanModerate) {
+		if ($reason !== '') {
+			$items[] = array('label' => 'Причина', 'value' => $reason);
+		}
+	}
+
+	return array(
+		'status' => $status,
+		'label' => lt_torrent_status_label($status),
+		'badge_html' => lt_torrent_status_badge($status),
+		'items' => $items,
+		'show' => ($status !== 'approved' || $viewerCanModerate || $isOwner || !empty($torrent['reviewed_by'])),
+	);
 }
 
 function lt_details_prepare_rating($torrentId)
@@ -988,6 +1041,15 @@ function lt_details_prepare_view_model($torrent, array $rating)
 	}
 
 	$statusBadges = array();
+	$viewerCanModerate = lt_torrent_can_moderate($USER);
+	$isOwner = (!empty($USER['id']) && (int) $USER['id'] === (int) ($torrent['id_user'] ?? 0));
+	$moderationView = lt_details_prepare_moderation_view($torrent, $viewerCanModerate, $isOwner);
+	if ($moderationView['status'] !== 'approved' || $viewerCanModerate || $isOwner) {
+		$statusBadges[] = array(
+			'label' => $moderationView['label'],
+			'class' => 'details-badge-status-'.str_replace('_', '-', $moderationView['status']),
+		);
+	}
 	if (!empty($torrent['banned'])) {
 		$statusBadges[] = array('label' => 'Заблокирован', 'class' => 'details-badge-danger');
 	}
@@ -1000,7 +1062,9 @@ function lt_details_prepare_view_model($torrent, array $rating)
 
 	$idUser = (int) ($user['id'] ?? 0);
 	$infohash = (string) ($torrent['infohash'] ?? '');
-	$canEdit = (!empty($PRIV['edit_release']) || (!empty($USER['id']) && (int) $USER['id'] === $idUser));
+	$currentStatus = lt_torrent_status_normalize($torrent['status'] ?? 'approved');
+	$canEdit = (!empty($PRIV['edit_release']) || (!empty($USER['id']) && (int) $USER['id'] === $idUser && in_array($currentStatus, array('approved', 'pending', 'need_fix'), true)));
+	$canDownloadModerated = ($currentStatus === 'approved' || $viewerCanModerate || ($isOwner && in_array($currentStatus, array('pending', 'need_fix'), true)));
 
 	return array(
 		'arr' => $torrent,
@@ -1047,6 +1111,7 @@ function lt_details_prepare_view_model($torrent, array $rating)
 		'details_rating_feedback' => $rating['feedback'],
 		'details_rating_table_ready' => $rating['table_ready'],
 		'details_status_badges' => $statusBadges,
+		'details_moderation' => $moderationView,
 		'details_description_text' => $description['description_text'],
 		'details_description_html' => $description['description_html'],
 		'detailsDescriptionHtml' => $descriptionHtml,
@@ -1057,8 +1122,8 @@ function lt_details_prepare_view_model($torrent, array $rating)
 		'details_extra_sections' => $description['extra_sections'],
 		'details_update_reason' => $description['update_reason'],
 		'details_can_edit' => $canEdit,
-		'details_download_href' => ($infohash !== '' && !empty($PRIV['download_torrent']) ? 'download.php?id='.$id : ''),
-		'details_magnet_href' => ($infohash !== '' && !empty($PRIV['download_magnet']) ? 'download.php?id='.$id.'&magnet=1' : ''),
+		'details_download_href' => ($infohash !== '' && !empty($PRIV['download_torrent']) && $canDownloadModerated ? 'download.php?id='.$id : ''),
+		'details_magnet_href' => ($infohash !== '' && !empty($PRIV['download_magnet']) && $canDownloadModerated ? 'download.php?id='.$id.'&magnet=1' : ''),
 		'details_edit_href' => ($canEdit ? 'edit.php?id='.$id : ''),
 		'details_bookmark_href' => $bookmark['href'],
 		'details_bookmark_label' => $bookmark['label'],

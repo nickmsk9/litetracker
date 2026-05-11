@@ -600,26 +600,37 @@ function lt_notifications_handle_private_message($recipientId, $actorId, $messag
 	), 86400);
 }
 
-function lt_notifications_handle_torrent_status($ownerId, $actorId, $torrentId, $torrentName, $status)
+function lt_notifications_handle_torrent_status($ownerId, $actorId, $torrentId, $torrentName, $status, $reason = '')
 {
 	$ownerId = (int) $ownerId;
 	$actorId = (int) $actorId;
 	$torrentId = (int) $torrentId;
 	$status = lt_notification_clean_key($status);
+	$reason = lt_notification_text($reason, 500);
 	if ($torrentId <= 0 || lt_notification_should_skip($ownerId, $actorId)) {
 		return;
 	}
 
 	$titles = array(
 		'approved' => 'Релиз одобрен',
+		'need_fix' => 'Релиз отправлен на доработку',
+		'rejected' => 'Релиз отклонён',
 		'hidden' => 'Релиз скрыт',
 		'deleted' => 'Релиз удалён',
+		'pending' => 'Релиз ожидает модерации',
 	);
 	$messages = array(
-		'approved' => 'Ваш релиз "'.lt_notification_text($torrentName, 140).'" снова доступен.',
+		'approved' => 'Ваш релиз "'.lt_notification_text($torrentName, 140).'" доступен в каталоге.',
+		'need_fix' => 'Ваш релиз "'.lt_notification_text($torrentName, 140).'" нужно доработать.',
+		'rejected' => 'Ваш релиз "'.lt_notification_text($torrentName, 140).'" отклонён модератором.',
 		'hidden' => 'Ваш релиз "'.lt_notification_text($torrentName, 140).'" скрыт модератором.',
 		'deleted' => 'Ваш релиз "'.lt_notification_text($torrentName, 140).'" удалён модератором.',
+		'pending' => 'Ваш релиз "'.lt_notification_text($torrentName, 140).'" отправлен на проверку.',
 	);
+	$message = $messages[$status] ?? 'Статус вашего релиза изменён.';
+	if ($reason !== '') {
+		$message .= ' Причина: '.$reason;
+	}
 
 	lt_notification_create_once(array(
 		'user_id' => $ownerId,
@@ -628,7 +639,7 @@ function lt_notifications_handle_torrent_status($ownerId, $actorId, $torrentId, 
 		'entity_type' => 'torrent',
 		'entity_id' => $torrentId,
 		'title' => $titles[$status] ?? 'Статус релиза изменён',
-		'message' => $messages[$status] ?? 'Статус вашего релиза изменён.',
+		'message' => $message,
 		'url' => ($status === 'deleted' ? 'my.releases.php' : lt_notification_url_for_event(array('entity_type' => 'torrent', 'entity_id' => $torrentId))),
 		'dedupe_key' => 'torrent_status:'.$status.':'.$torrentId.':'.date('YmdHi'),
 	), 300);

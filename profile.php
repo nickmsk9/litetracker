@@ -45,7 +45,7 @@ function profile_get_torrent_tab_labels()
 
 function profile_load_torrent_rows($userId, $tab)
 {
-	global $db;
+	global $db, $USER;
 
 	$userId = (int) $userId;
 	$tab = profile_normalize_torrent_tab($tab);
@@ -55,12 +55,14 @@ function profile_load_torrent_rows($userId, $tab)
 		return $rows;
 	}
 
+	$statusSql = lt_torrent_status_filter_sql($USER, 't');
+
 	if ($tab === 'uploaded') {
 		$sql = $db->query(
 			"SELECT t.id, t.name, t.size, t.added AS activity_date, c.name AS category_name
 			 FROM torrents AS t
 			 LEFT JOIN categories AS c ON c.id = t.id_category
-			 WHERE t.id_user = {$userId}
+			 WHERE t.id_user = {$userId} AND {$statusSql}
 			 ORDER BY t.added DESC, t.id DESC
 			 LIMIT 100"
 		);
@@ -72,7 +74,7 @@ function profile_load_torrent_rows($userId, $tab)
 			 FROM snatched AS s
 			 LEFT JOIN torrents AS t ON t.id = s.torrent
 			 LEFT JOIN categories AS c ON c.id = t.id_category
-			 WHERE s.userid = {$userId}
+			 WHERE s.userid = {$userId} AND {$statusSql}
 			 ORDER BY s.completedat DESC, s.startedat DESC, s.id DESC
 			 LIMIT 100"
 		);
@@ -83,7 +85,7 @@ function profile_load_torrent_rows($userId, $tab)
 			 FROM peers AS p
 			 LEFT JOIN torrents AS t ON t.id = p.torrent
 			 LEFT JOIN categories AS c ON c.id = t.id_category
-			 WHERE p.userid = {$userId} AND p.seeder = {$seederFlag}
+			 WHERE p.userid = {$userId} AND p.seeder = {$seederFlag} AND {$statusSql}
 			 ORDER BY p.last_action DESC, p.id DESC
 			 LIMIT 100"
 		);

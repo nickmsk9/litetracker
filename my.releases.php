@@ -14,6 +14,7 @@ require 'system/init.php';
 
 //Проверяем пользователя
 is_login();
+lt_torrent_status_ensure_schema();
 
 //Заголовок
 head($language['my_releases_1']);
@@ -33,6 +34,9 @@ head($language['my_releases_1']);
 //Выборка
 $where = array();
 $where[] = 't.id_user='.$USER['id'];
+if (!lt_torrent_can_moderate($USER)) {
+	$where[] = "t.status IN ('approved','pending','need_fix','rejected')";
+}
 
 
 

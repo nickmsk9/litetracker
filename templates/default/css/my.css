@@ -3215,6 +3215,40 @@ body.theme-dark .details-bookmark-button-active {
     color: #2f6fa5;
 }
 
+.details-badge-status-approved {
+    background: #e4f1e3;
+    color: #3e7137;
+}
+
+.details-badge-status-pending {
+    background: #fff3c4;
+    color: #8a6500;
+}
+
+.details-badge-status-need-fix {
+    background: #ffe4c2;
+    color: #94530f;
+}
+
+.details-badge-status-rejected,
+.details-badge-status-hidden {
+    background: #f7dfe0;
+    color: #9c343b;
+}
+
+.details-badge-status-deleted {
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
+.details-moderation-panel {
+    padding: 18px 20px;
+}
+
+.details-moderation-list {
+    margin-top: 12px;
+}
+
 .details-alert-panel {
     padding: 14px 18px;
     border-color: #e4c7ba;

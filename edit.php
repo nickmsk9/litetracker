@@ -269,6 +269,7 @@ function lt_edit_move_uploaded_image($file, $directory, $targetName, $label)
 }
 
 is_login();
+lt_torrent_status_ensure_schema();
 
 $act = isset($_GET['act']) ? (string) $_GET['act'] : '';
 $screen = isset($_GET['screen']) ? (int) $_GET['screen'] : 0;
@@ -281,8 +282,16 @@ if (!$db->num_rows($sql)) {
 
 $arr = $db->get_row($sql);
 
-if ($arr['id_user'] != $USER['id'] && !$PRIV['edit_release']) {
+$isTorrentOwner = ((int) $arr['id_user'] === (int) $USER['id']);
+$isTorrentModerator = lt_torrent_can_moderate($USER);
+$torrentStatus = lt_torrent_status_normalize($arr['status'] ?? 'approved');
+
+if (!$isTorrentOwner && !$isTorrentModerator) {
 	err($language['default_1'], $language['edit_2'], 1);
+}
+
+if ($isTorrentOwner && !$isTorrentModerator && in_array($torrentStatus, array('hidden', 'rejected', 'deleted'), true)) {
+	err($language['default_1'], 'Этот релиз нельзя редактировать в текущем статусе.', 1);
 }
 
 if ($act == 'delete_image') {
@@ -588,28 +597,30 @@ if ($act == 'take') {
 	}
 
 	$memcached->delete('tags');
+	if ($isTorrentOwner && !$isTorrentModerator && $torrentStatus === 'need_fix') {
+		lt_torrent_submit_for_review($id, true);
+	}
 	lt_edit_redirect_to_details($id);
 }
 
 if ($act == 'delete') {
-	if (isset($_GET['take']) && (int) $_GET['take'] === 1) {
-		$db->query('DELETE FROM torrents WHERE id='.(int) $id);
-		$db->query('DELETE FROM trackers WHERE torrent='.(int) $id);
-		$db->query('DELETE FROM peers WHERE torrent='.(int) $id);
-		$db->query('DELETE FROM snatched WHERE torrent='.(int) $id);
-		$_p = 'public/downloads/images/'.$arr['image']; if (is_file($_p)) { unlink($_p); }
-		$_p = 'public/downloads/torrents/'.(int) $id.'.torrent'; if (is_file($_p)) { unlink($_p); }
-		$_p = 'public/downloads/screens/'.$arr['screen_1']; if (is_file($_p)) { unlink($_p); }
-		$_p = 'public/downloads/screens/'.$arr['screen_2']; if (is_file($_p)) { unlink($_p); }
-		$_p = 'public/downloads/screens/'.$arr['screen_3']; if (is_file($_p)) { unlink($_p); }
-		$_p = 'public/downloads/screens/'.$arr['screen_4']; if (is_file($_p)) { unlink($_p); }
+	if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['take']) && (int) $_POST['take'] === 1) {
+		if (!lt_csrf_validate('edit_delete_'.$id)) {
+			err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+		}
+
+		lt_torrent_set_status($id, 'deleted', (int) $USER['id'], ($isTorrentModerator ? 'Удалено модератором' : 'Удалено владельцем'));
 		header('Location:index.php');
 		die();
 	}
 
 	head('Удалить релиз');
 	msg('Удалить релиз', 'Вы действительно хотите удалить релиз?');
-	echo '<input type="button" value="'.$language['upload_38'].'" onClick="window.location.href=\'edit.php?act=delete&id='.(int) $id.'&take=1\'"> ';
+	echo '<form method="post" action="edit.php?act=delete&id='.(int) $id.'" style="display:inline-block;">';
+	echo lt_csrf_input('edit_delete_'.$id);
+	echo '<input type="hidden" name="take" value="1">';
+	echo '<button type="submit">'.$language['upload_38'].'</button>';
+	echo '</form> ';
 	echo '<input type="button" value="'.$language['default_5'].'" onClick="history.go(-1)">';
 	foot();
 	die();

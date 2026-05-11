@@ -74,7 +74,8 @@ foreach ($categories as $category) {
 }
 
 $where = array();
-if (!$PRIV['details_banned_view']) {
+$where[] = lt_torrent_status_filter_sql($USER, 't');
+if (!$PRIV['details_banned_view'] && !lt_torrent_can_moderate($USER)) {
 	$where[] = 't.banned <> 1';
 }
 

@@ -60,12 +60,84 @@ function admin_dashboard_stat_value($sql, $field = 'c')
 	return (int) ($row[$field] ?? 0);
 }
 
+function admin_torrent_moderation_statuses()
+{
+	return array('pending', 'need_fix', 'hidden', 'rejected', 'approved', 'deleted', 'all');
+}
+
+function admin_torrent_moderation_action_status($action)
+{
+	$map = array(
+		'approve' => 'approved',
+		'need_fix' => 'need_fix',
+		'reject' => 'rejected',
+		'hide' => 'hidden',
+		'restore' => 'approved',
+		'soft_delete' => 'deleted',
+	);
+
+	$action = trim((string) $action);
+	return ($map[$action] ?? '');
+}
+
+function admin_torrent_moderation_json($ok, $message, $extra = array(), $statusCode = 200)
+{
+	http_response_code((int) $statusCode);
+	header('Content-Type: application/json; charset=utf-8');
+	echo json_encode(array_merge(array(
+		'ok' => (bool) $ok,
+		'message' => (string) $message,
+	), (array) $extra), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+	die();
+}
+
+function admin_torrent_moderation_is_ajax()
+{
+	return (!empty($_POST['ajax']) || strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest');
+}
+
+function admin_torrent_moderation_items($status)
+{
+	global $db;
+
+	lt_torrent_status_ensure_schema();
+
+	$status = trim((string) $status);
+	if (!in_array($status, admin_torrent_moderation_statuses(), true)) {
+		$status = 'pending';
+	}
+
+	$where = array();
+	if ($status !== 'all') {
+		$where[] = "t.status = '".$db->safesql($status)."'";
+	}
+
+	$sql = $db->query(
+		"SELECT t.*, u.name AS owner_name, u.class AS owner_class, c.name AS category_name, r.name AS reviewer_name, r.class AS reviewer_class
+		 FROM torrents AS t
+		 LEFT JOIN users AS u ON u.id = t.id_user
+		 LEFT JOIN categories AS c ON c.id = t.id_category
+		 LEFT JOIN users AS r ON r.id = t.reviewed_by
+		 ".($where ? 'WHERE '.implode(' AND ', $where) : '')."
+		 ORDER BY FIELD(t.status, 'pending', 'need_fix', 'hidden', 'rejected', 'approved', 'deleted'), t.added DESC
+		 LIMIT 100"
+	);
+
+	$items = array();
+	while ($row = $db->get_row($sql)) {
+		$items[] = $row;
+	}
+	$db->free($sql);
+
+	return $items;
+}
+
 function admin_dashboard_role_map($user, $priv)
 {
 	$superadmin = admin_dashboard_is_superadmin($user, $priv);
 	$content = ($superadmin || !empty($priv['edit_release']) || !empty($priv['cats']) || !empty($priv['news_add']) || !empty($priv['edit_news']) || !empty($priv['faq_moderate']));
 	$users = ($superadmin || !empty($priv['user_add']) || !empty($priv['setting_user']) || !empty($priv['messages']));
-	$moderation = ($superadmin || !empty($priv['comments_edit']) || !empty($priv['comments_delete']) || !empty($priv['ip_util']) || !empty($priv['multitracker_accounts']) || user_wall_reports_can_moderate());
+	$moderation = ($superadmin || !empty($priv['edit_release']) || !empty($priv['comments_edit']) || !empty($priv['comments_delete']) || !empty($priv['ip_util']) || !empty($priv['multitracker_accounts']) || user_wall_reports_can_moderate());
 	$monitoring = ($superadmin || !empty($priv['sessions_view']) || !empty($priv['search_query']));
 
 	return array(
@@ -309,6 +381,7 @@ function admin_dashboard_notice_meta($code)
 		'cache_flushed' => array('type' => 'success', 'text' => 'Кэш очищен.'),
 		'db_optimized' => array('type' => 'success', 'text' => 'Оптимизация БД выполнена.'),
 		'setting_toggled' => array('type' => 'success', 'text' => 'Системный переключатель обновлен.'),
+		'torrent_status_updated' => array('type' => 'success', 'text' => 'Статус релиза обновлен.'),
 		'settings_saved' => array('type' => 'success', 'text' => 'Настройки сохранены.'),
 		'no_changes' => array('type' => 'success', 'text' => 'Изменений не было.'),
 		'action_denied' => array('type' => 'error', 'text' => 'У вас нет прав на это действие.'),
@@ -323,6 +396,7 @@ $settingsSchema = admin_dashboard_settings_schema();
 $settingsFieldMap = admin_dashboard_settings_field_map($settingsSchema);
 $settingsDraft = array();
 $activeTab = admin_dashboard_normalize_tab($_GET['tab'] ?? 'overview', $roles);
+$activeSection = trim((string) ($_GET['section'] ?? ''));
 $flashMessage = admin_dashboard_notice_meta(trim((string) ($_GET['notice'] ?? '')));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -331,6 +405,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	$action = trim((string) ($_POST['admin_action'] ?? ''));
 
 	if (!lt_csrf_validate('admin_dashboard')) {
+		if ($action === 'torrent_moderation' && admin_torrent_moderation_is_ajax()) {
+			admin_torrent_moderation_json(false, 'Защитный токен устарел. Обновите страницу и повторите действие.', array(), 403);
+		}
 		$flashMessage = array(
 			'type' => 'error',
 			'text' => 'Защитный токен устарел. Обновите страницу и повторите действие.',
@@ -389,6 +466,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 			admin_dashboard_redirect($activeTab, ($result === true ? 'setting_toggled' : 'action_failed'));
 		}
+	}
+
+	if ($action === 'torrent_moderation') {
+		if (!lt_torrent_can_moderate($USER)) {
+			if (admin_torrent_moderation_is_ajax()) {
+				admin_torrent_moderation_json(false, 'У вас нет прав на модерацию раздач.', array(), 403);
+			}
+			admin_dashboard_redirect('moderation', 'action_denied');
+		}
+
+		$torrentId = (int) ($_POST['torrent_id'] ?? 0);
+		$moderationAction = trim((string) ($_POST['moderation_action'] ?? ''));
+		$newStatus = admin_torrent_moderation_action_status($moderationAction);
+		$reason = trim((string) ($_POST['status_reason'] ?? ''));
+		if ($torrentId <= 0 || $newStatus === '') {
+			if (admin_torrent_moderation_is_ajax()) {
+				admin_torrent_moderation_json(false, 'Некорректное действие модерации.', array(), 400);
+			}
+			admin_dashboard_redirect('moderation', 'action_failed');
+		}
+
+		$ok = lt_torrent_set_status($torrentId, $newStatus, (int) $USER['id'], $reason);
+		if (admin_torrent_moderation_is_ajax()) {
+			admin_torrent_moderation_json((bool) $ok, ($ok ? 'Статус релиза обновлен.' : 'Операция не выполнена.'), array(
+				'torrent_id' => $torrentId,
+				'status' => $newStatus,
+				'status_label' => lt_torrent_status_label($newStatus),
+			), ($ok ? 200 : 400));
+		}
+
+		header('Location: admin.php?tab=moderation&section=torrents&status='.rawurlencode(trim((string) ($_POST['filter_status'] ?? 'pending'))).'&notice='.($ok ? 'torrent_status_updated' : 'action_failed'));
+		die();
 	}
 
 	if ($action === 'save_settings') {
@@ -533,6 +642,7 @@ $sections = array(
 		'title' => 'Модерация и безопасность',
 		'description' => 'Жалобы, IP и подозрительная активность.',
 		'items' => array(
+			array('label' => 'Модерация раздач', 'description' => 'Очередь релизов: одобрение, доработка, скрытие, отклонение и soft delete.', 'href' => 'admin.php?tab=moderation&section=torrents', 'allowed' => lt_torrent_can_moderate($USER)),
 			array('label' => 'Жалобы на стену', 'description' => 'Модерация жалоб на комментарии в профилях.', 'href' => user_wall_reports_href(), 'allowed' => user_wall_reports_can_moderate(), 'badge' => ($openWallReportsCount > 0 ? $openWallReportsCount.' открыто' : '')),
 			array('label' => 'IP и блокировки', 'description' => 'Проверка IP, диапазонов и ручное управление банами.', 'href' => 'ip.util.php', 'allowed' => !empty($PRIV['ip_util'])),
 			array('label' => 'Мультитрекерные аккаунты', 'description' => 'Отлов подозрительных пользователей по IP и торрентам.', 'href' => 'multitracker_accounts.php', 'allowed' => !empty($PRIV['multitracker_accounts'])),
@@ -1128,6 +1238,120 @@ head('Админка');
 			</a>
 			<?php } ?>
 		</div>
+	</section>
+	<?php } ?>
+	<?php } elseif ($activeTab === 'moderation' && $activeSection === 'torrents' && lt_torrent_can_moderate($USER)) { ?>
+	<?php
+	$moderationStatus = trim((string) ($_GET['status'] ?? 'pending'));
+	if (!in_array($moderationStatus, admin_torrent_moderation_statuses(), true)) {
+		$moderationStatus = 'pending';
+	}
+	$moderationRows = admin_torrent_moderation_items($moderationStatus);
+	$moderationActions = array(
+		'approve' => 'Одобрить',
+		'need_fix' => 'На доработку',
+		'reject' => 'Отклонить',
+		'hide' => 'Скрыть',
+		'restore' => 'Восстановить',
+		'soft_delete' => 'Удалить мягко',
+	);
+	?>
+	<section class='admin-card'>
+		<h2 class='admin-card-title'>Модерация раздач</h2>
+		<p class='admin-card-text'>Очередь работает через soft status: torrent-файлы, infohash и связанные данные не меняются.</p>
+		<div class='admin-tabs' style='position:static;margin-top:16px;'>
+			<?php foreach (admin_torrent_moderation_statuses() as $statusOption) { ?>
+			<a class='admin-tab-link<?=($moderationStatus === $statusOption ? ' admin-tab-link-active' : '');?>' href='admin.php?tab=moderation&amp;section=torrents&amp;status=<?=$statusOption;?>'><?=($statusOption === 'all' ? 'Все' : htmlspecialchars(lt_torrent_status_label($statusOption), ENT_QUOTES, 'UTF-8'));?></a>
+			<?php } ?>
+		</div>
+		<?php if (!$moderationRows) { ?>
+		<div class='admin-empty' style='margin-top:16px;'>В этом фильтре нет раздач.</div>
+		<?php } else { ?>
+		<div class='lt-admin-table-wrap' style='margin-top:16px;'>
+			<table class='lt-admin-table'>
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Название</th>
+						<th>Автор</th>
+						<th>Категория</th>
+						<th>Размер</th>
+						<th>Дата загрузки</th>
+						<th>Статус</th>
+						<th>Причина</th>
+						<th>Проверил</th>
+						<th>Дата проверки</th>
+						<th>Действия</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ($moderationRows as $row) { ?>
+					<?php $rowStatus = lt_torrent_status_normalize($row['status'] ?? 'approved'); ?>
+					<tr>
+						<td><span class='lt-admin-code'>#<?=(int) $row['id'];?></span></td>
+						<td><a href='details.php?id=<?=(int) $row['id'];?>'><?=htmlspecialchars((string) $row['name'], ENT_QUOTES, 'UTF-8');?></a></td>
+						<td><?=htmlspecialchars((string) ($row['owner_name'] ?? 'Неизвестно'), ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=htmlspecialchars((string) ($row['category_name'] ?? 'Без категории'), ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=htmlspecialchars(mksize((float) ($row['size'] ?? 0)), ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=htmlspecialchars(convent_date((string) ($row['added'] ?? '')), ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=lt_torrent_status_badge($rowStatus);?></td>
+						<td><?=htmlspecialchars((string) ($row['status_reason'] ?? ''), ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=htmlspecialchars((string) ($row['reviewer_name'] ?? ''), ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=(!empty($row['reviewed_at']) ? htmlspecialchars(convent_date((string) $row['reviewed_at']), ENT_QUOTES, 'UTF-8') : '');?></td>
+						<td>
+							<form method='post' action='admin.php?tab=moderation&amp;section=torrents' class='torrent-moderation-form'>
+								<input type='hidden' name='tab' value='moderation'>
+								<input type='hidden' name='admin_action' value='torrent_moderation'>
+								<input type='hidden' name='torrent_id' value='<?=(int) $row['id'];?>'>
+								<input type='hidden' name='filter_status' value='<?=htmlspecialchars($moderationStatus, ENT_QUOTES, 'UTF-8');?>'>
+								<?=lt_csrf_input('admin_dashboard');?>
+								<select name='moderation_action' class='admin-settings-input' style='min-width:150px;margin-bottom:6px;'>
+									<?php foreach ($moderationActions as $actionKey => $actionLabel) { ?>
+									<option value='<?=$actionKey;?>'><?=$actionLabel;?></option>
+									<?php } ?>
+								</select>
+								<textarea name='status_reason' class='admin-settings-input' style='height:58px;min-width:220px;margin-bottom:6px;' placeholder='Причина или комментарий'></textarea>
+								<button class='admin-action-button' type='submit'>Применить</button>
+							</form>
+						</td>
+					</tr>
+					<?php } ?>
+				</tbody>
+			</table>
+		</div>
+		<?php } ?>
+	</section>
+	<?php } elseif (in_array($activeTab, array('content', 'users', 'moderation', 'monitoring'), true)) { ?>
+	<?php foreach ($sections as $section) { ?>
+	<?php if ($section['tab'] !== $activeTab) { continue; } ?>
+	<?php
+	$visibleItems = array();
+	foreach ($section['items'] as $item) {
+		if (!empty($item['allowed'])) {
+			$visibleItems[] = $item;
+		}
+	}
+	?>
+	<section class='admin-card'>
+		<h2 class='admin-card-title'><?=$section['title'];?></h2>
+		<p class='admin-card-text'><?=$section['description'];?></p>
+		<?php if (!$visibleItems) { ?>
+		<div class='admin-empty' style='margin-top:18px;'>Для вашей роли нет доступных разделов.</div>
+		<?php } else { ?>
+		<div class='admin-grid' style='margin-top:18px;'>
+			<?php foreach ($visibleItems as $item) { ?>
+			<a class='admin-link-card' href='<?=$item['href'];?>'>
+				<div class='admin-link-row'>
+					<div class='admin-link-title'><?=$item['label'];?></div>
+					<?php if (!empty($item['badge'])) { ?>
+					<span class='admin-link-badge'><?=$item['badge'];?></span>
+					<?php } ?>
+				</div>
+				<div class='admin-link-text'><?=$item['description'];?></div>
+			</a>
+			<?php } ?>
+		</div>
+		<?php } ?>
 	</section>
 	<?php } ?>
 	<?php } elseif (!empty($settingsSchema[$activeTab]) && !empty($roles[$activeTab])) { ?>

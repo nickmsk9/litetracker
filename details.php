@@ -47,6 +47,10 @@ if(!empty($_GET['edit']) && $_GET['edit'] == '1') {
 	msg($language['details_24']);
 }
 
+if (!empty($_GET['moderation']) && $_GET['moderation'] === 'pending') {
+	msg('Модерация', 'Раздача отправлена на модерацию. Она станет доступна после проверки.');
+}
+
 //Подключаем шаблон
 require 'templates/'.$config['template'].'/tpl.details.php';
 

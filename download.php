@@ -18,6 +18,7 @@ if(!$PRIV['details_view']) {
 	err($language['default_1'] , $language['details_29'] , 1);
 }
 
+lt_torrent_status_ensure_schema();
 
 //ID торрента
 $id = (int)$_GET['id'];
@@ -27,8 +28,21 @@ if(!$db->num_rows()) {
 }
 $arr = $db->get_row();
 
-//Проверяем на бан
-if($arr['banned'] && !$PRIV['details_banned_view']) {
+//Проверяем видимость с учетом soft moderation
+$torrentStatus = lt_torrent_status_normalize($arr['status'] ?? 'approved');
+$isTorrentOwner = (!empty($USER['id']) && (int) ($arr['id_user'] ?? 0) === (int) $USER['id']);
+$canDownloadModerated = (
+	$torrentStatus === 'approved'
+	|| lt_torrent_can_moderate($USER)
+	|| ($isTorrentOwner && in_array($torrentStatus, array('pending', 'need_fix'), true))
+);
+
+if (!$canDownloadModerated) {
+	err($language['default_1'] , $language['download_2'] , 1);
+}
+
+//Проверяем на legacy-бан
+if($arr['banned'] && !$PRIV['details_banned_view'] && !lt_torrent_can_moderate($USER) && $torrentStatus === 'approved') {
 	err($language['default_1'] , $language['download_2'] , 1);
 }
 
