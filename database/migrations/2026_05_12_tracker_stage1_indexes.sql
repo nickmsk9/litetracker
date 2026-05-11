@@ -7,15 +7,17 @@
 -- ===================================================================
 
 -- Optimize peers table for announce queries
-ALTER TABLE peers ADD INDEX IF NOT EXISTS idx_torrent_userid (torrent, userid);
-ALTER TABLE peers ADD INDEX IF NOT EXISTS idx_torrent_passkey (torrent, passkey);
-ALTER TABLE peers ADD INDEX IF NOT EXISTS idx_torrent_last_action (torrent, last_action);
+-- Note: IF NOT EXISTS for indexes is not supported in MySQL 8.x (only MariaDB).
+-- Run only if indexes are missing (verify with SHOW INDEX FROM peers).
+ALTER TABLE peers ADD INDEX idx_torrent_userid      (torrent, userid);
+ALTER TABLE peers ADD INDEX idx_torrent_passkey     (torrent, passkey);
+ALTER TABLE peers ADD INDEX idx_torrent_last_action (torrent, last_action);
 
 -- Optimize snatched table for user stats queries
-ALTER TABLE snatched ADD INDEX IF NOT EXISTS idx_userid_finished (userid, finished);
+ALTER TABLE snatched ADD INDEX idx_userid_finished (userid, finished);
 
 -- Optimize users table for passkey lookups
-ALTER TABLE users ADD INDEX IF NOT EXISTS idx_users_passkey (passkey);
+ALTER TABLE users ADD INDEX idx_users_passkey (passkey);
 
 -- Verify indexes created
 -- SELECT * FROM information_schema.STATISTICS WHERE TABLE_NAME='peers' AND TABLE_SCHEMA=DATABASE();

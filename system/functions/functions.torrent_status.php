@@ -57,6 +57,13 @@ function lt_torrent_status_ensure_schema()
 		return $ready;
 	}
 
+	// Memcached fast-path: skip all SHOW/UPDATE queries when schema was verified recently
+	$schemaCacheKey = 'schema:torrent_status:ready_v1';
+	if (lt_schema_cache_get($schemaCacheKey) === true) {
+		$ready = true;
+		return true;
+	}
+
 	if (!lt_table_exists('torrents')) {
 		$ready = false;
 		return false;
@@ -89,13 +96,18 @@ function lt_torrent_status_ensure_schema()
 	$db->query("UPDATE torrents SET status = 'approved' WHERE status IS NULL OR status = ''", 0);
 	$db->query("UPDATE torrents SET submitted_at = added WHERE submitted_at IS NULL", 0);
 
-	$ready = lt_column_exists('torrents', 'status', true);
+	$ready = lt_column_exists('torrents', 'status');
+	if ($ready) {
+		// Cache schema-ready state so next request skips all checks and UPDATEs
+		lt_schema_cache_set($schemaCacheKey, true);
+	}
 	return $ready;
 }
 
 function lt_torrent_index_exists($tableName, $indexName)
 {
 	global $db;
+	static $cache = array();
 
 	$tableName = lt_schema_identifier($tableName);
 	$indexName = trim((string) $indexName);
@@ -103,15 +115,30 @@ function lt_torrent_index_exists($tableName, $indexName)
 		return false;
 	}
 
+	$key = $tableName.'.'.$indexName;
+	if (array_key_exists($key, $cache)) {
+		return $cache[$key];
+	}
+
+	$cacheKey = 'schema:index:'.$tableName.':'.$indexName.':exists';
+	$cached = lt_schema_cache_get($cacheKey);
+	if (is_array($cached) && array_key_exists('exists', $cached)) {
+		$cache[$key] = (bool) $cached['exists'];
+		return $cache[$key];
+	}
+
 	$sql = $db->query("SHOW INDEX FROM `".$tableName."` WHERE Key_name = '".$db->safesql($indexName)."'", 0);
 	if ($sql === false) {
+		$cache[$key] = false;
 		return false;
 	}
 
 	$row = $db->get_row($sql);
 	$db->free($sql);
+	$cache[$key] = !empty($row);
+	lt_schema_cache_set($cacheKey, array('exists' => $cache[$key]));
 
-	return !empty($row);
+	return $cache[$key];
 }
 
 function lt_torrent_owner_id($torrent)

@@ -110,6 +110,7 @@ function comments_reports_ensure_table()
 function comments_index_exists($tableName, $indexName)
 {
     global $db;
+    static $cache = array();
 
     $tableName = preg_replace('~[^a-z0-9_]~i', '', (string) $tableName);
     $indexName = trim((string) $indexName);
@@ -117,15 +118,30 @@ function comments_index_exists($tableName, $indexName)
         return false;
     }
 
+    $key = $tableName.'.'.$indexName;
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+
+    $cacheKey = 'schema:index:'.$tableName.':'.$indexName.':exists';
+    $cached = lt_schema_cache_get($cacheKey);
+    if (is_array($cached) && array_key_exists('exists', $cached)) {
+        $cache[$key] = (bool) $cached['exists'];
+        return $cache[$key];
+    }
+
     $sql = $db->query("SHOW INDEX FROM `".$tableName."` WHERE Key_name = '".$db->safesql($indexName)."'", 0);
     if ($sql === false) {
+        $cache[$key] = false;
         return false;
     }
 
     $row = $db->get_row($sql);
     $db->free($sql);
+    $cache[$key] = !empty($row);
+    lt_schema_cache_set($cacheKey, array('exists' => $cache[$key]));
 
-    return !empty($row);
+    return $cache[$key];
 }
 
 function comments_ensure_modern_tables()
@@ -135,6 +151,13 @@ function comments_ensure_modern_tables()
 
     if ($ready !== null) {
         return $ready;
+    }
+
+    // Memcached fast-path: skip all SHOW TABLES checks when tables were verified recently
+    $schemaCacheKey = 'schema:comments_modern_tables:ready_v1';
+    if (lt_schema_cache_get($schemaCacheKey) === true) {
+        $ready = true;
+        return true;
     }
 
     if (!lt_table_exists('comment_pins')) {
@@ -195,6 +218,9 @@ function comments_ensure_modern_tables()
     }
 
     $ready = (lt_table_exists('comment_pins', true) && lt_table_exists('comment_reactions', true) && lt_table_exists('comment_edit_history', true));
+    if ($ready) {
+        lt_schema_cache_set($schemaCacheKey, true);
+    }
     return $ready;
 }
 
@@ -210,6 +236,13 @@ function comments_ensure_moderation_columns($type)
 
     if (array_key_exists($type, $ready)) {
         return $ready[$type];
+    }
+
+    // Memcached fast-path: skip SHOW COLUMNS/INDEX checks when verified recently
+    $schemaCacheKey = 'schema:comments_moderation:'.$type.':ready_v1';
+    if (lt_schema_cache_get($schemaCacheKey) === true) {
+        $ready[$type] = true;
+        return true;
     }
 
     $tableName = comments_table_name($type);
@@ -235,9 +268,13 @@ function comments_ensure_moderation_columns($type)
     $indexName = 'idx_'.$tableName.'_deleted';
     if (!comments_index_exists($tableName, $indexName)) {
         $db->query("ALTER TABLE `".$tableName."` ADD KEY `".$indexName."` (`is_deleted`, `date`)", 0);
+        lt_schema_cache_delete('schema:index:'.$tableName.':'.$indexName.':exists');
     }
 
     $ready[$type] = lt_column_exists($tableName, 'is_deleted', true);
+    if ($ready[$type]) {
+        lt_schema_cache_set($schemaCacheKey, true);
+    }
     return $ready[$type];
 }
 
