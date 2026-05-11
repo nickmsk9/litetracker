@@ -4330,6 +4330,7 @@ iframe {
 
 .browse-search-form {
     display: block;
+    position: relative;
 }
 
 .browse-search-row {
@@ -4356,6 +4357,57 @@ iframe {
     min-height: 40px;
     border-radius: 0 4px 4px 0 !important;
     font-weight: 700;
+}
+
+.browse-search-suggest {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--surface);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.browse-search-suggest[hidden] {
+    display: none;
+}
+
+.browse-suggest-group + .browse-suggest-group {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+}
+
+.browse-suggest-title {
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.browse-suggest-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.browse-suggest-item {
+    min-height: 26px;
+    padding: 4px 8px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--surface-solid);
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+.browse-suggest-item:hover {
+    background: var(--surface-alt);
 }
 
 .browse-categories {
@@ -5003,6 +5055,17 @@ iframe {
     flex: 0 0 auto;
 }
 
+.browse-filter-select {
+    width: 100%;
+    min-height: 30px;
+    padding: 4px 8px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--surface-solid);
+    color: var(--text);
+    font-size: 12px;
+}
+
 .browse-filter-empty {
     color: var(--muted);
     font-size: 12px;
@@ -5049,6 +5112,30 @@ iframe {
     color: var(--muted);
     font-size: 13px;
     line-height: 1.55;
+}
+
+.browse-page.is-loading .browse-results-panel {
+    opacity: 0.72;
+    pointer-events: none;
+}
+
+.browse-page.is-loading .browse-torrent-list {
+    position: relative;
+}
+
+.browse-page.is-loading .browse-torrent-list::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    background: repeating-linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, 0.45) 0,
+        rgba(255, 255, 255, 0.45) 12px,
+        rgba(255, 255, 255, 0) 12px,
+        rgba(255, 255, 255, 0) 24px
+    );
+    pointer-events: none;
 }
 
 .notifications-page {
