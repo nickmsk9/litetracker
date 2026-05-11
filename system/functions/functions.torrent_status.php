@@ -245,6 +245,7 @@ function lt_torrent_set_status($torrentId, $status, $moderatorId, $reason = '')
 	if (empty($torrent['id'])) {
 		return false;
 	}
+	$oldStatus = lt_torrent_status_normalize($torrent['status'] ?? 'approved');
 
 	$fields = array(
 		"status = '".$db->safesql($status)."'",
@@ -272,7 +273,28 @@ function lt_torrent_set_status($torrentId, $status, $moderatorId, $reason = '')
 
 	$db->query("UPDATE torrents SET ".implode(', ', $fields)." WHERE id = ".$torrentId, 0);
 	lt_torrent_sync_legacy_checked($torrentId, $status);
-	// TODO: write moderation_log here if/when the project adds that table.
+
+	if ($moderatorId > 0 && function_exists('lt_moderation_log')) {
+		$logAction = 'torrent_'.$status;
+		if ($status === 'approved') {
+			$logAction = (in_array($oldStatus, array('hidden', 'rejected', 'deleted'), true) ? 'torrent_restore' : 'torrent_approve');
+		} elseif ($status === 'need_fix') {
+			$logAction = 'torrent_need_fix';
+		} elseif ($status === 'rejected') {
+			$logAction = 'torrent_reject';
+		} elseif ($status === 'hidden') {
+			$logAction = 'torrent_hide';
+		} elseif ($status === 'deleted') {
+			$logAction = 'torrent_soft_delete';
+		}
+
+		lt_moderation_log($logAction, 'torrent', $torrentId, array(
+			'moderator_id' => $moderatorId,
+			'old_value' => $oldStatus,
+			'new_value' => $status,
+			'reason' => $reason,
+		));
+	}
 
 	if ((string) ($torrent['status'] ?? 'approved') !== $status && $moderatorId > 0) {
 		$torrent['status'] = $status;

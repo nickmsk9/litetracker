@@ -132,6 +132,75 @@ function admin_torrent_moderation_items($status)
 	return $items;
 }
 
+function admin_torrent_moderation_counts()
+{
+	global $db;
+
+	lt_torrent_status_ensure_schema();
+
+	$counts = array(
+		'pending' => 0,
+		'need_fix' => 0,
+		'hidden' => 0,
+		'rejected' => 0,
+		'approved' => 0,
+		'deleted' => 0,
+	);
+
+	$sql = $db->query("SELECT status, COUNT(*) AS c FROM torrents GROUP BY status", 0);
+	if ($sql) {
+		while ($row = $db->get_row($sql)) {
+			$status = lt_torrent_status_normalize($row['status'] ?? 'approved');
+			if (array_key_exists($status, $counts)) {
+				$counts[$status] = (int) ($row['c'] ?? 0);
+			}
+		}
+		$db->free($sql);
+	}
+
+	return $counts;
+}
+
+function admin_moderation_log_actions()
+{
+	return array(
+		'torrent_approve',
+		'torrent_need_fix',
+		'torrent_reject',
+		'torrent_hide',
+		'torrent_restore',
+		'torrent_soft_delete',
+	);
+}
+
+function admin_moderation_log_moderators()
+{
+	global $db;
+
+	if (!lt_moderation_log_ensure_schema()) {
+		return array();
+	}
+
+	$sql = $db->query(
+		"SELECT DISTINCT u.id, u.name
+		 FROM moderation_log AS ml
+		 INNER JOIN users AS u ON u.id = ml.moderator_id
+		 ORDER BY u.name ASC
+		 LIMIT 200",
+		0
+	);
+
+	$rows = array();
+	if ($sql) {
+		while ($row = $db->get_row($sql)) {
+			$rows[] = $row;
+		}
+		$db->free($sql);
+	}
+
+	return $rows;
+}
+
 function admin_dashboard_role_map($user, $priv)
 {
 	$superadmin = admin_dashboard_is_superadmin($user, $priv);
@@ -586,6 +655,13 @@ if (user_wall_reports_can_moderate()) {
 	$openWallReportsCount = admin_dashboard_stat_value("SELECT COUNT(*) AS c FROM `".user_wall_reports_table_name()."` WHERE status = 'open'");
 }
 
+$torrentModerationCounts = array();
+$torrentModerationQueueCount = 0;
+if (lt_torrent_can_moderate($USER)) {
+	$torrentModerationCounts = admin_torrent_moderation_counts();
+	$torrentModerationQueueCount = (int) ($torrentModerationCounts['pending'] ?? 0) + (int) ($torrentModerationCounts['need_fix'] ?? 0);
+}
+
 $statsRow = $db->super_query("SELECT
 	(SELECT COUNT(*) FROM users) AS users_count,
 	(SELECT COUNT(*) FROM torrents) AS torrents_count,
@@ -601,6 +677,9 @@ $stats = array(
 
 if (user_wall_reports_can_moderate()) {
 	$stats[] = array('label' => 'Жалобы', 'value' => $openWallReportsCount, 'href' => user_wall_reports_href());
+}
+if (lt_torrent_can_moderate($USER)) {
+	$stats[] = array('label' => 'На модерации', 'value' => $torrentModerationQueueCount, 'href' => 'admin.php?tab=moderation&section=torrents&status=pending');
 }
 
 $tabs = array(
@@ -642,7 +721,8 @@ $sections = array(
 		'title' => 'Модерация и безопасность',
 		'description' => 'Жалобы, IP и подозрительная активность.',
 		'items' => array(
-			array('label' => 'Модерация раздач', 'description' => 'Очередь релизов: одобрение, доработка, скрытие, отклонение и soft delete.', 'href' => 'admin.php?tab=moderation&section=torrents', 'allowed' => lt_torrent_can_moderate($USER)),
+			array('label' => 'Модерация раздач', 'description' => 'Очередь релизов: одобрение, доработка, скрытие, отклонение и soft delete.', 'href' => 'admin.php?tab=moderation&section=torrents', 'allowed' => lt_torrent_can_moderate($USER), 'badge' => ($torrentModerationQueueCount > 0 ? $torrentModerationQueueCount.' в очереди' : '')),
+			array('label' => 'Журнал модерации', 'description' => 'Кто, когда и какой статус изменил у раздач.', 'href' => 'admin.php?tab=moderation&section=log', 'allowed' => lt_torrent_can_moderate($USER)),
 			array('label' => 'Жалобы на стену', 'description' => 'Модерация жалоб на комментарии в профилях.', 'href' => user_wall_reports_href(), 'allowed' => user_wall_reports_can_moderate(), 'badge' => ($openWallReportsCount > 0 ? $openWallReportsCount.' открыто' : '')),
 			array('label' => 'IP и блокировки', 'description' => 'Проверка IP, диапазонов и ручное управление банами.', 'href' => 'ip.util.php', 'allowed' => !empty($PRIV['ip_util'])),
 			array('label' => 'Мультитрекерные аккаунты', 'description' => 'Отлов подозрительных пользователей по IP и торрентам.', 'href' => 'multitracker_accounts.php', 'allowed' => !empty($PRIV['multitracker_accounts'])),
@@ -669,11 +749,11 @@ $quickActions = array(
 );
 
 $shortcuts = array(
-	array('label' => 'Добавить пользователя', 'href' => 'user_add.php', 'allowed' => !empty($PRIV['user_add'])),
-	array('label' => 'Добавить новость', 'href' => 'news.php?act=add', 'allowed' => !empty($PRIV['news_add']) || !empty($PRIV['edit_news'])),
-	array('label' => 'Редактировать новости', 'href' => 'news.php', 'allowed' => !empty($PRIV['news_add']) || !empty($PRIV['edit_news'])),
-	array('label' => 'Открыть классы и права', 'href' => 'edit_priv.php', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
-	array('label' => 'Открыть жалобы', 'href' => user_wall_reports_href(), 'allowed' => user_wall_reports_can_moderate()),
+	array('label' => 'Добавить пользователя', 'description' => 'Создать аккаунт вручную и сразу перейти к настройкам профиля.', 'href' => 'user_add.php', 'allowed' => !empty($PRIV['user_add'])),
+	array('label' => 'Добавить новость', 'description' => 'Опубликовать короткое объявление или новость проекта.', 'href' => 'news.php?act=add', 'allowed' => !empty($PRIV['news_add']) || !empty($PRIV['edit_news'])),
+	array('label' => 'Редактировать новости', 'description' => 'Открыть список публикаций для правки и снятия с сайта.', 'href' => 'news.php', 'allowed' => !empty($PRIV['news_add']) || !empty($PRIV['edit_news'])),
+	array('label' => 'Открыть классы и права', 'description' => 'Проверить роли, разрешения и доступ к админским функциям.', 'href' => 'edit_priv.php', 'allowed' => !empty($PRIV['EDIT_PRIV'])),
+	array('label' => 'Открыть жалобы', 'description' => 'Разобрать открытые жалобы на комментарии в профилях.', 'href' => user_wall_reports_href(), 'allowed' => user_wall_reports_can_moderate()),
 );
 
 $roleBadges = array();
@@ -735,11 +815,13 @@ head('Админка');
 ?>
 <style>
 .admin-dashboard {
+	--admin-accent: #4f7f5a;
+	--admin-accent-hover: #416b49;
 	max-width: 1320px;
 	margin: 16px auto 0;
 	padding: 0 18px 28px;
 	box-sizing: border-box;
-	color: #1c2733;
+	color: var(--text);
 }
 
 .admin-hero,
@@ -747,9 +829,9 @@ head('Админка');
 .admin-card,
 .admin-settings-form,
 .admin-inline-message {
-	border: 1px solid #dfe7ef;
+	border: 1px solid var(--line);
 	border-radius: 6px;
-	background: #fff;
+	background: var(--surface);
 	box-sizing: border-box;
 }
 
@@ -760,12 +842,11 @@ head('Админка');
 	align-items: end;
 	padding: 20px 22px;
 	margin-bottom: 12px;
-	border-top: 4px solid #334e68;
 }
 
 .admin-hero-kicker {
 	margin: 0 0 5px;
-	color: #738091;
+	color: var(--muted);
 	font-size: 12px;
 	font-weight: 700;
 	line-height: 1.2;
@@ -774,7 +855,7 @@ head('Админка');
 
 .admin-hero-title {
 	margin: 0;
-	color: #111827;
+	color: var(--text);
 	font-size: 28px;
 	line-height: 1.15;
 }
@@ -782,7 +863,7 @@ head('Админка');
 .admin-hero-text {
 	max-width: 820px;
 	margin: 8px 0 0;
-	color: #536170;
+	color: var(--muted);
 	font-size: 14px;
 	line-height: 1.55;
 }
@@ -800,10 +881,10 @@ head('Админка');
 	align-items: center;
 	min-height: 24px;
 	padding: 0 9px;
-	border: 1px solid #d7e1eb;
-	border-radius: 999px;
-	background: #f4f7fa;
-	color: #45576a;
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	background: var(--surface-muted);
+	color: var(--muted);
 	font-size: 12px;
 	font-weight: 700;
 	line-height: 1;
@@ -838,29 +919,54 @@ head('Админка');
 	gap: 4px;
 	margin-bottom: 14px;
 	padding: 6px;
+	box-shadow: none;
 }
 
 .admin-tab-link {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
+	gap: 7px;
 	min-height: 34px;
 	padding: 0 12px;
+	border: 1px solid transparent;
 	border-radius: 4px;
-	color: #536170;
+	color: var(--muted);
 	font-size: 13px;
 	font-weight: 700;
 	text-decoration: none;
 }
 
 .admin-tab-link:hover {
-	background: #f2f6fa;
-	color: #111827;
+	border-color: var(--line);
+	background: var(--surface-muted);
+	color: var(--text);
 }
 
 .admin-tab-link-active {
-	background: #334e68;
-	color: #fff;
+	border-color: var(--text);
+	background: var(--text);
+	color: var(--surface);
+}
+
+.admin-tab-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 20px;
+	height: 20px;
+	padding: 0 6px;
+	border-radius: 4px;
+	background: var(--surface-muted);
+	color: var(--muted);
+	font-size: 11px;
+	font-weight: 800;
+	line-height: 1;
+}
+
+.admin-tab-link-active .admin-tab-count {
+	background: var(--surface);
+	color: var(--text);
 }
 
 .admin-stats,
@@ -886,6 +992,13 @@ head('Админка');
 	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
+.admin-status-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 10px;
+	margin-top: 16px;
+}
+
 .admin-settings-grid {
 	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 	margin-top: 16px;
@@ -900,13 +1013,15 @@ head('Админка');
 .admin-stat-card,
 .admin-link-card,
 .admin-action-card,
+.admin-shortcut-card,
 .admin-permission-row,
-.admin-system-item {
+.admin-system-item,
+.admin-status-card {
 	display: block;
 	padding: 14px 16px;
-	border: 1px solid #e1e8ef;
+	border: 1px solid var(--line);
 	border-radius: 5px;
-	background: #fbfcfd;
+	background: var(--surface-solid);
 	color: inherit;
 	text-decoration: none;
 	box-sizing: border-box;
@@ -914,14 +1029,16 @@ head('Админка');
 
 .admin-stat-card:hover,
 .admin-link-card:hover,
+.admin-shortcut-card:hover,
+.admin-status-card:hover,
 .admin-permission-row:hover {
-	border-color: #b8c9d8;
-	background: #fff;
+	border-color: var(--line-strong);
+	background: var(--surface-muted);
 }
 
 .admin-stat-value {
 	display: block;
-	color: #111827;
+	color: var(--text);
 	font-size: 26px;
 	font-weight: 800;
 	line-height: 1;
@@ -930,11 +1047,12 @@ head('Админка');
 .admin-stat-label,
 .admin-link-text,
 .admin-action-text,
+.admin-shortcut-text,
 .admin-card-text,
 .admin-settings-text,
 .admin-permission-text,
 .admin-settings-help {
-	color: #647283;
+	color: var(--muted);
 	font-size: 13px;
 	line-height: 1.5;
 }
@@ -942,6 +1060,7 @@ head('Админка');
 .admin-stat-label,
 .admin-link-text,
 .admin-action-text,
+.admin-shortcut-text,
 .admin-permission-text {
 	display: block;
 	margin-top: 7px;
@@ -950,7 +1069,7 @@ head('Админка');
 .admin-card-title,
 .admin-settings-title {
 	margin: 0 0 7px;
-	color: #111827;
+	color: var(--text);
 	font-size: 20px;
 	line-height: 1.25;
 }
@@ -970,8 +1089,9 @@ head('Админка');
 
 .admin-link-title,
 .admin-action-title,
+.admin-shortcut-title,
 .admin-permission-name {
-	color: #111827;
+	color: var(--text);
 	font-size: 15px;
 	font-weight: 800;
 	line-height: 1.3;
@@ -979,7 +1099,7 @@ head('Админка');
 
 .admin-action-card {
 	padding: 0;
-	background: #fff;
+	background: var(--surface-solid);
 	overflow: hidden;
 }
 
@@ -989,16 +1109,15 @@ head('Админка');
 }
 
 .admin-action-button,
-.admin-settings-submit,
-.admin-shortcut-link {
+.admin-settings-submit {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	min-height: 36px;
 	padding: 0 13px;
-	border: 1px solid #334e68;
+	border: 1px solid var(--admin-accent);
 	border-radius: 4px;
-	background: #334e68;
+	background: var(--admin-accent);
 	color: #fff;
 	font-size: 13px;
 	font-weight: 800;
@@ -1008,15 +1127,61 @@ head('Админка');
 }
 
 .admin-action-button:hover,
-.admin-settings-submit:hover,
-.admin-shortcut-link:hover {
-	border-color: #263d55;
-	background: #263d55;
+.admin-settings-submit:hover {
+	border-color: var(--admin-accent-hover);
+	background: var(--admin-accent-hover);
 	color: #fff;
+}
+
+.admin-secondary-link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 36px;
+	padding: 0 12px;
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	background: var(--surface-solid);
+	color: var(--text);
+	font-size: 13px;
+	font-weight: 800;
+	line-height: 1;
+	text-decoration: none;
+}
+
+.admin-secondary-link:hover {
+	border-color: var(--line-strong);
+	background: var(--surface-muted);
+	color: var(--text);
 }
 
 .admin-shortcut-grid {
 	margin-top: 14px;
+}
+
+.admin-shortcut-card {
+	min-height: 90px;
+}
+
+.admin-status-card {
+	padding: 12px 14px;
+}
+
+.admin-status-value {
+	display: block;
+	color: var(--text);
+	font-size: 22px;
+	font-weight: 800;
+	line-height: 1;
+}
+
+.admin-status-label {
+	display: block;
+	margin-top: 6px;
+	color: var(--muted);
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1.35;
 }
 
 .admin-settings-field {
@@ -1025,7 +1190,7 @@ head('Админка');
 }
 
 .admin-settings-label {
-	color: #1f2a35;
+	color: var(--text);
 	font-size: 13px;
 	font-weight: 800;
 }
@@ -1037,16 +1202,16 @@ head('Админка');
 .admin-settings-input,
 .admin-settings-checkbox-row {
 	width: 100%;
-	border: 1px solid #cfd9e4;
+	border: 1px solid var(--line-strong);
 	border-radius: 4px;
-	background: #fff;
+	background: var(--surface-solid);
 	box-sizing: border-box;
 }
 
 .admin-settings-input {
 	height: 38px;
 	padding: 0 10px;
-	color: #1f2a35;
+	color: var(--text);
 	font-size: 14px;
 }
 
@@ -1056,28 +1221,29 @@ head('Админка');
 	gap: 9px;
 	min-height: 38px;
 	padding: 0 10px;
-	color: #1f2a35;
+	color: var(--text);
 	font-size: 14px;
 }
 
 .admin-settings-footer {
 	display: flex;
+	gap: 8px;
 	justify-content: flex-end;
 	margin-top: 16px;
 }
 
 .admin-empty {
 	padding: 16px;
-	border: 1px dashed #cfd9e4;
+	border: 1px dashed var(--line-strong);
 	border-radius: 5px;
-	background: #fbfcfd;
-	color: #647283;
+	background: var(--surface-muted);
+	color: var(--muted);
 	font-size: 14px;
 	line-height: 1.5;
 }
 
 .admin-system-label {
-	color: #738091;
+	color: var(--muted);
 	font-size: 11px;
 	font-weight: 800;
 	text-transform: uppercase;
@@ -1085,7 +1251,7 @@ head('Админка');
 
 .admin-system-value {
 	margin-top: 6px;
-	color: #1f2a35;
+	color: var(--text);
 	font-size: 13px;
 	line-height: 1.45;
 	word-break: break-word;
@@ -1094,6 +1260,45 @@ head('Админка');
 .admin-system-path {
 	font-family: Consolas, Monaco, monospace;
 	font-size: 12px;
+}
+
+.admin-dashboard .lt-admin-table {
+	border-color: var(--line);
+	background: var(--surface);
+}
+
+.admin-dashboard .lt-admin-table th,
+.admin-dashboard .lt-admin-table td {
+	border-bottom-color: var(--line);
+}
+
+.admin-dashboard .lt-admin-table th {
+	background: var(--surface-muted);
+	color: var(--muted);
+}
+
+.admin-dashboard .lt-admin-table td {
+	color: var(--text);
+}
+
+.admin-dashboard .lt-admin-table a {
+	color: var(--text);
+	font-weight: 700;
+	text-decoration: underline;
+	text-decoration-color: var(--line-strong);
+	text-underline-offset: 3px;
+}
+
+.admin-dashboard .lt-admin-table a:hover {
+	color: var(--admin-accent-hover);
+	text-decoration-color: var(--admin-accent-hover);
+}
+
+.admin-card .admin-settings-form {
+	padding: 0;
+	margin: 16px 0 0;
+	border: 0;
+	background: transparent;
 }
 
 @media (max-width: 720px) {
@@ -1172,6 +1377,21 @@ head('Админка');
 		</div>
 	</section>
 
+	<?php if (lt_torrent_can_moderate($USER)) { ?>
+	<section class='admin-card'>
+		<h2 class='admin-card-title'>Раздачи на модерации</h2>
+		<p class='admin-card-text'>Сводка по soft status. Клик по статусу открывает очередь с готовым фильтром.</p>
+		<div class='admin-status-grid'>
+			<?php foreach (array('pending', 'need_fix', 'hidden', 'rejected', 'approved', 'deleted') as $statusKey) { ?>
+			<a class='admin-status-card' href='admin.php?tab=moderation&amp;section=torrents&amp;status=<?=$statusKey;?>'>
+				<span class='admin-status-value'><?=number_format((int) ($torrentModerationCounts[$statusKey] ?? 0));?></span>
+				<span class='admin-status-label'><?=htmlspecialchars(lt_torrent_status_label($statusKey), ENT_QUOTES, 'UTF-8');?></span>
+			</a>
+			<?php } ?>
+		</div>
+	</section>
+	<?php } ?>
+
 	<section class='admin-card'>
 		<h2 class='admin-card-title'>Быстрые действия</h2>
 		<p class='admin-card-text'>Операции, которые можно выполнить прямо из админки без перехода в отдельные страницы.</p>
@@ -1204,7 +1424,10 @@ head('Админка');
 			<?php foreach ($shortcuts as $shortcut) { ?>
 			<?php if (empty($shortcut['allowed'])) { continue; } ?>
 			<?php $hasShortcuts = true; ?>
-			<a class='admin-shortcut-link' href='<?=$shortcut['href'];?>'><?=$shortcut['label'];?></a>
+			<a class='admin-shortcut-card' href='<?=$shortcut['href'];?>'>
+				<span class='admin-shortcut-title'><?=htmlspecialchars($shortcut['label'], ENT_QUOTES, 'UTF-8');?></span>
+				<span class='admin-shortcut-text'><?=htmlspecialchars($shortcut['description'], ENT_QUOTES, 'UTF-8');?></span>
+			</a>
 			<?php } ?>
 		</div>
 		<?php if (!$hasShortcuts) { ?>
@@ -1240,6 +1463,113 @@ head('Админка');
 		</div>
 	</section>
 	<?php } ?>
+	<?php } elseif ($activeTab === 'moderation' && $activeSection === 'log' && lt_torrent_can_moderate($USER)) { ?>
+	<?php
+	$logFilters = array(
+		'action' => trim((string) ($_GET['action'] ?? '')),
+		'moderator_id' => (int) ($_GET['moderator_id'] ?? 0),
+		'target_type' => trim((string) ($_GET['target_type'] ?? '')),
+		'target_id' => (int) ($_GET['target_id'] ?? 0),
+		'date_from' => trim((string) ($_GET['date_from'] ?? '')),
+		'date_to' => trim((string) ($_GET['date_to'] ?? '')),
+		'limit' => 100,
+	);
+	$logRows = lt_moderation_log_fetch($logFilters);
+	$logActions = admin_moderation_log_actions();
+	$logModerators = admin_moderation_log_moderators();
+	?>
+	<section class='admin-card'>
+		<h2 class='admin-card-title'>Журнал модерации</h2>
+		<p class='admin-card-text'>Записываются действия модераторов по раздачам: старый и новый статус, причина, IP и время.</p>
+		<form class='admin-settings-form' method='get' action='admin.php' style='margin-top:16px;'>
+			<input type='hidden' name='tab' value='moderation'>
+			<input type='hidden' name='section' value='log'>
+			<div class='admin-settings-grid'>
+				<div class='admin-settings-field'>
+					<label class='admin-settings-label' for='log-action'>Действие</label>
+					<select class='admin-settings-input' id='log-action' name='action'>
+						<option value=''>Все действия</option>
+						<?php foreach ($logActions as $actionOption) { ?>
+						<option value='<?=htmlspecialchars($actionOption, ENT_QUOTES, 'UTF-8');?>'<?=($logFilters['action'] === $actionOption ? ' selected' : '');?>><?=htmlspecialchars(lt_moderation_log_action_label($actionOption), ENT_QUOTES, 'UTF-8');?></option>
+						<?php } ?>
+					</select>
+				</div>
+				<div class='admin-settings-field'>
+					<label class='admin-settings-label' for='log-moderator'>Модератор</label>
+					<select class='admin-settings-input' id='log-moderator' name='moderator_id'>
+						<option value='0'>Все модераторы</option>
+						<?php foreach ($logModerators as $moderatorRow) { ?>
+						<option value='<?=(int) $moderatorRow['id'];?>'<?=((int) $logFilters['moderator_id'] === (int) $moderatorRow['id'] ? ' selected' : '');?>><?=htmlspecialchars((string) $moderatorRow['name'], ENT_QUOTES, 'UTF-8');?></option>
+						<?php } ?>
+					</select>
+				</div>
+				<div class='admin-settings-field'>
+					<label class='admin-settings-label' for='log-target-type'>Тип объекта</label>
+					<input class='admin-settings-input' id='log-target-type' type='text' name='target_type' value='<?=htmlspecialchars($logFilters['target_type'], ENT_QUOTES, 'UTF-8');?>' placeholder='torrent'>
+				</div>
+				<div class='admin-settings-field'>
+					<label class='admin-settings-label' for='log-target-id'>ID объекта</label>
+					<input class='admin-settings-input' id='log-target-id' type='number' min='0' name='target_id' value='<?=($logFilters['target_id'] > 0 ? (int) $logFilters['target_id'] : '');?>'>
+				</div>
+				<div class='admin-settings-field'>
+					<label class='admin-settings-label' for='log-date-from'>Дата с</label>
+					<input class='admin-settings-input' id='log-date-from' type='date' name='date_from' value='<?=htmlspecialchars($logFilters['date_from'], ENT_QUOTES, 'UTF-8');?>'>
+				</div>
+				<div class='admin-settings-field'>
+					<label class='admin-settings-label' for='log-date-to'>Дата по</label>
+					<input class='admin-settings-input' id='log-date-to' type='date' name='date_to' value='<?=htmlspecialchars($logFilters['date_to'], ENT_QUOTES, 'UTF-8');?>'>
+				</div>
+			</div>
+			<div class='admin-settings-footer'>
+				<a class='admin-secondary-link' href='admin.php?tab=moderation&amp;section=log'>Сбросить</a>
+				<button class='admin-settings-submit' type='submit'>Фильтровать</button>
+			</div>
+		</form>
+		<?php if (!$logRows) { ?>
+		<div class='admin-empty' style='margin-top:16px;'>Записей журнала не найдено.</div>
+		<?php } else { ?>
+		<div class='lt-admin-table-wrap' style='margin-top:16px;'>
+			<table class='lt-admin-table'>
+				<thead>
+					<tr>
+						<th>Дата</th>
+						<th>Модератор</th>
+						<th>Действие</th>
+						<th>Объект</th>
+						<th>Старое значение</th>
+						<th>Новое значение</th>
+						<th>Причина</th>
+						<th>IP</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ($logRows as $logRow) { ?>
+					<?php
+					$targetUrl = lt_moderation_log_target_url($logRow['target_type'] ?? '', (int) ($logRow['target_id'] ?? 0));
+					$targetText = trim((string) ($logRow['target_type'] ?? '')).' #'.(int) ($logRow['target_id'] ?? 0);
+					?>
+					<tr>
+						<td><?=htmlspecialchars(convent_date((string) ($logRow['created_at'] ?? '')), ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=htmlspecialchars((string) ($logRow['moderator_name'] ?? ('#'.(int) ($logRow['moderator_id'] ?? 0))), ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=htmlspecialchars(lt_moderation_log_action_label($logRow['action'] ?? ''), ENT_QUOTES, 'UTF-8');?></td>
+						<td>
+							<?php if ($targetUrl !== '') { ?>
+							<a href='<?=htmlspecialchars($targetUrl, ENT_QUOTES, 'UTF-8');?>'><?=htmlspecialchars($targetText, ENT_QUOTES, 'UTF-8');?></a>
+							<?php } else { ?>
+							<?=htmlspecialchars($targetText, ENT_QUOTES, 'UTF-8');?>
+							<?php } ?>
+						</td>
+						<td><?=htmlspecialchars((string) ($logRow['old_value'] ?? ''), ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=htmlspecialchars((string) ($logRow['new_value'] ?? ''), ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=htmlspecialchars((string) ($logRow['reason'] ?? ''), ENT_QUOTES, 'UTF-8');?></td>
+						<td><?=htmlspecialchars((string) ($logRow['ip'] ?? ''), ENT_QUOTES, 'UTF-8');?></td>
+					</tr>
+					<?php } ?>
+				</tbody>
+			</table>
+		</div>
+		<?php } ?>
+	</section>
 	<?php } elseif ($activeTab === 'moderation' && $activeSection === 'torrents' && lt_torrent_can_moderate($USER)) { ?>
 	<?php
 	$moderationStatus = trim((string) ($_GET['status'] ?? 'pending'));
@@ -1261,7 +1591,11 @@ head('Админка');
 		<p class='admin-card-text'>Очередь работает через soft status: torrent-файлы, infohash и связанные данные не меняются.</p>
 		<div class='admin-tabs' style='position:static;margin-top:16px;'>
 			<?php foreach (admin_torrent_moderation_statuses() as $statusOption) { ?>
-			<a class='admin-tab-link<?=($moderationStatus === $statusOption ? ' admin-tab-link-active' : '');?>' href='admin.php?tab=moderation&amp;section=torrents&amp;status=<?=$statusOption;?>'><?=($statusOption === 'all' ? 'Все' : htmlspecialchars(lt_torrent_status_label($statusOption), ENT_QUOTES, 'UTF-8'));?></a>
+			<?php $statusCount = ($statusOption === 'all' ? array_sum($torrentModerationCounts) : (int) ($torrentModerationCounts[$statusOption] ?? 0)); ?>
+			<a class='admin-tab-link<?=($moderationStatus === $statusOption ? ' admin-tab-link-active' : '');?>' href='admin.php?tab=moderation&amp;section=torrents&amp;status=<?=$statusOption;?>'>
+				<span><?=($statusOption === 'all' ? 'Все' : htmlspecialchars(lt_torrent_status_label($statusOption), ENT_QUOTES, 'UTF-8'));?></span>
+				<span class='admin-tab-count'><?=number_format((int) $statusCount);?></span>
+			</a>
 			<?php } ?>
 		</div>
 		<?php if (!$moderationRows) { ?>

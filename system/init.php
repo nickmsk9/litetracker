@@ -70,6 +70,9 @@ require __DIR__ . '/functions/functions.comments.php';
 //Функционал уведомлений
 require __DIR__ . '/functions/functions.notifications.php';
 
+//Журнал действий модераторов
+require __DIR__ . '/functions/functions.moderation_log.php';
+
 //Статусы и модерация раздач
 require __DIR__ . '/functions/functions.torrent_status.php';
 
