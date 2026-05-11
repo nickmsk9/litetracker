@@ -95,6 +95,9 @@
         this.endpoint = root.getAttribute("data-endpoint") || AJAX_URL;
         this.refreshUrl = root.getAttribute("data-refresh-url") || this.endpoint;
         this.sort = root.getAttribute("data-comments-sort") || "old";
+        this.expandedReplies = {};
+        this.storageKey = "litetrackerCommentReplies:" + this.type + ":" + this.objectId;
+        this.loadExpandedReplies();
     }
 
     CommentThread.prototype.notice = function (message, isError) {
@@ -266,6 +269,90 @@
         this.setReplyMode(form, false);
     };
 
+    CommentThread.prototype.loadExpandedReplies = function () {
+        try {
+            this.expandedReplies = JSON.parse(window.localStorage.getItem(this.storageKey) || "{}");
+        } catch (error) {
+            this.expandedReplies = {};
+        }
+    };
+
+    CommentThread.prototype.saveExpandedReplies = function () {
+        try {
+            window.localStorage.setItem(this.storageKey, JSON.stringify(this.expandedReplies || {}));
+        } catch (error) {}
+    };
+
+    CommentThread.prototype.setRepliesExpanded = function (commentId, expanded) {
+        if (!commentId || commentId === "0") {
+            return;
+        }
+
+        if (expanded) {
+            this.expandedReplies[commentId] = 1;
+        } else {
+            delete this.expandedReplies[commentId];
+        }
+
+        this.saveExpandedReplies();
+    };
+
+    CommentThread.prototype.expandReplyBranch = function (commentEl) {
+        var current = commentEl;
+
+        while (current && current !== this.root) {
+            if (current.getAttribute && current.getAttribute("data-comment-id")) {
+                this.setRepliesExpanded(current.getAttribute("data-comment-id"), true);
+            }
+            current = closest(current.parentNode, ".wall-comment");
+        }
+    };
+
+    CommentThread.prototype.applyReplyCollapse = function () {
+        var self = this;
+        var childBoxes = this.root.querySelectorAll("[data-comment-children]");
+
+        Array.prototype.forEach.call(childBoxes, function (box) {
+            var parent = closest(box, ".wall-comment");
+            var parentId = parent ? parent.getAttribute("data-comment-id") || "0" : "0";
+            var children = Array.prototype.filter.call(box.children, function (child) {
+                return child.classList && child.classList.contains("wall-comment");
+            });
+            var toggle = box.querySelector(":scope > .comment-replies-toggle");
+            var hiddenCount;
+            var expanded;
+            var i;
+
+            if (toggle && toggle.parentNode) {
+                toggle.parentNode.removeChild(toggle);
+            }
+
+            for (i = 0; i < children.length; i += 1) {
+                children[i].hidden = false;
+            }
+
+            if (children.length <= 3 || parentId === "0") {
+                return;
+            }
+
+            expanded = !!self.expandedReplies[parentId];
+            hiddenCount = Math.max(0, children.length - 2);
+
+            if (!expanded) {
+                for (i = 0; i < hiddenCount; i += 1) {
+                    children[i].hidden = true;
+                }
+            }
+
+            toggle = document.createElement("button");
+            toggle.type = "button";
+            toggle.className = "comment-replies-toggle";
+            toggle.setAttribute("data-comment-replies-toggle", parentId);
+            toggle.textContent = expanded ? "Скрыть ответы" : "Показать ещё " + hiddenCount + " ответов";
+            box.insertBefore(toggle, box.firstChild);
+        });
+    };
+
     CommentThread.prototype.refreshStream = function (streamHtml, highlightId) {
         var stream = this.stream();
         var tmp;
@@ -294,6 +381,15 @@
 
         stream.innerHTML = newStream ? newStream.innerHTML : streamHtml;
         this.normalizeMainForm();
+
+        if (highlightId) {
+            var highlighted = this.root.querySelector('[data-comment-id="' + highlightId + '"]');
+            if (highlighted) {
+                this.expandReplyBranch(highlighted);
+            }
+        }
+
+        this.applyReplyCollapse();
 
         if (!highlightId) {
             return;
@@ -348,6 +444,8 @@
 
         parentInput.value = button.getAttribute("data-comment-id") || "0";
 
+        this.expandReplyBranch(closest(button, ".wall-comment"));
+        this.applyReplyCollapse();
         this.setReplyMode(form, true);
 
         this.focusTextarea(form);
@@ -772,6 +870,7 @@
         var target = event.target;
         var replyBtn = closest(target, "[data-comment-reply], [data-wall-reply]");
         var cancelBtn = closest(target, "[data-comment-reply-cancel]");
+        var collapseBtn = closest(target, "[data-comment-replies-toggle]");
         var editBtn = closest(target, "[data-wall-edit]");
         var deleteBtn = closest(target, "[data-wall-delete]");
         var reportBtn = closest(target, "[data-wall-report]");
@@ -795,6 +894,16 @@
         if (refreshBtn && this.root.contains(refreshBtn)) {
             event.preventDefault();
             this.refresh();
+            return;
+        }
+
+        if (collapseBtn && this.root.contains(collapseBtn)) {
+            event.preventDefault();
+            this.setRepliesExpanded(
+                collapseBtn.getAttribute("data-comment-replies-toggle") || "0",
+                !this.expandedReplies[collapseBtn.getAttribute("data-comment-replies-toggle") || "0"],
+            );
+            this.applyReplyCollapse();
             return;
         }
 
@@ -894,6 +1003,7 @@
         var self = this;
         var form = this.normalizeMainForm();
         this.setReplyMode(form, false);
+        this.applyReplyCollapse();
 
         this.root.addEventListener("click", function (event) {
             self.handleClick(event);

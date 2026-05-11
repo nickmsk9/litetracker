@@ -840,6 +840,38 @@ function comments_build_tree_branch($parentId, $comments, $childrenMap, $sort = 
     return $result;
 }
 
+function comments_tree_find_node($tree, $commentId)
+{
+    foreach ((array) $tree as $node) {
+        if ((int) ($node['id'] ?? 0) === (int) $commentId) {
+            return $node;
+        }
+
+        $found = comments_tree_find_node((array) ($node['children'] ?? array()), $commentId);
+        if ($found) {
+            return $found;
+        }
+    }
+
+    return null;
+}
+
+function comments_tree_without_node($tree, $commentId)
+{
+    $result = array();
+
+    foreach ((array) $tree as $node) {
+        if ((int) ($node['id'] ?? 0) === (int) $commentId) {
+            continue;
+        }
+
+        $node['children'] = comments_tree_without_node((array) ($node['children'] ?? array()), $commentId);
+        $result[] = $node;
+    }
+
+    return $result;
+}
+
 function comments_preload_users($rows)
 {
     global $db, $memcached;
@@ -1079,9 +1111,11 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0, $conte
     }
 
     if ($children) {
-        echo '<div class="wall-comment-children">';
+        $childContext = $context;
+        unset($childContext['pinned_clone']);
+        echo '<div class="wall-comment-children" data-comment-children="1">';
         foreach ($children as $childNode) {
-            comments_render_node($childNode, $type, $objectId, $file, $level + 1, $context);
+            comments_render_node($childNode, $type, $objectId, $file, $level + 1, $childContext);
         }
         echo '</div>';
     }
@@ -1122,8 +1156,8 @@ function comments_render_list_html($type, $objectId, $file = '', $desc = 0, $lim
     echo '</div>';
 
     if ($pinnedCommentId > 0 && !empty($rowsById[$pinnedCommentId])) {
-        $pinnedNode = $rowsById[$pinnedCommentId];
-        $pinnedNode['children'] = array();
+        $pinnedNode = comments_tree_find_node($tree, $pinnedCommentId) ?: $rowsById[$pinnedCommentId];
+        $tree = comments_tree_without_node($tree, $pinnedCommentId);
         $pinnedContext = $context;
         $pinnedContext['pinned_clone'] = true;
         echo '<div class="comment-pinned-block">';

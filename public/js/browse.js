@@ -186,6 +186,7 @@
         function fetchAndReplace(url, pushHistory) {
             currentFetch += 1;
             var requestId = currentFetch;
+            var keepSearchFocus = searchInput && document.activeElement === searchInput;
 
             setLoading(true);
 
@@ -210,6 +211,41 @@
                     var nextPage = doc.querySelector("[data-browse-page]");
                     if (!nextPage) {
                         throw new Error("Invalid browse response");
+                    }
+
+                    if (keepSearchFocus) {
+                        var currentResults = page.querySelector("[data-browse-results-panel]");
+                        var nextResults = nextPage.querySelector("[data-browse-results-panel]");
+                        var currentListOrEmpty;
+                        var nextListOrEmpty;
+                        var currentPagination = page.querySelector("[data-browse-pagination]");
+                        var nextPagination = nextPage.querySelector("[data-browse-pagination]");
+
+                        if (!currentResults || !nextResults) {
+                            throw new Error("Invalid browse partial response");
+                        }
+
+                        currentListOrEmpty = currentResults.querySelector("[data-browse-list], .browse-empty-state");
+                        nextListOrEmpty = nextResults.querySelector("[data-browse-list], .browse-empty-state");
+                        if (!currentListOrEmpty || !nextListOrEmpty) {
+                            throw new Error("Invalid browse partial response");
+                        }
+
+                        currentListOrEmpty.replaceWith(nextListOrEmpty);
+                        if (currentPagination && nextPagination) {
+                            currentPagination.replaceWith(nextPagination);
+                        } else if (currentPagination) {
+                            currentPagination.parentNode.removeChild(currentPagination);
+                        } else if (nextPagination) {
+                            page.querySelector(".browse-main").appendChild(nextPagination);
+                        }
+                        list = page.querySelector("[data-browse-list]");
+
+                        if (pushHistory && window.history && window.history.pushState) {
+                            window.history.pushState({ browseAjax: true }, "", url.toString());
+                        }
+
+                        return;
                     }
 
                     page.replaceWith(nextPage);

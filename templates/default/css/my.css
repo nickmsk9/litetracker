@@ -2392,6 +2392,21 @@ body.comment-history-open {
     border-left: 1px solid #e8edf2;
 }
 
+.comment-replies-toggle {
+    align-self: flex-start;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.comment-replies-toggle:hover {
+    text-decoration: underline;
+}
+
 .wall-comment-editor-slot {
     margin-top: 10px;
 }

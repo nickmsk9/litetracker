@@ -553,7 +553,7 @@ $orderBy = ($search !== ''
 	? 'search_score DESC, seeders DESC, t.completed DESC, IF(t.news = \'1\', 1, 0) DESC, t.added DESC'
 	: $sortOptions[$sort]['order']);
 
-$db->query("SELECT t.id
+$db->query("SELECT t.id, COALESCE(SUM(tr.seeders), 0) AS seeders
 	FROM torrents AS t
 	".$joinSql."
 	LEFT JOIN trackers AS tr ON tr.torrent = t.id
@@ -726,18 +726,6 @@ head('Торренты');
 		</div>
 
 		<aside class="browse-sidebar" data-browse-sidebar>
-			<?php if ($categories) { ?>
-			<nav class="browse-filter-panel browse-sidebar-categories" aria-label="Категории торрентов">
-				<div class="browse-filter-title">Категории:</div>
-				<div class="browse-filter-options">
-					<a class="browse-sidebar-category<?=($id_category === 0 ? ' is-active' : '');?>" href="<?=htmlspecialchars(browse_build_url(array('id_category' => null, 'page' => null)), ENT_QUOTES, 'UTF-8');?>">Все торренты</a>
-					<?php foreach ($categories as $category) { ?>
-					<a class="browse-sidebar-category<?=($id_category === (int) $category['id'] ? ' is-active' : '');?>" href="<?=htmlspecialchars(browse_build_url(array('id_category' => (int) $category['id'], 'page' => null)), ENT_QUOTES, 'UTF-8');?>"><?=htmlspecialchars((string) $category['name'], ENT_QUOTES, 'UTF-8');?></a>
-					<?php } ?>
-				</div>
-			</nav>
-			<?php } ?>
-
 			<form action="browse.php" method="get" class="browse-filter-panel" data-browse-filter-form>
 				<?php if ($search !== '') { ?>
 				<input type="hidden" name="search" value="<?=htmlspecialchars($search, ENT_QUOTES, 'UTF-8');?>">
@@ -781,11 +769,11 @@ head('Торренты');
 						<label class="browse-filter-option">
 							<select name="status" class="browse-filter-select" data-browse-auto-filter>
 								<option value="">Любой статус</option>
-								<option value="approved"<?=($quickFilters['status'] === 'approved' ? ' selected' : '');?>>approved</option>
-								<option value="pending"<?=($quickFilters['status'] === 'pending' ? ' selected' : '');?>>pending</option>
-								<option value="need_fix"<?=($quickFilters['status'] === 'need_fix' ? ' selected' : '');?>>need_fix</option>
-								<option value="hidden"<?=($quickFilters['status'] === 'hidden' ? ' selected' : '');?>>hidden</option>
-								<option value="deleted"<?=($quickFilters['status'] === 'deleted' ? ' selected' : '');?>>deleted</option>
+								<option value="approved"<?=($quickFilters['status'] === 'approved' ? ' selected' : '');?>>Опубликовано</option>
+								<option value="pending"<?=($quickFilters['status'] === 'pending' ? ' selected' : '');?>>Ожидает модерации</option>
+								<option value="need_fix"<?=($quickFilters['status'] === 'need_fix' ? ' selected' : '');?>>Нужна доработка</option>
+								<option value="hidden"<?=($quickFilters['status'] === 'hidden' ? ' selected' : '');?>>Скрыто</option>
+								<option value="deleted"<?=($quickFilters['status'] === 'deleted' ? ' selected' : '');?>>Удалено</option>
 							</select>
 						</label>
 					</div>
