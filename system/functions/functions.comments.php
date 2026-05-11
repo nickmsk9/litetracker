@@ -1001,9 +1001,12 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0, $conte
     $csrfTokenRaw = lt_csrf_token('comments_'.$type.'_'.$objectId);
     $csrfToken = rawurlencode($csrfTokenRaw);
     $csrfTokenSafe = htmlspecialchars($csrfTokenRaw, ENT_QUOTES, 'UTF-8');
+    $avatarSize = ($level > 0 ? 40 : 48);
+    $showReactionFooter = $commentCanReply;
+    $showFooter = ($commentHasSideActions || $showReactionFooter);
     echo '<article class="wall-comment comment-entry'.($children ? ' wall-comment-has-children' : '').($commentDeleted ? ' comment-entry-deleted' : '').($isPinned ? ' comment-entry-pinned' : '').($isPinnedClone ? ' comment-entry-pinned-clone' : '').'" id="'.($isPinnedClone ? 'wall-comment-pinned-'.$commentId : 'wall-comment-'.$commentId).'" data-comment-id="'.$commentId.'" data-comment-type="'.htmlspecialchars($type, ENT_QUOTES, 'UTF-8').'" data-comment-object-id="'.$objectId.'" data-wall-level="'.$level.'">';
     echo '<a class="wall-comment-avatar comment-entry-avatar" href="'.$commentProfileHref.'">';
-    echo '<img src="'.$commentAvatarPath.'" alt="'.$commentUserNameSafe.'" width="28" height="28">';
+    echo '<img src="'.$commentAvatarPath.'" alt="'.$commentUserNameSafe.'" width="'.$avatarSize.'" height="'.$avatarSize.'">';
     echo '</a>';
     echo '<div class="wall-comment-body comment-entry-body'.($commentHasSideActions ? ' comment-entry-body-has-side-actions' : '').'">';
     echo '<div class="wall-comment-meta comment-entry-meta">';
@@ -1014,55 +1017,64 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0, $conte
     echo '<span class="wall-comment-date comment-entry-date">'.htmlspecialchars(($commentEditedLabel !== '' ? $commentEditedLabel : $commentDate), ENT_QUOTES, 'UTF-8').'</span>';
     echo '</div>';
 
-    if ($commentHasSideActions) {
-        echo '<div class="comment-side-actions">';
-
-        if ($commentCanReport) {
-            echo '<a class="comment-side-button comment-side-button-report wall-comment-report" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=report&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" title="Пожаловаться" aria-label="Пожаловаться" data-wall-report="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">';
-            echo '<span class="wall-comment-report-icon">&#9888;</span>';
-            echo '<span class="wall-comment-report-label">Пожаловаться</span>';
-            echo '</a>';
-        }
-
-        if ($commentCanEdit) {
-            echo '<a class="comment-side-button comment-side-button-edit" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=edit&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-edit="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'" data-require-reason="'.($commentCanModerate && (int) ($USER['id'] ?? 0) !== $commentUserId ? '1' : '0').'">'.htmlspecialchars((string) ($language['comments_4'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8').'</a>';
-        }
-
-        if ($commentCanDelete) {
-            echo '<a class="comment-side-button comment-side-button-delete" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=delete&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-delete="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'" data-require-reason="'.(!empty($PRIV['comments_delete']) && ((int) ($USER['id'] ?? 0) !== $commentUserId || $type === 'users') ? '1' : '0').'">'.htmlspecialchars((string) ($language['comments_5'] ?? 'Удалить'), ENT_QUOTES, 'UTF-8').'</a>';
-        }
-
-        if ($commentCanPin) {
-            $pinAction = ($isPinned ? 'unpin' : 'pin');
-            echo '<a class="comment-side-button comment-side-button-pin" href="#" data-wall-pin="1" data-pin-action="'.$pinAction.'" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">'.($isPinned ? 'Открепить' : 'Закрепить').'</a>';
-        }
-
-        if ($commentCanRestore) {
-            echo '<a class="comment-side-button comment-side-button-restore" href="#" data-wall-restore="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">Восстановить</a>';
-        }
-
-        if ($commentHasHistory) {
-            echo '<a class="comment-side-button comment-side-button-history" href="#" data-wall-history="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">История</a>';
-        }
-
-        echo '</div>';
-    }
-
     echo '<div class="wall-comment-text comment-entry-text'.($commentDeleted ? ' comment-entry-text-deleted' : '').'">'.$commentTextHtml.'</div>';
     echo '<textarea class="wall-comment-source" hidden>'.htmlspecialchars($commentTextRaw, ENT_QUOTES, 'UTF-8').'</textarea>';
     echo '<div class="wall-comment-editor-slot"></div>';
 
-    if ($commentCanReply) {
+    if ($showFooter) {
+        echo '<div class="wall-comment-footer">';
         echo '<div class="wall-comment-actions comment-entry-actions">';
-        if ($commentCanReact) {
-            $likeActive = ((string) ($node['user_reaction'] ?? '') === 'like');
-            $dislikeActive = ((string) ($node['user_reaction'] ?? '') === 'dislike');
-            echo '<button class="wall-comment-button comment-reaction-button'.($likeActive ? ' comment-reaction-active' : '').'" type="button" data-comment-react="like" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">Нравится <span>'.(int) ($node['like_count'] ?? 0).'</span></button>';
-            echo '<button class="wall-comment-button comment-reaction-button'.($dislikeActive ? ' comment-reaction-active' : '').'" type="button" data-comment-react="dislike" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">Не нравится <span>'.(int) ($node['dislike_count'] ?? 0).'</span></button>';
-        } else {
-            echo '<span class="comment-reaction-summary">+'.(int) ($node['like_count'] ?? 0).' / -'.(int) ($node['dislike_count'] ?? 0).'</span>';
+        if ($commentCanReply) {
+            echo '<button class="wall-comment-button comment-reply-button" type="button" data-comment-reply="1" data-wall-reply="1" data-comment-id="'.$commentId.'" data-author-name="'.$commentUserNameSafe.'">Ответить</button>';
         }
-        echo '<button class="wall-comment-button comment-reply-button" type="button" data-comment-reply="1" data-wall-reply="1" data-comment-id="'.$commentId.'" data-author-name="'.$commentUserNameSafe.'">Ответить</button>';
+        if ($commentHasSideActions) {
+            echo '<div class="comment-side-actions'.(!$commentCanReply ? ' comment-side-actions-visible' : '').'">';
+
+            if ($commentCanReport) {
+                echo '<a class="comment-side-button comment-side-button-report wall-comment-report" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=report&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" title="Пожаловаться" aria-label="Пожаловаться" data-wall-report="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">';
+                echo '<span class="wall-comment-report-icon">&#9888;</span>';
+                echo '</a>';
+            }
+
+            if ($commentCanEdit) {
+                echo '<a class="comment-side-button comment-side-button-edit" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=edit&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-edit="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'" data-require-reason="'.($commentCanModerate && (int) ($USER['id'] ?? 0) !== $commentUserId ? '1' : '0').'">'.htmlspecialchars((string) ($language['comments_4'] ?? 'Редактировать'), ENT_QUOTES, 'UTF-8').'</a>';
+            }
+
+            if ($commentCanDelete) {
+                echo '<a class="comment-side-button comment-side-button-delete" href="comments.take.php?type='.urlencode($type).'&amp;object_id='.$objectId.'&amp;id_comment='.$commentId.'&amp;act=delete&amp;file='.htmlspecialchars($file, ENT_QUOTES, 'UTF-8').'&amp;csrf_token='.$csrfToken.'" data-wall-delete="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'" data-require-reason="'.(!empty($PRIV['comments_delete']) && ((int) ($USER['id'] ?? 0) !== $commentUserId || $type === 'users') ? '1' : '0').'">'.htmlspecialchars((string) ($language['comments_5'] ?? 'Удалить'), ENT_QUOTES, 'UTF-8').'</a>';
+            }
+
+            if ($commentCanPin) {
+                $pinAction = ($isPinned ? 'unpin' : 'pin');
+                echo '<a class="comment-side-button comment-side-button-pin" href="#" data-wall-pin="1" data-pin-action="'.$pinAction.'" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">'.($isPinned ? 'Открепить' : 'Закрепить').'</a>';
+            }
+
+            if ($commentCanRestore) {
+                echo '<a class="comment-side-button comment-side-button-restore" href="#" data-wall-restore="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">Восстановить</a>';
+            }
+
+            if ($commentHasHistory) {
+                echo '<a class="comment-side-button comment-side-button-history" href="#" data-wall-history="1" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'">История</a>';
+            }
+
+            echo '</div>';
+        }
+        echo '</div>';
+        if ($showReactionFooter) {
+            echo '<div class="comment-reactions" aria-label="Реакции комментария">';
+            if ($commentCanReact) {
+                $likeActive = ((string) ($node['user_reaction'] ?? '') === 'like');
+                $dislikeActive = ((string) ($node['user_reaction'] ?? '') === 'dislike');
+                echo '<button class="wall-comment-button comment-reaction-button comment-reaction-like'.($likeActive ? ' comment-reaction-active' : '').'" type="button" data-comment-react="like" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'" title="Нравится (👍)">👍 <span class="comment-reaction-count">'.(int) ($node['like_count'] ?? 0).'</span></button>';
+                echo '<button class="wall-comment-button comment-reaction-button comment-reaction-dislike'.($dislikeActive ? ' comment-reaction-active' : '').'" type="button" data-comment-react="dislike" data-comment-id="'.$commentId.'" data-csrf-token="'.$csrfTokenSafe.'" title="Не нравится (👎)">👎 <span class="comment-reaction-count">'.(int) ($node['dislike_count'] ?? 0).'</span></button>';
+            } else {
+                $likeCount = (int) ($node['like_count'] ?? 0);
+                $dislikeCount = (int) ($node['dislike_count'] ?? 0);
+                echo '<span class="comment-reaction-summary">👍 '.$likeCount.'</span>';
+                echo '<span class="comment-reaction-summary">👎 '.$dislikeCount.'</span>';
+            }
+            echo '</div>';
+        }
         echo '</div>';
     }
 
@@ -1101,7 +1113,8 @@ function comments_render_list_html($type, $objectId, $file = '', $desc = 0, $lim
     ob_start();
     echo '<div class="comment-stream'.($type === 'users' ? ' wall-comments-list' : ' torrent-comments-list').'" data-comment-stream="1">';
     echo '<div class="comment-toolbar">';
-    echo '<label class="comment-sort-label">Сортировка <select class="comment-sort-select" data-comment-sort="1">';
+    echo '<div class="comment-toolbar-summary"><span class="comment-toolbar-count">'.count($rows).'</span><span class="comment-toolbar-caption">комментариев</span></div>';
+    echo '<label class="comment-sort-label"><span class="comment-sort-text">Упорядочить</span><select class="comment-sort-select" data-comment-sort="1">';
     foreach (array('old' => 'Старые', 'new' => 'Новые', 'popular' => 'Популярные') as $sortKey => $sortLabel) {
         echo '<option value="'.$sortKey.'"'.($sort === $sortKey ? ' selected' : '').'>'.$sortLabel.'</option>';
     }

@@ -277,8 +277,21 @@
         }
 
         tmp = document.createElement("div");
-        tmp.innerHTML = streamHtml;
+        try {
+            tmp.innerHTML = streamHtml;
+        } catch (e) {
+            // If HTML parsing fails, don't update stream to prevent data loss
+            console.error("Failed to parse stream HTML:", e);
+            this.notice("Ошибка обновления комментариев. Попробуйте еще раз.", true);
+            return;
+        }
+        
         newStream = tmp.querySelector("[data-comment-stream]");
+        if (!newStream && !streamHtml.includes("data-comment-stream")) {
+            // Fallback: treat entire content as stream if no wrapper
+            newStream = tmp;
+        }
+        
         stream.innerHTML = newStream ? newStream.innerHTML : streamHtml;
         this.normalizeMainForm();
 
@@ -599,16 +612,50 @@
         }
         this.fillBasePayload(formData);
 
+        button.disabled = true;
+
         sendAjax(
             this.endpoint,
             formData,
             function (payload) {
-                if (payload.html) {
-                    self.refreshStream(payload.html || "", payload.comment_id || commentId);
+                button.disabled = false;
+                
+                // Update counts and state without full re-render
+                if (payload.comment_id && payload.likes !== undefined && payload.dislikes !== undefined) {
+                    var likeBtn = comment.querySelector('[data-comment-react="like"]');
+                    var dislikeBtn = comment.querySelector('[data-comment-react="dislike"]');
+                    
+                    if (likeBtn) {
+                        var likesSpan = likeBtn.querySelector('.comment-reaction-count');
+                        if (likesSpan) likesSpan.textContent = payload.likes;
+                        if (payload.reaction === 'like') {
+                            likeBtn.classList.add('comment-reaction-active');
+                        } else {
+                            likeBtn.classList.remove('comment-reaction-active');
+                        }
+                    }
+                    
+                    if (dislikeBtn) {
+                        var dislikesSpan = dislikeBtn.querySelector('.comment-reaction-count');
+                        if (dislikesSpan) dislikesSpan.textContent = payload.dislikes;
+                        if (payload.reaction === 'dislike') {
+                            dislikeBtn.classList.add('comment-reaction-active');
+                        } else {
+                            dislikeBtn.classList.remove('comment-reaction-active');
+                        }
+                    }
+                    
+                    self.notice(payload.message || "Реакция сохранена.");
+                } else {
+                    // Fallback: full re-render if partial update not available
+                    if (payload.html) {
+                        self.refreshStream(payload.html || "", payload.comment_id || commentId);
+                    }
+                    self.notice(payload.message || "Реакция сохранена.");
                 }
-                self.notice(payload.message || "Реакция сохранена.");
             },
             function (message) {
+                button.disabled = false;
                 self.notice(message, true);
             },
         );
@@ -629,6 +676,57 @@
         });
     };
 
+    CommentThread.prototype.openHistoryDialog = function (historyHtml) {
+        var existing = document.querySelector("[data-comment-history-modal]");
+        var backdrop;
+        var closeModal;
+        var onKeydown;
+
+        if (existing && existing.parentNode) {
+            existing.parentNode.removeChild(existing);
+        }
+
+        backdrop = document.createElement("div");
+        backdrop.className = "comment-history-modal";
+        backdrop.setAttribute("data-comment-history-modal", "1");
+        backdrop.innerHTML =
+            '<div class="comment-history-modal-dialog" role="dialog" aria-modal="true" aria-label="История изменений комментария">' +
+            '<div class="comment-history-modal-header">' +
+            '<div class="comment-history-title">История изменений комментария</div>' +
+            '<button type="button" class="comment-history-modal-close" data-comment-history-close="1" aria-label="Закрыть">&times;</button>' +
+            '</div>' +
+            '<div class="comment-history-list">' + historyHtml + '</div>' +
+            '</div>';
+
+        onKeydown = function (event) {
+            if (event.key === "Escape") {
+                closeModal();
+            }
+        };
+
+        closeModal = function () {
+            if (backdrop && backdrop.parentNode) {
+                backdrop.parentNode.removeChild(backdrop);
+            }
+            document.body.classList.remove("comment-history-open");
+            document.removeEventListener("keydown", onKeydown);
+        };
+
+        backdrop.addEventListener("click", function (event) {
+            if (event.target === backdrop || closest(event.target, "[data-comment-history-close]")) {
+                closeModal();
+            }
+        });
+
+        document.body.appendChild(backdrop);
+        document.body.classList.add("comment-history-open");
+        document.addEventListener("keydown", onKeydown);
+
+        if (backdrop.querySelector("[data-comment-history-close]")) {
+            backdrop.querySelector("[data-comment-history-close]").focus();
+        }
+    };
+
     CommentThread.prototype.showHistory = function (button) {
         var comment = closest(button, ".wall-comment");
         var commentId = button.getAttribute("data-comment-id") || (comment ? comment.getAttribute("data-comment-id") || "0" : "0");
@@ -647,11 +745,8 @@
             this.endpoint,
             formData,
             function (payload) {
-                if (window.LiteTracker && window.LiteTracker.ui && typeof window.LiteTracker.ui.alert === "function") {
-                    window.LiteTracker.ui.alert(payload.html || "Истории правок нет.");
-                } else {
-                    window.alert((payload.html || "Истории правок нет.").replace(/<[^>]+>/g, "\n"));
-                }
+                var historyHtml = payload.html || "<div class=\"comment-history-empty\">Истории правок нет.</div>";
+                self.openHistoryDialog(historyHtml);
             },
             function (message) {
                 self.notice(message, true);
@@ -672,6 +767,13 @@
         var restoreBtn = closest(target, "[data-wall-restore]");
         var historyBtn = closest(target, "[data-wall-history]");
         var comment;
+
+        // DEBUG: Log reaction button detection
+        if (target.getAttribute('data-comment-react')) {
+            console.log('[REACT-DEBUG] Target has data-comment-react:', target.getAttribute('data-comment-react'));
+            console.log('[REACT-DEBUG] reactBtn found:', !!reactBtn);
+            console.log('[REACT-DEBUG] this.root:', this.root);
+        }
 
         if (refreshBtn && this.root.contains(refreshBtn)) {
             event.preventDefault();
@@ -714,6 +816,7 @@
         }
 
         if (reactBtn && this.root.contains(reactBtn)) {
+                        console.log('[REACT-DEBUG] Calling submitReaction for:', reactBtn.getAttribute('data-comment-react'));
             event.preventDefault();
             this.submitReaction(reactBtn);
             return;

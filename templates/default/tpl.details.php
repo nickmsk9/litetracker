@@ -321,7 +321,7 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 			<?php if (!empty($USER['id'])) { ?>
 			<section class="details-panel details-comments-panel">
 				<header class="details-comments-header">
-					<h2 class="details-comments-title">Комментарии к торренту</h2>
+					<h2 class="details-comments-title">Комментарии</h2>
 				</header>
 				<div class="details-comments-body">
 					<?php listComment('torrents' , $id , 'details.php?'); ?>
