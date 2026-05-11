@@ -10,6 +10,7 @@ by Nick
 */
 
 require 'system/init.php';
+require 'system/functions/functions.migrations.php';
 
 is_login();
 
@@ -218,6 +219,7 @@ function admin_dashboard_role_map($user, $priv)
 		'site-settings' => $superadmin,
 		'tracker-settings' => $superadmin,
 		'feature-settings' => $superadmin,
+		'migrations' => $superadmin,
 		'superadmin' => $superadmin,
 	);
 }
@@ -453,6 +455,10 @@ function admin_dashboard_notice_meta($code)
 		'torrent_status_updated' => array('type' => 'success', 'text' => 'Статус релиза обновлен.'),
 		'settings_saved' => array('type' => 'success', 'text' => 'Настройки сохранены.'),
 		'no_changes' => array('type' => 'success', 'text' => 'Изменений не было.'),
+		'dry_run_complete' => array('type' => 'success', 'text' => 'Сухой прогон завершен.'),
+		'migrations_applied' => array('type' => 'success', 'text' => 'Миграции применены.'),
+		'migrations_partial' => array('type' => 'error', 'text' => 'Некоторые миграции не применены.'),
+		'no_migrations_selected' => array('type' => 'error', 'text' => 'Не выбрано ни одной миграции.'),
 		'action_denied' => array('type' => 'error', 'text' => 'У вас нет прав на это действие.'),
 		'action_failed' => array('type' => 'error', 'text' => 'Операция не выполнена.'),
 	);
@@ -567,6 +573,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 		header('Location: admin.php?tab=moderation&section=torrents&status='.rawurlencode(trim((string) ($_POST['filter_status'] ?? 'pending'))).'&notice='.($ok ? 'torrent_status_updated' : 'action_failed'));
 		die();
+	}
+
+	if ($action === 'migrations') {
+		if (!$roles['superadmin']) {
+			admin_dashboard_redirect('overview', 'action_denied');
+		}
+
+		$migrationsAction = trim((string) ($_POST['migrations_action'] ?? ''));
+
+		if ($migrationsAction === 'dry_run') {
+			// Dry run - just count pending migrations
+			$dryRunResult = lt_migrations_dry_run();
+			$_SESSION['admin_migrations_dryrun'] = $dryRunResult;
+			admin_dashboard_redirect('migrations', 'dry_run_complete');
+		}
+
+		if ($migrationsAction === 'apply') {
+			// Apply pending migrations
+			$migrationNames = array();
+			$selectedMigrations = (array) ($_POST['selected_migrations'] ?? array());
+
+			foreach ($selectedMigrations as $name) {
+				$name = trim((string) $name);
+				if (!empty($name) && preg_match('~^[0-9_a-z.]+\\.sql$~i', $name)) {
+					$migrationNames[] = $name;
+				}
+			}
+
+			if (empty($migrationNames)) {
+				admin_dashboard_redirect('migrations', 'no_migrations_selected');
+			}
+
+			$errors = array();
+			$applied = 0;
+			$migrations = lt_migrations_full_list();
+
+			foreach ($migrations as $migration) {
+				if (!in_array($migration['name'], $migrationNames, true)) {
+					continue;
+				}
+
+				// Only apply pending or changed migrations
+				if (!in_array($migration['status'], array('pending', 'changed'), true)) {
+					continue;
+				}
+
+				$errorMsg = '';
+				if (lt_migrations_execute($migration['name'], $migration['content'], $errorMsg)) {
+					$applied++;
+				} else {
+					$errors[] = $migration['name'].': '.$errorMsg;
+				}
+			}
+
+			$_SESSION['admin_migrations_applied'] = $applied;
+			$_SESSION['admin_migrations_errors'] = $errors;
+
+			admin_dashboard_redirect('migrations', (!empty($errors) ? 'migrations_partial' : 'migrations_applied'));
+		}
 	}
 
 	if ($action === 'save_settings') {
@@ -691,6 +756,7 @@ $tabs = array(
 	'site-settings' => array('label' => 'Сайт', 'allowed' => $roles['site-settings']),
 	'tracker-settings' => array('label' => 'Трекер', 'allowed' => $roles['tracker-settings']),
 	'feature-settings' => array('label' => 'Функции', 'allowed' => $roles['feature-settings']),
+	'migrations' => array('label' => 'БД / Миграции', 'allowed' => $roles['migrations']),
 );
 
 $sections = array(
@@ -1734,6 +1800,154 @@ head('Админка');
 			</div>
 		</form>
 	</section>
+	<?php } elseif ($activeTab === 'migrations') { ?>
+	<?php 
+	lt_migrations_ensure_table();
+	$allMigrations = lt_migrations_full_list();
+	$dryRunResult = $_SESSION['admin_migrations_dryrun'] ?? null;
+	$appliedCount = $_SESSION['admin_migrations_applied'] ?? null;
+	$errors = $_SESSION['admin_migrations_errors'] ?? null;
+	unset($_SESSION['admin_migrations_dryrun'], $_SESSION['admin_migrations_applied'], $_SESSION['admin_migrations_errors']);
+	?>
+	<section class='admin-card'>
+		<h2 class='admin-card-title'>Управление миграциями БД</h2>
+		<p class='admin-card-text'>Отслеживание, проверка и применение SQL-миграций. Все миграции находятся в папке database/migrations и сортируются по названию.</p>
+		
+		<div class='admin-inline-message admin-inline-message-error' style='margin-top:16px;'>
+			<strong>⚠ Важно:</strong> перед применением миграций обязательно сделайте резервную копию базы данных!
+		</div>
+
+		<?php if ($dryRunResult) { ?>
+		<div class='admin-inline-message admin-inline-message-success' style='margin-top:12px;'>
+			<strong>Результат сухого прогона:</strong><br>
+			Всего миграций: <?=$dryRunResult['total'];?><br>
+			Pending: <?=$dryRunResult['pending'];?> | Changed: <?=$dryRunResult['changed'];?> | Failed: <?=$dryRunResult['failed'];?> | Applied: <?=$dryRunResult['applied'];?>
+		</div>
+		<?php } ?>
+
+		<?php if ($appliedCount !== null) { ?>
+		<div class='admin-inline-message admin-inline-message-success' style='margin-top:12px;'>
+			<strong>Применено миграций:</strong> <?=$appliedCount;?>
+			<?php if (!empty($errors)) { ?>
+			<br><strong>Ошибки:</strong>
+			<ul style='margin:8px 0 0; padding-left:20px;'>
+				<?php foreach ($errors as $error) { ?>
+				<li><?=htmlspecialchars($error, ENT_QUOTES, 'UTF-8');?></li>
+				<?php } ?>
+			</ul>
+			<?php } ?>
+		</div>
+		<?php } ?>
+
+		<h3 style='margin-top:20px; margin-bottom:10px; font-size:16px; font-weight:800;'>Список миграций</h3>
+		
+		<?php if (!$allMigrations) { ?>
+		<div class='admin-empty'>В папке database/migrations нет файлов миграций.</div>
+		<?php } else { ?>
+		<form method='post' action='admin.php' style='margin-top:12px;'>
+			<input type='hidden' name='tab' value='migrations'>
+			<input type='hidden' name='admin_action' value='migrations'>
+			<?=lt_csrf_input('admin_dashboard');?>
+			
+			<div class='lt-admin-table-wrap' style='margin-bottom:16px;'>
+				<table class='lt-admin-table' style='font-size:12px;'>
+					<thead>
+						<tr>
+							<th style='width:30px;'><input type='checkbox' id='select-all-migrations' style='cursor:pointer;'></th>
+							<th>Файл</th>
+							<th style='width:120px;'>Статус</th>
+							<th style='width:100px;'>Checksum</th>
+							<th style='width:70px;'>Batch</th>
+							<th style='width:140px;'>Дата применения</th>
+							<th style='width:80px;'>Время (мс)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ($allMigrations as $migration) { ?>
+						<?php
+						$statusBg = 'pending' === $migration['status'] ? '#e7f3e7' : ('applied' === $migration['status'] ? '#e7f0e7' : ('changed' === $migration['status'] ? '#fff3e7' : '#ffe7e7'));
+						$statusLabel = array(
+							'pending' => 'Ожидание',
+							'applied' => 'Применена',
+							'failed' => 'Ошибка',
+							'changed' => 'Изменена',
+						)[$migration['status']] ?? $migration['status'];
+						?>
+						<tr>
+							<td>
+								<?php if (in_array($migration['status'], array('pending', 'changed'), true)) { ?>
+								<input type='checkbox' name='selected_migrations[]' value='<?=htmlspecialchars($migration['name'], ENT_QUOTES, 'UTF-8');?>' class='migration-checkbox'>
+								<?php } ?>
+							</td>
+							<td>
+								<code style='font-size:11px; word-break:break-all;'><?=htmlspecialchars($migration['name'], ENT_QUOTES, 'UTF-8');?></code>
+							</td>
+							<td style='background-color:<?=$statusBg;?>;'>
+								<?=htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8');?>
+							</td>
+							<td>
+								<code style='font-size:10px;'><?=htmlspecialchars(substr($migration['checksum'], 0, 8), ENT_QUOTES, 'UTF-8');?></code>
+							</td>
+							<td style='text-align:center;'>
+								<?=($migration['batch'] > 0 ? $migration['batch'] : '—');?>
+							</td>
+							<td>
+								<?=($migration['applied_at'] ? htmlspecialchars(convent_date($migration['applied_at']), ENT_QUOTES, 'UTF-8') : '—');?>
+							</td>
+							<td style='text-align:right;'>
+								<?=($migration['execution_time_ms'] > 0 ? $migration['execution_time_ms'] : '—');?>
+							</td>
+						</tr>
+						<?php if (!empty($migration['error_message']) && 'failed' === $migration['status']) { ?>
+						<tr>
+							<td colspan='7' style='padding:8px 12px; background:#fff5f5; color:#c33; font-size:11px; border-left:3px solid #c33;'>
+								<strong>Ошибка:</strong> <?=htmlspecialchars($migration['error_message'], ENT_QUOTES, 'UTF-8');?>
+							</td>
+						</tr>
+						<?php } ?>
+						<?php } ?>
+					</tbody>
+				</table>
+			</div>
+
+			<div class='admin-settings-footer' style='justify-content:flex-start; gap:8px; margin-top:16px;'>
+				<button class='admin-action-button' type='submit' name='migrations_action' value='dry_run' style='background:#666; border-color:#666;'>
+					Dry Run
+				</button>
+				<button class='admin-action-button' type='submit' name='migrations_action' value='apply' style='background:#0a7; border-color:#0a7;' onclick='return confirm("Применить выбранные миграции?\n\nОбязательно сделайте backup перед этим!");'>
+					Применить выбранные
+				</button>
+			</div>
+		</form>
+		<?php } ?>
+
+		<h3 style='margin-top:20px; margin-bottom:10px; font-size:16px; font-weight:800;'>Информация о системе</h3>
+		<div class='admin-system-grid'>
+			<div class='admin-system-item'>
+				<div class='admin-system-label'>Папка миграций</div>
+				<div class='admin-system-value'><span class='admin-system-path'><?=htmlspecialchars(lt_migrations_path(), ENT_QUOTES, 'UTF-8');?></span></div>
+			</div>
+			<div class='admin-system-item'>
+				<div class='admin-system-label'>Таблица schema_migrations</div>
+				<div class='admin-system-value'><?=(lt_table_exists('schema_migrations') ? 'создана' : 'не найдена');?></div>
+			</div>
+		</div>
+	</section>
+
+	<script>
+	document.addEventListener('DOMContentLoaded', function() {
+		var selectAllCheckbox = document.getElementById('select-all-migrations');
+		var migrationCheckboxes = document.querySelectorAll('.migration-checkbox');
+		
+		if (selectAllCheckbox) {
+			selectAllCheckbox.addEventListener('change', function() {
+				migrationCheckboxes.forEach(function(checkbox) {
+					checkbox.checked = selectAllCheckbox.checked;
+				});
+			});
+		}
+	});
+	</script>
 	<?php } else { ?>
 	<?php $hasVisibleSection = false; ?>
 	<?php foreach ($sections as $section) { ?>
