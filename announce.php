@@ -294,6 +294,18 @@ if ($event === 'stopped') {
 			} else {
 				$trupdateset[] = 'leechers = leechers + 1';
 			}
+
+			// Ensure snatched row exists for this user/torrent so that subsequent
+			// UPDATE snatched ... WHERE userid=X AND torrent=Y does not silently fail.
+			// ON DUPLICATE KEY UPDATE is a no-op if the row already exists (preserves startedat).
+			if ($userid > 0) {
+				$ts_now = (int) time();
+				announce_safe_query(
+					"INSERT INTO snatched (userid, torrent, uploaded, downloaded, startedat, completedat, finished)"
+					." VALUES (".$userid.", ".$torrentid.", 0, 0, ".$ts_now.", 0, 0)"
+					." ON DUPLICATE KEY UPDATE startedat = IF(startedat = 0, ".$ts_now.", startedat)"
+				);
+			}
 		}
 	}
 }
