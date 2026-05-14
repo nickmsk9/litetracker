@@ -2393,18 +2393,48 @@ body.comment-history-open {
 }
 
 .comment-replies-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     align-self: flex-start;
-    padding: 0;
-    border: 0;
+    padding: 3px 10px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
     background: transparent;
-    color: var(--accent);
+    color: var(--muted);
     font: inherit;
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
     cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
 }
 
 .comment-replies-toggle:hover {
-    text-decoration: underline;
+    background: var(--surface-alt);
+    border-color: var(--line-strong);
+    color: var(--text);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+    text-decoration: none;
+}
+
+.comment-replies-toggle-label {
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.comment-replies-toggle-icon {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    transition: transform 0.22s ease;
+}
+
+.comment-replies-toggle[aria-expanded="true"] .comment-replies-toggle-icon {
+    transform: rotate(180deg);
 }
 
 .wall-comment-editor-slot {
