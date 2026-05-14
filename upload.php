@@ -369,6 +369,10 @@ foreach ($metadataSchema as $group => $definition) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+	if (!lt_csrf_validate('upload_torrent')) {
+		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
+
 	$form = $defaults;
 	$form['name'] = trim((string) ($_POST['name'] ?? ''));
 	$form['catid'] = (int) ($_POST['catid'] ?? 0);
@@ -584,6 +588,7 @@ head('Загрузить торрент');
 		</div>
 
 		<form class="upload-form" action="upload.php" method="post" enctype="multipart/form-data">
+			<?=lt_csrf_input('upload_torrent');?>
 			<div class="upload-grid">
 				<div class="upload-grid-main">
 					<div class="upload-field">

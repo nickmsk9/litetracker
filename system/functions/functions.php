@@ -827,12 +827,11 @@ function validfilename($name) {
 }
 //Формирование секретного кода
 function mksecret($length = 32) {
-$set = array("a","A","b","B","c","C","d","D","e","E","f","F","g","G","h","H","i","I","j","J","k","K","l","L","m","M","n","N","o","O","p","P","q","Q","r","R","s","S","t","T","u","U","v","V","w","W","x","X","y","Y","z","Z","1","2","3","4","5","6","7","8","9");
+	$set = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+	$setLen = strlen($set);
 	$str = '';
-	for($i = 1; $i <= $length; $i++)
-	{
-		$ch = rand(0, count($set)-1);
-		$str .= $set[$ch];
+	for ($i = 0; $i < $length; $i++) {
+		$str .= $set[random_int(0, $setLen - 1)];
 	}
 	return $str;
 }
@@ -1015,11 +1014,7 @@ function lt_csrf_token($scope = 'default')
 	}
 
 	if (empty($_SESSION['lt_csrf'][$scope])) {
-		if (function_exists('random_bytes')) {
-			$_SESSION['lt_csrf'][$scope] = bin2hex(random_bytes(16));
-		} else {
-			$_SESSION['lt_csrf'][$scope] = md5(mksecret(32).microtime(true).$scope);
-		}
+		$_SESSION['lt_csrf'][$scope] = bin2hex(random_bytes(16));
 	}
 
 	$token = (string) $_SESSION['lt_csrf'][$scope];
@@ -1161,16 +1156,19 @@ function taggenrelist($cat) {
 
 function addtags($addtags) {
 	global $language;
-	foreach(explode(",", $addtags) as $tag)
-	{
-		if(!empty($addtags))
-			$tags .= "<a style=\"font-weight:normal;\" href=\"browse.php?text=".$tag."&type=tags\">".$tag."</a>, ";
+	$tags = '';
+	foreach (explode(",", (string) $addtags) as $tag) {
+		$tag = trim($tag);
+		if ($tag !== '') {
+			$tags .= '<a style="font-weight:normal;" href="browse.php?text=' . htmlspecialchars(rawurlencode($tag), ENT_QUOTES, 'UTF-8') . '&amp;type=tags">' . htmlspecialchars($tag, ENT_QUOTES, 'UTF-8') . '</a>, ';
+		}
 	}
-
-	if ($tags)
+	if ($tags) {
 		$tags = substr($tags, 0, -2);
-	if (empty($addtags))
-	$tags = $language['tags_1'];
+	}
+	if (empty($addtags)) {
+		$tags = $language['tags_1'];
+	}
 	return $tags;
 }
 
@@ -1571,17 +1569,17 @@ function format_comment($text, $strip_html = true) {
 	$html[] = "<img class=\"linked-image\" src=\"\\3\" align=\"\\1\" border=\"0\" alt=\"\\2\" title=\"\\2\" />";
 	$bb[] = "#\[kp=([0-9]+)\]#is";
 	$html[] = "<a href=\"http://www.kinopoisk.ru/level/1/film/\\1/\" rel=\"nofollow\"><img src=\"http://www.kinopoisk.ru/rating/\\1.gif/\" alt=\"Кинопоиск\" title=\"Кинопоиск\" border=\"0\" /></a>";
-	$bb[] = "#\[url\]([\w]+?://([\w\#$%&~/.\-;:=,?@\]+]+|\[(?!url=))*?)\[/url\]#is";
+	$bb[] = "#\[url\]((?:https?|ftp)://([\w\#$%&~/.\-;:=,?@\]+]+|\[(?!url=))*?)\[/url\]#is";
 	$html[] = "<a href=\"\\1\" title=\"\\1\">\\1</a>";
 	$bb[] = "#\[url\]((www|ftp)\.([\w\#$%&~/.\-;:=,?@\]+]+|\[(?!url=))*?)\[/url\]#is";
 	$html[] = "<a href=\"http://\\1\" title=\"\\1\">\\1</a>";
-	$bb[] = "#\[url=([\w]+?://[\w\#$%&~/.\-;:=,?@\[\]+]*?)\]([^?\n\r\t].*?)\[/url\]#is";
+	$bb[] = "#\[url=((?:https?|ftp)://[\w\#$%&~/.\-;:=,?@\[\]+]*?)\]([^?\n\r\t].*?)\[/url\]#is";
 	$html[] = "<a href=\"\\1\" title=\"\\1\">\\2</a>";
 	$bb[] = "#\[url=((www|ftp)\.[\w\#$%&~/.\-;:=,?@\[\]+]*?)\]([^?\n\r\t].*?)\[/url\]#is";
 	$html[] = "<a href=\"http://\\1\" title=\"\\1\">\\3</a>";
-	$bb[] = "/\[url=([^()<>\s]+?)\]((\s|.)+?)\[\/url\]/i";
+	$bb[] = "/\[url=((?:https?|ftp|mailto):[^()<>\s\"']+?)\]([\s\S]+?)\[\/url\]/i";
 	$html[] = "<a href=\"\\1\">\\2</a>";
-	$bb[] = "/\[url\]([^()<>\s]+?)\[\/url\]/i";
+	$bb[] = "/\[url\]((?:https?|ftp):[^()<>\s\"']+?)\[\/url\]/i";
 	$html[] = "<a href=\"\\1\">\\1</a>";
 	$bb[] = "#\[mail\](\S+?)\[/mail\]#i";
 	$html[] = "<a href=\"mailto:\\1\">\\1</a>";
@@ -1632,17 +1630,27 @@ $s = str_replace("[/spoiler]","</div></div>",$s);
 	if (preg_match("#\[code\](.*?)\[/code\]#si", $s)) $s = encode_code($s);
 	if (preg_match("#\[php\](.*?)\[/php\]#si", $s)) $s = encode_php($s);
 /////////////////////////////////Tag [youtube][/youtube]
-while (preg_match("/\[youtube\]((\s|.)+?)\[\/youtube\]/i", $s)) {
-$s = str_replace("watch?v=","v/", $s);
-$s = preg_replace ("/\[youtube\]((\s|.)+?)\[\/youtube\]/i", "<object width='640' height='505'><param name=movie value='\\1&hl=ru&fs=1&'></param><param name='allowFullScreen' value='true'></param><param name='allowscriptaccess' value='always'></param><embed src='\\1&hl=ru&fs=1&' type='application/x-shockwave-flash' allowscriptaccess='always' allowfullscreen='true' width='640' height='505'></embed></object>", $s);
-}
+$s = preg_replace_callback("/\[youtube\]([\s\S]+?)\[\/youtube\]/i", function ($m) {
+	$url = trim(htmlspecialchars_decode($m[1], ENT_QUOTES));
+	$url = str_replace("watch?v=", "v/", $url);
+	if (!preg_match('#^https?://(?:www\.)?youtube\.com/v/[A-Za-z0-9_\-]{11}(?:[?&][^\s\'"<>]*)?$#i', $url)) {
+		return '';
+	}
+	$safe = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+	return "<object width=\"640\" height=\"505\"><param name=\"movie\" value=\"" . $safe . "&amp;hl=ru&amp;fs=1&amp;\"></param><param name=\"allowFullScreen\" value=\"true\"></param><param name=\"allowscriptaccess\" value=\"always\"></param><embed src=\"" . $safe . "&amp;hl=ru&amp;fs=1&amp;\" type=\"application/x-shockwave-flash\" allowscriptaccess=\"always\" allowfullscreen=\"true\" width=\"640\" height=\"505\"></embed></object>";
+}, $s);
 ///////////////////////////////////end tag youtube
 
 /////////////////////////////////Tag [rutube][/rutube]
-while (preg_match("/\[rutube\]((\s|.)+?)\[\/rutube\]/i", $s)) {
-$s = preg_replace("/http:\/\/rutube.ru\/tracks\/([0-9]+)\.html\?v\=/","http://video.rutube.ru/", $s);
-$s = preg_replace ("/\[rutube\]((\s|.)+?)\[\/rutube\]/i", "<object width='640' height='505'><param name=movie value='\\1'></param><param name='allowFullScreen' value='true'></param><param name='allowscriptaccess' value='always'></param><embed src='\\1' type='application/x-shockwave-flash' allowscriptaccess='always' allowfullscreen='true' width='640' height='505'></embed></object>", $s);
-}
+$s = preg_replace_callback("/\[rutube\]([\s\S]+?)\[\/rutube\]/i", function ($m) {
+	$url = trim(htmlspecialchars_decode($m[1], ENT_QUOTES));
+	$url = preg_replace("#http://rutube\.ru/tracks/([0-9]+)\.html\?v=#", "http://video.rutube.ru/", $url);
+	if (!preg_match('#^https?://(?:video\.)?rutube\.ru/[A-Za-z0-9/_\-\.]+$#i', $url)) {
+		return '';
+	}
+	$safe = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+	return "<object width=\"640\" height=\"505\"><param name=\"movie\" value=\"" . $safe . "\"></param><param name=\"allowFullScreen\" value=\"true\"></param><param name=\"allowscriptaccess\" value=\"always\"></param><embed src=\"" . $safe . "\" type=\"application/x-shockwave-flash\" allowscriptaccess=\"always\" allowfullscreen=\"true\" width=\"640\" height=\"505\"></embed></object>";
+}, $s);
 ///////////////////////////////////end tag rutube
 
 	// URLs
