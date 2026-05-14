@@ -151,10 +151,7 @@ if($op == 'forgot') {
 		$db->pquery("UPDATE users SET password=?, password_code='' WHERE id=?", 'si', [$password_hash, (int) $arr['id']]);
 
 		//Удаляем кеш
-		$memcached->delete('user_'.$arr['id'] , 0);
-
-
-		//Логинимся
+		lt_cache_invalidate_user($arr['id']);
 		// logout_cookie();
 		login_cookie($arr['id']  , $password_hash);
 
@@ -411,7 +408,7 @@ if($_POST) {
 		}
 
 		//Удаляем кеш
-		$memcached->delete('user_'.$arr['id'] , 0);
+		lt_cache_invalidate_user($arr['id']);
 
 		//Определяем cookies
 		logout_cookie();

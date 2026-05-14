@@ -489,7 +489,7 @@ if ($act == 'take') {
 		}
 	}
 
-	$memcached->delete('tags');
+	lt_cache_invalidate_tags();
 	if ($isTorrentOwner && !$isTorrentModerator && $torrentStatus === 'need_fix') {
 		lt_torrent_submit_for_review($id, true);
 	}

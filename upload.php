@@ -539,10 +539,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 	lt_torrent_rewrite_file_announces('public/downloads/torrents/'.$id.'.torrent', lt_torrent_site_announce_urls(null, false));
 
-	$memcached->delete('upload_categories');
-	$memcached->delete('news_releases');
-	$memcached->delete('tags');
-	$memcached->delete('taggenrelist_'.$form['catid']);
+	lt_cache_invalidate_cats();
+	lt_cache_delete('news_releases');
+	lt_cache_invalidate_tags();
+	lt_cache_invalidate_tags_genre($form['catid']);
 
 	header('Location:/details.php?id='.$id.(!lt_torrent_can_auto_approve($USER) ? '&moderation=pending' : ''));
 	die();

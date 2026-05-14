@@ -298,7 +298,7 @@ if($_GET['act'] == 'voicing' && $_GET['id']) {
 
 	//Снимаем деньги
 	$db->query("UPDATE users SET voice=(voice - ".$arr['voice'].") WHERE id=".$USER['id']."");
-	$memcached->delete('user_'.$USER['id']);
+	lt_cache_invalidate_user($USER['id']);
 	header('Location:shop.php?status=1');
 	die();
 }

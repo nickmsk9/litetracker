@@ -499,9 +499,7 @@ function lt_details_save_rating($torrentId, $userId, $ratingValue)
 	);
 
 	lt_set_cookie('lt_torrent_rating_'.$torrentId, (string) $ratingValue, time() + 31536000, false, 'Lax');
-	if (is_object($memcached) && method_exists($memcached, 'delete')) {
-		$memcached->delete('torrent_'.$torrentId, 0);
-	}
+	lt_cache_invalidate_torrent($torrentId);
 
 	return lt_details_rating_stats($torrentId, $userId);
 }

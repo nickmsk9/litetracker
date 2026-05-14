@@ -13,20 +13,24 @@ require_once __DIR__ . '/functions.common.php';
 
 //Информация о пользователе
 function get_user_info($id) {
-	global $db , $memcached;
+	global $db;
 
 	//Если нету id
 	if(!$id) {
 		return false;
 	}
 
+	$cacheKey = lt_cache_key_user($id);
+	$cacheNs  = lt_cache_key_user_ns();
+
 	//Запрос к таблице users
-	if (false === ($row = $memcached->get('user_'.$id)))
+	$row = lt_cache_get($cacheKey, $cacheNs);
+	if ($row === false)
 	{
-		$sql = $db->query("SELECT * FROM users WHERE id = ".$id);
+		$sql = $db->query("SELECT * FROM users WHERE id = ".(int)$id);
 		$row  = $db->get_row($sql);
 		$db->free($sql);
-		$memcached->set('user_'.$id, $row  , 0, rand(1500 , 3000) );
+		lt_cache_set($cacheKey, $row, rand(1500, 3000), $cacheNs);
 	}
 
 	return $row;
@@ -48,7 +52,7 @@ function lt_unread_messages_count($userId)
 
 function lt_sync_user_unread_messages($userId)
 {
-	global $db, $memcached, $USER;
+	global $db, $USER;
 
 	$userId = (int) $userId;
 	if ($userId <= 0 || !lt_table_exists('users')) {
@@ -60,7 +64,7 @@ function lt_sync_user_unread_messages($userId)
 	$currentStoredCount = ($isCurrentUser ? (int) ($USER['num_messages'] ?? -1) : null);
 	if (!$isCurrentUser || $currentStoredCount !== $count) {
 		$db->query("UPDATE users SET num_messages = ".$count." WHERE id = ".$userId);
-		$memcached->delete('user_'.$userId, 0);
+		lt_cache_invalidate_user($userId);
 	}
 	if ($isCurrentUser) {
 		$USER['num_messages'] = $count;
@@ -706,7 +710,7 @@ function user_check() {
 
 function user_session()
 {
-	global $USER , $config , $memcached ,$db;
+	global $USER , $config , $db;
 
 	//Определяем session_id
 	$session_id = session_id();
@@ -716,8 +720,9 @@ function user_session()
 	$user_agent  = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
 	$php_self    = (string) ($_SERVER['PHP_SELF'] ?? '');
 
-	$throttleKey = 'session_touch_'.md5($session_id.'|'.$user_id);
-	if (is_object($memcached) && false !== $memcached->get($throttleKey)) {
+	$throttleKey = lt_cache_key_session_touch(md5($session_id.'|'.$user_id));
+	$throttleNs  = lt_cache_key_sessions_ns();
+	if (false !== lt_cache_get($throttleKey, $throttleNs)) {
 		return;
 	}
 
@@ -731,9 +736,7 @@ function user_session()
 		[$session_id, (string) $user_id, $last_access, (string) $ip, $user_agent, $php_self]
 	);
 
-	if (is_object($memcached)) {
-		$memcached->set($throttleKey, '1', 0, 60);
-	}
+	lt_cache_set($throttleKey, '1', 60, $throttleNs);
 
 	return;
 }
@@ -1081,7 +1084,7 @@ function lt_csrf_validate($scope = 'default', $token = null)
 
 //Добавление cookies
 function login_cookie($id, $password_hash,  $expires = 0x7fffffff) {
-	global $memcached , $config;
+	global $config;
 
    $subnet = explode('.', getip());
 	$subnet[2] = $subnet[3] = 0;
@@ -1093,24 +1096,20 @@ function login_cookie($id, $password_hash,  $expires = 0x7fffffff) {
 	lt_set_cookie(COOKIE_ID, $id, $expires, true, 'Lax');
 	lt_set_cookie(COOKIE_PASSWORD, md5($password_hash.COOKIE_SALT.$subnet), $expires, true, 'Lax');
 
-
-	//Удаляем memcached файл
-	$memcached->delete('user_'.$id);
-
+	lt_cache_invalidate_user($id);
 }
 
 
 //Удаление cookies
 function logout_cookie() {
-	global  $memcached , $USER , $config;
+	global $USER , $config;
 
 	$expires = time() - 3600;
 	lt_set_cookie(COOKIE_ID, '', $expires, true, 'Lax');
 	lt_set_cookie(COOKIE_PASSWORD, '', $expires, true, 'Lax');
 	unset($_COOKIE[COOKIE_ID], $_COOKIE[COOKIE_PASSWORD]);
-	//Удаляем memcached файл
 	if($USER && isset($USER['id'])) {
-		$memcached->delete('user_'.$USER['id']);
+		lt_cache_invalidate_user($USER['id']);
 	}
 }
 
@@ -1136,17 +1135,21 @@ function err($subject = '' , $text = '' , $pref = 0 , $type = 'error') {
 
 //Вывод тегов для категории
 function taggenrelist($cat) {
-	global $memcached , $db;
+	global $db;
 	$ret = array();
 
-	if (false === ($ret = $memcached->get("taggenrelist_".$cat)))
+	$cacheKey = lt_cache_key_tags_genre($cat);
+	$cacheNs  = lt_cache_key_tags_ns();
+
+	$ret = lt_cache_get($cacheKey, $cacheNs);
+	if ($ret === false)
 	{
 		$cache = array();
 		$res = $db->query("SELECT id, name, howmuch FROM tags WHERE category=".(int)$cat." ORDER BY name ASC") or sqlerr(__FILE__ , __LINE__);
 		while ($row = $db->get_row() )
 			$cache[] = $row;
 
-		$memcached->set("taggenrelist_".$cat, $cache , 0, 500);
+		lt_cache_set($cacheKey, $cache, 500, $cacheNs);
 		$ret = $cache;
 	}
 
@@ -1574,7 +1577,7 @@ function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {
 	$user_out = (int) $user_out;
 	$db->pquery("INSERT INTO mail(name, text, id_user_in, id_user_out, date, delete_in, delete_out) VALUES (?, ?, ".$user_in.", ".$user_out.", NOW(), 0, 0)", 'ss', [$name, $text]);
 	$db->query("UPDATE users SET num_messages=(num_messages+1) WHERE id=".$user_in);
-	$memcached->delete("user_".$user_in);
+	lt_cache_invalidate_user($user_in);
 	return 1;
 }
 
@@ -1841,11 +1844,10 @@ function get_categories() {
 function categories_array($id = 0) {
 	global $db;
 
-	$memcached = (function_exists('lt_cache') ? lt_cache() : null);
-
 	$id = (int) $id;
-	$cacheKey = 'categories_' . $id;
-	$categories_who = (is_object($memcached) ? $memcached->get($cacheKey) : false);
+	$cacheKey = lt_cache_key_cats($id);
+	$cacheNs  = lt_cache_key_cats_ns();
+	$categories_who = lt_cache_get($cacheKey, $cacheNs);
 
 	if ($categories_who === false) {
 		$sql = $db->query("
@@ -1869,9 +1871,7 @@ function categories_array($id = 0) {
 			}
 		}
 
-		if (is_object($memcached)) {
-			$memcached->set($cacheKey, $categories_who, 0, 1000);
-		}
+		lt_cache_set($cacheKey, $categories_who, 3600, $cacheNs);
 	}
 
 	return $categories_who;
@@ -1938,16 +1938,20 @@ function is_language($language = "") {
 }
 //Получение списка классов
 function get_classes_list() {
-	global $memcached , $db;
+	global $db;
+
+	$cacheKey = lt_cache_key_priv_all();
+	$cacheNs  = lt_cache_key_priv_ns();
 
 	//Определяем права пользовател
-	if (false === ($result = $memcached->get('priv_all'))) {
+	$result = lt_cache_get($cacheKey, $cacheNs);
+	if ($result === false) {
 		$db->query("SELECT * FROM priv WHERE id > 0 ");
 		$result = array();
 		while($row = $db->get_row() ) {
 			$result[] = $row;
 		}
-		$memcached->set('priv_all' , $result , 0, 300);
+		lt_cache_set($cacheKey, $result, 300, $cacheNs);
 	}
 	return $result;
 }
