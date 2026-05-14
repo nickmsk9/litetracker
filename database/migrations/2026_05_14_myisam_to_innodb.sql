@@ -44,7 +44,6 @@ ALTER TABLE `tags`              ENGINE=InnoDB;
 
 ALTER TABLE `users`            ENGINE=InnoDB;
 ALTER TABLE `users_blacklist`  ENGINE=InnoDB;
-ALTER TABLE `bans`             ENGINE=InnoDB;
 ALTER TABLE `confirm`          ENGINE=InnoDB;
 ALTER TABLE `forgot`           ENGINE=InnoDB;
 ALTER TABLE `friends`          ENGINE=InnoDB;

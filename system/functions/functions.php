@@ -1633,7 +1633,7 @@ $s = str_replace("[/spoiler]","</div></div>",$s);
 $s = preg_replace_callback("/\[youtube\]([\s\S]+?)\[\/youtube\]/i", function ($m) {
 	$url = trim(htmlspecialchars_decode($m[1], ENT_QUOTES));
 	$url = str_replace("watch?v=", "v/", $url);
-	if (!preg_match('#^https?://(?:www\.)?youtube\.com/v/[A-Za-z0-9_\-]{5,20}(?:[?&][^\s\'"<>]*)?$#i', $url)) {
+	if (!preg_match('#^https?://(?:www\.)?youtube\.com/v/[A-Za-z0-9_\-]{11}(?:[?&][^\s\'"<>]*)?$#i', $url)) {
 		return '';
 	}
 	$safe = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
