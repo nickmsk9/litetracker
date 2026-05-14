@@ -35,237 +35,115 @@ function lt_edit_collect_screens($torrent)
 	return $result;
 }
 
+/**
+ * @deprecated Use lt_torrent_category_name_from_list()
+ */
 function lt_edit_category_name($categories, $categoryId)
 {
-	foreach ((array) $categories as $category) {
-		if ((int) ($category['id'] ?? 0) !== (int) $categoryId) {
-			continue;
-		}
-
-		return trim((string) ($category['name'] ?? ''));
-	}
-
-	return '';
+	return lt_torrent_category_name_from_list($categories, $categoryId);
 }
 
+/**
+ * @deprecated Use lt_torrent_metadata_service_values()
+ */
 function lt_edit_metadata_values($torrent, $schema)
 {
-	$result = array();
-
-	foreach ((array) $schema as $group => $definition) {
-		$column = trim((string) ($definition['column'] ?? ''));
-		if ($column === '') {
-			$result[$group] = array();
-			continue;
-		}
-
-		if (($definition['input'] ?? '') === 'radio') {
-			$result[$group] = trim((string) ($torrent[$column] ?? ''));
-			continue;
-		}
-
-		$result[$group] = lt_torrent_metadata_parse($group, $torrent[$column] ?? '');
-	}
-
-	return $result;
+	return lt_torrent_metadata_service_values($torrent, $schema);
 }
 
+/**
+ * @deprecated Use lt_torrent_description_service_parse()
+ */
 function lt_edit_parse_description($text)
 {
+	$parsed = lt_torrent_description_service_parse($text);
 	$result = array();
-	$currentLabel = '';
-	$lines = preg_split('/\r?\n/u', (string) $text);
 
-	foreach ($lines as $line) {
-		$fieldMatch = array();
-		$sectionMatch = array();
-
-		if (preg_match('/^\[u\].+\[\/u\]$/ui', $line, $sectionMatch)) {
-			$currentLabel = '';
-			continue;
-		}
-
-		if (preg_match('/^\[b\]([^:\[]+):\[\/b\]\s*(.*)$/ui', $line, $fieldMatch)) {
-			$currentLabel = trim((string) ($fieldMatch[1] ?? ''));
-			if ($currentLabel === '') {
+	foreach ((array) ($parsed['sections'] ?? array()) as $section) {
+		foreach ((array) ($section['items'] ?? array()) as $item) {
+			$label = trim((string) ($item['label'] ?? ''));
+			if ($label === '') {
 				continue;
 			}
-
-			$result[$currentLabel] = trim((string) ($fieldMatch[2] ?? ''));
-			continue;
+			$result[$label] = trim((string) ($item['value'] ?? ''));
 		}
-
-		if ($currentLabel === '') {
-			continue;
-		}
-
-		$result[$currentLabel] .= ($result[$currentLabel] !== '' ? "\n" : '').$line;
 	}
 
 	return $result;
 }
 
+/**
+ * @deprecated Use lt_torrent_description_template_textarea_labels()
+ */
 function lt_edit_template_textarea_labels()
 {
-	return array(
-		'Описание',
-		'В ролях',
-		'Треклист',
-		'Системные требования',
-	);
+	return lt_torrent_description_template_textarea_labels();
 }
 
+/**
+ * @deprecated Use lt_torrent_description_template_field_type()
+ */
 function lt_edit_template_field_type($label)
 {
-	return (in_array(trim((string) $label), lt_edit_template_textarea_labels(), true) ? 'textarea' : 'text');
+	return lt_torrent_description_template_field_type($label);
 }
 
+/**
+ * @deprecated Use lt_torrent_description_service_manual_fields()
+ */
 function lt_edit_template_manual_fields($categoryNameOrKey, $values = array())
 {
-	$template = lt_torrent_description_template($categoryNameOrKey);
-	$items = (array) ($template['items'] ?? array());
-	$result = array();
-	$values = (is_array($values) ? $values : array());
-
-	foreach ($items as $item) {
-		$type = trim((string) ($item['type'] ?? 'field'));
-		$label = trim((string) ($item['label'] ?? ''));
-		$auto = trim((string) ($item['auto'] ?? ''));
-
-		if ($label === '' || $type === 'section' || $auto !== '') {
-			continue;
-		}
-
-		$result[] = array(
-			'label' => $label,
-			'field_type' => lt_edit_template_field_type($label),
-			'value' => (string) ($values[$label] ?? ''),
-		);
-	}
-
-	return $result;
+	return lt_torrent_description_service_manual_fields($categoryNameOrKey, $values);
 }
 
+/**
+ * @deprecated Use lt_torrent_description_service_primary_label()
+ */
 function lt_edit_primary_description_label($categoryNameOrKey)
 {
-	$template = lt_torrent_description_template($categoryNameOrKey);
-	$items = (array) ($template['items'] ?? array());
-
-	foreach ($items as $item) {
-		$type = trim((string) ($item['type'] ?? 'field'));
-		$label = trim((string) ($item['label'] ?? ''));
-		if ($type === 'field' && $label === 'Описание') {
-			return $label;
-		}
-	}
-
-	return '';
+	return lt_torrent_description_service_primary_label($categoryNameOrKey);
 }
 
+/**
+ * @deprecated Use lt_torrent_description_service_build()
+ */
 function lt_edit_build_description($categoryNameOrKey, $templateValues, $autoValues = array())
 {
-	$template = lt_torrent_description_template($categoryNameOrKey);
-	$items = (array) ($template['items'] ?? array());
-	$templateValues = (is_array($templateValues) ? $templateValues : array());
-	$autoValues = (is_array($autoValues) ? $autoValues : array());
-	$lines = array();
-
-	foreach ($items as $item) {
-		$type = trim((string) ($item['type'] ?? 'field'));
-		$label = trim((string) ($item['label'] ?? ''));
-		$auto = trim((string) ($item['auto'] ?? ''));
-		if ($label === '') {
-			continue;
-		}
-
-		if ($type === 'section') {
-			if ($lines && end($lines) !== '') {
-				$lines[] = '';
-			}
-
-			$lines[] = '[u]'.$label.'[/u]';
-			continue;
-		}
-
-		$value = '';
-		if ($auto !== '' && isset($autoValues[$auto])) {
-			$value = trim((string) $autoValues[$auto]);
-		} else {
-			$value = trim((string) ($templateValues[$label] ?? ''));
-		}
-
-		if (strpos($value, "\n") !== false) {
-			$lines[] = '[b]'.$label.':[/b]'.($value !== '' ? "\n".$value : '');
-			continue;
-		}
-
-		$lines[] = '[b]'.$label.':[/b]'.($value !== '' ? ' '.$value : '');
-	}
-
-	return trim(implode("\n", $lines));
+	return lt_torrent_description_service_build($categoryNameOrKey, $templateValues, $autoValues);
 }
 
+/**
+ * @deprecated Use lt_upload_asset_ensure_directory()
+ */
 function lt_edit_ensure_directory($path)
 {
-	if (is_dir($path)) {
-		return true;
-	}
-
-	$created = mkdir($path, 0777, true);
-	return $created || is_dir($path);
+	return lt_upload_asset_ensure_directory($path);
 }
 
+/**
+ * @deprecated Use lt_upload_asset_image_extension()
+ */
 function lt_edit_image_extension($filename)
 {
-	$extension = strtolower((string) pathinfo((string) $filename, PATHINFO_EXTENSION));
-	$allowed = array('jpg', 'jpeg', 'png', 'gif');
-
-	return (in_array($extension, $allowed, true) ? ($extension === 'jpeg' ? 'jpg' : $extension) : '');
+	return lt_upload_asset_image_extension($filename, true);
 }
 
+/**
+ * @deprecated Use lt_upload_asset_validate_image()
+ */
 function lt_edit_validate_image($file, $label)
 {
-	global $config, $language;
+	global $config;
 
-	$name = (string) ($file['name'] ?? '');
-	$tmp = (string) ($file['tmp_name'] ?? '');
-	$size = (int) ($file['size'] ?? 0);
-	$error = (int) ($file['error'] ?? UPLOAD_ERR_OK);
-
-	if ($error !== UPLOAD_ERR_OK || $name === '' || $tmp === '' || !is_uploaded_file($tmp)) {
-		err($language['default_1'], $label.' не был загружен.', 1);
-	}
-
-	$extension = lt_edit_image_extension($name);
-	if ($extension === '') {
-		err($language['default_1'], $label.' должен быть в формате JPG, PNG или GIF.', 1);
-	}
-
-	if ($size <= 0 || $size > (int) $config['max_size_image']) {
-		err($language['default_1'], $label.' превышает допустимый размер '.mksize($config['max_size_image']).'.', 1);
-	}
-
-	$imageInfo = getimagesize($tmp);
-	if (!$imageInfo || empty($imageInfo[2]) || !in_array((int) $imageInfo[2], array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG), true)) {
-		err($language['default_1'], $label.' не похож на изображение.', 1);
-	}
-
-	return $extension;
+	return lt_upload_asset_validate_image($file, $label, (int) $config['max_size_image'], true);
 }
 
+/**
+ * @deprecated Use lt_upload_asset_move_uploaded_image()
+ */
 function lt_edit_move_uploaded_image($file, $directory, $targetName, $label)
 {
-	global $language;
-
-	if (!lt_edit_ensure_directory($directory)) {
-		err($language['default_1'], 'Не удалось подготовить каталог для загрузки файлов.', 1);
-	}
-
-	if (!move_uploaded_file((string) ($file['tmp_name'] ?? ''), $directory.$targetName)) {
-		err($language['default_1'], 'Не удалось сохранить '.$label.'.', 1);
-	}
-
-	return $targetName;
+	return lt_upload_asset_move_uploaded_image($file, $directory, $targetName, $label);
 }
 
 is_login();

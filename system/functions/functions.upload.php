@@ -583,37 +583,20 @@ function lt_torrent_info_heading($categoryName)
 	return (!empty($map[$name]) ? $map[$name] : 'Информация о релизе');
 }
 
+/**
+ * @deprecated Use lt_format_date_label()
+ */
 function lt_torrent_format_date_label($date)
 {
-	$timestamp = strtotime((string) $date);
-	if (!$timestamp) {
-		return trim((string) convent_date((string) $date));
-	}
-
-	static $months = array(
-		1 => 'января',
-		2 => 'февраля',
-		3 => 'марта',
-		4 => 'апреля',
-		5 => 'мая',
-		6 => 'июня',
-		7 => 'июля',
-		8 => 'августа',
-		9 => 'сентября',
-		10 => 'октября',
-		11 => 'ноября',
-		12 => 'декабря',
-	);
-
-	return date('j', $timestamp).' '.$months[(int) date('n', $timestamp)].' в '.date('H:i', $timestamp);
+	return lt_format_date_label($date);
 }
 
+/**
+ * @deprecated Use lt_format_comment_html()
+ */
 function lt_torrent_render_text_html($text)
 {
-	$html = trim((string) format_comment((string) $text));
-	$html = preg_replace('~^(?:<br\s*/?>\s*)+|(?:\s*<br\s*/?>)+$~i', '', $html);
-
-	return $html;
+	return lt_format_comment_html($text);
 }
 
 function lt_torrent_truncate_plain_text($text, $length = 520)
@@ -935,7 +918,7 @@ function lt_torrent_user_color_html($class, $username, $privilegesByClass = arra
 	$class = (int) $class;
 	$priv = (array) ($privilegesByClass[$class] ?? array());
 	if (!$priv) {
-		return get_user_color($class, $username);
+		return lt_user_color_html_bridge($class, $username);
 	}
 
 	$nameHtml = (!empty($priv['EDIT_PRIV']) ? '<span class="lt-emoji-font">'.$username.'</span>' : $username);

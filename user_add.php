@@ -11,7 +11,7 @@ by Nick
 
 require 'system/init.php';
 
-$userAddBonusColumn = (lt_column_exists('users', 'bonus') ? 'bonus' : 'voice');
+$userAddBonusColumn = lt_user_bonus_column();
 
 if(!$PRIV['user_add']) {
 	err($language['default_1'], $language['user_add_1'], 1);

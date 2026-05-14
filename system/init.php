@@ -51,6 +51,17 @@ require __DIR__ . '/functions/functions.http.php';
 require __DIR__ . '/functions/functions.upload.php';
 require __DIR__ . '/functions/functions.metadata.php';
 
+// Канонические helpers/services
+require_once __DIR__ . '/../app/helpers/FormattingHelper.php';
+require_once __DIR__ . '/../app/helpers/TorrentDescriptionHelper.php';
+require_once __DIR__ . '/../app/helpers/UploadAssetHelper.php';
+require_once __DIR__ . '/../app/helpers/UserHelper.php';
+require_once __DIR__ . '/../app/Support/CacheKeys.php';
+require_once __DIR__ . '/../app/Support/CacheInvalidation.php';
+require_once __DIR__ . '/../app/Services/TorrentMetadataService.php';
+require_once __DIR__ . '/../app/Services/TorrentDescriptionService.php';
+require_once __DIR__ . '/../app/Services/CommentService.php';
+
 
 
 //Функции для тегов

@@ -12,16 +12,12 @@ by Nick
 
 require '../system/init.php';
 
-header('Content-Type: application/json; charset=UTF-8');
-
 function ajax_cm_response($ok, $message = '', $extra = array())
 {
-    $payload = array_merge(
-        array('ok' => (int)(bool)$ok, 'message' => (string)$message),
+    lt_json_response(array_merge(
+        array('ok' => (int) $ok, 'message' => (string)$message),
         $extra
-    );
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
-    die();
+    ));
 }
 
 $action   = preg_replace('~[^a-z_]~', '', trim((string)($_REQUEST['action'] ?? $_REQUEST['act'] ?? '')));
@@ -140,26 +136,10 @@ if ($action === 'add') {
     $insertOk  = ($db->query($insertSql, 0) !== false);
 
     if (!$insertOk) {
-        // Retry with emoji-to-entity fallback for wide-char characters
-        $canFallback = function_exists('mb_ord') || function_exists('iconv');
-        if ($canFallback) {
-            $textSafe = preg_replace_callback(
-                '/[\x{10000}-\x{10FFFF}]/u',
-                function ($m) {
-                    if (function_exists('mb_ord')) {
-                        return '&#' . mb_ord($m[0], 'UTF-8') . ';';
-                    }
-                    $enc = iconv('UTF-8', 'UCS-4BE', $m[0]);
-                    if ($enc === false || strlen($enc) !== 4) return '';
-                    $cp = unpack('N', $enc);
-                    return (!empty($cp[1]) ? '&#' . (int)$cp[1] . ';' : '');
-                },
-                $text
-            );
-            $insertValues[3] = "'" . $db->safesql($textSafe) . "'";
-            $insertSql = "INSERT INTO `{$tableName}` (`" . implode('`,`', $insertFields) . "`) VALUES (" . implode(', ', $insertValues) . ")";
-            $insertOk  = ($db->query($insertSql, 0) !== false);
-        }
+        $textSafe = lt_comment_prepare_storage_text($text);
+        $insertValues[3] = "'" . $db->safesql($textSafe) . "'";
+        $insertSql = "INSERT INTO `{$tableName}` (`" . implode('`,`', $insertFields) . "`) VALUES (" . implode(', ', $insertValues) . ")";
+        $insertOk  = ($db->query($insertSql, 0) !== false);
     }
 
     if (!$insertOk) {
@@ -172,15 +152,7 @@ if ($action === 'add') {
 
     // Notify wall owner if needed
     if ($type === 'users' && (int)$USER['id'] !== $objectId) {
-        $wallOwner = $db->super_query("SELECT id, name, notify_comments FROM users WHERE id = " . $objectId);
-        if (!empty($wallOwner['id']) && !empty($wallOwner['notify_comments'])) {
-            send_msg(
-                'Новый комментарий на стене',
-                'Пользователь [b]' . $USER['name'] . '[/b] оставил новый комментарий на вашей стене.' . "\n" . 'Ссылка: ' . profile_href($objectId),
-                (int)$wallOwner['id'],
-                0
-            );
-        }
+        lt_comment_notify_wall_owner($objectId, $USER);
     }
 
     ajax_cm_response(1, 'Комментарий добавлен.', array(

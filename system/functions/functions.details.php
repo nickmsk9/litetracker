@@ -20,13 +20,12 @@ function lt_details_lower($value)
 	return (function_exists('mb_strtolower') ? mb_strtolower($value, 'UTF-8') : strtolower($value));
 }
 
+/**
+ * @deprecated Use lt_format_label_key()
+ */
 function lt_details_label_key($label)
 {
-	$label = strip_tags((string) $label);
-	$label = str_replace(':', '', $label);
-	$label = preg_replace('/\s+/u', ' ', trim($label));
-
-	return lt_details_lower($label);
+	return lt_format_label_key($label);
 }
 
 function lt_details_info_heading($categoryName)
@@ -48,37 +47,20 @@ function lt_details_info_heading($categoryName)
 	return (!empty($map[$name]) ? $map[$name] : 'Информация о релизе');
 }
 
+/**
+ * @deprecated Use lt_format_date_label()
+ */
 function lt_details_format_date_label($date)
 {
-	$timestamp = strtotime((string) $date);
-	if (!$timestamp) {
-		return trim((string) convent_date((string) $date));
-	}
-
-	static $months = array(
-		1 => 'января',
-		2 => 'февраля',
-		3 => 'марта',
-		4 => 'апреля',
-		5 => 'мая',
-		6 => 'июня',
-		7 => 'июля',
-		8 => 'августа',
-		9 => 'сентября',
-		10 => 'октября',
-		11 => 'ноября',
-		12 => 'декабря',
-	);
-
-	return date('j', $timestamp).' '.$months[(int) date('n', $timestamp)].' в '.date('H:i', $timestamp);
+	return lt_format_date_label($date);
 }
 
+/**
+ * @deprecated Use lt_format_comment_html()
+ */
 function lt_details_render_text_html($text)
 {
-	$html = trim((string) format_comment((string) $text));
-	$html = preg_replace('~^(?:<br\s*/?>\s*)+|(?:\s*<br\s*/?>)+$~i', '', $html);
-
-	return $html;
+	return lt_format_comment_html($text);
 }
 
 function lt_details_local_summary($text, $maxLength = 320)
@@ -131,69 +113,12 @@ function lt_details_collect_screens($torrent)
 	return $result;
 }
 
+/**
+ * @deprecated Use lt_torrent_description_service_parse()
+ */
 function lt_details_parse_description($text)
 {
-	$text = (string) $text;
-	$lines = preg_split('/\r\n|\r|\n/', $text);
-	$sections = array(
-		array(
-			'label' => '',
-			'items' => array(),
-		),
-	);
-	$intro = array();
-	$currentSection = 0;
-	$currentItem = -1;
-
-	foreach ($lines as $line) {
-		$line = trim((string) $line);
-		if ($line === '') {
-			if ($currentItem >= 0) {
-				$currentValue = $sections[$currentSection]['items'][$currentItem]['value'];
-				if ($currentValue !== '' && substr($currentValue, -1) !== "\n") {
-					$sections[$currentSection]['items'][$currentItem]['value'] .= "\n";
-				}
-			}
-			continue;
-		}
-
-		if (preg_match('/^\[u\](.+?)\[\/u\]$/iu', $line, $match)) {
-			$sections[] = array(
-				'label' => trim((string) $match[1]),
-				'items' => array(),
-			);
-			$currentSection = count($sections) - 1;
-			$currentItem = -1;
-			continue;
-		}
-
-		if (preg_match('/^\[b\](.+?)\[\/b\]\s*(.*)$/iu', $line, $match)) {
-			$label = trim((string) $match[1]);
-			if (substr($label, -1) === ':') {
-				$label = rtrim(substr($label, 0, -1));
-			}
-
-			$sections[$currentSection]['items'][] = array(
-				'label' => $label,
-				'value' => trim((string) $match[2]),
-			);
-			$currentItem = count($sections[$currentSection]['items']) - 1;
-			continue;
-		}
-
-		if ($currentItem >= 0) {
-			$currentValue = $sections[$currentSection]['items'][$currentItem]['value'];
-			$sections[$currentSection]['items'][$currentItem]['value'] = trim($currentValue."\n".$line);
-			continue;
-		}
-
-		$intro[] = $line;
-	}
-
-	return array(
-		'intro' => $intro,
-		'sections' => $sections,
-	);
+	return lt_torrent_description_service_parse($text);
 }
 
 function lt_details_has_item($sections, $labelKeys)

@@ -15,7 +15,7 @@ if (!empty($USER) && !$PRIV['profile_view']) {
 	err($language['default_1'], $language['profile_20'], 1);
 }
 
-$profileBonusColumn = (lt_column_exists('users', 'bonus') ? 'bonus' : 'voice');
+$profileBonusColumn = lt_user_bonus_column();
 
 function profile_normalize_view($view)
 {
@@ -383,7 +383,7 @@ $profileEditorHistory = array();
 $profileEditorTransferUnit = 1024 * 1024 * 1024;
 $profileEditorUploadedGb = round(((int) ($arr['uploaded'] ?? 0)) / $profileEditorTransferUnit, 3);
 $profileEditorDownloadedGb = round(((int) ($arr['downloaded'] ?? 0)) / $profileEditorTransferUnit, 3);
-$profileEditorBonusColumn = (lt_column_exists('users', 'bonus') ? 'bonus' : 'voice');
+$profileEditorBonusColumn = lt_user_bonus_column();
 $profileEditorBonusValue = (float) ($arr[$profileEditorBonusColumn] ?? 0);
 
 if ($canManageThisProfile) {

@@ -19,43 +19,21 @@ $GLOBALS['LITETRACKER_HIDE_STANDARD_SIDEBAR'] = true;
 
 function lt_news_format_publication_date($date)
 {
+	return lt_format_date_label($date);
+}
+
+function lt_news_require_manage_permission()
+{
 	global $language;
 
-	$date = trim((string) $date);
-	if ($date === '' || strpos($date, ' ') === false) {
-		return convent_date($date);
+	if (!lt_user_can_manage_news()) {
+		err($language['default_1'], $language['default_10'], 1);
 	}
+}
 
-	$months = array(
-		'01' => $language['month_1'],
-		'02' => $language['month_2'],
-		'03' => $language['month_3'],
-		'04' => $language['month_4'],
-		'05' => $language['month_5'],
-		'06' => $language['month_6'],
-		'07' => $language['month_7'],
-		'08' => $language['month_8'],
-		'09' => $language['month_9'],
-		'10' => $language['month_10'],
-		'11' => $language['month_11'],
-		'12' => $language['month_12'],
-	);
-
-	list($datePart, $timePart) = explode(' ', $date, 2);
-	$explodeDate = explode('-', $datePart);
-	$explodeTime = explode(':', $timePart);
-
-	if (count($explodeDate) !== 3 || count($explodeTime) < 2) {
-		return convent_date($date);
-	}
-
-	$day = (int) $explodeDate[2];
-	$month = ($months[$explodeDate[1]] ?? $explodeDate[1]);
-	$year = (int) $explodeDate[0];
-	$hour = (int) $explodeTime[0];
-	$minute = str_pad((string) ((int) $explodeTime[1]), 2, '0', STR_PAD_LEFT);
-
-	return $day.' '.$month.' '.$year.' в '.$hour.':'.$minute;
+function lt_news_invalidate_cache()
+{
+	lt_cache_invalidate_news();
 }
 
 
@@ -67,9 +45,7 @@ function lt_news_format_publication_date($date)
 if($act == 'edit' && $id) {
 
 	//Только Администраторам , Модераторам
-	if(!$PRIV['news_add']) {
-		err($language['default_1'] , $language['default_10'] , 1);
-	}
+	lt_news_require_manage_permission();
 
 	$db->query("SELECT * FROM news WHERE id=".$id."");
 	if(!$db->num_rows() ) {
@@ -114,8 +90,7 @@ if($act == 'edit' && $id) {
 		}
 
 		//Удаляем старый кеш
-		$memcached->delete('news');
-		$memcached->delete('sidebar_news_all');
+		lt_news_invalidate_cache();
 		header("Location:news.php?id=".$id."");
 		die();
 	}
@@ -159,9 +134,7 @@ if($act == 'edit' && $id) {
 if($act == 'add') {
 
 	//Только Администраторам , Модераторам
-	if(!$PRIV['news_add']) {
-		err($language['default_1'] , $language['default_10'] , 1);
-	}
+	lt_news_require_manage_permission();
 
 
 	//Обработка новости
@@ -184,8 +157,7 @@ if($act == 'add') {
 
 
 		//Удаляем старый кеш
-		$memcached->delete('news');
-		$memcached->delete('sidebar_news_all');
+		lt_news_invalidate_cache();
 		header("Location:news.php?id=".$id."");
 		die();
 	}
@@ -224,9 +196,7 @@ if($act == 'delete' && $id) {
 
 
 	//Только Администраторам , Модераторам
-	if(!$PRIV['news_add']) {
-		err($language['default_1'] , $language['default_10'] , 1);
-	}
+	lt_news_require_manage_permission();
 
 	//Проверяем , существует ли новость
 	$db->query("SELECT * FROM news WHERE id=".$id."");
@@ -239,8 +209,7 @@ if($act == 'delete' && $id) {
 
 
 	//Удаляем старый кеш
-	$memcached->delete('news');
-	$memcached->delete('sidebar_news_all');
+	lt_news_invalidate_cache();
 	header("Location:news.php?status=1");
 	die();
 }
