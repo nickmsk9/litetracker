@@ -52,6 +52,8 @@ services:
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: litetracker-phpmyadmin
+    profiles:
+      - tools
     restart: unless-stopped
     depends_on:
       - db

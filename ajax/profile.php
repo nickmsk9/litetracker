@@ -37,7 +37,7 @@ function profile_ajax_admin_ensure_schema()
 			`created_at` datetime NOT NULL,
 			PRIMARY KEY (`id`),
 			KEY `user_created` (`user_id`, `created_at`)
-		) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin"
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
 	);
 
 	$ready = true;

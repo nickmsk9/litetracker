@@ -16,6 +16,12 @@ function lt_moderation_log_ensure_schema()
 		return $ready;
 	}
 
+	$schemaCacheKey = 'schema:moderation_log:ready_v1';
+	if (lt_schema_cache_get($schemaCacheKey) === true) {
+		$ready = true;
+		return true;
+	}
+
 	$db->query(
 		"CREATE TABLE IF NOT EXISTS `moderation_log` (
 			`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -34,12 +40,15 @@ function lt_moderation_log_ensure_schema()
 			KEY `action_created` (`action`, `created_at`),
 			KEY `target` (`target_type`, `target_id`),
 			KEY `created_at` (`created_at`)
-		) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3",
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 		0
 	);
 
 	lt_schema_cache_delete(lt_schema_table_cache_key('moderation_log'));
 	$ready = lt_table_exists('moderation_log', true);
+	if ($ready) {
+		lt_schema_cache_set($schemaCacheKey, true);
+	}
 
 	return $ready;
 }

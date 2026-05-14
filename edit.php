@@ -173,6 +173,10 @@ if ($isTorrentOwner && !$isTorrentModerator && in_array($torrentStatus, array('h
 }
 
 if ($act == 'delete_image') {
+	if (!lt_csrf_validate('edit_media_'.$id)) {
+		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
+
 	if (!empty($arr['image'])) {
 		$db->query('UPDATE torrents SET image="" WHERE id='.(int) $id);
 		$_p = 'public/downloads/images/'.$arr['image'];
@@ -183,6 +187,10 @@ if ($act == 'delete_image') {
 }
 
 if ($act == 'delete_screen') {
+	if (!lt_csrf_validate('edit_media_'.$id)) {
+		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
+
 	if ($screen < 1 || $screen > 4) {
 		err($language['default_1'], $language['default_6']);
 	}
@@ -197,6 +205,13 @@ if ($act == 'delete_screen') {
 }
 
 if ($act == 'take') {
+	if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+		err($language['default_1'], $language['default_6'], 1);
+	}
+	if (!lt_csrf_validate('edit_torrent_'.$id)) {
+		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
+
 	$update = array();
 	$updateParams = array();
 	$updateTypes = '';
@@ -558,6 +573,7 @@ head($language['edit_3'], true);
 
 		<form class="upload-form edit-upload-form" enctype="multipart/form-data" action="edit.php?act=take&id=<?=(int) $id;?>" method="post" name="upload">
 			<input type="hidden" name="id" value="<?=(int) $id;?>">
+			<?=lt_csrf_input('edit_torrent_'.$id);?>
 
 			<div class="upload-grid">
 				<div class="upload-grid-main">
@@ -664,7 +680,7 @@ head($language['edit_3'], true);
 						<div class="edit-media-card edit-media-card-cover">
 							<div class="edit-media-card-head">
 								<strong>Текущая обложка</strong>
-								<a class="upload-top-link upload-top-link-red" href="edit.php?id=<?=(int) $id;?>&amp;act=delete_image">Удалить</a>
+								<a class="upload-top-link upload-top-link-red" href="edit.php?id=<?=(int) $id;?>&amp;act=delete_image&amp;<?=lt_csrf_query('edit_media_'.$id);?>">Удалить</a>
 							</div>
 							<a class="edit-media-preview edit-media-preview-cover" href="public/downloads/images/<?=htmlspecialchars($currentCover, ENT_QUOTES, 'UTF-8');?>" target="_blank" rel="noopener noreferrer">
 								<img class="edit-media-preview-image edit-media-preview-image-cover" src="public/downloads/images/<?=htmlspecialchars($currentCover, ENT_QUOTES, 'UTF-8');?>" alt="Обложка">
@@ -692,7 +708,7 @@ head($language['edit_3'], true);
 									</a>
 									<div class="edit-media-preview-actions">
 										<span class="edit-media-preview-title">Скрин <?=htmlspecialchars((string) $screenItem['index'], ENT_QUOTES, 'UTF-8');?></span>
-										<a class="upload-top-link upload-top-link-red" href="edit.php?id=<?=(int) $id;?>&amp;act=delete_screen&amp;screen=<?=(int) $screenItem['index'];?>">Удалить</a>
+										<a class="upload-top-link upload-top-link-red" href="edit.php?id=<?=(int) $id;?>&amp;act=delete_screen&amp;screen=<?=(int) $screenItem['index'];?>&amp;<?=lt_csrf_query('edit_media_'.$id);?>">Удалить</a>
 									</div>
 								</div>
 								<?php } ?>

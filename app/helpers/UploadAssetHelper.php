@@ -54,6 +54,13 @@ if (!function_exists('lt_upload_asset_validate_image')) {
             err($language['default_1'], $label.' не похож на изображение.', 1);
         }
 
+        // Verify image type matches declared extension to prevent MIME/extension spoofing
+        $imagetypeToExtension = array(IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_GIF => 'gif');
+        $detectedExtension = $imagetypeToExtension[(int) $imageInfo[2]] ?? '';
+        if ($detectedExtension !== $extension) {
+            err($language['default_1'], $label.' — тип файла не соответствует расширению.', 1);
+        }
+
         return $extension;
     }
 }
