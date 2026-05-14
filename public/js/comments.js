@@ -348,7 +348,29 @@
             toggle.type = "button";
             toggle.className = "comment-replies-toggle";
             toggle.setAttribute("data-comment-replies-toggle", parentId);
-            toggle.textContent = expanded ? "Скрыть ответы" : "Показать ещё " + hiddenCount + " ответов";
+            toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+
+            var labelSpan = document.createElement("span");
+            labelSpan.className = "comment-replies-toggle-label";
+            labelSpan.textContent = expanded ? "Скрыть ответы" : "Показать ещё " + hiddenCount + " ответов";
+
+            var iconSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            iconSvg.setAttribute("class", "comment-replies-toggle-icon");
+            iconSvg.setAttribute("width", "12");
+            iconSvg.setAttribute("height", "12");
+            iconSvg.setAttribute("viewBox", "0 0 12 12");
+            iconSvg.setAttribute("fill", "none");
+            iconSvg.setAttribute("aria-hidden", "true");
+            var iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            iconPath.setAttribute("d", "M2 4.5l4 3.5 4-3.5");
+            iconPath.setAttribute("stroke", "currentColor");
+            iconPath.setAttribute("stroke-width", "1.5");
+            iconPath.setAttribute("stroke-linecap", "round");
+            iconPath.setAttribute("stroke-linejoin", "round");
+            iconSvg.appendChild(iconPath);
+
+            toggle.appendChild(labelSpan);
+            toggle.appendChild(iconSvg);
             box.insertBefore(toggle, box.firstChild);
         });
     };
