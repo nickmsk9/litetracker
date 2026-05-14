@@ -1155,7 +1155,9 @@ function taggenrelist($cat) {
 
 
 /**
- * @deprecated No callers found outside this file. Use tags_echo() from functions.tags.php instead.
+ * @deprecated No callers found outside this file. Use tags_echo() from
+ *             system/functions/functions.tags.php instead — it provides equivalent
+ *             tag-link rendering and is the canonical implementation.
  */
 function addtags($addtags) {
 	global $language;
@@ -1375,9 +1377,7 @@ function convent_date($date = '' ) {
 	$explode_date = explode('-' , (string) ($explode[0] ?? '0000-01-01'));
 
 	//Удаляем нуль перез числом
-	if (substr((string) ($explode_date[2] ?? '0'), 0, 1) === '0') {
-		$explode_date[2] = str_replace('0' , '' , (string) ($explode_date[2] ?? '0'));
-	}
+	$explode_date[2] = ltrim((string) ($explode_date[2] ?? '0'), '0') ?: '0';
 
 
 
