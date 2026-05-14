@@ -191,7 +191,7 @@ if($_GET['act'] == 'edit') {
 		 <span class="grey">Название товара:</span>
 		</td>
 		<td style="padding: 0px;">
-		 <input type="text" name="name" style="margin: 0px;" size="25" class="inputText" value="<?=htmlspecialchars($arr['name']);?>">
+		 <input type="text" name="name" style="margin: 0px;" size="25" class="inputText" value="<?=htmlspecialchars((string) ($arr['name'] ?? ''), ENT_QUOTES, 'UTF-8');?>">
 		</td><td>
 	   </td></tr>
 

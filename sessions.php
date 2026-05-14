@@ -78,8 +78,8 @@ if($db->num_rows($sql)) {
 
 		echo '<td>'.convent_date($arr['last_access']).'</td>';
 		echo '<td><a href="ip.util.php?ip='.long2ip($arr['ip']).'">'.long2ip($arr['ip']).'</a></td>';
-		echo '<td>'.htmlspecialchars($arr['user_agent']).'</td>';
-		echo '<td>'.htmlspecialchars($arr['php_self']).'</td>';
+		echo '<td>'.htmlspecialchars((string) ($arr['user_agent'] ?? ''), ENT_QUOTES, 'UTF-8').'</td>';
+		echo '<td>'.htmlspecialchars((string) ($arr['php_self'] ?? ''), ENT_QUOTES, 'UTF-8').'</td>';
 
 
 		echo '</tr>';

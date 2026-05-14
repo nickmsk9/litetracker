@@ -755,7 +755,7 @@ function get_user_color($class, $username, $user = null) {
 	$isEmojiName = (!empty($priv['EDIT_PRIV']));
 	$nameHtml = ($isEmojiName ? '<span class="lt-emoji-font">'.$username.'</span>' : $username);
 
-	return "<font title=\"".htmlspecialchars($priv['NAME'])."\" style=\"color:#".htmlspecialchars($priv['COLOR'])."\">" . $nameHtml . "</font>";
+	return "<font title=\"".htmlspecialchars((string) ($priv['NAME'] ?? ''), ENT_QUOTES, 'UTF-8')."\" style=\"color:#".htmlspecialchars((string) ($priv['COLOR'] ?? '000000'), ENT_QUOTES, 'UTF-8')."\">" . $nameHtml . "</font>";
 }
 
 
@@ -1154,6 +1154,9 @@ function taggenrelist($cat) {
 }
 
 
+/**
+ * @deprecated No callers found outside this file. Use tags_echo() from functions.tags.php instead.
+ */
 function addtags($addtags) {
 	global $language;
 	$tags = '';
@@ -1174,6 +1177,9 @@ function addtags($addtags) {
 
 
 //Анти - XSS
+/**
+ * @deprecated Ineffective string-replacement XSS filter with no callers. Do not use; escape output with htmlspecialchars() instead.
+ */
 function antixss() {
 	//Запрещенные элементы
 	$array = array('./' , '../' , '\'' , '<script>' , 'document.cookie' , '</script>' );
@@ -1304,6 +1310,9 @@ function pager($rpp, $count, $href, $opts = array()) {
 	return array($pagertop, $pagerbottom, "LIMIT $start , $rpp");
 }
 //Цвет ратио
+/**
+ * @deprecated No callers found. Use a direct color computation if needed.
+ */
   function get_ratio_color($ratio) {
     if ($ratio < 0.1) return "#ff0000";
     if ($ratio < 0.2) return "#ee0000";
@@ -1319,6 +1328,9 @@ function pager($rpp, $count, $href, $opts = array()) {
 }
 
 
+/**
+ * @deprecated No callers found outside this file. Use strtotime() directly.
+ */
 function sql_timestamp_to_unix_timestamp($s)
 {
   return mktime(substr($s, 11, 2), substr($s, 14, 2), substr($s, 17, 2), substr($s, 5, 2), substr($s, 8, 2), substr($s, 0, 4));
@@ -1350,7 +1362,7 @@ function convent_date($date = '' ) {
 	//$explode['1'] - время
 	//////////////////////////////////////////////
 	//Разбиваем на дата / время
-	$explode = explode(' '  , $date);
+	$explode = explode(' '  , (string) $date);
 
 
 
@@ -1360,11 +1372,11 @@ function convent_date($date = '' ) {
 	//$explode_date['2'] - день
 	//////////////////////////////////////////////
 	//Разбиваем дату на гггг-мм-дд
-	$explode_date = explode('-' , $explode['0']);
+	$explode_date = explode('-' , (string) ($explode[0] ?? '0000-01-01'));
 
 	//Удаляем нуль перез числом
-	if(substr($explode_date['2'] ,0,1) == '0' ) {
-		$explode_date['2'] = str_replace('0' , '' , $explode_date['2']);
+	if (substr((string) ($explode_date[2] ?? '0'), 0, 1) === '0') {
+		$explode_date[2] = str_replace('0' , '' , (string) ($explode_date[2] ?? '0'));
 	}
 
 
@@ -1375,16 +1387,27 @@ function convent_date($date = '' ) {
 	//$explode_time['2'] - секунда
 	//////////////////////////////////////////////
 	//Разбиваем время на чч:мм:cc
-	$explode_time = explode(':' , $explode['1']);
+	$explode_time = explode(':' , (string) ($explode[1] ?? '00:00:00'));
 
-	return ($explode_date['2'] == date('d') ? $language['month_13'] : $explode_date['2'] .' '.$mounth[$explode_date['1']]).' '. ($explode_date['2'] != date('d') ? $explode_date['0'].' года' : '' ) . ' , '.$explode_time['0'].':'.$explode_time['1'];
+	$day   = (string) ($explode_date[2] ?? '0');
+	$month = (string) ($explode_date[1] ?? '01');
+	$year  = (string) ($explode_date[0] ?? '0000');
+	$hour  = (string) ($explode_time[0] ?? '00');
+	$min   = (string) ($explode_time[1] ?? '00');
+
+	return ($day == date('d') ? $language['month_13'] : $day .' '.($mounth[$month] ?? '')).' '. ($day != date('d') ? $year.' года' : '' ) . ' , '.$hour.':'.$min;
 }
 
 
 //Вывод рейтинга пользователю или гостю
+/**
+ * @deprecated No callers found outside this file. Use get_ratio() and render HTML directly.
+ */
 function get_user_rating($uploaded = '' , $downloaded = '') {
 	global $USER , $language;
 
+	$up   = 0;
+	$down = 0;
 	if(!empty($uploaded)  && !empty($downloaded) ) {
 		$down =	$downloaded;
 		$up =	$uploaded;
@@ -1421,6 +1444,9 @@ function rusdate($num,$type = 0){
     return $rus[$type][$num % 10];
 }
 
+/**
+ * @deprecated No callers found outside this file. get_elapsed_time() is not used by the active codebase.
+ */
 function get_elapsed_time($date,$showseconds=true,$unix=true){
     if($date == "0000-00-00 00:00:00") return "---";
     if(!$unix){$U = date('U',strtotime($date));}else{$U=$date;};
@@ -1510,6 +1536,9 @@ function get_server_load() {
  * Узнаем сколько времени прошло с определенной даты
  * @param datetime $time
  * @return array (years , months , days)
+ */
+/**
+ * @deprecated No callers found outside this file.
  */
 function get_certain_time($time) {
 	$date1 = $time;

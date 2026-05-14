@@ -72,7 +72,7 @@ if($_GET['act'] == 'bans_ip') {
 
 		echo '<td>'.convent_date($arr['date']).'</td>';
 		echo '<td><A href="'.profile_href($arr['id_user']).'">'.get_user_color($arr['class_user'] , $arr['user_name']).'</a></td>';
-		echo '<td>'.(empty($arr['text']) ? '<i>Без комментария...</i>' : htmlspecialchars($arr['text']) ).'</td>';
+		echo '<td>'.(empty($arr['text']) ? '<i>Без комментария...</i>' : htmlspecialchars((string) ($arr['text'] ?? ''), ENT_QUOTES, 'UTF-8') ).'</td>';
 		echo '<td><input type="button" value="Разблокировать IP" onClick="window.location.href=\'ip.util.php?id='.$arr['id'].'&act=unlock_ip\'">
 		</td>';
 
@@ -247,7 +247,7 @@ if($_GET['act'] == 'bans_account') {
 		echo '<td><a href="'.profile_href($arr['id']).'">'.get_user_color($arr['class'] , $arr['name']).'</a></td>';
 		echo '<td>'.get_ratio($arr['uploaded'] , $arr['downloaded']).'%</td>';
 		echo '<td>'.convent_date($arr['added']).'</td>';
-		echo '<td>'.htmlspecialchars($arr['email']).'</td>';
+		echo '<td>'.htmlspecialchars((string) ($arr['email'] ?? ''), ENT_QUOTES, 'UTF-8').'</td>';
 		echo '<td>'.convent_date($arr['last_access']).'</td>';
 		echo '<td>'.long2ip($arr['ip']).'</td>';
 		echo '<td><input type="button" value="Разбанить аккаунт" onClick="window.location.href=\'ip.util.php?id='.$arr['id'].'&act=banned_account\'">
@@ -325,7 +325,7 @@ begin_frame('Поиск');
 <table width="95%" align="center">
 	<tr>
 	<td>
-	<input type="text" name="ip" size="50%" class="search"   autocomplete="off" value="<?=htmlspecialchars((string)$_GET['ip']);?>">
+	<input type="text" name="ip" size="50%" class="search"   autocomplete="off" value="<?=htmlspecialchars((string) ($_GET['ip'] ?? ''), ENT_QUOTES, 'UTF-8');?>">
 	<input type="submit" value="Поиск" class="search">
 	</td>
 	</tr>
@@ -409,7 +409,7 @@ if($_GET['ip']) {
 			echo '<td><a href="'.profile_href($arr['id']).'">'.get_user_color($arr['class'] , $arr['name']).'</a></td>';
 			echo '<td>'.get_ratio($arr['uploaded'] , $arr['downloaded']).'%</td>';
 			echo '<td>'.convent_date($arr['added']).'</td>';
-			echo '<td>'.htmlspecialchars($arr['email']).'</td>';
+			echo '<td>'.htmlspecialchars((string) ($arr['email'] ?? ''), ENT_QUOTES, 'UTF-8').'</td>';
 			echo '<td>'.convent_date($arr['last_access']).'</td>';
 			echo '<td>'.long2ip($arr['ip']).'</td>';
 			echo '<td><input type="button" value="'.(!$arr['banned'] ? 'Забанить аккаунт' : 'Разбанить аккаунт' ).'" onClick="window.location.href=\'ip.util.php?id='.$arr['id'].'&act=banned_account\'">

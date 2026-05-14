@@ -167,7 +167,7 @@ if($op == 'forgot') {
 		//Отправляем письмо на email
 		//Заголовок
 		$body = '';
-		$body .= "Здравствуйте, вы успешно восстановили пароль на трекере ".htmlspecialchars($_SERVER['HTTP_HOST'])."\n\r";
+		$body .= "Здравствуйте, вы успешно восстановили пароль на трекере ".htmlspecialchars((string) ($_SERVER['HTTP_HOST'] ?? ''), ENT_QUOTES, 'UTF-8')."\n\r";
 		$body .= "Теперь вы можете войти под своим аккаунтом\n\r";
 		$body .= "--------------------------------------------------\n\r";
 		$body .= "Пользователь:".$arr['name']."\n\r";
@@ -180,7 +180,7 @@ if($op == 'forgot') {
 		//Отправка письма
 		$mail = new phpmailer;
 		$mail->AddAddress($row['email'], $arr['name']);
-		$mail->Subject = htmlspecialchars($_SERVER['HTTP_HOST']).'.Support';
+		$mail->Subject = htmlspecialchars((string) ($_SERVER['HTTP_HOST'] ?? ''), ENT_QUOTES, 'UTF-8').'.Support';
 		$mail->Body = $body;
 		$mail->Send(); // send message
 
@@ -265,11 +265,11 @@ if($op == 'forgot') {
 
 				//Заголовок
 				$body = '';
-				$body .= "Здравствуйте, вы запросили восстановление пароля на нашем трекере ".htmlspecialchars($_SERVER['HTTP_HOST'])."\n\r";
+				$body .= "Здравствуйте, вы запросили восстановление пароля на нашем трекере ".htmlspecialchars((string) ($_SERVER['HTTP_HOST'] ?? ''), ENT_QUOTES, 'UTF-8')."\n\r";
 				$body .= "Для успешной смены пароля , вы должны подтвердить свой аккаунт\n\r";
 				$body .= "--------------------------------------------------\n\r";
 				$body .= "Пользователь:".$arr['name']."\n\r";
-				$body .= "Cсылка на активацию: http://".htmlspecialchars($_SERVER['HTTP_HOST'])."/login.php?op=forgot&step=2&code=".$code."\n\r";
+				$body .= "Cсылка на активацию: http://".htmlspecialchars((string) ($_SERVER['HTTP_HOST'] ?? ''), ENT_QUOTES, 'UTF-8')."/login.php?op=forgot&step=2&code=".$code."\n\r";
 				$body .= "--------------------------------------------------\n\r";
 				$body .= "Внимание! Код действует в течении 15 суток , со дня отправки\n\r";
 				$body .= "С уважением , администрация трекера\n\r";
@@ -278,7 +278,7 @@ if($op == 'forgot') {
 				//Отправка письма
 				$mail = new phpmailer;
 				$mail->AddAddress($email, $arr['name']);
-				$mail->Subject = htmlspecialchars($_SERVER['HTTP_HOST']).'.Support';
+				$mail->Subject = htmlspecialchars((string) ($_SERVER['HTTP_HOST'] ?? ''), ENT_QUOTES, 'UTF-8').'.Support';
 				$mail->Body = $body;
 				$mail->Send(); // send message
 
