@@ -29,11 +29,11 @@ if($act == 'view') {
 
 
 
-	head(htmlspecialchars($arr['subject']));
+	head(htmlspecialchars((string) ($arr['subject'] ?? ''), ENT_QUOTES, 'UTF-8'));
 	//Выводим статусы
 	comment_status();
 
-	begin_frame(htmlspecialchars($arr['subject']).($PRIV['faq_moderate'] ? '<div style="float:right"><a href="faq.php?act=topic&type=edit&id='.$id.'">[Редактировать]</a> <a href="faq.php?act=topic&type=delete&id='.$id.'">[Удалить]</a></div>' : ''));
+	begin_frame(htmlspecialchars((string) ($arr['subject'] ?? ''), ENT_QUOTES, 'UTF-8').($PRIV['faq_moderate'] ? '<div style="float:right"><a href="faq.php?act=topic&type=edit&id='.$id.'">[Редактировать]</a> <a href="faq.php?act=topic&type=delete&id='.$id.'">[Удалить]</a></div>' : ''));
 	echo format_comment($arr['text']);
 
 
@@ -154,7 +154,7 @@ if($act == 'topic') {
 
 		<form action="faq.php?act=topic&type=<?=$type;?>&id=<?=$id;?>" method="post">
 		<table>
-			<tr><td width="10%"><b>Название:</b></td><td><input type="text" name="subject" size="80%" value="<?=htmlspecialchars($arr['subject']);?>"></td></tr>
+			<tr><td width="10%"><b>Название:</b></td><td><input type="text" name="subject" size="80%" value="<?=htmlspecialchars((string) ($arr['subject'] ?? ''), ENT_QUOTES, 'UTF-8');?>"></td></tr>
 			<tr><td colspan="2"><?=textbb('text' , $arr['text']);?></td></tr>
 			<tr><td colspan="2"><input type="submit" value="Выполнить"></td></tr>
 		</table>
@@ -226,7 +226,7 @@ if(!$db->num_rows($sql) ) {
 		//Информация о пользователе
 		$user = get_user_info($arr['id_user']);
 		echo '<tr>
-		<td><a href="faq.php?act=view&id='.$arr['id'].'"><b>'.htmlspecialchars($arr['subject']).'</b></a></td>
+		<td><a href="faq.php?act=view&id='.$arr['id'].'"><b>'.htmlspecialchars((string) ($arr['subject'] ?? ''), ENT_QUOTES, 'UTF-8').'</b></a></td>
 		<td>'.convent_date($arr['added']).'</td>
 		<td><a href="'.profile_href($user['id']).'">'.get_user_color($user['class'] , $user['name']).'</a></td>
 		</tr>';

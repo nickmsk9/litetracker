@@ -607,7 +607,7 @@ function lt_details_render_peers_page($torrentId)
 		echo '<td>'.convent_date($row['started']).'</td>';
 		echo '<td>'.($row['prev_action'] != '0000-00-00 00:00:00' ? convent_date($row['prev_action']) : 'Не известно').'</td>';
 		echo '<td>'.convent_date($row['last_action']).'</td>';
-		echo '<td>'.htmlspecialchars($row['agent']).'</td>';
+		echo '<td>'.htmlspecialchars((string) ($row['agent'] ?? ''), ENT_QUOTES, 'UTF-8').'</td>';
 		echo '<td>'.($row['seeder'] ? '<img src="public/images/up.png">Раздающий' : '<img src="public/images/down.png">Качающий').'</td>';
 		echo '</tr>';
 	}

@@ -106,7 +106,7 @@ if($db->num_rows()) {
 		echo '<tr>';
 
 		echo '<td><a href="'.profile_href($arr['id_user']).'">'.get_user_color($arr['class'] , $arr['name']).'</a></td>';
-		echo '<td><a href="browse.php?search='.htmlspecialchars($arr['text']).'">'.htmlspecialchars($arr['text']).'</a></td>';
+		echo '<td><a href="browse.php?search='.htmlspecialchars((string) ($arr['text'] ?? ''), ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars((string) ($arr['text'] ?? ''), ENT_QUOTES, 'UTF-8').'</a></td>';
 		echo '<td>'.convent_date($arr['last_date']).'</td>';
 		echo '<td>'.$arr['num_views'].'</td>';
 		echo '<td>'.($arr['num_torrents'] > 0 ? '<font color="green"><b>'.$arr['num_torrents'].'</b></font>' : '<font color="red"><b>'.$arr['num_torrents'].'</b></font>').'</td>';
