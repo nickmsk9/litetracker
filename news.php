@@ -19,7 +19,7 @@ $GLOBALS['LITETRACKER_HIDE_STANDARD_SIDEBAR'] = true;
 
 function lt_news_format_publication_date($date)
 {
-	return lt_format_date_label($date);
+	return lt_format_date_label_with_year($date);
 }
 
 function lt_news_require_manage_permission()

@@ -27,6 +27,33 @@ if (!function_exists('lt_format_date_label')) {
     }
 }
 
+if (!function_exists('lt_format_date_label_with_year')) {
+    function lt_format_date_label_with_year($date)
+    {
+        $timestamp = strtotime((string) $date);
+        if (!$timestamp) {
+            return trim((string) convent_date((string) $date));
+        }
+
+        static $months = array(
+            1 => 'января',
+            2 => 'февраля',
+            3 => 'марта',
+            4 => 'апреля',
+            5 => 'мая',
+            6 => 'июня',
+            7 => 'июля',
+            8 => 'августа',
+            9 => 'сентября',
+            10 => 'октября',
+            11 => 'ноября',
+            12 => 'декабря',
+        );
+
+        return date('j', $timestamp).' '.$months[(int) date('n', $timestamp)].' '.date('Y', $timestamp).' в '.date('H:i', $timestamp);
+    }
+}
+
 if (!function_exists('lt_format_comment_html')) {
     function lt_format_comment_html($text)
     {
