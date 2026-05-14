@@ -32,7 +32,7 @@ if (!$autocleanLock) {
 	die(autoclean_response_gif());
 }
 
-$bonusColumn = (lt_column_exists('users', 'bonus') ? 'bonus' : 'voice');
+$bonusColumn = lt_user_bonus_column();
 $birthdayDateFormat = '%m-%d';
 $birthdayPhpMonthDayFormat = 'm-d';
 $defaultBirthdayBonusAmount = 150;

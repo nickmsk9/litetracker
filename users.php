@@ -66,7 +66,7 @@ if ($classFilter > 0) {
 
 $pagerParams['sort'] = $sortKey;
 $whereSql = ($where ? 'WHERE '.implode(' AND ', $where) : '');
-$bonusColumn = (lt_column_exists('users', 'bonus') ? 'bonus' : 'voice');
+$bonusColumn = lt_user_bonus_column();
 
 $countRow = $db->super_query("SELECT COUNT(*) AS cnt FROM users AS u ".$whereSql);
 $countUsers = (int) ($countRow['cnt'] ?? 0);

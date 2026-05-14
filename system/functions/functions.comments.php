@@ -436,6 +436,91 @@ function lt_comment_notify_deleted($type, $objectId, $commentId, $commentUserId,
     }
 }
 
+function lt_comment_prepare_storage_text($text)
+{
+    $text = (string) $text;
+
+    return preg_replace_callback(
+        '/[\x{10000}-\x{10FFFF}]/u',
+        function ($matches) {
+            if (!isset($matches[0]) || $matches[0] === '') {
+                return '';
+            }
+
+            if (function_exists('mb_ord')) {
+                return '&#'.mb_ord($matches[0], 'UTF-8').';';
+            }
+
+            if (!function_exists('iconv')) {
+                return '';
+            }
+
+            $encoded = iconv('UTF-8', 'UCS-4BE', $matches[0]);
+            if ($encoded === false || strlen($encoded) !== 4) {
+                return '';
+            }
+
+            $codepoint = unpack('N', $encoded);
+            if (empty($codepoint[1])) {
+                return '';
+            }
+
+            return '&#'.(int) $codepoint[1].';';
+        },
+        $text
+    );
+}
+
+function lt_comment_return_url($file, $objectId, $suffix = '')
+{
+    $file = trim((string) $file);
+    $objectId = (int) $objectId;
+    $suffix = (string) $suffix;
+
+    if ($file === '') {
+        return '';
+    }
+
+    $url = $file;
+    if (strpos($url, 'id=') === false) {
+        $url .= 'id='.$objectId;
+    }
+
+    if ($suffix !== '') {
+        if ($suffix[0] === '#') {
+            $url .= $suffix;
+        } else {
+            $needsGlue = (substr($url, -1) !== '&' && substr($url, -1) !== '?' && strpos($suffix, '&') !== 0);
+            $url .= ($needsGlue ? '&' : '').ltrim($suffix, '&');
+        }
+    }
+
+    return $url;
+}
+
+function lt_comment_notify_wall_owner($wallOwnerId, $actor = array())
+{
+    global $db;
+
+    $wallOwnerId = (int) $wallOwnerId;
+    $actor = (is_array($actor) ? $actor : array());
+    if ($wallOwnerId <= 0 || $wallOwnerId === (int) ($actor['id'] ?? 0)) {
+        return;
+    }
+
+    $wallOwner = $db->super_query("SELECT id, name, notify_comments FROM users WHERE id = ".$wallOwnerId);
+    if (empty($wallOwner['id']) || empty($wallOwner['notify_comments'])) {
+        return;
+    }
+
+    send_msg(
+        'Новый комментарий на стене',
+        'Пользователь [b]'.(string) ($actor['name'] ?? '').'[/b] оставил новый комментарий на вашей стене.'."\n".'Ссылка: '.profile_href($wallOwnerId),
+        (int) $wallOwner['id'],
+        0
+    );
+}
+
 function comments_context_url($type, $objectId, $commentId = 0)
 {
     $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);

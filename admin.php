@@ -83,13 +83,11 @@ function admin_torrent_moderation_action_status($action)
 
 function admin_torrent_moderation_json($ok, $message, $extra = array(), $statusCode = 200)
 {
-	http_response_code((int) $statusCode);
-	header('Content-Type: application/json; charset=utf-8');
-	echo json_encode(array_merge(array(
+	// lt_json_response sets JSON header, HTTP code, and terminates request.
+	lt_json_response(array_merge(array(
 		'ok' => (bool) $ok,
 		'message' => (string) $message,
-	), (array) $extra), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-	die();
+	), (array) $extra), (int) $statusCode);
 }
 
 function admin_torrent_moderation_is_ajax()

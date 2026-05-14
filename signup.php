@@ -11,7 +11,7 @@ by Nick
 
 require 'system/init.php';
 
-$signupBonusColumn = (lt_column_exists('users', 'bonus') ? 'bonus' : 'voice');
+$signupBonusColumn = lt_user_bonus_column();
 
 $act = trim((string) ($_GET['act'] ?? ''));
 $signupName = trim((string) ($_POST['name'] ?? ''));

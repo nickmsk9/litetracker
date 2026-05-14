@@ -4,21 +4,10 @@ require '../system/init.php';
 
 function profile_ajax_response($ok, $message = '', $extra = array())
 {
-	header('Content-Type: application/json; charset=UTF-8');
-
-	$payload = array(
+	lt_json_response(array_merge(array(
 		'ok' => ($ok ? 1 : 0),
 		'message' => (string) $message,
-	);
-
-	if (!empty($extra) && is_array($extra)) {
-		foreach ($extra as $key => $value) {
-			$payload[$key] = $value;
-		}
-	}
-
-	echo json_encode($payload, JSON_UNESCAPED_UNICODE);
-	die();
+	), (is_array($extra) ? $extra : array())));
 }
 
 function profile_ajax_require_login()
@@ -160,7 +149,7 @@ if ($action === 'moderate_profile') {
 		profile_ajax_response(false, 'Недостаточно прав для редактирования этого пользователя.');
 	}
 
-	$bonusColumn = (lt_column_exists('users', 'bonus') ? 'bonus' : 'voice');
+	$bonusColumn = lt_user_bonus_column();
 	$updates = array();
 	$historyNotes = array();
 	$name = trim((string) ($_POST['name'] ?? $target['name']));
