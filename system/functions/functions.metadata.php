@@ -54,24 +54,14 @@ function lt_metadata_cache_key($provider, $title, $year = null, $category = '')
 
 function lt_metadata_cache_get($provider, $title, $year = null, $category = '')
 {
-	global $memcached;
-
-	if (!isset($memcached) || !is_object($memcached) || !method_exists($memcached, 'get')) {
-		return false;
-	}
-
-	return $memcached->get(lt_metadata_cache_key($provider, $title, $year, $category));
+	$key = lt_metadata_cache_key($provider, $title, $year, $category);
+	return lt_cache_get($key, lt_cache_key_meta_ns());
 }
 
 function lt_metadata_cache_set($provider, $title, $year, $category, $value)
 {
-	global $memcached;
-
-	if (!isset($memcached) || !is_object($memcached) || !method_exists($memcached, 'set')) {
-		return false;
-	}
-
-	return $memcached->set(lt_metadata_cache_key($provider, $title, $year, $category), $value, 0, 86400);
+	$key = lt_metadata_cache_key($provider, $title, $year, $category);
+	return lt_cache_set($key, $value, 86400, lt_cache_key_meta_ns());
 }
 
 function lt_metadata_http_json($url, $timeout = 4)

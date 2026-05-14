@@ -130,13 +130,14 @@ require_once __DIR__ . '/bootstrap/cache.php';
 $memcached = lt_cache_bind_globals();
 
 //Cron system
-if (false === ($CRON = $memcached->get('CRON'))) {
+$CRON = lt_cache_get(lt_cache_key_cron(), lt_cache_key_sys_ns());
+if ($CRON === false) {
 	$sql = $db->query("SELECT * FROM cron");
 	$CRON = array();
 	while($cron  = $db->get_row($sql)) {
 		$CRON[$cron['cron_name']] = $cron['cron_value'];
 	}
-	$memcached->set('CRON', $CRON  , 0, 15*60);
+	lt_cache_set(lt_cache_key_cron(), $CRON, 15*60, lt_cache_key_sys_ns());
 }
 
 
@@ -167,10 +168,11 @@ if(!$PRIV['ip_util']) {
 	$ip = ip2long_db(getip()); //IP адрес
 
 	//Бан по IP - адресу
-	if (false === ($ban_resource = $memcached->get('ip_bans_'.$ip))) {
+	$ban_resource = lt_cache_get(lt_cache_key_ip_ban($ip), lt_cache_key_sys_ns());
+	if ($ban_resource === false) {
 		$sql = $db->query("SELECT * FROM bans WHERE '".$ip."'  >= first AND '".$ip."' <= last");
 		$ban_resource = $db->get_row($sql);
-		$memcached->set('ip_bans_'.$ip, $ban_resource  , 0, 1000);
+		lt_cache_set(lt_cache_key_ip_ban($ip), $ban_resource, 1000, lt_cache_key_sys_ns());
 	}
 
 	if($ban_resource) {
@@ -185,7 +187,7 @@ if($USER && strlen($USER['passkey']) != 32) {
 	$USER['passkey'] = md5($USER['name'].get_date_time().$USER['password']);
 	$sql = $db->query('UPDATE users SET passkey="'.$USER['passkey'].'" WHERE id="'.$USER['id'].'"');
 	$db->free($sql);
-	$memcached->delete('user_'.$USER['id']);
+	lt_cache_invalidate_user($USER['id']);
 }
 
 
@@ -193,7 +195,7 @@ if($USER) {
 	//Если пользователь забанен , делаем выход
 	if($USER['banned']) {
 		logout_cookie();
-		$memcached->delete('user_'.$USER['id']);
+		lt_cache_invalidate_user($USER['id']);
 	}
 }
 ?>

@@ -210,7 +210,7 @@ if ($act === 'edit' && !empty($_GET['id'])) {
 		}
 
 		$db->query("UPDATE categories SET name='".$db->safesql($name)."', template=".$template." WHERE id=".$id);
-		$memcached->delete('upload_categories');
+		lt_cache_invalidate_cats();
 
 		header('Location: categories.php?status=3');
 		die();
@@ -248,7 +248,7 @@ if ($act === 'del' && !empty($_GET['id'])) {
 		}
 
 		$db->query("DELETE FROM categories WHERE id=".$id);
-		$memcached->delete('upload_categories');
+		lt_cache_invalidate_cats();
 
 		header('Location: categories.php?status=2');
 		die();
@@ -304,7 +304,7 @@ if ($act === 'add') {
 		}
 
 		$db->query("INSERT INTO categories(name, image, template, date) VALUES ('".$db->safesql($name)."', '', ".$template.", NOW())");
-		$memcached->delete('upload_categories');
+		lt_cache_invalidate_cats();
 
 		header('Location: categories.php?status=1');
 		die();

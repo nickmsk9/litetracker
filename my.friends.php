@@ -68,10 +68,7 @@ if($_GET['act'] == 'check') {
 	if($USER['num_friends']) {
 		$db->query("UPDATE users SET num_friends = (num_friends - 1) WHERE id=".$USER['id']);
 	}
-	$memcached->delete('user_'.$USER['id']  ,  0);
-
-
-	//Перенаправление
+	lt_cache_invalidate_user($USER['id']);
 	if($check == 'yes') {
 		header('Location:my.friends.php?status=2');
 	} elseif($check == 'delete')  {

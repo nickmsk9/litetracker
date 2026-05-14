@@ -189,8 +189,7 @@ if($_GET['act'] == 'delete' && $_GET['id']) {
 		$db->query("DELETE FROM priv WHERE id=".$id);
 
 		//Удаляем cache
-		$memcached->delete('priv_'.$id , 0);
-		$memcached->delete('priv_all' , 0);
+		lt_cache_invalidate_priv();
 
 		header("Location:edit_priv.php?status=2");
 		die();
@@ -297,8 +296,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		}
 
 		//Удаляем cache
-		$memcached->delete('priv_'.$id , 0);
-		$memcached->delete('priv_all' , 0);
+		lt_cache_invalidate_priv();
 
 		//Перенаправление
 		header('Location:edit_priv.php?status=1');

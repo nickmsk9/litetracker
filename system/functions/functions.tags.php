@@ -8,14 +8,13 @@
 
 function get_tags()
 {
-	global $memcached, $db;
+	global $db;
 
 	$arr = array();
 
-	$res = false;
-	if (isset($memcached) && is_object($memcached)) {
-		$res = $memcached->get('tags');
-	}
+	$cacheKey = lt_cache_key_tags_all();
+	$cacheNs  = lt_cache_key_tags_ns();
+	$res = lt_cache_get($cacheKey, $cacheNs);
 
 	if ($res === false || !is_array($res)) {
 		$query = $db->query("SELECT name, howmuch FROM tags WHERE howmuch > 0 ORDER BY RAND() LIMIT 15");
@@ -27,10 +26,7 @@ function get_tags()
 			}
 		}
 
-		if (isset($memcached) && is_object($memcached)) {
-			$memcached->set('tags', $tags_cache, 0, 24 * 60 * 60);
-		}
-
+		lt_cache_set($cacheKey, $tags_cache, 24 * 60 * 60, $cacheNs);
 		$res = $tags_cache;
 	}
 
@@ -52,16 +48,14 @@ function get_tags()
 
 function lt_tags_popular($limit = 30)
 {
-	global $memcached, $db;
+	global $db;
 
 	$limit = max(1, min(100, (int) $limit));
-	$cacheKey = 'tags:popular:'.$limit;
+	$cacheKey = lt_cache_key_tags_popular($limit);
+	$cacheNs  = lt_cache_key_tags_ns();
 	$ttl = 600;
 
-	$cached = false;
-	if (isset($memcached) && is_object($memcached) && method_exists($memcached, 'get')) {
-		$cached = $memcached->get($cacheKey);
-	}
+	$cached = lt_cache_get($cacheKey, $cacheNs);
 
 	if (is_array($cached)) {
 		return $cached;
@@ -90,9 +84,7 @@ function lt_tags_popular($limit = 30)
 		$db->free($sql);
 	}
 
-	if (isset($memcached) && is_object($memcached) && method_exists($memcached, 'set')) {
-		$memcached->set($cacheKey, $tags, 0, $ttl);
-	}
+	lt_cache_set($cacheKey, $tags, $ttl, $cacheNs);
 
 	return $tags;
 }

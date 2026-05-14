@@ -95,7 +95,7 @@ if ($bonus_per_cleanup > 0) {
 
 	while ($active_user = $db->get_row($active_users)) {
 		$db->query("UPDATE users SET {$bonusColumn} = ({$bonusColumn} + ".$bonus_per_cleanup.") WHERE id = ".(int) $active_user['user_id']);
-		$memcached->delete('user_'.(int) $active_user['user_id']);
+		lt_cache_invalidate_user((int) $active_user['user_id']);
 	}
 }
 
@@ -217,7 +217,7 @@ if ($signupClassId > 0) {
 					$db->query("INSERT INTO user_admin_notes (user_id, admin_id, note, created_at) VALUES (".$promotionUserId.", 0, 'Автоповышение: ".(int) $signupClassId." -> ".$db->safesql((string) $autoPromotionTarget['NAME'])."', NOW())");
 				}
 				send_msg($autoPromotionMessageSubject, sprintf($autoPromotionMessageTemplate, $autoPromotionTarget['NAME']), $promotionUserId, 0);
-				$memcached->delete('user_'.$promotionUserId);
+				lt_cache_invalidate_user($promotionUserId);
 			}
 		}
 	}
@@ -237,7 +237,7 @@ while($arr = $db->get_row($sql) ) {
 
 //Обновляем cron-запись
 $db->query("UPDATE cron SET cron_value=".time()." WHERE cron_name='autoclean_last'");
-$memcached->delete('CRON');
+lt_cache_invalidate_cron();
 lt_lock_release($autocleanLock);
 die(autoclean_response_gif());
 ?>

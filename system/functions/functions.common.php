@@ -116,32 +116,24 @@ function get_ratio($uploaded , $downloaded) {
 
 // Информация о правах класса
 function get_priv_info($class) {
-	global $memcached , $db;
+	global $db;
 
 	$class = (int)$class;
 	$row = false;
-	$cacheKey = 'priv_'.$class;
+	$cacheNs = lt_cache_key_priv_ns();
 
-	if (is_object($memcached)) {
-		$row = $memcached->get($cacheKey);
-	}
+	$row = lt_cache_get(lt_cache_key_priv_class($class), $cacheNs);
 
 	if ($row === false || empty($row['id'])) {
 		$row = $db->super_query("SELECT * FROM priv WHERE id=".$class);
-		if (is_object($memcached)) {
-			$memcached->set($cacheKey, $row, 0, 1000);
-		}
+		lt_cache_set(lt_cache_key_priv_class($class), $row, 1000, $cacheNs);
 	}
 
 	if ($row) {
 		return $row;
 	}
 
-	if (is_object($memcached)) {
-		$row = $memcached->get('priv_guest_defaults');
-	} else {
-		$row = false;
-	}
+	$row = lt_cache_get(lt_cache_key_priv_guest(), $cacheNs);
 
 	if ($row === false) {
 		$row = array();
@@ -155,9 +147,7 @@ function get_priv_info($class) {
 		$row['NAME'] = 'Гость';
 		$row['COLOR'] = '000000';
 
-		if (is_object($memcached)) {
-			$memcached->set('priv_guest_defaults', $row, 0, 1000);
-		}
+		lt_cache_set(lt_cache_key_priv_guest(), $row, 1000, $cacheNs);
 	}
 
 	return $row;

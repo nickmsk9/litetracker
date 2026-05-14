@@ -83,13 +83,14 @@ $memcached = lt_cache_bind_globals();
 
 
 //Cron system
-if (false === ($CRON = $memcached->get('CRON'))) {
+$CRON = lt_cache_get(lt_cache_key_cron(), lt_cache_key_sys_ns());
+if ($CRON === false) {
 	$sql = $db->query("SELECT * FROM cron");
 	$CRON = array();
 	while($cron  = $db->get_row($sql)) {
 		$CRON[$cron['cron_name']] = $cron['cron_value'];
 	}
-	$memcached->set('CRON', $CRON  , 0, 15*60);
+	lt_cache_set(lt_cache_key_cron(), $CRON, 15*60, lt_cache_key_sys_ns());
 }
 
 

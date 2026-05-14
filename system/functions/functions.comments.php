@@ -975,8 +975,9 @@ function comments_preload_users($rows)
 
     $users = array();
     $missingIds = array();
+    $cacheNs = lt_cache_key_user_ns();
     foreach ($ids as $userId) {
-        $cachedUser = (is_object($memcached) && method_exists($memcached, 'get') ? $memcached->get('user_'.$userId) : false);
+        $cachedUser = lt_cache_get(lt_cache_key_user($userId), $cacheNs);
         if (is_array($cachedUser) && !empty($cachedUser['id'])) {
             $users[(int) $cachedUser['id']] = $cachedUser;
             continue;
@@ -992,9 +993,7 @@ function comments_preload_users($rows)
     $sql = $db->query("SELECT * FROM users WHERE id IN (".implode(',', $missingIds).")");
     while ($user = $db->get_row($sql)) {
         $users[(int) $user['id']] = $user;
-        if (is_object($memcached) && method_exists($memcached, 'set')) {
-            $memcached->set('user_'.(int) $user['id'], $user, 0, rand(1500, 3000));
-        }
+        lt_cache_set(lt_cache_key_user((int) $user['id']), $user, rand(1500, 3000), $cacheNs);
     }
     $db->free($sql);
 
