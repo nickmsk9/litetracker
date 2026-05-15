@@ -258,7 +258,7 @@ body.theme-litetracker-2026-minimal {
     font-weight: 700;
     line-height: 1.2;
     cursor: pointer;
-    transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .12s ease;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 
 .theme-litetracker-2026-minimal button:hover,
@@ -286,8 +286,8 @@ body.theme-litetracker-2026-minimal {
 .theme-litetracker-2026-minimal .browse-upload-button,
 .theme-litetracker-2026-minimal a[href*="download"],
 .theme-litetracker-2026-minimal a[href*="download.php"] {
-    background: linear-gradient(135deg, #2563eb, #7c3aed);
-    border-color: #2563eb;
+    background: linear-gradient(135deg, var(--lt-primary), var(--lt-violet));
+    border-color: var(--lt-primary);
     color: #ffffff;
     box-shadow: var(--lt-shadow-primary);
 }
@@ -299,9 +299,9 @@ body.theme-litetracker-2026-minimal {
 .theme-litetracker-2026-minimal .browse-upload-button:hover,
 .theme-litetracker-2026-minimal a[href*="download"]:hover,
 .theme-litetracker-2026-minimal a[href*="download.php"]:hover {
-    background: linear-gradient(135deg, #1d4ed8, #6d28d9);
+    background: linear-gradient(135deg, var(--lt-primary-hover), var(--lt-indigo));
     color: #ffffff;
-    border-color: #1d4ed8;
+    border-color: var(--lt-primary-hover);
     box-shadow: 0 12px 28px rgba(37, 99, 235, 0.3);
 }
 
@@ -743,7 +743,7 @@ body.theme-litetracker-2026-minimal {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: #ef4444;
+    background: var(--lt-danger);
     color: #ffffff;
     border-radius: 7px;
     font-weight: 800;
