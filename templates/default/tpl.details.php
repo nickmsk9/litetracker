@@ -307,8 +307,11 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 						href="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>"
 						target="_blank"
 						rel="noopener"
-						data-details-screenshot-zoom="1"
-						data-zoom-src="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>"
+						data-pswp-src="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>"
+						<?php if (!empty($screen['width']) && !empty($screen['height'])) { ?>
+						data-pswp-width="<?=(int) $screen['width'];?>"
+						data-pswp-height="<?=(int) $screen['height'];?>"
+						<?php } ?>
 						title="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>"
 					>
 						<img src="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>" alt="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>">
@@ -331,4 +334,9 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 		</div>
 	</div>
 </div>
+<?php if ($screens) { ?>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.css">
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/umd/photoswipe.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/umd/photoswipe-lightbox.umd.min.js"></script>
+<?php } ?>
 <script type="text/javascript" src="/public/js/details.js"></script>

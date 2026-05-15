@@ -103,10 +103,22 @@ function lt_details_collect_screens($torrent)
 			$path = $name;
 		}
 
+		$width = 0;
+		$height = 0;
+		if (is_file($path)) {
+			$size = @getimagesize($path);
+			if (is_array($size) && !empty($size[0]) && !empty($size[1])) {
+				$width = (int) $size[0];
+				$height = (int) $size[1];
+			}
+		}
+
 		$result[] = array(
 			'id' => $index,
 			'path' => $path,
 			'title' => 'Скриншот №'.$index,
+			'width' => $width,
+			'height' => $height,
 		);
 	}
 
