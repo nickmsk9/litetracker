@@ -69,13 +69,12 @@ if (!empty($USER['theme_dark'])) {
 if (lt_is_mobile_request()) {
     $bodyClasses[] = 'is-mobile';
 }
-$activeThemeSlug = trim((string) ($GLOBALS['LITETRACKER_THEME_SLUG'] ?? ''));
 if (function_exists('lt_themes_validate_slug')) {
-    $activeThemeSlug = (string) lt_themes_validate_slug($activeThemeSlug);
-}
-if ($activeThemeSlug !== '' && preg_match('/^[a-zA-Z0-9_]+$/', $activeThemeSlug)) {
-    // Theme slug may contain underscores; convert to kebab-case CSS class for predictable selectors.
-    $bodyClasses[] = 'theme-'.strtolower(str_replace('_', '-', $activeThemeSlug));
+    $activeThemeSlug = (string) lt_themes_validate_slug(trim((string) ($GLOBALS['LITETRACKER_THEME_SLUG'] ?? '')));
+    if ($activeThemeSlug !== '' && preg_match('/^[a-zA-Z0-9_]+$/', $activeThemeSlug)) {
+        // Theme slug may contain underscores; convert to kebab-case CSS class for predictable selectors.
+        $bodyClasses[] = 'theme-'.strtolower(str_replace('_', '-', $activeThemeSlug));
+    }
 }
 $welcomeBanner = '';
 if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
