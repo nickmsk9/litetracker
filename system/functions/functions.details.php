@@ -106,7 +106,15 @@ function lt_details_collect_screens($torrent)
 		$width = 0;
 		$height = 0;
 		if (is_file($path)) {
-			$size = @getimagesize($path);
+			$size = false;
+			set_error_handler(function () {
+				return true;
+			});
+			try {
+				$size = getimagesize($path);
+			} finally {
+				restore_error_handler();
+			}
 			if (is_array($size) && !empty($size[0]) && !empty($size[1])) {
 				$width = (int) $size[0];
 				$height = (int) $size[1];

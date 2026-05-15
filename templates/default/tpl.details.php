@@ -334,9 +334,4 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 		</div>
 	</div>
 </div>
-<?php if ($screens) { ?>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.css">
-<script src="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/umd/photoswipe.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/umd/photoswipe-lightbox.umd.min.js"></script>
-<?php } ?>
 <script type="text/javascript" src="/public/js/details.js"></script>

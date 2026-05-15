@@ -35,6 +35,7 @@ if (isset($_GET['trackers']) && !empty($arr['multi'])) {
 
 $detailsViewModel = lt_details_prepare_view_model($arr, $detailsRating);
 extract($detailsViewModel, EXTR_SKIP);
+$GLOBALS['LITETRACKER_ENABLE_PHOTOSWIPE'] = !empty($screens);
 
 //Заголовок
 head($torrent_name_plain);

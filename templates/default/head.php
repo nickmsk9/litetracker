@@ -89,6 +89,11 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <?=$header;?>
 <link href="templates/<?=$tpl;?>/css/my.css" rel="stylesheet" type="text/css">
+<?php if (!empty($GLOBALS['LITETRACKER_ENABLE_PHOTOSWIPE'])) { ?>
+<link href="/public/libs/photoswipe/photoswipe.css" rel="stylesheet" type="text/css">
+<script src="/public/libs/photoswipe/photoswipe.umd.min.js"></script>
+<script src="/public/libs/photoswipe/photoswipe-lightbox.umd.min.js"></script>
+<?php } ?>
 <?php
 $_headThemeSlug = (string) ($GLOBALS['LITETRACKER_THEME_SLUG'] ?? '');
 if (function_exists('lt_themes_override_css_url') && $_headThemeSlug !== '' && $_headThemeSlug !== $tpl) {
