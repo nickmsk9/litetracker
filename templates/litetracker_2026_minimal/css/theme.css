@@ -34,11 +34,6 @@ body.theme-litetracker-2026-minimal {
     text-rendering: optimizeLegibility;
 }
 
-body.theme-litetracker-2026-minimal {
-    background: var(--lt-bg);
-    color: var(--lt-text);
-}
-
 body.theme-litetracker-2026-minimal .site-header-band,
 body.theme-litetracker-2026-minimal .site-header,
 body.theme-litetracker-2026-minimal .site-topbar,
@@ -177,7 +172,7 @@ body.theme-litetracker-2026-minimal .details-bookmark-button {
     font-weight: 600;
     line-height: 1.2;
     cursor: pointer;
-    transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .12s ease;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 
 body.theme-litetracker-2026-minimal button:hover,
@@ -464,7 +459,7 @@ body.theme-litetracker-2026-minimal .site-user-avatar img,
 body.theme-litetracker-2026-minimal .profile-card-avatar img,
 body.theme-litetracker-2026-minimal .wall-form-avatar img,
 body.theme-litetracker-2026-minimal .comment-entry-avatar img {
-    border-radius: 10px;
+    border-radius: var(--lt-radius);
     border: 1px solid var(--lt-border);
     background: var(--lt-surface-soft);
 }
