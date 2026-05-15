@@ -204,6 +204,25 @@ if (!function_exists('lt_cache_key_meta_ns')) {
 }
 
 // ---------------------------------------------------------------------------
+// THEMES
+// namespace: 'themes'
+// ---------------------------------------------------------------------------
+
+if (!function_exists('lt_cache_key_themes_list')) {
+    function lt_cache_key_themes_list()
+    {
+        return 'themes_list';
+    }
+}
+
+if (!function_exists('lt_cache_key_themes_ns')) {
+    function lt_cache_key_themes_ns()
+    {
+        return 'themes';
+    }
+}
+
+// ---------------------------------------------------------------------------
 // SESSION WRITE THROTTLE
 // namespace: 'sessions'
 // ---------------------------------------------------------------------------

@@ -430,6 +430,9 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 	//Тема трекера
 	$tpl = $config['template'];
 
+	// Resolve the active CSS theme for the current user (may differ from $tpl for PHP files)
+	$GLOBALS['LITETRACKER_THEME_SLUG'] = (function_exists('lt_resolve_theme') ? lt_resolve_theme($USER) : $tpl);
+
 	//Название сайа | Название страницы
 	$sitename = $config['sitename'];
 	$title = (empty($title) ? '' : $title);

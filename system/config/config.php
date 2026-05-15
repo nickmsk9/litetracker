@@ -76,6 +76,7 @@ $config  = array(
 'sitename' => 'LiteTracker Engine' , //Название сайта
 'gzip' => 1 , //Использовать gzip-сжатие
 'template' => 'default', //Шаблон сайта
+'default_theme' => '', //Тема оформления по умолчанию (пусто = используется шаблон 'template')
 'lang' => 'Russian', //Язык сайта
 'siteonline' => 1, //Сайт открыт - 1 / Сайт закрыт - 0
 'rewrite' => 0, //ЧПУ

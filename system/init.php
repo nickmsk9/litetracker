@@ -64,6 +64,9 @@ require_once __DIR__ . '/../app/Services/CommentService.php';
 
 
 
+//Функционал тем оформления
+require __DIR__ . '/functions/functions.themes.php';
+
 //Функции для тегов
 require __DIR__ . '/functions/functions.tags.php';
 //Функции для редактора WYSIWYG

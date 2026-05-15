@@ -255,6 +255,7 @@ function admin_dashboard_settings_schema()
 				array('key' => 'siteonline', 'label' => 'Сайт открыт', 'type' => 'checkbox', 'description' => 'Если выключить, обычные пользователи не смогут пользоваться сайтом во время работ.'),
 				array('key' => 'registeronline', 'label' => 'Регистрация открыта', 'type' => 'checkbox', 'description' => 'Разрешает создание новых аккаунтов через публичную форму регистрации.'),
 				array('key' => 'gzip', 'label' => 'Gzip-сжатие', 'type' => 'checkbox', 'description' => 'Сжимает HTML-ответы, если сервер и браузер это поддерживают.'),
+				array('key' => 'default_theme', 'label' => 'Тема оформления по умолчанию', 'type' => 'select', 'options' => (function_exists('lt_themes_get_admin_options') ? lt_themes_get_admin_options() : array('default' => 'LiteTracker Default')), 'description' => 'Тема, которая применяется для всех гостей и пользователей, не выбравших свою тему в профиле. Каждый пользователь может сменить тему в настройках.'),
 				array('key' => 'begin_money', 'label' => 'Стартовый баланс', 'type' => 'text', 'description' => 'Сколько бонусных единиц получает новый пользователь после регистрации.'),
 				array('key' => 'project_help_text', 'label' => 'Текст блока помощи проекту', 'type' => 'text', 'description' => 'Короткое описание цели сбора. Пример: “Оплата аренды сервера”.'),
 				array('key' => 'project_help_button_label', 'label' => 'Кнопка помощи проекту', 'type' => 'text', 'description' => 'Текст кнопки в блоке помощи. Пример: “Помочь проекту”.'),
@@ -699,6 +700,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			} else {
 				$result = admin_dashboard_update_config_values($updates, $settingsFieldMap);
 				if ($result === true) {
+					// Invalidate themes cache if the default theme changed
+					if (isset($updates['default_theme']) && function_exists('lt_themes_invalidate_cache')) {
+						lt_themes_invalidate_cache();
+					}
 					admin_dashboard_redirect($settingsTab, 'settings_saved');
 				}
 
