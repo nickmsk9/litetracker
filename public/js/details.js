@@ -273,64 +273,28 @@
     });
   }
 
-  function initScreenshotZoom() {
-    var items = document.querySelectorAll('[data-details-screenshot-zoom]');
+  function initScreenshotGallery() {
+    var gallery = document.querySelector('#details-gallery');
+    var lightbox;
 
-    if (!items.length) {
+    if (!gallery) {
       return;
     }
 
-    Array.prototype.forEach.call(items, function (item) {
-      var image = item.querySelector('img');
-      var zoomSrc = item.getAttribute('data-zoom-src') || (image ? image.getAttribute('src') : '');
-      var zoomWindow = document.createElement('div');
-
-      if (!image || !zoomSrc) {
-        return;
+    if (typeof window.PhotoSwipeLightbox !== 'function' || typeof window.PhotoSwipe !== 'function') {
+      if (typeof window.console !== 'undefined' && typeof window.console.warn === 'function') {
+        window.console.warn('PhotoSwipe library not loaded, gallery disabled.');
       }
+      return;
+    }
 
-      zoomWindow.className = 'details-gallery-zoom-window';
-      zoomWindow.style.backgroundImage = 'url("' + zoomSrc.replace(/"/g, '%22') + '")';
-      item.appendChild(zoomWindow);
-
-      function refreshZoomSize() {
-        var rect = image.getBoundingClientRect();
-
-        zoomWindow.style.width = Math.round(rect.width) + 'px';
-        zoomWindow.style.height = Math.round(rect.height) + 'px';
-      }
-
-      function positionZoom(event) {
-        var rect = image.getBoundingClientRect();
-        var naturalWidth = image.naturalWidth || rect.width;
-        var naturalHeight = image.naturalHeight || rect.height;
-        var x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
-        var y = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
-        var xPercent = rect.width ? (x / rect.width) * 100 : 50;
-        var yPercent = rect.height ? (y / rect.height) * 100 : 50;
-
-        zoomWindow.style.backgroundSize = naturalWidth + 'px ' + naturalHeight + 'px';
-        zoomWindow.style.backgroundPosition = xPercent + '% ' + yPercent + '%';
-      }
-
-      item.addEventListener('mouseenter', function (event) {
-        refreshZoomSize();
-        positionZoom(event);
-        item.classList.add('is-zooming');
-      });
-
-      item.addEventListener('mousemove', positionZoom);
-
-      item.addEventListener('mouseleave', function () {
-        item.classList.remove('is-zooming');
-      });
-
-      if (image.complete) {
-        refreshZoomSize();
-      } else {
-        image.addEventListener('load', refreshZoomSize);
-      }
+    lightbox = new window.PhotoSwipeLightbox({
+      gallery: '#details-gallery',
+      children: 'a',
+      pswpModule: window.PhotoSwipe
     });
+
+    lightbox.init();
   }
 
   function initPostTts() {
@@ -374,7 +338,7 @@
   }
 
   onReady(function () {
-    initScreenshotZoom();
+    initScreenshotGallery();
     initBookmarkButton();
     initTrackerRefreshButton();
     initRatingControl();
