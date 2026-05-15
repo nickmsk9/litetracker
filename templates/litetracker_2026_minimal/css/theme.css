@@ -1,247 +1,654 @@
-/*
- * LiteTracker 2026 Minimal — theme override
- *
- * This file is loaded on top of the base templates/default/css/my.css.
- * It only redefines CSS custom properties and applies a handful of targeted
- * overrides to produce a lighter, more minimal visual style.
- *
- * Rules to keep in mind:
- *   - Do NOT import or duplicate the base CSS here.
- *   - Avoid heavy box-shadows, large gradients, glassmorphism, complex animations.
- *   - Keep border-radius small and consistent (4–6 px).
- */
-
-/* -------------------------------------------------------------------------
- * 1. CSS variable overrides (light mode)
- * ---------------------------------------------------------------------- */
-
 :root {
-    color-scheme: light;
-    --font-ui: Arial, sans-serif;
-
-    --color-bg:           #eef3f8;
-    --color-surface:      #ffffff;
-    --color-surface-muted:#f8fafc;
-    --color-border:       #dbe3ec;
-    --color-text:         #1f2937;
-    --color-text-muted:   #6b7280;
-    --color-primary:      #2563eb;
-    --color-primary-hover:#1d4ed8;
-
-    --radius-sm: 2px;
-    --radius-md: 6px;
-    --radius-lg: 6px;
-
-    --shadow-sm: none;
-    --shadow-md: none;
-    --shadow:    none;
-
-    --bg:           var(--color-bg);
-    --surface:      var(--color-surface);
-    --surface-solid:#ffffff;
-    --surface-muted:var(--color-surface-muted);
-    --surface-alt:  #f1f5f9;
-    --text:         var(--color-text);
-    --muted:        var(--color-text-muted);
-    --line:         var(--color-border);
-    --line-strong:  #c8d3df;
-    --accent:       var(--color-primary);
-    --accent-hover: var(--color-primary-hover);
-
-    --success-bg:   #eff6ff;
-    --success-line: #bfdbfe;
+    --lt-bg: #f3f6fb;
+    --lt-bg-soft: #eef3f8;
+    --lt-surface: #ffffff;
+    --lt-surface-soft: #f8fafc;
+    --lt-border: #dbe3ec;
+    --lt-border-soft: #e8eef5;
+    --lt-text: #111827;
+    --lt-text-soft: #1f2937;
+    --lt-muted: #64748b;
+    --lt-muted-light: #94a3b8;
+    --lt-primary: #2563eb;
+    --lt-primary-hover: #1d4ed8;
+    --lt-primary-soft: #dbeafe;
+    --lt-success: #16a34a;
+    --lt-success-soft: #dcfce7;
+    --lt-danger: #dc2626;
+    --lt-danger-soft: #fee2e2;
+    --lt-warning: #f59e0b;
+    --lt-warning-soft: #fef3c7;
+    --lt-radius-sm: 6px;
+    --lt-radius: 10px;
+    --lt-radius-lg: 14px;
+    --lt-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    --lt-shadow-soft: 0 2px 10px rgba(15, 23, 42, 0.04);
 }
 
-/* Dark-mode variable overrides — keep them mild so contrast stays readable */
-body.theme-dark {
-    --color-bg:           #1a1d22;
-    --color-surface:      #242830;
-    --color-surface-muted:#1e2127;
-    --color-border:       #353c47;
-    --color-text:         #f1f5f9;
-    --color-text-muted:   #94a3b8;
-    --color-primary:      #60a5fa;
-    --color-primary-hover:#93c5fd;
-
-    --bg:           var(--color-bg);
-    --surface:      var(--color-surface);
-    --surface-solid:#242830;
-    --surface-muted:var(--color-surface-muted);
-    --surface-alt:  #2d3340;
-    --text:         var(--color-text);
-    --muted:        var(--color-text-muted);
-    --line:         var(--color-border);
-    --line-strong:  #454e5e;
-    --accent:       var(--color-primary);
-    --accent-hover: var(--color-primary-hover);
-
-    --success-bg:   #1e3050;
-    --success-line: #2d4e7e;
+body.theme-litetracker-2026-minimal {
+    background: var(--lt-bg);
+    color: var(--lt-text);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
 }
 
-/* -------------------------------------------------------------------------
- * 2. Base typography
- * ---------------------------------------------------------------------- */
-
-body {
-    font-family: Arial, sans-serif;
+body.theme-litetracker-2026-minimal {
+    background: var(--lt-bg);
+    color: var(--lt-text);
 }
 
-/* -------------------------------------------------------------------------
- * 3. Form inputs — remove inset shadow used in default theme
- * ---------------------------------------------------------------------- */
-
-input[type="text"],
-input[type="password"],
-input[type="email"],
-input[type="number"],
-textarea,
-select {
-    box-shadow: none;
-    border-radius: var(--radius-md);
+body.theme-litetracker-2026-minimal .site-header-band,
+body.theme-litetracker-2026-minimal .site-header,
+body.theme-litetracker-2026-minimal .site-topbar,
+body.theme-litetracker-2026-minimal .header,
+body.theme-litetracker-2026-minimal .topbar,
+body.theme-litetracker-2026-minimal .navbar,
+body.theme-litetracker-2026-minimal #header,
+body.theme-litetracker-2026-minimal #top,
+body.theme-litetracker-2026-minimal .main-header {
+    background: rgba(255, 255, 255, 0.96);
+    border-bottom: 1px solid var(--lt-border);
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
 }
 
-input[type="text"]:focus,
-input[type="password"]:focus,
-input[type="email"]:focus,
-textarea:focus,
-select:focus {
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+body.theme-litetracker-2026-minimal .site-nav-link,
+body.theme-litetracker-2026-minimal .header a,
+body.theme-litetracker-2026-minimal .topbar a,
+body.theme-litetracker-2026-minimal .navbar a,
+body.theme-litetracker-2026-minimal #header a {
+    color: var(--lt-text-soft);
+    text-decoration: none;
+    font-weight: 500;
 }
 
-/* -------------------------------------------------------------------------
- * 4. Buttons — primary and secondary
- * ---------------------------------------------------------------------- */
-
-input[type="submit"],
-input[type="button"],
-button,
-.button_yes,
-.site-auth-link,
-.project-help-button,
-.settings-remove-button,
-.settings-upload-button {
-    border-radius: 4px;
-    box-shadow: none;
+body.theme-litetracker-2026-minimal .site-nav-link:hover,
+body.theme-litetracker-2026-minimal .header a:hover,
+body.theme-litetracker-2026-minimal .topbar a:hover,
+body.theme-litetracker-2026-minimal .navbar a:hover,
+body.theme-litetracker-2026-minimal #header a:hover {
+    color: var(--lt-primary);
+    text-decoration: none;
 }
 
-input[type="submit"]:hover,
-input[type="button"]:hover,
-button:hover,
-.button_yes:hover {
-    box-shadow: none;
+body.theme-litetracker-2026-minimal a {
+    color: var(--lt-primary);
+    text-decoration: none;
 }
 
-/* Primary button */
-.btn-primary,
-input[type="submit"].btn-primary,
-button.btn-primary {
-    background: #2563eb;
-    color: #fff;
-    border: 0;
-    border-radius: 4px;
+body.theme-litetracker-2026-minimal a:hover {
+    color: var(--lt-primary-hover);
+    text-decoration: underline;
 }
 
-.btn-primary:hover,
-input[type="submit"].btn-primary:hover,
-button.btn-primary:hover {
-    background: #1d4ed8;
-    color: #fff;
+body.theme-litetracker-2026-minimal .frame,
+body.theme-litetracker-2026-minimal .block,
+body.theme-litetracker-2026-minimal .box,
+body.theme-litetracker-2026-minimal .panel,
+body.theme-litetracker-2026-minimal .content-box,
+body.theme-litetracker-2026-minimal .mainbox,
+body.theme-litetracker-2026-minimal .sidebar-box,
+body.theme-litetracker-2026-minimal .sidebar-block,
+body.theme-litetracker-2026-minimal .news-block,
+body.theme-litetracker-2026-minimal .torrent,
+body.theme-litetracker-2026-minimal .torrent-block,
+body.theme-litetracker-2026-minimal .torrent-card,
+body.theme-litetracker-2026-minimal .commentbox,
+body.theme-litetracker-2026-minimal .userbox,
+body.theme-litetracker-2026-minimal .profile-box,
+body.theme-litetracker-2026-minimal .table-wrapper,
+body.theme-litetracker-2026-minimal .details-block,
+body.theme-litetracker-2026-minimal .details-panel,
+body.theme-litetracker-2026-minimal .browse-panel,
+body.theme-litetracker-2026-minimal .browse-torrent-card,
+body.theme-litetracker-2026-minimal .profile-card,
+body.theme-litetracker-2026-minimal .profile-panel,
+body.theme-litetracker-2026-minimal .profile-sidebar-card,
+body.theme-litetracker-2026-minimal .sidebar-panel,
+body.theme-litetracker-2026-minimal .news-detail-card,
+body.theme-litetracker-2026-minimal .site-welcome-banner {
+    background: var(--lt-surface);
+    border: 1px solid var(--lt-border);
+    border-radius: var(--lt-radius);
+    box-shadow: var(--lt-shadow-soft);
 }
 
-/* Secondary button */
-.btn-secondary,
-input[type="submit"].btn-secondary,
-button.btn-secondary {
+body.theme-litetracker-2026-minimal .frame,
+body.theme-litetracker-2026-minimal .sidebar-panel,
+body.theme-litetracker-2026-minimal .profile-sidebar-card,
+body.theme-litetracker-2026-minimal .browse-panel,
+body.theme-litetracker-2026-minimal .profile-panel,
+body.theme-litetracker-2026-minimal .details-panel {
+    margin-bottom: 14px;
+}
+
+body.theme-litetracker-2026-minimal .frame-body,
+body.theme-litetracker-2026-minimal .details-panel,
+body.theme-litetracker-2026-minimal .profile-panel,
+body.theme-litetracker-2026-minimal .sidebar-panel,
+body.theme-litetracker-2026-minimal .news-detail-content {
+    padding: 14px 16px;
+}
+
+body.theme-litetracker-2026-minimal .details-panel,
+body.theme-litetracker-2026-minimal .details,
+body.theme-litetracker-2026-minimal .torrent-details,
+body.theme-litetracker-2026-minimal #details,
+body.theme-litetracker-2026-minimal .torrent-info,
+body.theme-litetracker-2026-minimal .release-info {
+    background: var(--lt-surface);
+    border: 1px solid var(--lt-border);
+    border-radius: var(--lt-radius);
+    box-shadow: var(--lt-shadow-soft);
+}
+
+body.theme-litetracker-2026-minimal .details-poster-image,
+body.theme-litetracker-2026-minimal img.poster,
+body.theme-litetracker-2026-minimal .poster img,
+body.theme-litetracker-2026-minimal .cover img,
+body.theme-litetracker-2026-minimal .torrent-cover img,
+body.theme-litetracker-2026-minimal .torrent-poster img,
+body.theme-litetracker-2026-minimal img[src*="poster"],
+body.theme-litetracker-2026-minimal img[src*="cover"],
+body.theme-litetracker-2026-minimal img[src*="covers"] {
+    border-radius: var(--lt-radius);
+    border: 1px solid var(--lt-border);
+    box-shadow: var(--lt-shadow);
+}
+
+body.theme-litetracker-2026-minimal button,
+body.theme-litetracker-2026-minimal input[type="submit"],
+body.theme-litetracker-2026-minimal input[type="button"],
+body.theme-litetracker-2026-minimal .btn,
+body.theme-litetracker-2026-minimal .button,
+body.theme-litetracker-2026-minimal a.button,
+body.theme-litetracker-2026-minimal .site-auth-link,
+body.theme-litetracker-2026-minimal .profile-card-button,
+body.theme-litetracker-2026-minimal .browse-search-submit,
+body.theme-litetracker-2026-minimal .browse-filter-submit,
+body.theme-litetracker-2026-minimal .project-help-button,
+body.theme-litetracker-2026-minimal .details-download-button,
+body.theme-litetracker-2026-minimal .details-tracker-refresh-button,
+body.theme-litetracker-2026-minimal .details-bookmark-button {
+    border-radius: var(--lt-radius-sm);
+    border: 1px solid var(--lt-border);
+    padding: 8px 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .12s ease;
+}
+
+body.theme-litetracker-2026-minimal button:hover,
+body.theme-litetracker-2026-minimal input[type="submit"]:hover,
+body.theme-litetracker-2026-minimal input[type="button"]:hover,
+body.theme-litetracker-2026-minimal .btn:hover,
+body.theme-litetracker-2026-minimal .button:hover,
+body.theme-litetracker-2026-minimal a.button:hover,
+body.theme-litetracker-2026-minimal .site-auth-link:hover,
+body.theme-litetracker-2026-minimal .profile-card-button:hover,
+body.theme-litetracker-2026-minimal .browse-search-submit:hover,
+body.theme-litetracker-2026-minimal .browse-filter-submit:hover,
+body.theme-litetracker-2026-minimal .project-help-button:hover,
+body.theme-litetracker-2026-minimal .details-download-button:hover,
+body.theme-litetracker-2026-minimal .details-tracker-refresh-button:hover,
+body.theme-litetracker-2026-minimal .details-bookmark-button:hover {
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+body.theme-litetracker-2026-minimal .download,
+body.theme-litetracker-2026-minimal .download-button,
+body.theme-litetracker-2026-minimal .btn-download,
+body.theme-litetracker-2026-minimal .details-download-button,
+body.theme-litetracker-2026-minimal .browse-upload-button,
+body.theme-litetracker-2026-minimal a[href*="download"],
+body.theme-litetracker-2026-minimal a[href*="download.php"] {
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    border-color: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+}
+
+body.theme-litetracker-2026-minimal .download:hover,
+body.theme-litetracker-2026-minimal .download-button:hover,
+body.theme-litetracker-2026-minimal .btn-download:hover,
+body.theme-litetracker-2026-minimal .details-download-button:hover,
+body.theme-litetracker-2026-minimal .browse-upload-button:hover,
+body.theme-litetracker-2026-minimal a[href*="download"]:hover,
+body.theme-litetracker-2026-minimal a[href*="download.php"]:hover {
+    background: linear-gradient(135deg, #1d4ed8, #4338ca);
+    color: #ffffff;
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
+}
+
+body.theme-litetracker-2026-minimal .btn-secondary,
+body.theme-litetracker-2026-minimal .bookmark,
+body.theme-litetracker-2026-minimal .favorite,
+body.theme-litetracker-2026-minimal .details-bookmark-button,
+body.theme-litetracker-2026-minimal .details-download-button-magnet,
+body.theme-litetracker-2026-minimal .profile-sidebar-link,
+body.theme-litetracker-2026-minimal a[href*="bookmark"],
+body.theme-litetracker-2026-minimal a[href*="favorite"] {
+    background: var(--lt-surface-soft);
+    color: var(--lt-text-soft);
+    border-color: var(--lt-border);
+}
+
+body.theme-litetracker-2026-minimal .btn-secondary:hover,
+body.theme-litetracker-2026-minimal .bookmark:hover,
+body.theme-litetracker-2026-minimal .favorite:hover,
+body.theme-litetracker-2026-minimal .details-bookmark-button:hover,
+body.theme-litetracker-2026-minimal .details-download-button-magnet:hover,
+body.theme-litetracker-2026-minimal .profile-sidebar-link:hover,
+body.theme-litetracker-2026-minimal a[href*="bookmark"]:hover,
+body.theme-litetracker-2026-minimal a[href*="favorite"]:hover {
+    background: #eef2ff;
+    color: var(--lt-primary);
+    border-color: #c7d2fe;
+}
+
+body.theme-litetracker-2026-minimal table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    background: var(--lt-surface);
+}
+
+body.theme-litetracker-2026-minimal th {
+    background: var(--lt-surface-soft);
+    color: var(--lt-muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .01em;
+}
+
+body.theme-litetracker-2026-minimal td,
+body.theme-litetracker-2026-minimal th {
+    padding: 9px 11px;
+    border-bottom: 1px solid var(--lt-border-soft);
+}
+
+body.theme-litetracker-2026-minimal tr:hover td {
     background: #f8fafc;
-    color: #1f2937;
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
 }
 
-.btn-secondary:hover,
-input[type="submit"].btn-secondary:hover,
-button.btn-secondary:hover {
-    background: #f1f5f9;
-    color: #111827;
+body.theme-litetracker-2026-minimal table tr:last-child td {
+    border-bottom: none;
 }
 
-/* -------------------------------------------------------------------------
- * 5. Frame / card blocks — remove shadows, clean up borders
- * ---------------------------------------------------------------------- */
-
-.frame,
-.card,
-.block,
-.box,
-.sidebar-panel,
-.settings-nav-card,
-.settings-content,
-.admin-card {
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    box-shadow: none;
+body.theme-litetracker-2026-minimal .details-files-wrap,
+body.theme-litetracker-2026-minimal .details-trackers-wrap,
+body.theme-litetracker-2026-minimal .profile-torrent-table-wrap,
+body.theme-litetracker-2026-minimal .browse-torrent-list {
+    margin: 0;
 }
 
-/* -------------------------------------------------------------------------
- * 6. Tables — lighter grid without heavy borders
- * ---------------------------------------------------------------------- */
+body.theme-litetracker-2026-minimal .badge,
+body.theme-litetracker-2026-minimal .label,
+body.theme-litetracker-2026-minimal .status,
+body.theme-litetracker-2026-minimal .tag,
+body.theme-litetracker-2026-minimal .cat,
+body.theme-litetracker-2026-minimal .category,
+body.theme-litetracker-2026-minimal .browse-tag-chip,
+body.theme-litetracker-2026-minimal .browse-category-tab,
+body.theme-litetracker-2026-minimal .details-badge,
+body.theme-litetracker-2026-minimal .release-category-chip,
+body.theme-litetracker-2026-minimal .category-card {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    border: 1px solid transparent;
+    background: var(--lt-surface-soft);
+    color: var(--lt-text-soft);
+}
 
-.table-default th,
-.lt-admin-table th {
-    background: var(--surface-alt);
+body.theme-litetracker-2026-minimal .status-ok,
+body.theme-litetracker-2026-minimal .badge-success,
+body.theme-litetracker-2026-minimal .label-success,
+body.theme-litetracker-2026-minimal .published,
+body.theme-litetracker-2026-minimal .approved,
+body.theme-litetracker-2026-minimal .details-tracker-status-ok {
+    background: var(--lt-success-soft);
+    color: #166534;
+    border-color: #bbf7d0;
+}
+
+body.theme-litetracker-2026-minimal .status-error,
+body.theme-litetracker-2026-minimal .badge-danger,
+body.theme-litetracker-2026-minimal .label-danger,
+body.theme-litetracker-2026-minimal .error,
+body.theme-litetracker-2026-minimal .failed,
+body.theme-litetracker-2026-minimal .details-tracker-status-error {
+    background: var(--lt-danger-soft);
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+body.theme-litetracker-2026-minimal .status-info,
+body.theme-litetracker-2026-minimal .badge-info,
+body.theme-litetracker-2026-minimal .label-info,
+body.theme-litetracker-2026-minimal .local-tracker,
+body.theme-litetracker-2026-minimal .details-tracker-status-local,
+body.theme-litetracker-2026-minimal .details-tracker-status-private {
+    background: var(--lt-primary-soft);
+    color: #1e40af;
+    border-color: #bfdbfe;
+}
+
+body.theme-litetracker-2026-minimal .site-sidebar,
+body.theme-litetracker-2026-minimal .browse-sidebar,
+body.theme-litetracker-2026-minimal .profile-sidebar,
+body.theme-litetracker-2026-minimal .right-column,
+body.theme-litetracker-2026-minimal #right,
+body.theme-litetracker-2026-minimal .aside {
+    color: var(--lt-text-soft);
+}
+
+body.theme-litetracker-2026-minimal .site-sidebar .sidebar-panel,
+body.theme-litetracker-2026-minimal .right-column .block,
+body.theme-litetracker-2026-minimal #right .block,
+body.theme-litetracker-2026-minimal .aside .block,
+body.theme-litetracker-2026-minimal .news-block {
+    background: var(--lt-surface);
+    border: 1px solid var(--lt-border);
+    border-radius: var(--lt-radius);
+    box-shadow: var(--lt-shadow-soft);
+}
+
+body.theme-litetracker-2026-minimal .sidebar-panel-title,
+body.theme-litetracker-2026-minimal .sidebar-news-title,
+body.theme-litetracker-2026-minimal .profile-sidebar-stats-title,
+body.theme-litetracker-2026-minimal .sidebar h1,
+body.theme-litetracker-2026-minimal .sidebar h2,
+body.theme-litetracker-2026-minimal .sidebar h3,
+body.theme-litetracker-2026-minimal .right-column h1,
+body.theme-litetracker-2026-minimal .right-column h2,
+body.theme-litetracker-2026-minimal .right-column h3,
+body.theme-litetracker-2026-minimal .news-block h1,
+body.theme-litetracker-2026-minimal .news-block h2,
+body.theme-litetracker-2026-minimal .news-block h3 {
+    color: var(--lt-text);
+    font-weight: 700;
+}
+
+body.theme-litetracker-2026-minimal .sidebar-news-item + .sidebar-news-item {
+    border-top: 1px solid var(--lt-border-soft);
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+body.theme-litetracker-2026-minimal .sidebar-news-date,
+body.theme-litetracker-2026-minimal .sidebar .date,
+body.theme-litetracker-2026-minimal .right-column .date,
+body.theme-litetracker-2026-minimal .news-date,
+body.theme-litetracker-2026-minimal small {
+    color: var(--lt-muted-light);
+}
+
+body.theme-litetracker-2026-minimal .wall-comment,
+body.theme-litetracker-2026-minimal .comment,
+body.theme-litetracker-2026-minimal .comment-item,
+body.theme-litetracker-2026-minimal .comment-body,
+body.theme-litetracker-2026-minimal .commentbox,
+body.theme-litetracker-2026-minimal .comment-entry {
+    background: var(--lt-surface);
+    border-bottom: 1px solid var(--lt-border-soft);
+}
+
+body.theme-litetracker-2026-minimal .wall-comment,
+body.theme-litetracker-2026-minimal .comment,
+body.theme-litetracker-2026-minimal .comment-item,
+body.theme-litetracker-2026-minimal .comment-entry {
+    padding: 12px 0;
+}
+
+body.theme-litetracker-2026-minimal .wall-comment-author,
+body.theme-litetracker-2026-minimal .comment .author,
+body.theme-litetracker-2026-minimal .comment-author,
+body.theme-litetracker-2026-minimal .username,
+body.theme-litetracker-2026-minimal .comment-entry-author {
+    color: var(--lt-primary);
+    font-weight: 700;
+}
+
+body.theme-litetracker-2026-minimal .wall-comment-date,
+body.theme-litetracker-2026-minimal .comment .date,
+body.theme-litetracker-2026-minimal .comment-date,
+body.theme-litetracker-2026-minimal .comment-meta,
+body.theme-litetracker-2026-minimal .comment small,
+body.theme-litetracker-2026-minimal .comment-entry-date {
+    color: var(--lt-muted-light);
+    font-size: 12px;
+}
+
+body.theme-litetracker-2026-minimal .wall-comment-actions a,
+body.theme-litetracker-2026-minimal .comment .actions a,
+body.theme-litetracker-2026-minimal .comment-actions a,
+body.theme-litetracker-2026-minimal .comment a[href*="reply"],
+body.theme-litetracker-2026-minimal .comment a[href*="edit"],
+body.theme-litetracker-2026-minimal .comment a[href*="delete"],
+body.theme-litetracker-2026-minimal .comment-side-button {
+    color: var(--lt-muted);
+    font-size: 12px;
     font-weight: 600;
 }
 
-.table-default td,
-.lt-admin-table td,
-.table-default th,
-.lt-admin-table th {
-    border-color: var(--line);
+body.theme-litetracker-2026-minimal .wall-comment-actions a:hover,
+body.theme-litetracker-2026-minimal .comment .actions a:hover,
+body.theme-litetracker-2026-minimal .comment-actions a:hover,
+body.theme-litetracker-2026-minimal .comment a[href*="reply"]:hover,
+body.theme-litetracker-2026-minimal .comment a[href*="edit"]:hover,
+body.theme-litetracker-2026-minimal .comment a[href*="delete"]:hover,
+body.theme-litetracker-2026-minimal .comment-side-button:hover {
+    color: var(--lt-primary);
 }
 
-/* -------------------------------------------------------------------------
- * 7. Header band — flat background, no gradient
- * ---------------------------------------------------------------------- */
-
-.site-header-band {
-    background: var(--surface);
-    box-shadow: 0 1px 0 var(--line);
+body.theme-litetracker-2026-minimal .wall-comment-children,
+body.theme-litetracker-2026-minimal .comment-reply,
+body.theme-litetracker-2026-minimal .comment-child,
+body.theme-litetracker-2026-minimal .replies,
+body.theme-litetracker-2026-minimal .children {
+    border-left: 1px solid var(--lt-border);
 }
 
-body.theme-dark .site-header-band {
-    background: #1e2127;
-    box-shadow: 0 1px 0 #353c47;
+body.theme-litetracker-2026-minimal .avatar,
+body.theme-litetracker-2026-minimal .user-avatar,
+body.theme-litetracker-2026-minimal .comment-avatar,
+body.theme-litetracker-2026-minimal img.avatar,
+body.theme-litetracker-2026-minimal .site-user-avatar img,
+body.theme-litetracker-2026-minimal .profile-card-avatar img,
+body.theme-litetracker-2026-minimal .wall-form-avatar img,
+body.theme-litetracker-2026-minimal .comment-entry-avatar img {
+    border-radius: 10px;
+    border: 1px solid var(--lt-border);
+    background: var(--lt-surface-soft);
 }
 
-/* -------------------------------------------------------------------------
- * 8. Sidebar panels — minimal style
- * ---------------------------------------------------------------------- */
-
-.project-help-progress {
-    border-radius: 3px;
-    overflow: hidden;
+body.theme-litetracker-2026-minimal .comment .avatar,
+body.theme-litetracker-2026-minimal .comment-avatar,
+body.theme-litetracker-2026-minimal .comment img.avatar,
+body.theme-litetracker-2026-minimal .comment-entry-avatar img {
+    border-radius: 50%;
 }
 
-.project-help-progress-fill {
-    background: var(--accent);
+body.theme-litetracker-2026-minimal input[type="text"],
+body.theme-litetracker-2026-minimal input[type="password"],
+body.theme-litetracker-2026-minimal input[type="email"],
+body.theme-litetracker-2026-minimal input[type="search"],
+body.theme-litetracker-2026-minimal select,
+body.theme-litetracker-2026-minimal textarea {
+    background: var(--lt-surface);
+    border: 1px solid #cbd5e1;
+    border-radius: var(--lt-radius-sm);
+    color: var(--lt-text);
+    padding: 7px 9px;
+    transition: border-color .15s ease, box-shadow .15s ease;
 }
 
-/* -------------------------------------------------------------------------
- * 9. Comment blocks
- * ---------------------------------------------------------------------- */
-
-.comments-item {
-    border-bottom: 1px solid var(--line);
-    box-shadow: none;
+body.theme-litetracker-2026-minimal input[type="text"]:focus,
+body.theme-litetracker-2026-minimal input[type="password"]:focus,
+body.theme-litetracker-2026-minimal input[type="email"]:focus,
+body.theme-litetracker-2026-minimal input[type="search"]:focus,
+body.theme-litetracker-2026-minimal select:focus,
+body.theme-litetracker-2026-minimal textarea:focus {
+    outline: none;
+    border-color: var(--lt-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
 }
 
-/* -------------------------------------------------------------------------
- * 10. Footer — keep clean, remove heavy styling if any
- * ---------------------------------------------------------------------- */
+body.theme-litetracker-2026-minimal .site-notifications-dropdown,
+body.theme-litetracker-2026-minimal .site-user-menu,
+body.theme-litetracker-2026-minimal .dropdown,
+body.theme-litetracker-2026-minimal .menu-dropdown,
+body.theme-litetracker-2026-minimal .notifications,
+body.theme-litetracker-2026-minimal .notification-dropdown {
+    background: var(--lt-surface);
+    border: 1px solid var(--lt-border);
+    border-radius: var(--lt-radius);
+    box-shadow: var(--lt-shadow);
+}
 
-.footer {
-    background: var(--surface);
-    border-top: 1px solid var(--line);
-    box-shadow: none;
+body.theme-litetracker-2026-minimal .site-notifications-list > a,
+body.theme-litetracker-2026-minimal .site-user-menu-link,
+body.theme-litetracker-2026-minimal .dropdown a,
+body.theme-litetracker-2026-minimal .menu-dropdown a,
+body.theme-litetracker-2026-minimal .notifications a,
+body.theme-litetracker-2026-minimal .notification-dropdown a {
+    border-bottom: 1px solid var(--lt-border-soft);
+}
+
+body.theme-litetracker-2026-minimal .site-notifications-list > a:last-child,
+body.theme-litetracker-2026-minimal .site-user-menu-link:last-child,
+body.theme-litetracker-2026-minimal .dropdown a:last-child,
+body.theme-litetracker-2026-minimal .menu-dropdown a:last-child,
+body.theme-litetracker-2026-minimal .notifications a:last-child,
+body.theme-litetracker-2026-minimal .notification-dropdown a:last-child {
+    border-bottom: 0;
+}
+
+body.theme-litetracker-2026-minimal .site-user-menu-link:hover,
+body.theme-litetracker-2026-minimal .site-notifications-list a:hover,
+body.theme-litetracker-2026-minimal .dropdown a:hover,
+body.theme-litetracker-2026-minimal .menu-dropdown a:hover,
+body.theme-litetracker-2026-minimal .notifications a:hover,
+body.theme-litetracker-2026-minimal .notification-dropdown a:hover {
+    background: #f8fafc;
+    text-decoration: none;
+}
+
+body.theme-litetracker-2026-minimal .footer,
+body.theme-litetracker-2026-minimal #footer {
+    background: #ffffff;
+    border-top: 1px solid var(--lt-border);
+    color: var(--lt-muted);
+}
+
+body.theme-litetracker-2026-minimal .footer a,
+body.theme-litetracker-2026-minimal #footer a {
+    color: #475569;
+    text-decoration: none;
+}
+
+body.theme-litetracker-2026-minimal .footer a:hover,
+body.theme-litetracker-2026-minimal #footer a:hover {
+    color: var(--lt-primary);
+    text-decoration: underline;
+}
+
+body.theme-litetracker-2026-minimal .age-badge,
+body.theme-litetracker-2026-minimal .adult-badge,
+body.theme-litetracker-2026-minimal .badge-18 {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ef4444;
+    color: #ffffff;
+    border-radius: 6px;
+    font-weight: 700;
+    padding: 5px 8px;
+}
+
+body.theme-litetracker-2026-minimal .adults-only .s-icons-18plus {
+    border-radius: 6px;
+    background: #ef4444;
+}
+
+body.theme-litetracker-2026-minimal .browse-category-tab,
+body.theme-litetracker-2026-minimal .browse-tag-chip,
+body.theme-litetracker-2026-minimal .browse-sort-link,
+body.theme-litetracker-2026-minimal .browse-view-button,
+body.theme-litetracker-2026-minimal .tabs a,
+body.theme-litetracker-2026-minimal .category-tabs a,
+body.theme-litetracker-2026-minimal .filter-tabs a {
+    background: var(--lt-surface);
+    border: 1px solid var(--lt-border);
+    color: var(--lt-text-soft);
+    border-radius: var(--lt-radius-sm);
+}
+
+body.theme-litetracker-2026-minimal .browse-category-tab.is-active,
+body.theme-litetracker-2026-minimal .browse-tag-chip.is-active,
+body.theme-litetracker-2026-minimal .browse-sort-item.is-active .browse-sort-link,
+body.theme-litetracker-2026-minimal .browse-view-button.is-active,
+body.theme-litetracker-2026-minimal .tabs a.active,
+body.theme-litetracker-2026-minimal .category-tabs a.active,
+body.theme-litetracker-2026-minimal .filter-tabs a.active,
+body.theme-litetracker-2026-minimal .tabs .active a {
+    background: var(--lt-primary);
+    border-color: var(--lt-primary);
+    color: #ffffff;
+}
+
+body.theme-litetracker-2026-minimal .profile-card-name,
+body.theme-litetracker-2026-minimal .details-title,
+body.theme-litetracker-2026-minimal .browse-torrent-card-title,
+body.theme-litetracker-2026-minimal .browse-torrent-card-compact-title,
+body.theme-litetracker-2026-minimal .news-detail-title {
+    color: var(--lt-text);
+    font-weight: 800;
+}
+
+body.theme-litetracker-2026-minimal .profile-status,
+body.theme-litetracker-2026-minimal .profile-status-online {
+    background: var(--lt-success-soft);
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+    padding: 3px 10px;
+    display: inline-block;
+}
+
+body.theme-litetracker-2026-minimal .browse-torrent-card-meta,
+body.theme-litetracker-2026-minimal .details-date-row,
+body.theme-litetracker-2026-minimal .details-rating-note,
+body.theme-litetracker-2026-minimal .profile-rank-line,
+body.theme-litetracker-2026-minimal .browse-filter-title,
+body.theme-litetracker-2026-minimal .news-detail-date,
+body.theme-litetracker-2026-minimal .news-detail-publisher-label {
+    color: var(--lt-muted);
+}
+
+body.theme-litetracker-2026-minimal .browse-torrent-card-cover img,
+body.theme-litetracker-2026-minimal .browse-torrent-card-compact-cover img,
+body.theme-litetracker-2026-minimal .details-gallery-item img,
+body.theme-litetracker-2026-minimal .screenshots img,
+body.theme-litetracker-2026-minimal .screenshot img,
+body.theme-litetracker-2026-minimal .gallery img {
+    border-radius: var(--lt-radius-sm);
+    border: 1px solid var(--lt-border);
+    transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+}
+
+body.theme-litetracker-2026-minimal .details-gallery-item img:hover,
+body.theme-litetracker-2026-minimal .screenshots img:hover,
+body.theme-litetracker-2026-minimal .screenshot img:hover,
+body.theme-litetracker-2026-minimal .gallery img:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--lt-shadow-soft);
+    opacity: .96;
 }

@@ -69,6 +69,11 @@ if (!empty($USER['theme_dark'])) {
 if (lt_is_mobile_request()) {
     $bodyClasses[] = 'is-mobile';
 }
+$activeThemeSlug = trim((string) ($GLOBALS['LITETRACKER_THEME_SLUG'] ?? ''));
+if ($activeThemeSlug !== '' && preg_match('/^[a-zA-Z0-9_-]+$/', $activeThemeSlug)) {
+	$bodyClasses[] = 'theme-'.$activeThemeSlug;
+	$bodyClasses[] = 'theme-'.str_replace('_', '-', $activeThemeSlug);
+}
 $welcomeBanner = '';
 if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 	$welcomeBanner = trim((string) $_SESSION['lt_welcome_banner']);
