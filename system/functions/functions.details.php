@@ -103,8 +103,8 @@ function lt_details_collect_screens($torrent)
 			$path = $name;
 		}
 
-		$width = 0;
-		$height = 0;
+		$width = 1600;
+		$height = 900;
 		if (is_file($path) && is_readable($path)) {
 			$size = getimagesize($path);
 			if (is_array($size) && !empty($size[0]) && !empty($size[1])) {

@@ -308,10 +308,8 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 						target="_blank"
 						rel="noopener"
 						data-pswp-src="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>"
-						<?php if (!empty($screen['width']) && !empty($screen['height'])) { ?>
 						data-pswp-width="<?=(int) $screen['width'];?>"
 						data-pswp-height="<?=(int) $screen['height'];?>"
-						<?php } ?>
 						title="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>"
 					>
 						<img src="<?=htmlspecialchars($screen['path'], ENT_QUOTES, 'UTF-8');?>" alt="<?=htmlspecialchars($screen['title'], ENT_QUOTES, 'UTF-8');?>">

@@ -277,7 +277,14 @@
     var gallery = document.querySelector('#details-gallery');
     var lightbox;
 
-    if (!gallery || typeof window.PhotoSwipeLightbox !== 'function' || typeof window.PhotoSwipe !== 'function') {
+    if (!gallery) {
+      return;
+    }
+
+    if (typeof window.PhotoSwipeLightbox !== 'function' || typeof window.PhotoSwipe !== 'function') {
+      if (typeof window.console !== 'undefined' && typeof window.console.warn === 'function') {
+        window.console.warn('PhotoSwipe library not loaded, gallery disabled.');
+      }
       return;
     }
 
