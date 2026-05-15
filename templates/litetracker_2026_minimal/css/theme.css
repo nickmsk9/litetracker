@@ -172,7 +172,7 @@ body.theme-litetracker-2026-minimal .details-bookmark-button {
     font-weight: 600;
     line-height: 1.2;
     cursor: pointer;
-    transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
+    transition: all .15s ease;
 }
 
 body.theme-litetracker-2026-minimal button:hover,
