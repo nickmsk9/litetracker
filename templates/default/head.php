@@ -71,6 +71,7 @@ if (lt_is_mobile_request()) {
 }
 $activeThemeSlug = trim((string) ($GLOBALS['LITETRACKER_THEME_SLUG'] ?? ''));
 if ($activeThemeSlug !== '' && preg_match('/^[a-zA-Z0-9_]+$/', $activeThemeSlug)) {
+    // Theme slug may contain underscores; convert to kebab-case CSS class for predictable selectors.
     $bodyClasses[] = 'theme-'.strtolower(str_replace('_', '-', $activeThemeSlug));
 }
 $welcomeBanner = '';
