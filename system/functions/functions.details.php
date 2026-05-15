@@ -9,6 +9,13 @@ by Nick
 ===================================================================
 */
 
+if (!defined('LT_DETAILS_SCREEN_FALLBACK_WIDTH')) {
+	define('LT_DETAILS_SCREEN_FALLBACK_WIDTH', 1600);
+}
+if (!defined('LT_DETAILS_SCREEN_FALLBACK_HEIGHT')) {
+	define('LT_DETAILS_SCREEN_FALLBACK_HEIGHT', 900);
+}
+
 function lt_details_lower($value)
 {
 	$value = trim((string) $value);
@@ -103,8 +110,8 @@ function lt_details_collect_screens($torrent)
 			$path = $name;
 		}
 
-		$width = 1600;
-		$height = 900;
+		$width = LT_DETAILS_SCREEN_FALLBACK_WIDTH;
+		$height = LT_DETAILS_SCREEN_FALLBACK_HEIGHT;
 		if (is_file($path) && is_readable($path)) {
 			$size = getimagesize($path);
 			if (is_array($size) && !empty($size[0]) && !empty($size[1])) {
