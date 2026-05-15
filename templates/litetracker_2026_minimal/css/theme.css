@@ -28,7 +28,7 @@
 body.theme-litetracker-2026-minimal {
     background: var(--lt-bg);
     color: var(--lt-text);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: Arial, sans-serif;
     font-size: 14px;
     line-height: 1.5;
     text-rendering: optimizeLegibility;
@@ -197,9 +197,7 @@ body.theme-litetracker-2026-minimal .download,
 body.theme-litetracker-2026-minimal .download-button,
 body.theme-litetracker-2026-minimal .btn-download,
 body.theme-litetracker-2026-minimal .details-download-button,
-body.theme-litetracker-2026-minimal .browse-upload-button,
-body.theme-litetracker-2026-minimal a[href*="download"],
-body.theme-litetracker-2026-minimal a[href*="download.php"] {
+body.theme-litetracker-2026-minimal .browse-upload-button {
     background: linear-gradient(135deg, #2563eb, #4f46e5);
     border-color: #2563eb;
     color: #ffffff;
@@ -210,9 +208,7 @@ body.theme-litetracker-2026-minimal .download:hover,
 body.theme-litetracker-2026-minimal .download-button:hover,
 body.theme-litetracker-2026-minimal .btn-download:hover,
 body.theme-litetracker-2026-minimal .details-download-button:hover,
-body.theme-litetracker-2026-minimal .browse-upload-button:hover,
-body.theme-litetracker-2026-minimal a[href*="download"]:hover,
-body.theme-litetracker-2026-minimal a[href*="download.php"]:hover {
+body.theme-litetracker-2026-minimal .browse-upload-button:hover {
     background: linear-gradient(135deg, #1d4ed8, #4338ca);
     color: #ffffff;
     box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
@@ -224,8 +220,7 @@ body.theme-litetracker-2026-minimal .favorite,
 body.theme-litetracker-2026-minimal .details-bookmark-button,
 body.theme-litetracker-2026-minimal .details-download-button-magnet,
 body.theme-litetracker-2026-minimal .profile-sidebar-link,
-body.theme-litetracker-2026-minimal a[href*="bookmark"],
-body.theme-litetracker-2026-minimal a[href*="favorite"] {
+body.theme-litetracker-2026-minimal .details-guest-login-button {
     background: var(--lt-surface-soft);
     color: var(--lt-text-soft);
     border-color: var(--lt-border);
@@ -237,8 +232,7 @@ body.theme-litetracker-2026-minimal .favorite:hover,
 body.theme-litetracker-2026-minimal .details-bookmark-button:hover,
 body.theme-litetracker-2026-minimal .details-download-button-magnet:hover,
 body.theme-litetracker-2026-minimal .profile-sidebar-link:hover,
-body.theme-litetracker-2026-minimal a[href*="bookmark"]:hover,
-body.theme-litetracker-2026-minimal a[href*="favorite"]:hover {
+body.theme-litetracker-2026-minimal .details-guest-login-button:hover {
     background: #eef2ff;
     color: var(--lt-primary);
     border-color: #c7d2fe;

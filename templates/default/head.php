@@ -70,8 +70,11 @@ if (lt_is_mobile_request()) {
     $bodyClasses[] = 'is-mobile';
 }
 $activeThemeSlug = trim((string) ($GLOBALS['LITETRACKER_THEME_SLUG'] ?? ''));
-if ($activeThemeSlug !== '' && preg_match('/^[a-zA-Z0-9_-]+$/', $activeThemeSlug)) {
-    $bodyClasses[] = 'theme-'.str_replace('_', '-', $activeThemeSlug);
+if ($activeThemeSlug !== '' && preg_match('/^[a-zA-Z0-9_]+$/', $activeThemeSlug)) {
+    $activeThemeClassSlug = strtolower(str_replace('_', '-', $activeThemeSlug));
+    if (preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $activeThemeClassSlug)) {
+        $bodyClasses[] = 'theme-'.$activeThemeClassSlug;
+    }
 }
 $welcomeBanner = '';
 if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
