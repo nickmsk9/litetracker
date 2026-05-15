@@ -1,5 +1,5 @@
 :root {
-    --lt-bg: #f3f6fb;
+    --lt-bg: #f4f7fb;
     --lt-bg-soft: #eef3f8;
     --lt-surface: #ffffff;
     --lt-surface-soft: #f8fafc;
@@ -12,245 +12,389 @@
     --lt-primary: #2563eb;
     --lt-primary-hover: #1d4ed8;
     --lt-primary-soft: #dbeafe;
-    --lt-header-bg: #ffffff;
-    --lt-interactive-soft: #eef2ff;
-    --lt-input-border: #cbd5e1;
-    --lt-footer-link: #475569;
+    --lt-indigo: #4f46e5;
+    --lt-violet: #7c3aed;
     --lt-success: #16a34a;
     --lt-success-soft: #dcfce7;
     --lt-danger: #dc2626;
     --lt-danger-soft: #fee2e2;
-    --lt-danger-strong: #ef4444;
     --lt-warning: #f59e0b;
     --lt-warning-soft: #fef3c7;
     --lt-radius-sm: 6px;
     --lt-radius: 10px;
     --lt-radius-lg: 14px;
-    --lt-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     --lt-shadow-soft: 0 2px 10px rgba(15, 23, 42, 0.04);
+    --lt-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    --lt-shadow-primary: 0 10px 24px rgba(37, 99, 235, 0.25);
 }
 
+.theme-litetracker-2026-minimal body,
 body.theme-litetracker-2026-minimal {
     background: var(--lt-bg);
     color: var(--lt-text);
-    font-family: Arial, sans-serif;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: 14px;
     line-height: 1.5;
     text-rendering: optimizeLegibility;
 }
 
-body.theme-litetracker-2026-minimal .site-header-band,
-body.theme-litetracker-2026-minimal .site-header,
-body.theme-litetracker-2026-minimal .site-topbar,
-body.theme-litetracker-2026-minimal .header,
-body.theme-litetracker-2026-minimal .topbar,
-body.theme-litetracker-2026-minimal .navbar,
-body.theme-litetracker-2026-minimal #header,
-body.theme-litetracker-2026-minimal #top,
-body.theme-litetracker-2026-minimal .main-header {
-    background: var(--lt-header-bg);
-    border-bottom: 1px solid var(--lt-border);
-    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+.theme-litetracker-2026-minimal,
+body.theme-litetracker-2026-minimal {
+    color: var(--lt-text);
 }
 
-body.theme-litetracker-2026-minimal .site-nav-link,
-body.theme-litetracker-2026-minimal .header a,
-body.theme-litetracker-2026-minimal .topbar a,
-body.theme-litetracker-2026-minimal .navbar a,
-body.theme-litetracker-2026-minimal #header a {
-    color: var(--lt-text-soft);
-    text-decoration: none;
-    font-weight: 500;
-}
-
-body.theme-litetracker-2026-minimal .site-nav-link:hover,
-body.theme-litetracker-2026-minimal .header a:hover,
-body.theme-litetracker-2026-minimal .topbar a:hover,
-body.theme-litetracker-2026-minimal .navbar a:hover,
-body.theme-litetracker-2026-minimal #header a:hover {
+.theme-litetracker-2026-minimal a {
     color: var(--lt-primary);
     text-decoration: none;
 }
 
-body.theme-litetracker-2026-minimal a {
-    color: var(--lt-primary);
-    text-decoration: none;
-}
-
-body.theme-litetracker-2026-minimal a:hover {
+.theme-litetracker-2026-minimal a:hover {
     color: var(--lt-primary-hover);
     text-decoration: underline;
 }
 
-body.theme-litetracker-2026-minimal .frame,
-body.theme-litetracker-2026-minimal .block,
-body.theme-litetracker-2026-minimal .box,
-body.theme-litetracker-2026-minimal .panel,
-body.theme-litetracker-2026-minimal .content-box,
-body.theme-litetracker-2026-minimal .mainbox,
-body.theme-litetracker-2026-minimal .sidebar-box,
-body.theme-litetracker-2026-minimal .sidebar-block,
-body.theme-litetracker-2026-minimal .news-block,
-body.theme-litetracker-2026-minimal .torrent,
-body.theme-litetracker-2026-minimal .torrent-block,
-body.theme-litetracker-2026-minimal .torrent-card,
-body.theme-litetracker-2026-minimal .commentbox,
-body.theme-litetracker-2026-minimal .userbox,
-body.theme-litetracker-2026-minimal .profile-box,
-body.theme-litetracker-2026-minimal .table-wrapper,
-body.theme-litetracker-2026-minimal .details-block,
-body.theme-litetracker-2026-minimal .details-panel,
-body.theme-litetracker-2026-minimal .browse-panel,
-body.theme-litetracker-2026-minimal .browse-torrent-card,
-body.theme-litetracker-2026-minimal .profile-card,
-body.theme-litetracker-2026-minimal .profile-panel,
-body.theme-litetracker-2026-minimal .profile-sidebar-card,
-body.theme-litetracker-2026-minimal .sidebar-panel,
-body.theme-litetracker-2026-minimal .news-detail-card,
-body.theme-litetracker-2026-minimal .site-welcome-banner {
+.theme-litetracker-2026-minimal .site-header-band,
+.theme-litetracker-2026-minimal .site-header,
+.theme-litetracker-2026-minimal .site-topbar,
+.theme-litetracker-2026-minimal .header,
+.theme-litetracker-2026-minimal .topbar,
+.theme-litetracker-2026-minimal .navbar,
+.theme-litetracker-2026-minimal #header,
+.theme-litetracker-2026-minimal #top,
+.theme-litetracker-2026-minimal .main-header {
+    background: rgba(255, 255, 255, 0.96);
+    border-bottom: 1px solid var(--lt-border);
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+.theme-litetracker-2026-minimal .site-topbar,
+.theme-litetracker-2026-minimal .header,
+.theme-litetracker-2026-minimal .topbar,
+.theme-litetracker-2026-minimal .navbar,
+.theme-litetracker-2026-minimal #header {
+    min-height: 64px;
+    align-items: center;
+}
+
+.theme-litetracker-2026-minimal .site-brand,
+.theme-litetracker-2026-minimal .logo {
+    margin: 0;
+    line-height: 1;
+}
+
+.theme-litetracker-2026-minimal .site-brand-image {
+    display: block;
+    max-height: 42px;
+    width: auto;
+    object-fit: contain;
+}
+
+.theme-litetracker-2026-minimal .site-nav-link,
+.theme-litetracker-2026-minimal .header a,
+.theme-litetracker-2026-minimal .topbar a,
+.theme-litetracker-2026-minimal .navbar a,
+.theme-litetracker-2026-minimal #header a {
+    color: var(--lt-text-soft);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.theme-litetracker-2026-minimal .site-nav-link:hover,
+.theme-litetracker-2026-minimal .header a:hover,
+.theme-litetracker-2026-minimal .topbar a:hover,
+.theme-litetracker-2026-minimal .navbar a:hover,
+.theme-litetracker-2026-minimal #header a:hover {
+    color: var(--lt-primary);
+    text-decoration: none;
+}
+
+.theme-litetracker-2026-minimal input[type="search"],
+.theme-litetracker-2026-minimal .search input,
+.theme-litetracker-2026-minimal .search-box input,
+.theme-litetracker-2026-minimal .site-search input,
+.theme-litetracker-2026-minimal .browse-search-input {
+    background: var(--lt-surface-soft);
+    border: 1px solid var(--lt-border);
+    border-radius: 8px;
+    color: var(--lt-text);
+    padding: 8px 12px;
+}
+
+.theme-litetracker-2026-minimal input[type="search"]:focus,
+.theme-litetracker-2026-minimal .search input:focus,
+.theme-litetracker-2026-minimal .search-box input:focus,
+.theme-litetracker-2026-minimal .site-search input:focus,
+.theme-litetracker-2026-minimal .browse-search-input:focus {
+    outline: none;
+    border-color: var(--lt-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+
+.theme-litetracker-2026-minimal .frame,
+.theme-litetracker-2026-minimal .block,
+.theme-litetracker-2026-minimal .box,
+.theme-litetracker-2026-minimal .panel,
+.theme-litetracker-2026-minimal .content-box,
+.theme-litetracker-2026-minimal .mainbox,
+.theme-litetracker-2026-minimal .sidebar-box,
+.theme-litetracker-2026-minimal .sidebar-block,
+.theme-litetracker-2026-minimal .news-block,
+.theme-litetracker-2026-minimal .torrent,
+.theme-litetracker-2026-minimal .torrent-block,
+.theme-litetracker-2026-minimal .torrent-card,
+.theme-litetracker-2026-minimal .commentbox,
+.theme-litetracker-2026-minimal .userbox,
+.theme-litetracker-2026-minimal .profile-box,
+.theme-litetracker-2026-minimal .table-wrapper,
+.theme-litetracker-2026-minimal .details-block,
+.theme-litetracker-2026-minimal .details-panel,
+.theme-litetracker-2026-minimal .browse-panel,
+.theme-litetracker-2026-minimal .browse-torrent-card,
+.theme-litetracker-2026-minimal .profile-card,
+.theme-litetracker-2026-minimal .profile-panel,
+.theme-litetracker-2026-minimal .profile-sidebar-card,
+.theme-litetracker-2026-minimal .sidebar-panel,
+.theme-litetracker-2026-minimal .news-detail-card,
+.theme-litetracker-2026-minimal .site-welcome-banner {
     background: var(--lt-surface);
     border: 1px solid var(--lt-border);
     border-radius: var(--lt-radius);
     box-shadow: var(--lt-shadow-soft);
 }
 
-body.theme-litetracker-2026-minimal .frame,
-body.theme-litetracker-2026-minimal .sidebar-panel,
-body.theme-litetracker-2026-minimal .profile-sidebar-card,
-body.theme-litetracker-2026-minimal .browse-panel,
-body.theme-litetracker-2026-minimal .profile-panel,
-body.theme-litetracker-2026-minimal .details-panel {
+.theme-litetracker-2026-minimal .frame,
+.theme-litetracker-2026-minimal .sidebar-panel,
+.theme-litetracker-2026-minimal .profile-sidebar-card,
+.theme-litetracker-2026-minimal .browse-panel,
+.theme-litetracker-2026-minimal .profile-panel,
+.theme-litetracker-2026-minimal .details-panel,
+.theme-litetracker-2026-minimal .browse-torrent-card,
+.theme-litetracker-2026-minimal .profile-card {
     margin-bottom: 14px;
 }
 
-body.theme-litetracker-2026-minimal .frame-body,
-body.theme-litetracker-2026-minimal .details-panel,
-body.theme-litetracker-2026-minimal .profile-panel,
-body.theme-litetracker-2026-minimal .sidebar-panel,
-body.theme-litetracker-2026-minimal .news-detail-content {
+.theme-litetracker-2026-minimal .frame-body,
+.theme-litetracker-2026-minimal .details-panel,
+.theme-litetracker-2026-minimal .profile-panel,
+.theme-litetracker-2026-minimal .sidebar-panel,
+.theme-litetracker-2026-minimal .news-detail-content,
+.theme-litetracker-2026-minimal .profile-card,
+.theme-litetracker-2026-minimal .browse-panel {
     padding: 14px 16px;
 }
 
-body.theme-litetracker-2026-minimal .details-panel,
-body.theme-litetracker-2026-minimal .details,
-body.theme-litetracker-2026-minimal .torrent-details,
-body.theme-litetracker-2026-minimal #details,
-body.theme-litetracker-2026-minimal .torrent-info,
-body.theme-litetracker-2026-minimal .release-info {
+.theme-litetracker-2026-minimal .details,
+.theme-litetracker-2026-minimal .torrent-details,
+.theme-litetracker-2026-minimal #details,
+.theme-litetracker-2026-minimal .torrent-info,
+.theme-litetracker-2026-minimal .release-info {
     background: var(--lt-surface);
     border: 1px solid var(--lt-border);
     border-radius: var(--lt-radius);
     box-shadow: var(--lt-shadow-soft);
 }
 
-body.theme-litetracker-2026-minimal .details-poster-image,
-body.theme-litetracker-2026-minimal img.poster,
-body.theme-litetracker-2026-minimal .poster img,
-body.theme-litetracker-2026-minimal .cover img,
-body.theme-litetracker-2026-minimal .torrent-cover img,
-body.theme-litetracker-2026-minimal .torrent-poster img,
-body.theme-litetracker-2026-minimal img[src*="poster"],
-body.theme-litetracker-2026-minimal img[src*="cover"],
-body.theme-litetracker-2026-minimal img[src*="covers"] {
+.theme-litetracker-2026-minimal .details-title,
+.theme-litetracker-2026-minimal .details-title-panel h1,
+.theme-litetracker-2026-minimal .details-page h1,
+.theme-litetracker-2026-minimal .details-page .frame-title,
+.theme-litetracker-2026-minimal .profile-card-name,
+.theme-litetracker-2026-minimal .browse-torrent-card-title,
+.theme-litetracker-2026-minimal .browse-torrent-card-compact-title,
+.theme-litetracker-2026-minimal .news-detail-title {
+    color: var(--lt-text);
+    font-weight: 800;
+    letter-spacing: -.01em;
+}
+
+.theme-litetracker-2026-minimal .details-title,
+.theme-litetracker-2026-minimal .details-title-panel h1 {
+    font-size: 33px;
+    line-height: 1.25;
+}
+
+.theme-litetracker-2026-minimal .details-meta-stats,
+.theme-litetracker-2026-minimal .details-tracker-summary,
+.theme-litetracker-2026-minimal .details-date-row,
+.theme-litetracker-2026-minimal .browse-torrent-card-meta,
+.theme-litetracker-2026-minimal .profile-rank-line,
+.theme-litetracker-2026-minimal .browse-filter-title,
+.theme-litetracker-2026-minimal .news-detail-date,
+.theme-litetracker-2026-minimal .news-detail-publisher-label {
+    color: var(--lt-muted);
+}
+
+.theme-litetracker-2026-minimal .details-poster-image,
+.theme-litetracker-2026-minimal img.poster,
+.theme-litetracker-2026-minimal .poster img,
+.theme-litetracker-2026-minimal .cover img,
+.theme-litetracker-2026-minimal .torrent-cover img,
+.theme-litetracker-2026-minimal .torrent-poster img,
+.theme-litetracker-2026-minimal img[src*="poster"],
+.theme-litetracker-2026-minimal img[src*="cover"],
+.theme-litetracker-2026-minimal img[src*="covers"] {
     border-radius: var(--lt-radius);
     border: 1px solid var(--lt-border);
     box-shadow: var(--lt-shadow);
 }
 
-body.theme-litetracker-2026-minimal button,
-body.theme-litetracker-2026-minimal input[type="submit"],
-body.theme-litetracker-2026-minimal input[type="button"],
-body.theme-litetracker-2026-minimal .btn,
-body.theme-litetracker-2026-minimal .button,
-body.theme-litetracker-2026-minimal a.button,
-body.theme-litetracker-2026-minimal .site-auth-link,
-body.theme-litetracker-2026-minimal .profile-card-button,
-body.theme-litetracker-2026-minimal .browse-search-submit,
-body.theme-litetracker-2026-minimal .browse-filter-submit,
-body.theme-litetracker-2026-minimal .project-help-button,
-body.theme-litetracker-2026-minimal .details-download-button,
-body.theme-litetracker-2026-minimal .details-tracker-refresh-button,
-body.theme-litetracker-2026-minimal .details-bookmark-button {
-    border-radius: var(--lt-radius-sm);
+.theme-litetracker-2026-minimal button,
+.theme-litetracker-2026-minimal input[type="submit"],
+.theme-litetracker-2026-minimal input[type="button"],
+.theme-litetracker-2026-minimal .btn,
+.theme-litetracker-2026-minimal .button,
+.theme-litetracker-2026-minimal a.button,
+.theme-litetracker-2026-minimal .site-auth-link,
+.theme-litetracker-2026-minimal .profile-card-button,
+.theme-litetracker-2026-minimal .browse-search-submit,
+.theme-litetracker-2026-minimal .browse-filter-submit,
+.theme-litetracker-2026-minimal .project-help-button,
+.theme-litetracker-2026-minimal .details-download-button,
+.theme-litetracker-2026-minimal .details-tracker-refresh-button,
+.theme-litetracker-2026-minimal .details-bookmark-button {
+    border-radius: 8px;
     border: 1px solid var(--lt-border);
-    padding: 8px 13px;
-    font-weight: 600;
+    padding: 9px 14px;
+    font-weight: 700;
     line-height: 1.2;
     cursor: pointer;
-    transition: all .15s ease;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .12s ease;
 }
 
-body.theme-litetracker-2026-minimal button:hover,
-body.theme-litetracker-2026-minimal input[type="submit"]:hover,
-body.theme-litetracker-2026-minimal input[type="button"]:hover,
-body.theme-litetracker-2026-minimal .btn:hover,
-body.theme-litetracker-2026-minimal .button:hover,
-body.theme-litetracker-2026-minimal a.button:hover,
-body.theme-litetracker-2026-minimal .site-auth-link:hover,
-body.theme-litetracker-2026-minimal .profile-card-button:hover,
-body.theme-litetracker-2026-minimal .browse-search-submit:hover,
-body.theme-litetracker-2026-minimal .browse-filter-submit:hover,
-body.theme-litetracker-2026-minimal .project-help-button:hover,
-body.theme-litetracker-2026-minimal .details-download-button:hover,
-body.theme-litetracker-2026-minimal .details-tracker-refresh-button:hover,
-body.theme-litetracker-2026-minimal .details-bookmark-button:hover {
+.theme-litetracker-2026-minimal button:hover,
+.theme-litetracker-2026-minimal input[type="submit"]:hover,
+.theme-litetracker-2026-minimal input[type="button"]:hover,
+.theme-litetracker-2026-minimal .btn:hover,
+.theme-litetracker-2026-minimal .button:hover,
+.theme-litetracker-2026-minimal a.button:hover,
+.theme-litetracker-2026-minimal .site-auth-link:hover,
+.theme-litetracker-2026-minimal .profile-card-button:hover,
+.theme-litetracker-2026-minimal .browse-search-submit:hover,
+.theme-litetracker-2026-minimal .browse-filter-submit:hover,
+.theme-litetracker-2026-minimal .project-help-button:hover,
+.theme-litetracker-2026-minimal .details-download-button:hover,
+.theme-litetracker-2026-minimal .details-tracker-refresh-button:hover,
+.theme-litetracker-2026-minimal .details-bookmark-button:hover {
     text-decoration: none;
     transform: translateY(-1px);
 }
 
-body.theme-litetracker-2026-minimal .download,
-body.theme-litetracker-2026-minimal .download-button,
-body.theme-litetracker-2026-minimal .btn-download,
-body.theme-litetracker-2026-minimal .details-download-button,
-body.theme-litetracker-2026-minimal .browse-upload-button {
-    background: linear-gradient(135deg, #2563eb, #4f46e5);
+.theme-litetracker-2026-minimal .download,
+.theme-litetracker-2026-minimal .download-button,
+.theme-litetracker-2026-minimal .btn-download,
+.theme-litetracker-2026-minimal .details-download-button,
+.theme-litetracker-2026-minimal .browse-upload-button,
+.theme-litetracker-2026-minimal a[href*="download"],
+.theme-litetracker-2026-minimal a[href*="download.php"] {
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
     border-color: #2563eb;
     color: #ffffff;
-    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+    box-shadow: var(--lt-shadow-primary);
 }
 
-body.theme-litetracker-2026-minimal .download:hover,
-body.theme-litetracker-2026-minimal .download-button:hover,
-body.theme-litetracker-2026-minimal .btn-download:hover,
-body.theme-litetracker-2026-minimal .details-download-button:hover,
-body.theme-litetracker-2026-minimal .browse-upload-button:hover {
-    background: linear-gradient(135deg, #1d4ed8, #4338ca);
+.theme-litetracker-2026-minimal .download:hover,
+.theme-litetracker-2026-minimal .download-button:hover,
+.theme-litetracker-2026-minimal .btn-download:hover,
+.theme-litetracker-2026-minimal .details-download-button:hover,
+.theme-litetracker-2026-minimal .browse-upload-button:hover,
+.theme-litetracker-2026-minimal a[href*="download"]:hover,
+.theme-litetracker-2026-minimal a[href*="download.php"]:hover {
+    background: linear-gradient(135deg, #1d4ed8, #6d28d9);
     color: #ffffff;
-    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
+    border-color: #1d4ed8;
+    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.3);
 }
 
-body.theme-litetracker-2026-minimal .btn-secondary,
-body.theme-litetracker-2026-minimal .bookmark,
-body.theme-litetracker-2026-minimal .favorite,
-body.theme-litetracker-2026-minimal .details-bookmark-button,
-body.theme-litetracker-2026-minimal .details-download-button-magnet,
-body.theme-litetracker-2026-minimal .profile-sidebar-link,
-body.theme-litetracker-2026-minimal .details-guest-login-button {
-    background: var(--lt-surface-soft);
+.theme-litetracker-2026-minimal .btn-secondary,
+.theme-litetracker-2026-minimal .bookmark,
+.theme-litetracker-2026-minimal .favorite,
+.theme-litetracker-2026-minimal .details-bookmark-button,
+.theme-litetracker-2026-minimal .details-download-button-magnet,
+.theme-litetracker-2026-minimal .profile-sidebar-link,
+.theme-litetracker-2026-minimal .details-guest-login-button,
+.theme-litetracker-2026-minimal a[href*="bookmark"],
+.theme-litetracker-2026-minimal a[href*="favorite"] {
+    background: var(--lt-surface);
     color: var(--lt-text-soft);
     border-color: var(--lt-border);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-body.theme-litetracker-2026-minimal .btn-secondary:hover,
-body.theme-litetracker-2026-minimal .bookmark:hover,
-body.theme-litetracker-2026-minimal .favorite:hover,
-body.theme-litetracker-2026-minimal .details-bookmark-button:hover,
-body.theme-litetracker-2026-minimal .details-download-button-magnet:hover,
-body.theme-litetracker-2026-minimal .profile-sidebar-link:hover,
-body.theme-litetracker-2026-minimal .details-guest-login-button:hover {
-    background: var(--lt-interactive-soft);
+.theme-litetracker-2026-minimal .btn-secondary:hover,
+.theme-litetracker-2026-minimal .bookmark:hover,
+.theme-litetracker-2026-minimal .favorite:hover,
+.theme-litetracker-2026-minimal .details-bookmark-button:hover,
+.theme-litetracker-2026-minimal .details-download-button-magnet:hover,
+.theme-litetracker-2026-minimal .profile-sidebar-link:hover,
+.theme-litetracker-2026-minimal .details-guest-login-button:hover,
+.theme-litetracker-2026-minimal a[href*="bookmark"]:hover,
+.theme-litetracker-2026-minimal a[href*="favorite"]:hover {
+    background: #eef2ff;
     color: var(--lt-primary);
     border-color: #c7d2fe;
 }
 
-body.theme-litetracker-2026-minimal table {
+.theme-litetracker-2026-minimal .badge,
+.theme-litetracker-2026-minimal .label,
+.theme-litetracker-2026-minimal .status,
+.theme-litetracker-2026-minimal .tag,
+.theme-litetracker-2026-minimal .cat,
+.theme-litetracker-2026-minimal .category,
+.theme-litetracker-2026-minimal .browse-tag-chip,
+.theme-litetracker-2026-minimal .browse-category-tab,
+.theme-litetracker-2026-minimal .details-badge,
+.theme-litetracker-2026-minimal .release-category-chip,
+.theme-litetracker-2026-minimal .category-card {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    border: 1px solid transparent;
+}
+
+.theme-litetracker-2026-minimal .status-ok,
+.theme-litetracker-2026-minimal .badge-success,
+.theme-litetracker-2026-minimal .label-success,
+.theme-litetracker-2026-minimal .published,
+.theme-litetracker-2026-minimal .approved,
+.theme-litetracker-2026-minimal .details-tracker-status-ok {
+    background: var(--lt-success-soft);
+    color: #166534;
+    border-color: #bbf7d0;
+}
+
+.theme-litetracker-2026-minimal .status-error,
+.theme-litetracker-2026-minimal .badge-danger,
+.theme-litetracker-2026-minimal .label-danger,
+.theme-litetracker-2026-minimal .error,
+.theme-litetracker-2026-minimal .failed,
+.theme-litetracker-2026-minimal .details-tracker-status-error {
+    background: var(--lt-danger-soft);
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+.theme-litetracker-2026-minimal .status-info,
+.theme-litetracker-2026-minimal .badge-info,
+.theme-litetracker-2026-minimal .label-info,
+.theme-litetracker-2026-minimal .local-tracker,
+.theme-litetracker-2026-minimal .details-tracker-status-local,
+.theme-litetracker-2026-minimal .details-tracker-status-private {
+    background: var(--lt-primary-soft);
+    color: #1e40af;
+    border-color: #bfdbfe;
+}
+
+.theme-litetracker-2026-minimal table {
     border-collapse: separate;
     border-spacing: 0;
     width: 100%;
     background: var(--lt-surface);
 }
 
-body.theme-litetracker-2026-minimal th {
+.theme-litetracker-2026-minimal th {
     background: var(--lt-surface-soft);
     color: var(--lt-muted);
     font-size: 12px;
@@ -258,357 +402,278 @@ body.theme-litetracker-2026-minimal th {
     letter-spacing: .01em;
 }
 
-body.theme-litetracker-2026-minimal td,
-body.theme-litetracker-2026-minimal th {
+.theme-litetracker-2026-minimal td,
+.theme-litetracker-2026-minimal th {
     padding: 9px 11px;
     border-bottom: 1px solid var(--lt-border-soft);
 }
 
-body.theme-litetracker-2026-minimal tr:hover td {
-    background: var(--lt-surface-soft);
+.theme-litetracker-2026-minimal tr:hover td {
+    background: #f8fafc;
 }
 
-body.theme-litetracker-2026-minimal table tr:last-child td {
+.theme-litetracker-2026-minimal table tr:last-child td {
     border-bottom: none;
 }
 
-body.theme-litetracker-2026-minimal .details-files-wrap,
-body.theme-litetracker-2026-minimal .details-trackers-wrap,
-body.theme-litetracker-2026-minimal .profile-torrent-table-wrap,
-body.theme-litetracker-2026-minimal .browse-torrent-list {
+.theme-litetracker-2026-minimal .details-files-wrap,
+.theme-litetracker-2026-minimal .details-trackers-wrap,
+.theme-litetracker-2026-minimal .profile-torrent-table-wrap,
+.theme-litetracker-2026-minimal .browse-torrent-list {
     margin: 0;
 }
 
-body.theme-litetracker-2026-minimal .badge,
-body.theme-litetracker-2026-minimal .label,
-body.theme-litetracker-2026-minimal .status,
-body.theme-litetracker-2026-minimal .tag,
-body.theme-litetracker-2026-minimal .cat,
-body.theme-litetracker-2026-minimal .category,
-body.theme-litetracker-2026-minimal .browse-tag-chip,
-body.theme-litetracker-2026-minimal .browse-category-tab,
-body.theme-litetracker-2026-minimal .details-badge,
-body.theme-litetracker-2026-minimal .release-category-chip,
-body.theme-litetracker-2026-minimal .category-card {
-    display: inline-block;
-    border-radius: 999px;
-    padding: 3px 8px;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.2;
-    border: 1px solid transparent;
-    background: var(--lt-surface-soft);
+.theme-litetracker-2026-minimal .site-sidebar,
+.theme-litetracker-2026-minimal .sidebar,
+.theme-litetracker-2026-minimal .browse-sidebar,
+.theme-litetracker-2026-minimal .profile-sidebar,
+.theme-litetracker-2026-minimal .right-column,
+.theme-litetracker-2026-minimal #right,
+.theme-litetracker-2026-minimal .aside {
     color: var(--lt-text-soft);
 }
 
-body.theme-litetracker-2026-minimal .status-ok,
-body.theme-litetracker-2026-minimal .badge-success,
-body.theme-litetracker-2026-minimal .label-success,
-body.theme-litetracker-2026-minimal .published,
-body.theme-litetracker-2026-minimal .approved,
-body.theme-litetracker-2026-minimal .details-tracker-status-ok {
-    background: var(--lt-success-soft);
-    color: #166534;
-    border-color: #bbf7d0;
-}
-
-body.theme-litetracker-2026-minimal .status-error,
-body.theme-litetracker-2026-minimal .badge-danger,
-body.theme-litetracker-2026-minimal .label-danger,
-body.theme-litetracker-2026-minimal .error,
-body.theme-litetracker-2026-minimal .failed,
-body.theme-litetracker-2026-minimal .details-tracker-status-error {
-    background: var(--lt-danger-soft);
-    color: #991b1b;
-    border-color: #fecaca;
-}
-
-body.theme-litetracker-2026-minimal .status-info,
-body.theme-litetracker-2026-minimal .badge-info,
-body.theme-litetracker-2026-minimal .label-info,
-body.theme-litetracker-2026-minimal .local-tracker,
-body.theme-litetracker-2026-minimal .details-tracker-status-local,
-body.theme-litetracker-2026-minimal .details-tracker-status-private {
-    background: var(--lt-primary-soft);
-    color: #1e40af;
-    border-color: #bfdbfe;
-}
-
-body.theme-litetracker-2026-minimal .site-sidebar,
-body.theme-litetracker-2026-minimal .browse-sidebar,
-body.theme-litetracker-2026-minimal .profile-sidebar,
-body.theme-litetracker-2026-minimal .right-column,
-body.theme-litetracker-2026-minimal #right,
-body.theme-litetracker-2026-minimal .aside {
-    color: var(--lt-text-soft);
-}
-
-body.theme-litetracker-2026-minimal .site-sidebar .sidebar-panel,
-body.theme-litetracker-2026-minimal .right-column .block,
-body.theme-litetracker-2026-minimal #right .block,
-body.theme-litetracker-2026-minimal .aside .block,
-body.theme-litetracker-2026-minimal .news-block {
+.theme-litetracker-2026-minimal .site-sidebar .sidebar-panel,
+.theme-litetracker-2026-minimal .sidebar .block,
+.theme-litetracker-2026-minimal .right-column .block,
+.theme-litetracker-2026-minimal #right .block,
+.theme-litetracker-2026-minimal .aside .block,
+.theme-litetracker-2026-minimal .news-block {
     background: var(--lt-surface);
     border: 1px solid var(--lt-border);
     border-radius: var(--lt-radius);
     box-shadow: var(--lt-shadow-soft);
 }
 
-body.theme-litetracker-2026-minimal .sidebar-panel-title,
-body.theme-litetracker-2026-minimal .sidebar-news-title,
-body.theme-litetracker-2026-minimal .profile-sidebar-stats-title,
-body.theme-litetracker-2026-minimal .sidebar h1,
-body.theme-litetracker-2026-minimal .sidebar h2,
-body.theme-litetracker-2026-minimal .sidebar h3,
-body.theme-litetracker-2026-minimal .right-column h1,
-body.theme-litetracker-2026-minimal .right-column h2,
-body.theme-litetracker-2026-minimal .right-column h3,
-body.theme-litetracker-2026-minimal .news-block h1,
-body.theme-litetracker-2026-minimal .news-block h2,
-body.theme-litetracker-2026-minimal .news-block h3 {
+.theme-litetracker-2026-minimal .sidebar-panel-title,
+.theme-litetracker-2026-minimal .sidebar-news-title,
+.theme-litetracker-2026-minimal .profile-sidebar-stats-title,
+.theme-litetracker-2026-minimal .sidebar h1,
+.theme-litetracker-2026-minimal .sidebar h2,
+.theme-litetracker-2026-minimal .sidebar h3,
+.theme-litetracker-2026-minimal .right-column h1,
+.theme-litetracker-2026-minimal .right-column h2,
+.theme-litetracker-2026-minimal .right-column h3,
+.theme-litetracker-2026-minimal .news-block h1,
+.theme-litetracker-2026-minimal .news-block h2,
+.theme-litetracker-2026-minimal .news-block h3 {
     color: var(--lt-text);
-    font-weight: 700;
+    font-weight: 800;
 }
 
-body.theme-litetracker-2026-minimal .sidebar-news-item + .sidebar-news-item {
+.theme-litetracker-2026-minimal .sidebar-news-item + .sidebar-news-item,
+.theme-litetracker-2026-minimal .news-block article + article {
     border-top: 1px solid var(--lt-border-soft);
     margin-top: 10px;
     padding-top: 10px;
 }
 
-body.theme-litetracker-2026-minimal .sidebar-news-date,
-body.theme-litetracker-2026-minimal .sidebar .date,
-body.theme-litetracker-2026-minimal .right-column .date,
-body.theme-litetracker-2026-minimal .news-date,
-body.theme-litetracker-2026-minimal small {
+.theme-litetracker-2026-minimal .sidebar-news-date,
+.theme-litetracker-2026-minimal .sidebar .date,
+.theme-litetracker-2026-minimal .right-column .date,
+.theme-litetracker-2026-minimal .news-date,
+.theme-litetracker-2026-minimal small {
     color: var(--lt-muted-light);
 }
 
-body.theme-litetracker-2026-minimal .wall-comment,
-body.theme-litetracker-2026-minimal .comment,
-body.theme-litetracker-2026-minimal .comment-item,
-body.theme-litetracker-2026-minimal .comment-body,
-body.theme-litetracker-2026-minimal .commentbox,
-body.theme-litetracker-2026-minimal .comment-entry {
+.theme-litetracker-2026-minimal .site-notifications-dropdown,
+.theme-litetracker-2026-minimal .site-user-menu,
+.theme-litetracker-2026-minimal .dropdown,
+.theme-litetracker-2026-minimal .menu-dropdown,
+.theme-litetracker-2026-minimal .notifications,
+.theme-litetracker-2026-minimal .notification-dropdown {
+    background: var(--lt-surface);
+    border: 1px solid var(--lt-border);
+    border-radius: 12px;
+    box-shadow: var(--lt-shadow);
+    overflow: hidden;
+}
+
+.theme-litetracker-2026-minimal .site-notifications-list > a,
+.theme-litetracker-2026-minimal .site-user-menu-link,
+.theme-litetracker-2026-minimal .site-notification-item,
+.theme-litetracker-2026-minimal .dropdown a,
+.theme-litetracker-2026-minimal .menu-dropdown a,
+.theme-litetracker-2026-minimal .notifications a,
+.theme-litetracker-2026-minimal .notification-dropdown a {
+    border-bottom: 1px solid var(--lt-border-soft);
+}
+
+.theme-litetracker-2026-minimal .site-notifications-list > a:last-child,
+.theme-litetracker-2026-minimal .site-user-menu-link:last-child,
+.theme-litetracker-2026-minimal .site-notification-item:last-child,
+.theme-litetracker-2026-minimal .dropdown a:last-child,
+.theme-litetracker-2026-minimal .menu-dropdown a:last-child,
+.theme-litetracker-2026-minimal .notifications a:last-child,
+.theme-litetracker-2026-minimal .notification-dropdown a:last-child {
+    border-bottom: 0;
+}
+
+.theme-litetracker-2026-minimal .site-user-menu-link:hover,
+.theme-litetracker-2026-minimal .site-notifications-list a:hover,
+.theme-litetracker-2026-minimal .site-notification-item:hover,
+.theme-litetracker-2026-minimal .dropdown a:hover,
+.theme-litetracker-2026-minimal .menu-dropdown a:hover,
+.theme-litetracker-2026-minimal .notifications a:hover,
+.theme-litetracker-2026-minimal .notification-dropdown a:hover {
+    background: #f8fafc;
+    text-decoration: none;
+}
+
+.theme-litetracker-2026-minimal .site-notification-item-unread {
+    position: relative;
+}
+
+.theme-litetracker-2026-minimal .site-notification-item-unread::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    width: 8px;
+    height: 8px;
+    margin-top: -4px;
+    border-radius: 50%;
+    background: var(--lt-primary);
+    box-shadow: 0 0 0 2px var(--lt-primary-soft);
+}
+
+.theme-litetracker-2026-minimal .site-notification-item > a {
+    padding-left: 24px;
+}
+
+.theme-litetracker-2026-minimal .wall-comment,
+.theme-litetracker-2026-minimal .comment,
+.theme-litetracker-2026-minimal .comment-item,
+.theme-litetracker-2026-minimal .comment-body,
+.theme-litetracker-2026-minimal .commentbox,
+.theme-litetracker-2026-minimal .comment-entry {
     background: var(--lt-surface);
     border-bottom: 1px solid var(--lt-border-soft);
 }
 
-body.theme-litetracker-2026-minimal .wall-comment,
-body.theme-litetracker-2026-minimal .comment,
-body.theme-litetracker-2026-minimal .comment-item,
-body.theme-litetracker-2026-minimal .comment-entry {
+.theme-litetracker-2026-minimal .wall-comment,
+.theme-litetracker-2026-minimal .comment,
+.theme-litetracker-2026-minimal .comment-item,
+.theme-litetracker-2026-minimal .comment-entry {
     padding: 12px 0;
 }
 
-body.theme-litetracker-2026-minimal .wall-comment-author,
-body.theme-litetracker-2026-minimal .comment .author,
-body.theme-litetracker-2026-minimal .comment-author,
-body.theme-litetracker-2026-minimal .username,
-body.theme-litetracker-2026-minimal .comment-entry-author {
+.theme-litetracker-2026-minimal .wall-comment-author,
+.theme-litetracker-2026-minimal .comment .author,
+.theme-litetracker-2026-minimal .comment-author,
+.theme-litetracker-2026-minimal .username,
+.theme-litetracker-2026-minimal .comment-entry-author {
     color: var(--lt-primary);
-    font-weight: 700;
+    font-weight: 800;
 }
 
-body.theme-litetracker-2026-minimal .wall-comment-date,
-body.theme-litetracker-2026-minimal .comment .date,
-body.theme-litetracker-2026-minimal .comment-date,
-body.theme-litetracker-2026-minimal .comment-meta,
-body.theme-litetracker-2026-minimal .comment small,
-body.theme-litetracker-2026-minimal .comment-entry-date {
+.theme-litetracker-2026-minimal .wall-comment-date,
+.theme-litetracker-2026-minimal .comment .date,
+.theme-litetracker-2026-minimal .comment-date,
+.theme-litetracker-2026-minimal .comment-meta,
+.theme-litetracker-2026-minimal .comment small,
+.theme-litetracker-2026-minimal .comment-entry-date {
     color: var(--lt-muted-light);
     font-size: 12px;
 }
 
-body.theme-litetracker-2026-minimal .wall-comment-actions a,
-body.theme-litetracker-2026-minimal .comment .actions a,
-body.theme-litetracker-2026-minimal .comment-actions a,
-body.theme-litetracker-2026-minimal .comment a[href*="reply"],
-body.theme-litetracker-2026-minimal .comment a[href*="edit"],
-body.theme-litetracker-2026-minimal .comment a[href*="delete"],
-body.theme-litetracker-2026-minimal .comment-side-button {
+.theme-litetracker-2026-minimal .wall-comment-actions a,
+.theme-litetracker-2026-minimal .comment .actions a,
+.theme-litetracker-2026-minimal .comment-actions a,
+.theme-litetracker-2026-minimal .comment a[href*="reply"],
+.theme-litetracker-2026-minimal .comment a[href*="edit"],
+.theme-litetracker-2026-minimal .comment a[href*="delete"],
+.theme-litetracker-2026-minimal .comment-side-button {
     color: var(--lt-muted);
     font-size: 12px;
     font-weight: 600;
 }
 
-body.theme-litetracker-2026-minimal .wall-comment-actions a:hover,
-body.theme-litetracker-2026-minimal .comment .actions a:hover,
-body.theme-litetracker-2026-minimal .comment-actions a:hover,
-body.theme-litetracker-2026-minimal .comment a[href*="reply"]:hover,
-body.theme-litetracker-2026-minimal .comment a[href*="edit"]:hover,
-body.theme-litetracker-2026-minimal .comment a[href*="delete"]:hover,
-body.theme-litetracker-2026-minimal .comment-side-button:hover {
+.theme-litetracker-2026-minimal .wall-comment-actions a:hover,
+.theme-litetracker-2026-minimal .comment .actions a:hover,
+.theme-litetracker-2026-minimal .comment-actions a:hover,
+.theme-litetracker-2026-minimal .comment a[href*="reply"]:hover,
+.theme-litetracker-2026-minimal .comment a[href*="edit"]:hover,
+.theme-litetracker-2026-minimal .comment a[href*="delete"]:hover,
+.theme-litetracker-2026-minimal .comment-side-button:hover {
     color: var(--lt-primary);
 }
 
-body.theme-litetracker-2026-minimal .wall-comment-children,
-body.theme-litetracker-2026-minimal .comment-reply,
-body.theme-litetracker-2026-minimal .comment-child,
-body.theme-litetracker-2026-minimal .replies,
-body.theme-litetracker-2026-minimal .children {
+.theme-litetracker-2026-minimal .wall-comment-children,
+.theme-litetracker-2026-minimal .comment-reply,
+.theme-litetracker-2026-minimal .comment-child,
+.theme-litetracker-2026-minimal .replies,
+.theme-litetracker-2026-minimal .children {
     border-left: 1px solid var(--lt-border);
 }
 
-body.theme-litetracker-2026-minimal .avatar,
-body.theme-litetracker-2026-minimal .user-avatar,
-body.theme-litetracker-2026-minimal .comment-avatar,
-body.theme-litetracker-2026-minimal img.avatar,
-body.theme-litetracker-2026-minimal .site-user-avatar img,
-body.theme-litetracker-2026-minimal .profile-card-avatar img,
-body.theme-litetracker-2026-minimal .wall-form-avatar img,
-body.theme-litetracker-2026-minimal .comment-entry-avatar img {
-    border-radius: var(--lt-radius);
+.theme-litetracker-2026-minimal .avatar,
+.theme-litetracker-2026-minimal .user-avatar,
+.theme-litetracker-2026-minimal .comment-avatar,
+.theme-litetracker-2026-minimal img.avatar,
+.theme-litetracker-2026-minimal .site-user-avatar img,
+.theme-litetracker-2026-minimal .profile-card-avatar img,
+.theme-litetracker-2026-minimal .wall-form-avatar img,
+.theme-litetracker-2026-minimal .comment-entry-avatar img {
+    border-radius: 10px;
     border: 1px solid var(--lt-border);
     background: var(--lt-surface-soft);
 }
 
-body.theme-litetracker-2026-minimal .comment .avatar,
-body.theme-litetracker-2026-minimal .comment-avatar,
-body.theme-litetracker-2026-minimal .comment img.avatar,
-body.theme-litetracker-2026-minimal .comment-entry-avatar img {
+.theme-litetracker-2026-minimal .comment .avatar,
+.theme-litetracker-2026-minimal .comment-avatar,
+.theme-litetracker-2026-minimal .comment img.avatar,
+.theme-litetracker-2026-minimal .comment-entry-avatar img {
     border-radius: 50%;
 }
 
-body.theme-litetracker-2026-minimal input[type="text"],
-body.theme-litetracker-2026-minimal input[type="password"],
-body.theme-litetracker-2026-minimal input[type="email"],
-body.theme-litetracker-2026-minimal input[type="search"],
-body.theme-litetracker-2026-minimal select,
-body.theme-litetracker-2026-minimal textarea {
+.theme-litetracker-2026-minimal .browse-torrent-card-cover img,
+.theme-litetracker-2026-minimal .browse-torrent-card-compact-cover img,
+.theme-litetracker-2026-minimal .details-gallery-item img,
+.theme-litetracker-2026-minimal .screenshots img,
+.theme-litetracker-2026-minimal .screenshot img,
+.theme-litetracker-2026-minimal .gallery img {
+    border-radius: var(--lt-radius-sm);
+    border: 1px solid var(--lt-border);
+    transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+}
+
+.theme-litetracker-2026-minimal .details-gallery-item img:hover,
+.theme-litetracker-2026-minimal .screenshots img:hover,
+.theme-litetracker-2026-minimal .screenshot img:hover,
+.theme-litetracker-2026-minimal .gallery img:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--lt-shadow-soft);
+    opacity: .96;
+}
+
+.theme-litetracker-2026-minimal input[type="text"],
+.theme-litetracker-2026-minimal input[type="password"],
+.theme-litetracker-2026-minimal input[type="email"],
+.theme-litetracker-2026-minimal input[type="search"],
+.theme-litetracker-2026-minimal select,
+.theme-litetracker-2026-minimal textarea {
     background: var(--lt-surface);
-    border: 1px solid var(--lt-input-border);
+    border: 1px solid #cbd5e1;
     border-radius: var(--lt-radius-sm);
     color: var(--lt-text);
     padding: 7px 9px;
     transition: border-color .15s ease, box-shadow .15s ease;
 }
 
-body.theme-litetracker-2026-minimal input[type="text"]:focus,
-body.theme-litetracker-2026-minimal input[type="password"]:focus,
-body.theme-litetracker-2026-minimal input[type="email"]:focus,
-body.theme-litetracker-2026-minimal input[type="search"]:focus,
-body.theme-litetracker-2026-minimal select:focus,
-body.theme-litetracker-2026-minimal textarea:focus {
+.theme-litetracker-2026-minimal input[type="text"]:focus,
+.theme-litetracker-2026-minimal input[type="password"]:focus,
+.theme-litetracker-2026-minimal input[type="email"]:focus,
+.theme-litetracker-2026-minimal input[type="search"]:focus,
+.theme-litetracker-2026-minimal select:focus,
+.theme-litetracker-2026-minimal textarea:focus {
     outline: none;
     border-color: var(--lt-primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
 }
 
-body.theme-litetracker-2026-minimal .site-notifications-dropdown,
-body.theme-litetracker-2026-minimal .site-user-menu,
-body.theme-litetracker-2026-minimal .dropdown,
-body.theme-litetracker-2026-minimal .menu-dropdown,
-body.theme-litetracker-2026-minimal .notifications,
-body.theme-litetracker-2026-minimal .notification-dropdown {
-    background: var(--lt-surface);
-    border: 1px solid var(--lt-border);
-    border-radius: var(--lt-radius);
-    box-shadow: var(--lt-shadow);
-}
-
-body.theme-litetracker-2026-minimal .site-notifications-list > a,
-body.theme-litetracker-2026-minimal .site-user-menu-link,
-body.theme-litetracker-2026-minimal .dropdown a,
-body.theme-litetracker-2026-minimal .menu-dropdown a,
-body.theme-litetracker-2026-minimal .notifications a,
-body.theme-litetracker-2026-minimal .notification-dropdown a {
-    border-bottom: 1px solid var(--lt-border-soft);
-}
-
-body.theme-litetracker-2026-minimal .site-notifications-list > a:last-child,
-body.theme-litetracker-2026-minimal .site-user-menu-link:last-child,
-body.theme-litetracker-2026-minimal .dropdown a:last-child,
-body.theme-litetracker-2026-minimal .menu-dropdown a:last-child,
-body.theme-litetracker-2026-minimal .notifications a:last-child,
-body.theme-litetracker-2026-minimal .notification-dropdown a:last-child {
-    border-bottom: 0;
-}
-
-body.theme-litetracker-2026-minimal .site-user-menu-link:hover,
-body.theme-litetracker-2026-minimal .site-notifications-list a:hover,
-body.theme-litetracker-2026-minimal .dropdown a:hover,
-body.theme-litetracker-2026-minimal .menu-dropdown a:hover,
-body.theme-litetracker-2026-minimal .notifications a:hover,
-body.theme-litetracker-2026-minimal .notification-dropdown a:hover {
-    background: var(--lt-surface-soft);
-    text-decoration: none;
-}
-
-body.theme-litetracker-2026-minimal .footer,
-body.theme-litetracker-2026-minimal #footer {
-    background: var(--lt-surface);
-    border-top: 1px solid var(--lt-border);
-    color: var(--lt-muted);
-}
-
-body.theme-litetracker-2026-minimal .footer a,
-body.theme-litetracker-2026-minimal #footer a {
-    color: var(--lt-footer-link);
-    text-decoration: none;
-}
-
-body.theme-litetracker-2026-minimal .footer a:hover,
-body.theme-litetracker-2026-minimal #footer a:hover {
-    color: var(--lt-primary);
-    text-decoration: underline;
-}
-
-body.theme-litetracker-2026-minimal .age-badge,
-body.theme-litetracker-2026-minimal .adult-badge,
-body.theme-litetracker-2026-minimal .badge-18 {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--lt-danger-strong);
-    color: #ffffff;
-    border-radius: 6px;
-    font-weight: 700;
-    padding: 5px 8px;
-}
-
-body.theme-litetracker-2026-minimal .adults-only .s-icons-18plus {
-    border-radius: 6px;
-    background: var(--lt-danger-strong);
-}
-
-body.theme-litetracker-2026-minimal .browse-category-tab,
-body.theme-litetracker-2026-minimal .browse-tag-chip,
-body.theme-litetracker-2026-minimal .browse-sort-link,
-body.theme-litetracker-2026-minimal .browse-view-button,
-body.theme-litetracker-2026-minimal .tabs a,
-body.theme-litetracker-2026-minimal .category-tabs a,
-body.theme-litetracker-2026-minimal .filter-tabs a {
-    background: var(--lt-surface);
-    border: 1px solid var(--lt-border);
-    color: var(--lt-text-soft);
-    border-radius: var(--lt-radius-sm);
-}
-
-body.theme-litetracker-2026-minimal .browse-category-tab.is-active,
-body.theme-litetracker-2026-minimal .browse-tag-chip.is-active,
-body.theme-litetracker-2026-minimal .browse-sort-item.is-active .browse-sort-link,
-body.theme-litetracker-2026-minimal .browse-view-button.is-active,
-body.theme-litetracker-2026-minimal .tabs a.active,
-body.theme-litetracker-2026-minimal .category-tabs a.active,
-body.theme-litetracker-2026-minimal .filter-tabs a.active,
-body.theme-litetracker-2026-minimal .tabs .active a {
-    background: var(--lt-primary);
-    border-color: var(--lt-primary);
-    color: #ffffff;
-}
-
-body.theme-litetracker-2026-minimal .profile-card-name,
-body.theme-litetracker-2026-minimal .details-title,
-body.theme-litetracker-2026-minimal .browse-torrent-card-title,
-body.theme-litetracker-2026-minimal .browse-torrent-card-compact-title,
-body.theme-litetracker-2026-minimal .news-detail-title {
-    color: var(--lt-text);
-    font-weight: 800;
-}
-
-body.theme-litetracker-2026-minimal .profile-status,
-body.theme-litetracker-2026-minimal .profile-status-online {
+.theme-litetracker-2026-minimal .profile-status,
+.theme-litetracker-2026-minimal .profile-status-online {
     background: var(--lt-success-soft);
     color: #166534;
     border: 1px solid #bbf7d0;
@@ -617,32 +682,70 @@ body.theme-litetracker-2026-minimal .profile-status-online {
     display: inline-block;
 }
 
-body.theme-litetracker-2026-minimal .browse-torrent-card-meta,
-body.theme-litetracker-2026-minimal .details-date-row,
-body.theme-litetracker-2026-minimal .details-rating-note,
-body.theme-litetracker-2026-minimal .profile-rank-line,
-body.theme-litetracker-2026-minimal .browse-filter-title,
-body.theme-litetracker-2026-minimal .news-detail-date,
-body.theme-litetracker-2026-minimal .news-detail-publisher-label {
-    color: var(--lt-muted);
-}
-
-body.theme-litetracker-2026-minimal .browse-torrent-card-cover img,
-body.theme-litetracker-2026-minimal .browse-torrent-card-compact-cover img,
-body.theme-litetracker-2026-minimal .details-gallery-item img,
-body.theme-litetracker-2026-minimal .screenshots img,
-body.theme-litetracker-2026-minimal .screenshot img,
-body.theme-litetracker-2026-minimal .gallery img {
-    border-radius: var(--lt-radius-sm);
+.theme-litetracker-2026-minimal .browse-category-tab,
+.theme-litetracker-2026-minimal .browse-tag-chip,
+.theme-litetracker-2026-minimal .browse-sort-link,
+.theme-litetracker-2026-minimal .browse-view-button,
+.theme-litetracker-2026-minimal .tabs a,
+.theme-litetracker-2026-minimal .category-tabs a,
+.theme-litetracker-2026-minimal .filter-tabs a,
+.theme-litetracker-2026-minimal .profile-torrent-tab {
+    background: var(--lt-surface);
     border: 1px solid var(--lt-border);
-    transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+    color: var(--lt-text-soft);
+    border-radius: var(--lt-radius-sm);
 }
 
-body.theme-litetracker-2026-minimal .details-gallery-item img:hover,
-body.theme-litetracker-2026-minimal .screenshots img:hover,
-body.theme-litetracker-2026-minimal .screenshot img:hover,
-body.theme-litetracker-2026-minimal .gallery img:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--lt-shadow-soft);
-    opacity: .96;
+.theme-litetracker-2026-minimal .browse-category-tab.is-active,
+.theme-litetracker-2026-minimal .browse-tag-chip.is-active,
+.theme-litetracker-2026-minimal .browse-sort-item.is-active .browse-sort-link,
+.theme-litetracker-2026-minimal .browse-view-button.is-active,
+.theme-litetracker-2026-minimal .profile-torrent-tab-active,
+.theme-litetracker-2026-minimal .tabs a.active,
+.theme-litetracker-2026-minimal .category-tabs a.active,
+.theme-litetracker-2026-minimal .filter-tabs a.active,
+.theme-litetracker-2026-minimal .tabs .active a {
+    background: var(--lt-primary);
+    border-color: var(--lt-primary);
+    color: #ffffff;
+}
+
+.theme-litetracker-2026-minimal .footer,
+.theme-litetracker-2026-minimal #footer {
+    background: #ffffff;
+    border-top: 1px solid var(--lt-border);
+    color: var(--lt-muted);
+    box-shadow: 0 -1px 0 rgba(15, 23, 42, 0.02);
+}
+
+.theme-litetracker-2026-minimal .footer .wrapper {
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+
+.theme-litetracker-2026-minimal .footer a,
+.theme-litetracker-2026-minimal #footer a {
+    color: #475569;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.theme-litetracker-2026-minimal .footer a:hover,
+.theme-litetracker-2026-minimal #footer a:hover {
+    color: var(--lt-primary);
+    text-decoration: underline;
+}
+
+.theme-litetracker-2026-minimal .age-badge,
+.theme-litetracker-2026-minimal .adult-badge,
+.theme-litetracker-2026-minimal .badge-18,
+.theme-litetracker-2026-minimal .adults-only .s-icons-18plus {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ef4444;
+    color: #ffffff;
+    border-radius: 7px;
+    font-weight: 800;
+    padding: 5px 8px;
 }
