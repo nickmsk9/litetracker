@@ -877,7 +877,8 @@ CREATE TABLE `torrents` (
   KEY `idx_torrents_content_type` (`content_type`),
   KEY `idx_torrents_name` (`name`(191)),
   KEY `status_added` (`status`,`added`),
-  KEY `owner_status` (`id_user`,`status`)
+  KEY `owner_status` (`id_user`,`status`),
+  UNIQUE KEY `idx_torrents_infohash` (`infohash`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

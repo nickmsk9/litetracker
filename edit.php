@@ -179,7 +179,7 @@ if ($act == 'delete_image') {
 
 	if (!empty($arr['image'])) {
 		$db->query('UPDATE torrents SET image="" WHERE id='.(int) $id);
-		$_p = 'public/downloads/images/'.$arr['image'];
+		$_p = 'public/downloads/images/'.basename((string) $arr['image']);
 		if (is_file($_p)) { unlink($_p); }
 	}
 
@@ -197,7 +197,7 @@ if ($act == 'delete_screen') {
 
 	if (!empty($arr['screen_'.$screen])) {
 		$db->query('UPDATE torrents SET screen_'.$screen.'="" WHERE id='.(int) $id);
-		$_p = 'public/downloads/screens/'.$arr['screen_'.$screen];
+		$_p = 'public/downloads/screens/'.basename((string) $arr['screen_'.$screen]);
 		if (is_file($_p)) { unlink($_p); }
 	}
 
@@ -393,7 +393,7 @@ if ($act == 'take') {
 		lt_edit_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $coverName, 'обложку');
 
 		if (!empty($arr['image']) && $arr['image'] !== $coverName) {
-			$_p = 'public/downloads/images/'.$arr['image'];
+			$_p = 'public/downloads/images/'.basename((string) $arr['image']);
 			if (is_file($_p)) { unlink($_p); }
 		}
 
@@ -420,7 +420,7 @@ if ($act == 'take') {
 		lt_edit_move_uploaded_image($screenFile, 'public/downloads/screens/', $screenStoredName, 'скриншот '.$slot);
 
 		if (!empty($arr['screen_'.$slot]) && $arr['screen_'.$slot] !== $screenStoredName) {
-			$_p = 'public/downloads/screens/'.$arr['screen_'.$slot];
+			$_p = 'public/downloads/screens/'.basename((string) $arr['screen_'.$slot]);
 			if (is_file($_p)) { unlink($_p); }
 		}
 

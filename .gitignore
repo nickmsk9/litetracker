@@ -3,6 +3,7 @@ Thumbs.db
 .php-cs-fixer.cache
 .env
 .env.*
+!.env.example
 
 node_modules/
 vendor/

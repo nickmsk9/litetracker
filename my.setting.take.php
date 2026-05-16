@@ -79,8 +79,8 @@ function prepare_user_avatar_upload($fieldName, $userId, $userRow)
 		$smallPath = $dirDestSmall . $fileName;
 
 		if (!empty($userRow['avatar'])) {
-			$_p = $dirDest.$userRow['avatar']; if (is_file($_p)) { unlink($_p); }
-			$_p = $dirDestSmall.$userRow['avatar']; if (is_file($_p)) { unlink($_p); }
+			$_p = $dirDest.basename((string) $userRow['avatar']); if (is_file($_p)) { unlink($_p); }
+			$_p = $dirDestSmall.basename((string) $userRow['avatar']); if (is_file($_p)) { unlink($_p); }
 		}
 
 		if (!copy($_FILES[$fieldName]['tmp_name'], $mainPath) || !copy($_FILES[$fieldName]['tmp_name'], $smallPath)) {
@@ -112,8 +112,8 @@ function prepare_user_avatar_upload($fieldName, $userId, $userRow)
 	$smallPath = $dirDestSmall . $fileName;
 
 	if (!empty($userRow['avatar'])) {
-		$_p = $dirDest.$userRow['avatar']; if (is_file($_p)) { unlink($_p); }
-		$_p = $dirDestSmall.$userRow['avatar']; if (is_file($_p)) { unlink($_p); }
+		$_p = $dirDest.basename((string) $userRow['avatar']); if (is_file($_p)) { unlink($_p); }
+		$_p = $dirDestSmall.basename((string) $userRow['avatar']); if (is_file($_p)) { unlink($_p); }
 	}
 
 	$saveResizedJpeg = function ($srcImage, $srcWidth, $srcHeight, $targetPath, $maxWidth, $maxHeight) {
@@ -228,8 +228,8 @@ if($act == 'foto_delete') {
 		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
 	}
 
-	$_p = 'public/avatars/'.$arr['avatar']; if (is_file($_p)) { unlink($_p); }
-	$_p = 'public/avatars/small/'.$arr['avatar']; if (is_file($_p)) { unlink($_p); }
+	$_p = 'public/avatars/'.basename((string) $arr['avatar']); if (is_file($_p)) { unlink($_p); }
+	$_p = 'public/avatars/small/'.basename((string) $arr['avatar']); if (is_file($_p)) { unlink($_p); }
 	$db->query("UPDATE users SET avatar='' WHERE id='".$id."'");
 	if (function_exists('lt_cache_invalidate_user')) { lt_cache_invalidate_user($id); } else { $memcached->delete('user_'.$id, 0); }
 	header('Location:my.setting.php?id='.$id);

@@ -231,6 +231,7 @@ if (!defined('LITETRACKER')) {
 					</div>
 
 					<input type="hidden" name="act" value="exchange_bonus">
+					<?=lt_csrf_input('profile_bonus_'.$id);?>
 				</form>
 			</section>
 			<?php } ?>
