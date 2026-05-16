@@ -122,7 +122,7 @@ if ($birthdayBonusAmount > 0) {
 		"SELECT id, name
 		 FROM users
 		 WHERE birthday_date IS NOT NULL
-		   AND birthday_date <> '0000-00-00'
+		   AND birthday_date > '1000-01-01'
 		   AND DATE_FORMAT(birthday_date, '".$db->safesql($birthdayDateFormat)."') = '".$db->safesql($todayMonthDay)."'"
 	);
 	while ($birthdayUser = $db->get_row($birthdayUsers)) {

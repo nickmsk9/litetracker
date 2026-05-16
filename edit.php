@@ -36,22 +36,6 @@ function lt_edit_collect_screens($torrent)
 }
 
 /**
- * @deprecated Use lt_torrent_category_name_from_list()
- */
-function lt_edit_category_name($categories, $categoryId)
-{
-	return lt_torrent_category_name_from_list($categories, $categoryId);
-}
-
-/**
- * @deprecated Use lt_torrent_metadata_service_values()
- */
-function lt_edit_metadata_values($torrent, $schema)
-{
-	return lt_torrent_metadata_service_values($torrent, $schema);
-}
-
-/**
  * @deprecated Use lt_torrent_description_service_parse()
  */
 function lt_edit_parse_description($text)
@@ -70,80 +54,6 @@ function lt_edit_parse_description($text)
 	}
 
 	return $result;
-}
-
-/**
- * @deprecated Use lt_torrent_description_template_textarea_labels()
- */
-function lt_edit_template_textarea_labels()
-{
-	return lt_torrent_description_template_textarea_labels();
-}
-
-/**
- * @deprecated Use lt_torrent_description_template_field_type()
- */
-function lt_edit_template_field_type($label)
-{
-	return lt_torrent_description_template_field_type($label);
-}
-
-/**
- * @deprecated Use lt_torrent_description_service_manual_fields()
- */
-function lt_edit_template_manual_fields($categoryNameOrKey, $values = array())
-{
-	return lt_torrent_description_service_manual_fields($categoryNameOrKey, $values);
-}
-
-/**
- * @deprecated Use lt_torrent_description_service_primary_label()
- */
-function lt_edit_primary_description_label($categoryNameOrKey)
-{
-	return lt_torrent_description_service_primary_label($categoryNameOrKey);
-}
-
-/**
- * @deprecated Use lt_torrent_description_service_build()
- */
-function lt_edit_build_description($categoryNameOrKey, $templateValues, $autoValues = array())
-{
-	return lt_torrent_description_service_build($categoryNameOrKey, $templateValues, $autoValues);
-}
-
-/**
- * @deprecated Use lt_upload_asset_ensure_directory()
- */
-function lt_edit_ensure_directory($path)
-{
-	return lt_upload_asset_ensure_directory($path);
-}
-
-/**
- * @deprecated Use lt_upload_asset_image_extension()
- */
-function lt_edit_image_extension($filename)
-{
-	return lt_upload_asset_image_extension($filename, true);
-}
-
-/**
- * @deprecated Use lt_upload_asset_validate_image()
- */
-function lt_edit_validate_image($file, $label)
-{
-	global $config;
-
-	return lt_upload_asset_validate_image($file, $label, (int) $config['max_size_image'], true);
-}
-
-/**
- * @deprecated Use lt_upload_asset_move_uploaded_image()
- */
-function lt_edit_move_uploaded_image($file, $directory, $targetName, $label)
-{
-	return lt_upload_asset_move_uploaded_image($file, $directory, $targetName, $label);
 }
 
 is_login();
@@ -222,7 +132,7 @@ if ($act == 'take') {
 
 	$categories = categories_array();
 	$category = (int) ($_POST['category'] ?? 0);
-	$categoryName = lt_edit_category_name($categories, $category);
+	$categoryName = lt_torrent_category_name_from_list($categories, $category);
 	if ($category <= 0 || $categoryName === '') {
 		err($language['default_1'], $language['upload_3'], 1);
 	}
@@ -374,12 +284,12 @@ if ($act == 'take') {
 		'subtitles' => lt_torrent_metadata_format('subtitles', $metadataCsv['subtitles'] ?? ''),
 		'country' => lt_torrent_metadata_format('country', $metadataCsv['country'] ?? ''),
 	);
-	$primaryDescriptionLabel = lt_edit_primary_description_label($categoryName);
+	$primaryDescriptionLabel = lt_torrent_description_service_primary_label($categoryName);
 	if ($primaryDescriptionLabel !== '' && trim((string) ($templateValues[$primaryDescriptionLabel] ?? '')) === '') {
 		err($language['default_1'], $language['upload_26'], 1);
 	}
 
-	$descr = lt_edit_build_description($categoryName, $templateValues, $autoDescriptionValues);
+	$descr = lt_torrent_description_service_build($categoryName, $templateValues, $autoDescriptionValues);
 	if ($descr === '') {
 		err($language['default_1'], $language['upload_26'], 1);
 	}
@@ -388,9 +298,9 @@ if ($act == 'take') {
 	}
 
 	if (!empty($_FILES['image']['name'])) {
-		$coverExtension = lt_edit_validate_image((array) $_FILES['image'], 'Обложка');
+		$coverExtension = lt_upload_asset_validate_image((array) $_FILES['image'], 'Обложка', (int) $config['max_size_image'], true);
 		$coverName = $id.'.'.$coverExtension;
-		lt_edit_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $coverName, 'обложку');
+		lt_upload_asset_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $coverName, 'обложку');
 
 		if (!empty($arr['image']) && $arr['image'] !== $coverName) {
 			$_p = 'public/downloads/images/'.basename((string) $arr['image']);
@@ -415,9 +325,9 @@ if ($act == 'take') {
 			'size' => (int) ($screenFiles['size'][$index] ?? 0),
 		);
 
-		$screenExtension = lt_edit_validate_image($screenFile, 'Скриншот '.$slot);
+		$screenExtension = lt_upload_asset_validate_image($screenFile, 'Скриншот '.$slot, (int) $config['max_size_image'], true);
 		$screenStoredName = $id.'_'.$index.'.'.$screenExtension;
-		lt_edit_move_uploaded_image($screenFile, 'public/downloads/screens/', $screenStoredName, 'скриншот '.$slot);
+		lt_upload_asset_move_uploaded_image($screenFile, 'public/downloads/screens/', $screenStoredName, 'скриншот '.$slot);
 
 		if (!empty($arr['screen_'.$slot]) && $arr['screen_'.$slot] !== $screenStoredName) {
 			$_p = 'public/downloads/screens/'.basename((string) $arr['screen_'.$slot]);
@@ -526,9 +436,9 @@ foreach ($categories as $categoryItem) {
 }
 
 $selectedCategoryId = (int) ($arr['id_category'] ?? 0);
-$selectedCategoryName = lt_edit_category_name($categories, $selectedCategoryId);
+$selectedCategoryName = lt_torrent_category_name_from_list($categories, $selectedCategoryId);
 $metadataSchema = lt_torrent_metadata_schema();
-$metadataValues = lt_edit_metadata_values($arr, $metadataSchema);
+$metadataValues = lt_torrent_metadata_service_values($arr, $metadataSchema);
 $typeOptionsMap = lt_torrent_type_options_map();
 $descriptionTemplates = lt_torrent_description_templates();
 $templateFieldExamples = array();
@@ -545,7 +455,7 @@ if ($currentContentType === '') {
 }
 $metadataValues['type'] = $currentContentType;
 $parsedDescriptionValues = lt_edit_parse_description((string) ($arr['descr'] ?? ''));
-$currentTemplateFields = lt_edit_template_manual_fields($selectedCategoryName, $parsedDescriptionValues);
+$currentTemplateFields = lt_torrent_description_service_manual_fields($selectedCategoryName, $parsedDescriptionValues);
 $tagSuggestions = taggenrelist($selectedCategoryId);
 $currentScreens = lt_edit_collect_screens($arr);
 $currentCover = trim((string) ($arr['image'] ?? ''));

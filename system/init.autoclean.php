@@ -42,6 +42,11 @@ require __DIR__ . '/config/config.mysql.php';
 require __DIR__ . '/functions/functions.php';
 require __DIR__ . '/functions/functions.http.php';
 
+// Канонические helpers/support, необходимые cron bootstrap и cache keys
+require_once __DIR__ . '/../app/helpers/UserHelper.php';
+require_once __DIR__ . '/../app/Support/CacheKeys.php';
+require_once __DIR__ . '/../app/Support/CacheInvalidation.php';
+
 //Подключаем класс db
 require __DIR__ . '/classes/class.db.php';
 

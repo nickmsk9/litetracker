@@ -1160,62 +1160,6 @@ function taggenrelist($cat) {
 }
 
 
-/**
- * @deprecated No callers found outside this file. Use tags_echo() from
- *             system/functions/functions.tags.php instead — it provides equivalent
- *             tag-link rendering and is the canonical implementation.
- */
-function addtags($addtags) {
-	global $language;
-	$tags = '';
-	foreach (explode(",", (string) $addtags) as $tag) {
-		$tag = trim($tag);
-		if ($tag !== '') {
-			$tags .= '<a style="font-weight:normal;" href="browse.php?text=' . htmlspecialchars(rawurlencode($tag), ENT_QUOTES, 'UTF-8') . '&amp;type=tags">' . htmlspecialchars($tag, ENT_QUOTES, 'UTF-8') . '</a>, ';
-		}
-	}
-	if ($tags) {
-		$tags = substr($tags, 0, -2);
-	}
-	if (empty($addtags)) {
-		$tags = $language['tags_1'];
-	}
-	return $tags;
-}
-
-
-//Анти - XSS
-/**
- * @deprecated Ineffective string-replacement XSS filter with no callers. Do not use; escape output with htmlspecialchars() instead.
- */
-function antixss() {
-	//Запрещенные элементы
-	$array = array('./' , '../' , '\'' , '<script>' , 'document.cookie' , '</script>' );
-
-	//GET
-	$query = $_GET;
-	if( sizeof($query) ) {
-		foreach($query AS $arr => $value) {
-			$clear_xss = str_replace($array , '[xss]' , $value);
-			$_GET[$arr]  = $clear_xss;
-		}
-
-	}
-
-	//GET
-	$query = $_POST;
-	if( sizeof($query) ) {
-		foreach($query AS $arr => $value) {
-			$clear_xss = str_replace($array , '[xss]' , $value);
-			$_POST[$arr]  = $clear_xss;
-		}
-
-	}
-
-
-	return true;
-}
-
 //sqlwildcardesc
 function sqlwildcardesc($x) {
 	global $db;
@@ -1317,33 +1261,6 @@ function pager($rpp, $count, $href, $opts = array()) {
 
 	return array($pagertop, $pagerbottom, "LIMIT $start , $rpp");
 }
-//Цвет ратио
-/**
- * @deprecated No callers found. Use a direct color computation if needed.
- */
-  function get_ratio_color($ratio) {
-    if ($ratio < 0.1) return "#ff0000";
-    if ($ratio < 0.2) return "#ee0000";
-    if ($ratio < 0.3) return "#dd0000";
-    if ($ratio < 0.4) return "#cc0000";
-    if ($ratio < 0.5) return "#bb0000";
-    if ($ratio < 0.6) return "#aa0000";
-    if ($ratio < 0.7) return "#990000";
-    if ($ratio < 0.8) return "#880000";
-    if ($ratio < 0.9) return "#770000";
-    if ($ratio < 1) return "#660000";
-    return "#000000";
-}
-
-
-/**
- * @deprecated No callers found outside this file. Use strtotime() directly.
- */
-function sql_timestamp_to_unix_timestamp($s)
-{
-  return mktime(substr($s, 11, 2), substr($s, 14, 2), substr($s, 17, 2), substr($s, 5, 2), substr($s, 8, 2), substr($s, 0, 4));
-}
-
 //Преобразование даты / времени
 //гггг-мм-дд чч:мм:сс
 function convent_date($date = '' ) {
@@ -1405,34 +1322,6 @@ function convent_date($date = '' ) {
 }
 
 
-//Вывод рейтинга пользователю или гостю
-/**
- * @deprecated No callers found outside this file. Use get_ratio() and render HTML directly.
- */
-function get_user_rating($uploaded = '' , $downloaded = '') {
-	global $USER , $language;
-
-	$up   = 0;
-	$down = 0;
-	if(!empty($uploaded)  && !empty($downloaded) ) {
-		$down =	$downloaded;
-		$up =	$uploaded;
-	}
-
-
-
-	$ratio = get_ratio($up , $down);
-	if($ratio <= 0){
-		echo '<div id="rateTopZero"><img src="public/images/rate/zero1.gif"></div><div id="rateBottomZero"><font color="#8ba1bc">'.$language['rating_1'].': '.$ratio.'%</font></div>';
-	}elseif($ratio > 0 AND $ratio <= 10){
-		echo '<div id="rateTopGreen"><img src="public/images/rate/green1.gif"></div><div id="rateBottomGreen"><font color="#1e7300">'.$language['rating_1'].': '.$ratio.'%</font></a></div>';
-	}elseif($ratio > 10 AND $ratio <= 100){
-		echo '<div id="rateTopGold"><img src="public/images/rate/gold1.gif"></div><div id="rateBottomGold"><font color="#948239">'.$language['rating_1'].': '.$ratio.'%</font></a></div>';
-	}elseif($ratio > 100){
-		echo '<div id="rateTopDarkgold"><img src="public/images/rate/darkgold1.gif"></div><div id="rateBottomDarkgold"><font color="#fff2c8">'.$language['rating_1'].': '.$ratio.'%</font></a></div>';
-	}
-
-}
 //Преобразуем дату
 function rusdate($num,$type = 0){
     $rus = array (
@@ -1449,67 +1338,6 @@ function rusdate($num,$type = 0){
     if ( 10 < $num && $num < 20) return $rus[$type][0];
     return $rus[$type][$num % 10];
 }
-
-/**
- * @deprecated No callers found outside this file. get_elapsed_time() is not used by the active codebase.
- */
-function get_elapsed_time($date,$showseconds=true,$unix=true){
-    if($date == "0000-00-00 00:00:00") return "---";
-    if(!$unix){$U = date('U',strtotime($date));}else{$U=$date;};
-    $N = time();
-    $diff = $N-$U;
-
-
-    if($diff>=31536000){
-        $Iyear = floor($diff/31536000);
-        $diff = $diff-($Iyear*31536000);
-    }
-    if($diff>=2629800){    //2592000 seconds in month with 30 days
-        $Imonth = floor($diff/2629800);
-        $diff = $diff-($Imonth*2629800);
-    }
-    if($diff>=604800){
-        $Iweek = floor($diff/604800);
-        $diff = $diff-($Iweek*604800);
-    }
-    if($diff>=86400){
-        $Iday = floor($diff/86400);
-        $diff = $diff-($Iday*86400);
-    }
-    if($diff>=3600){
-        $Ihour = floor($diff/3600);
-        $diff = $diff-($Ihour*3600);
-    }
-    if($diff>=60){
-        $Iminute = floor($diff/60);
-        $diff = $diff-($Iminute*60);
-    }
-    if($diff>0){
-        $Isecond = floor($diff);
-    }
-
-    $j = " ";
-
-    $ret = "";
-
-    if(isset($Iyear)) $ret .= $Iyear." ".rusdate($Iyear,'year').$j;
-    if(isset($Imonth)) $ret .= $Imonth ." ".rusdate($Imonth ,'month').$j;
-    if(isset($Iweek)) $ret .= $Iweek ." ".rusdate($Iweek ,'week').$j;
-    if(isset($Iday)) $ret .= $Iday ." ".rusdate($Iday ,'day').$j;
-    if(isset($Ihour)) $ret .= $Ihour ." ".rusdate($Ihour ,'hour').$j;
-    if(isset($Iminute)) $ret .= $Iminute ." ".rusdate($Iminute ,'minute').$j;
-
-//    if($showseconds==false && $Iminute<1)$Iminute=0;
-    if($showseconds==false && $Iminute<1 && $Ihour<1 && $Iday<1 && $Iweek<1 && $Imonth<1 && $Iyear<1)return rusdate(0 ,'minute');
-
-    if(($Isecond>0 OR $ret=="") AND $showseconds==true){
-        if($ret=="" AND !isset($Isecond))$Isecond=0;
-        $ret .= $Isecond ." ".rusdate($Isecond ,'second').$j;
-    }
-    return $ret;
-}
-
-
 
 //Нагрузка на сервер
 function get_server_load() {
@@ -1537,29 +1365,6 @@ function get_server_load() {
 	return $returnload;
 }
 
-
-/**
- * Узнаем сколько времени прошло с определенной даты
- * @param datetime $time
- * @return array (years , months , days)
- */
-/**
- * @deprecated No callers found outside this file.
- */
-function get_certain_time($time) {
-	$date1 = $time;
-	$date2 = get_date_time();
-
-	$diff = abs(strtotime($date2) - strtotime($date1));
-
-	$years = floor($diff / (365*60*60*24));
-	$months = floor(($diff - $years * 365*60*60*24) / (30*60*60*24));
-	$days = floor(($diff - $years * 365*60*60*24 - $months*30*60*60*24)/ (60*60*24));
-
-
-	$array = array('years' => $years , 'months' => $months , 'days' => $days);
-	return $array;
-}
 
 //Отправка локального сообщения
 function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {

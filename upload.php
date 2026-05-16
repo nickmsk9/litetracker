@@ -33,14 +33,6 @@ function lt_upload_category_info($catid)
 	return (array) $db->super_query("SELECT * FROM categories WHERE id = ".$catid." LIMIT 1");
 }
 
-/**
- * @deprecated Use lt_torrent_category_name_from_list()
- */
-function lt_upload_category_name($categories, $catid)
-{
-	return lt_torrent_category_name_from_list($categories, $catid);
-}
-
 function lt_upload_default_category_id($categories)
 {
 	foreach ((array) $categories as $category) {
@@ -53,46 +45,6 @@ function lt_upload_default_category_id($categories)
 	return (int) ($categories[0]['id'] ?? 0);
 }
 
-/**
- * @deprecated Use lt_torrent_description_template_textarea_labels()
- */
-function lt_upload_template_textarea_labels()
-{
-	return lt_torrent_description_template_textarea_labels();
-}
-
-/**
- * @deprecated Use lt_torrent_description_template_field_type()
- */
-function lt_upload_template_field_type($label)
-{
-	return lt_torrent_description_template_field_type($label);
-}
-
-/**
- * @deprecated Use lt_torrent_description_service_manual_fields()
- */
-function lt_upload_template_manual_fields($categoryNameOrKey, $values = array())
-{
-	return lt_torrent_description_service_manual_fields($categoryNameOrKey, $values);
-}
-
-/**
- * @deprecated Use lt_torrent_description_service_primary_label()
- */
-function lt_upload_primary_description_label($categoryNameOrKey)
-{
-	return lt_torrent_description_service_primary_label($categoryNameOrKey);
-}
-
-/**
- * @deprecated Use lt_torrent_description_service_build()
- */
-function lt_upload_build_description($categoryNameOrKey, $templateValues, $autoValues = array())
-{
-	return lt_torrent_description_service_build($categoryNameOrKey, $templateValues, $autoValues);
-}
-
 function lt_upload_next_torrent_id()
 {
 	global $db;
@@ -100,40 +52,6 @@ function lt_upload_next_torrent_id()
 	$row = $db->super_query("SHOW TABLE STATUS LIKE 'torrents'");
 
 	return (!empty($row['Auto_increment']) ? (int) $row['Auto_increment'] : 0);
-}
-
-/**
- * @deprecated Use lt_upload_asset_ensure_directory()
- */
-function lt_upload_ensure_directory($path)
-{
-	return lt_upload_asset_ensure_directory($path);
-}
-
-/**
- * @deprecated Use lt_upload_asset_image_extension()
- */
-function lt_upload_image_extension($filename)
-{
-	return lt_upload_asset_image_extension($filename, false);
-}
-
-/**
- * @deprecated Use lt_upload_asset_validate_image()
- */
-function lt_upload_validate_image($file, $label)
-{
-	global $config;
-
-	return lt_upload_asset_validate_image($file, $label, (int) $config['max_size_image'], false);
-}
-
-/**
- * @deprecated Use lt_upload_asset_move_uploaded_image()
- */
-function lt_upload_move_uploaded_image($file, $directory, $targetName, $label)
-{
-	return lt_upload_asset_move_uploaded_image($file, $directory, $targetName, $label);
 }
 
 function lt_upload_retarget_asset($directory, $oldName, $newName)
@@ -158,6 +76,8 @@ function lt_upload_retarget_asset($directory, $oldName, $newName)
 
 function lt_upload_collect_screenshots($nextId)
 {
+	global $config;
+
 	$screenshots = array();
 	$files = ($_FILES['screenshot'] ?? array());
 	$names = (isset($files['name']) && is_array($files['name']) ? $files['name'] : array());
@@ -187,9 +107,9 @@ function lt_upload_collect_screenshots($nextId)
 
 	$result = array();
 	foreach ($screenshots as $index => $screenshot) {
-		$extension = lt_upload_validate_image($screenshot, 'Скринлист');
+		$extension = lt_upload_asset_validate_image($screenshot, 'Скринлист', (int) $config['max_size_image'], false);
 		$filename = $nextId.'_'.$index.'.'.$extension;
-		$result[] = lt_upload_move_uploaded_image($screenshot, 'public/downloads/screens/', $filename, 'скринлист');
+		$result[] = lt_upload_asset_move_uploaded_image($screenshot, 'public/downloads/screens/', $filename, 'скринлист');
 	}
 
 	return $result;
@@ -343,7 +263,7 @@ lt_torrent_status_ensure_schema();
 $metadataSchema = lt_torrent_metadata_schema();
 $categories = lt_upload_categories_list();
 $defaultCategoryId = lt_upload_default_category_id($categories);
-$defaultCategoryName = lt_upload_category_name($categories, $defaultCategoryId);
+$defaultCategoryName = lt_torrent_category_name_from_list($categories, $defaultCategoryId);
 $typeOptionsMap = lt_torrent_type_options_map();
 $defaultTypeOptions = lt_torrent_metadata_type_options_for_category($defaultCategoryName);
 $defaultContentType = (string) key($defaultTypeOptions);
@@ -426,12 +346,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		'subtitles' => lt_torrent_metadata_format('subtitles', $metadataValues['subtitles'] ?? ''),
 		'country' => lt_torrent_metadata_format('country', $metadataValues['country'] ?? ''),
 	);
-	$primaryDescriptionLabel = lt_upload_primary_description_label((string) ($categoryInfo['name'] ?? ''));
+	$primaryDescriptionLabel = lt_torrent_description_service_primary_label((string) ($categoryInfo['name'] ?? ''));
 	if ($primaryDescriptionLabel !== '' && trim((string) ($form['template_values'][$primaryDescriptionLabel] ?? '')) === '') {
 		err($language['default_1'], $language['upload_26'], 1);
 	}
 
-	$form['descr'] = lt_upload_build_description((string) ($categoryInfo['name'] ?? ''), $form['template_values'], $autoDescriptionValues);
+	$form['descr'] = lt_torrent_description_service_build((string) ($categoryInfo['name'] ?? ''), $form['template_values'], $autoDescriptionValues);
 	if ($form['descr'] === '') {
 		err($language['default_1'], $language['upload_26'], 1);
 	}
@@ -441,8 +361,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		err('Ошибка', 'Не удалось подготовить загрузку торрента.', 1);
 	}
 
-	$coverExtension = lt_upload_validate_image((array) ($_FILES['image'] ?? array()), 'Обложка');
-	$coverName = lt_upload_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $nextId.'.'.$coverExtension, 'обложку');
+	$coverExtension = lt_upload_asset_validate_image((array) ($_FILES['image'] ?? array()), 'Обложка', (int) $config['max_size_image'], false);
+	$coverName = lt_upload_asset_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $nextId.'.'.$coverExtension, 'обложку');
 	$screenshots = lt_upload_collect_screenshots($nextId);
 	$tags = lt_upload_collect_tags($form['tags']);
 
@@ -529,7 +449,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		lt_torrent_submit_for_review($id, true);
 	}
 
-	if (!lt_upload_ensure_directory('public/downloads/torrents/')) {
+	if (!lt_upload_asset_ensure_directory('public/downloads/torrents/')) {
 		err('Ошибка', 'Не удалось подготовить каталог для torrent-файлов.', 1);
 	}
 
@@ -561,9 +481,9 @@ foreach ($categories as $category) {
 	}
 }
 
-$currentCategoryName = lt_upload_category_name($categories, (int) ($form['catid'] ?? $defaultCategoryId));
+$currentCategoryName = lt_torrent_category_name_from_list($categories, (int) ($form['catid'] ?? $defaultCategoryId));
 $currentTemplateKey = (string) ($categoryTemplateMap[(int) ($form['catid'] ?? $defaultCategoryId)] ?? 'movies');
-$currentTemplateFields = lt_upload_template_manual_fields($currentCategoryName, (array) ($form['template_values'] ?? array()));
+$currentTemplateFields = lt_torrent_description_service_manual_fields($currentCategoryName, (array) ($form['template_values'] ?? array()));
 $currentTypeOptions = lt_torrent_metadata_type_options_for_category($currentCategoryName);
 if ($currentTypeOptions) {
 	$metadataSchema['type']['options'] = $currentTypeOptions;

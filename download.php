@@ -21,7 +21,8 @@ if(!$PRIV['details_view']) {
 lt_torrent_status_ensure_schema();
 
 //ID торрента
-$id = (int)$_GET['id'];
+$id = (int) ($_GET['id'] ?? 0);
+$magnet = !empty($_GET['magnet']);
 $db->query('SELECT *  FROM torrents WHERE id="'.$id.'"');
 if(!$db->num_rows()) {
 	err($language['default_1'] , $language['download_1'] , 1);
@@ -90,9 +91,6 @@ if(!empty($config['captcha']) && $config['reCaptcha_download']) {
 
 }
 
-
-
-if ($_GET['magnet']) $magnet = true; else $magnet=false;
 
 //Путь к торрент - файлу
 if(!$magnet) {
