@@ -212,13 +212,13 @@ if($act == 'ban_account') {
 
 	if($arr['banned'] == 0) {
 		$db->query("UPDATE users SET banned='1' WHERE id=".$id);
-		$memcached->delete('user_'.$id, 0);
+		if (function_exists('lt_cache_invalidate_user')) { lt_cache_invalidate_user($id); } else { $memcached->delete('user_'.$id, 0); }
 		header('Location:my.setting.php?id='.$id.'&status=9');
 		die();
 	}
 
 	$db->query("UPDATE users SET banned='0' WHERE id=".$id);
-	$memcached->delete('user_'.$id, 0);
+	if (function_exists('lt_cache_invalidate_user')) { lt_cache_invalidate_user($id); } else { $memcached->delete('user_'.$id, 0); }
 	header('Location:my.setting.php?id='.$id.'&status=10');
 	die();
 }
@@ -231,7 +231,7 @@ if($act == 'foto_delete') {
 	$_p = 'public/avatars/'.$arr['avatar']; if (is_file($_p)) { unlink($_p); }
 	$_p = 'public/avatars/small/'.$arr['avatar']; if (is_file($_p)) { unlink($_p); }
 	$db->query("UPDATE users SET avatar='' WHERE id='".$id."'");
-	$memcached->delete('user_'.$id, 0);
+	if (function_exists('lt_cache_invalidate_user')) { lt_cache_invalidate_user($id); } else { $memcached->delete('user_'.$id, 0); }
 	header('Location:my.setting.php?id='.$id);
 	die();
 }
@@ -264,7 +264,7 @@ if($act == 'password') {
 	$passwordHash = lt_password_hash_value($newPassword);
 
 	$db->pquery("UPDATE users SET password=?, password_code='' WHERE id=?", 'si', [$passwordHash, (int) $id]);
-	$memcached->delete('user_'.$id, 0);
+	if (function_exists('lt_cache_invalidate_user')) { lt_cache_invalidate_user($id); } else { $memcached->delete('user_'.$id, 0); }
 
 	if ((int) $USER['id'] === (int) $id) {
 		logout_cookie();
@@ -392,7 +392,11 @@ if(count($update)) {
 	$db->pquery("UPDATE users SET ".implode(',', $update)." WHERE id=?", $updateTypes, $updateParams);
 }
 
-$memcached->delete('user_'.$id, 0);
+if (function_exists('lt_cache_invalidate_user')) {
+	lt_cache_invalidate_user($id);
+} else {
+	$memcached->delete('user_'.$id, 0);
+}
 header('Location:my.setting.php?id='.$id);
 die();
 ?>
