@@ -15,12 +15,6 @@ function lt_themes_fallback_list()
 			'css_path'   => 'templates/default/css/my.css',
 			'is_default' => true,
 		),
-		'litetracker_2026_minimal' => array(
-			'slug'       => 'litetracker_2026_minimal',
-			'title'      => 'LiteTracker 2026 Minimal',
-			'css_path'   => 'templates/litetracker_2026_minimal/css/theme.css',
-			'is_default' => false,
-		),
 	);
 }
 

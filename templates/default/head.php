@@ -94,16 +94,6 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 <script src="/public/libs/photoswipe/photoswipe.umd.min.js" defer></script>
 <script src="/public/libs/photoswipe/photoswipe-lightbox.umd.min.js" defer></script>
 <?php } ?>
-<?php
-$_headThemeSlug = (string) ($GLOBALS['LITETRACKER_THEME_SLUG'] ?? '');
-if (function_exists('lt_themes_override_css_url') && $_headThemeSlug !== '' && $_headThemeSlug !== $tpl) {
-	$_headOverrideCss = lt_themes_override_css_url($_headThemeSlug, $tpl);
-	if ($_headOverrideCss !== '') {
-		echo '<link href="'.htmlspecialchars($_headOverrideCss, ENT_QUOTES, 'UTF-8').'" rel="stylesheet" type="text/css">'."\n";
-	}
-}
-unset($_headThemeSlug, $_headOverrideCss);
-?>
 </head>
 <body<?=($bodyClasses ? ' class="'.htmlspecialchars(implode(' ', $bodyClasses), ENT_QUOTES, 'UTF-8').'"' : '');?>>
 <div class="site-wrapper">
