@@ -1,0 +1,1012 @@
+/* browse.css: browse/home torrent-list page-specific styles extracted from my.css */
+
+.browse-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.browse-hero,
+.browse-panel,
+.browse-filter-panel {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.browse-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+}
+
+.browse-hero-title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.browse-hero-action {
+  flex: 0 0 auto;
+}
+
+.browse-upload-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 16px;
+  border: 1px solid #79b86d;
+  border-radius: 4px;
+  background: #86c87a;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.browse-upload-button:hover {
+  background: #76b86a;
+  border-color: #6cab60;
+  color: #ffffff;
+}
+
+.browse-upload-button-icon {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+}
+
+.browse-upload-button-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.browse-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 18px;
+  align-items: start;
+}
+
+.browse-layout-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.browse-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.browse-sidebar {
+  min-width: 0;
+}
+
+.browse-search-panel {
+  padding: 18px 20px;
+}
+
+.browse-search-form {
+  display: block;
+  position: relative;
+}
+
+.browse-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  gap: 0;
+}
+
+.browse-search-input {
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 14px;
+  border-right-width: 0;
+  border-radius: 4px 0 0 4px !important;
+  box-shadow: none;
+}
+
+.browse-search-input:focus {
+  position: relative;
+  z-index: 1;
+}
+
+.browse-search-submit {
+  min-height: 40px;
+  border-radius: 0 4px 4px 0 !important;
+  font-weight: 700;
+}
+
+.browse-search-suggest {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.browse-search-suggest[hidden] {
+  display: none;
+}
+
+.browse-suggest-group + .browse-suggest-group {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.browse-suggest-title {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.browse-suggest-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.browse-suggest-item {
+  min-height: 26px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-solid);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.browse-suggest-item:hover {
+  background: var(--surface-alt);
+}
+
+.browse-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  overflow: hidden;
+}
+
+.browse-category-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 10px 14px;
+  border-left: 1px solid var(--line);
+  background: var(--surface-solid);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.browse-category-tab:first-child {
+  border-left: 0;
+}
+
+.browse-category-tab:hover {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+.browse-category-tab.is-active {
+  background: #484e59;
+  color: #ffffff;
+}
+
+.browse-tag-cloud {
+  padding: 14px 16px;
+}
+
+.browse-tag-cloud-title {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.browse-tag-cloud-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.browse-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-solid);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.browse-tag-chip:hover {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+.browse-tag-chip.is-active {
+  background: #484e59;
+  color: #ffffff;
+}
+
+.browse-tag-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.browse-tag-chip.is-active .browse-tag-count {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.browse-results-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.browse-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--line);
+}
+
+.browse-sort-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.browse-sort-item {
+  padding: 7px 10px;
+}
+
+.browse-sort-link {
+  display: block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  color: #909fa7;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.browse-sort-item:hover .browse-sort-link {
+  color: var(--text);
+}
+
+.browse-sort-item.is-active .browse-sort-link {
+  background: #454c54;
+  color: #ffffff;
+}
+
+.browse-view-switch {
+  display: flex;
+  align-items: center;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface-solid);
+}
+
+.browse-view-button {
+  width: 48px;
+  min-width: 48px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--surface-solid);
+  color: var(--muted);
+}
+
+.browse-view-button:first-child {
+  border-left: 0;
+}
+
+.browse-view-button:hover {
+  background: #f7f7f7;
+  color: var(--text);
+}
+
+.browse-view-button.is-active {
+  box-shadow: inset 0 1px 10px rgba(0, 0, 0, 0.12);
+  color: var(--text);
+}
+
+.browse-view-icon {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.browse-view-icon-medium::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  box-shadow:
+    0 8px 0 currentColor,
+    8px 0 0 currentColor,
+    8px 8px 0 currentColor;
+}
+
+.browse-view-icon-small::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 1px;
+  width: 4px;
+  height: 4px;
+  background: currentColor;
+  box-shadow:
+    0 6px 0 currentColor,
+    0 12px 0 currentColor;
+}
+
+.browse-view-icon-small::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 7px;
+  width: 10px;
+  height: 4px;
+  background: currentColor;
+  box-shadow:
+    0 6px 0 currentColor,
+    0 12px 0 currentColor;
+}
+
+.browse-pagination {
+  padding: 0;
+}
+
+.home-load-more {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  margin: 0 0 18px;
+  border: 1px solid #8797a0;
+  border-radius: 4px;
+  background: #8ea0aa;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.home-load-more:hover {
+  background: #7f919b;
+  border-color: #7f919b;
+}
+
+.home-load-more:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.browse-torrent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 0 0;
+}
+
+.browse-torrent-list[data-view="full"] {
+  gap: 20px;
+}
+
+.browse-torrent-card {
+  border: 0;
+  border-radius: 4px;
+  background: var(--surface-solid);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.browse-torrent-card.is-banned .browse-torrent-card-title a,
+.browse-torrent-card.is-banned .browse-torrent-card-compact-title a {
+  color: #c33b3b;
+}
+
+.browse-torrent-card-full {
+  display: block;
+}
+
+.browse-torrent-card-compact {
+  display: none;
+}
+
+.browse-torrent-card-title-wrap {
+  padding: 10px 20px;
+}
+
+.browse-torrent-card-title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 30px;
+  font-weight: 400;
+}
+
+.browse-torrent-card-title a {
+  color: var(--accent);
+}
+
+.browse-torrent-card-title a:hover {
+  color: var(--accent-hover);
+}
+
+.browse-torrent-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  padding: 5px 20px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.browse-torrent-card-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 20px;
+}
+
+.browse-torrent-card-meta-item:not(:last-child)::after {
+  content: "|";
+  margin: 0 8px 0 10px;
+  color: #909fa7;
+}
+
+.browse-torrent-card-meta-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  color: #7b7b7b;
+}
+
+.browse-torrent-card-meta-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.browse-torrent-card-meta-label {
+  color: #909fa7;
+}
+
+.browse-torrent-card-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text);
+}
+
+.browse-torrent-card-user:hover {
+  color: var(--accent);
+}
+
+.browse-torrent-card-body {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+
+.browse-torrent-card-poster-col {
+  flex: 0 0 auto;
+  width: 240px;
+}
+
+.browse-torrent-card-cover {
+  position: relative;
+  display: block;
+  width: 240px;
+  height: 360px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--surface-alt);
+}
+
+.browse-torrent-card-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.browse-torrent-card-cover-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  display: inline-block;
+  padding: 0 5px;
+  border-radius: 0 0 4px 0;
+  background: #909fa7;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 20px;
+  text-transform: lowercase;
+}
+
+.browse-torrent-card-multi-badge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 4px 0 0 0;
+  background: #2f6fa5;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-transform: lowercase;
+}
+
+.browse-torrent-card-copy {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.browse-torrent-card-copy-body {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.browse-torrent-card-copy-body strong {
+  font-weight: 700;
+}
+
+.browse-torrent-card-info-title,
+.browse-torrent-card-extra-title {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.browse-torrent-card-spoiler {
+  display: inline-block;
+  margin: 2px 0 0;
+}
+
+.browse-torrent-card-spoiler summary {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  border-bottom: 1px dotted var(--accent);
+  cursor: pointer;
+  list-style: none;
+}
+
+.browse-torrent-card-spoiler summary::-webkit-details-marker {
+  display: none;
+}
+
+.browse-torrent-card-spoiler summary::after {
+  content: "";
+  margin-left: 7px;
+  margin-top: 7px;
+  border: 5px solid transparent;
+  border-top-color: var(--text);
+}
+
+.browse-torrent-card-spoiler[open] summary::after {
+  margin-top: 1px;
+  transform: rotate(180deg);
+}
+
+.browse-torrent-card-spoiler-content {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+}
+
+.browse-torrent-card-update-title {
+  font-size: 13px;
+}
+
+.browse-torrent-card-compact-inner {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 10px 20px;
+}
+
+.browse-torrent-card-compact-cover {
+  position: relative;
+  display: block;
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--surface-alt);
+  flex: 0 0 auto;
+}
+
+.browse-torrent-card-compact-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.browse-torrent-card-cover-badge-compact {
+  font-size: 10px;
+  line-height: 14px;
+  padding: 0 4px;
+}
+
+.browse-torrent-card-multi-badge-compact {
+  min-width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.browse-torrent-card-compact-content {
+  min-width: 0;
+}
+
+.browse-torrent-card-compact-title {
+  margin: 0 0 5px;
+  font-size: 14px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+.browse-torrent-card-compact-title a {
+  color: var(--accent);
+}
+
+.browse-torrent-card-compact-title a:hover {
+  color: var(--accent-hover);
+}
+
+.browse-torrent-card-meta-compact {
+  padding: 0;
+  border: 0;
+}
+
+.browse-torrent-list[data-view="compact"] .browse-torrent-card-full {
+  display: none;
+}
+
+.browse-torrent-list[data-view="compact"] .browse-torrent-card-compact {
+  display: block;
+}
+
+.browse-filter-panel {
+  position: sticky;
+  top: 12px;
+  padding: 18px 20px 20px;
+}
+
+.browse-filter-group + .browse-filter-group {
+  margin-top: 18px;
+}
+
+.browse-filter-title {
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.browse-filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.browse-filter-options-extra {
+  margin-top: 8px;
+}
+
+.browse-sidebar-categories {
+  margin-bottom: 14px;
+}
+
+.browse-sidebar-category {
+  display: block;
+  padding: 7px 9px;
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.browse-sidebar-category:hover,
+.browse-sidebar-category.is-active {
+  background: var(--surface-muted);
+  color: var(--accent);
+}
+
+.browse-filter-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.browse-filter-option input {
+  margin-top: 1px;
+  flex: 0 0 auto;
+}
+
+.browse-filter-select {
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-solid);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.browse-filter-empty {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.browse-filter-more {
+  margin-top: 8px;
+}
+
+.browse-filter-more[open] {
+  margin-bottom: 2px;
+}
+
+.browse-filter-more-toggle {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  list-style: none;
+}
+
+.browse-filter-more-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.browse-filter-more-toggle:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.browse-filter-submit {
+  width: 100%;
+  margin-top: 20px;
+  min-height: 40px;
+  border-radius: 4px !important;
+  font-weight: 700;
+}
+
+.browse-empty-state {
+  padding: 18px 16px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.browse-page.is-loading .browse-results-panel {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.browse-page.is-loading .browse-torrent-list {
+  position: relative;
+}
+
+.browse-page.is-loading .browse-torrent-list::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.45) 0,
+    rgba(255, 255, 255, 0.45) 12px,
+    rgba(255, 255, 255, 0) 12px,
+    rgba(255, 255, 255, 0) 24px
+  );
+  pointer-events: none;
+}
+
+.home-torrents-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.home-results-panel {
+  overflow: visible;
+}
+
+.home-browse-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.home-torrent-list {
+  padding-top: 20px;
+}
+
+.browse-empty-state-filtered {
+  margin: 0 14px 14px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-alt);
+}
+
+@media (max-width: 1180px) {
+  .browse-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .browse-filter-panel {
+    position: static;
+  }
+
+  .browse-categories {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .browse-category-tab {
+    flex: 0 0 auto;
+    min-width: 138px;
+    border-left: 0;
+    border-right: 1px solid var(--line);
+  }
+
+  .browse-category-tab:last-child {
+    border-right: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .browse-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .browse-hero-action {
+    width: 100%;
+  }
+
+  .browse-upload-button {
+    width: 100%;
+  }
+
+  .browse-search-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .browse-search-input {
+    border-right-width: 1px;
+    border-radius: 4px !important;
+  }
+
+  .browse-search-submit {
+    border-radius: 4px !important;
+  }
+
+  .browse-results-header {
+    justify-content: center;
+  }
+
+  .home-browse-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .browse-sort-list {
+    width: 100%;
+  }
+
+  .browse-view-switch {
+    width: 100%;
+  }
+
+  .browse-view-button {
+    flex: 1 1 0;
+    width: auto;
+  }
+
+  .browse-torrent-card-body {
+    flex-direction: column;
+  }
+
+  .browse-torrent-card-poster-col,
+  .browse-torrent-card-cover {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .browse-torrent-card-cover {
+    height: auto;
+  }
+
+  .browse-torrent-card-cover img {
+    width: 100%;
+    height: auto;
+  }
+
+  .browse-torrent-card-compact-inner {
+    align-items: flex-start;
+  }
+
+  .browse-torrent-card-meta {
+    gap: 6px 0;
+  }
+
+  .browse-torrent-card-meta-item:not(:last-child)::after {
+    margin: 0 6px 0 8px;
+  }
+}
+
+body.is-mobile .browse-layout {
+  display: block;
+}
+
+body.is-mobile .browse-sidebar {
+  width: 100%;
+  margin-top: 16px;
+}

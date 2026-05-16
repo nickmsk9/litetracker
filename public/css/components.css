@@ -1,0 +1,109 @@
+/* components.css: buttons/cards/forms/modals будут перенесены позже. */
+
+.frame-body-no-padding {
+  padding: 0;
+}
+
+.blockContent {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.frame {
+  overflow: hidden;
+}
+
+.frame-header {
+  padding: 18px 20px 0;
+}
+
+.frame-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 400;
+}
+
+.frame-body {
+  padding: 14px 20px 20px !important;
+}
+
+.frame > .frame-body:first-child {
+  padding-top: 16px;
+}
+
+.message,
+.success,
+.error {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+}
+
+.message,
+.success {
+  border: 1px solid var(--success-line);
+  background: var(--success-bg);
+  color: var(--text);
+}
+
+.message strong,
+.success strong,
+.error strong {
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.error {
+  border: 1px solid #e7c5c5;
+  background: #fff3f3;
+  color: #8a2c2c;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+textarea,
+select {
+  width: min(100%, 100%);
+  min-height: 38px;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-solid);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+input[type="text"]:hover,
+input[type="password"]:hover,
+input[type="email"]:hover,
+textarea:hover,
+select:hover {
+  border-color: #b8b8bf;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: rgba(0, 113, 227, 0.5);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.12);
+}
+
+textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.inputText {
+  width: min(100%, 360px);
+}
