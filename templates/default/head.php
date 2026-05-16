@@ -88,6 +88,7 @@ $isAuthModalFrameClass = in_array('auth-modal-frame', $bodyClasses, true);
 $shouldIncludeAuthPageCss = ($isAuthPageScript || $isAuthModalFrameClass);
 $shouldIncludeDetailsPageCss = ($currentScript === 'details.php');
 $shouldIncludeProfilePageCss = in_array($currentScript, array('profile.php', 'my.setting.php'), true);
+$shouldIncludeUploadPageCss = in_array($currentScript, array('upload.php', 'edit.php'), true);
 ?>
 <!doctype html>
 <html lang="ru">
@@ -112,6 +113,9 @@ $shouldIncludeProfilePageCss = in_array($currentScript, array('profile.php', 'my
     <?php } ?>
     <?php if ($shouldIncludeProfilePageCss) { ?>
         <link href="public/css/pages/profile.css" rel="stylesheet" type="text/css">
+    <?php } ?>
+    <?php if ($shouldIncludeUploadPageCss) { ?>
+        <link href="public/css/pages/upload.css" rel="stylesheet" type="text/css">
     <?php } ?>
     <link href="templates/<?= $tpl; ?>/css/my.css" rel="stylesheet" type="text/css">
     <?php if (!empty($GLOBALS['LITETRACKER_ENABLE_PHOTOSWIPE'])) { ?>
