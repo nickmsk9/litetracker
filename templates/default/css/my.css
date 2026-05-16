@@ -2436,6 +2436,7 @@ body.comment-history-open {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    margin-top: 8px;
 }
 
 .wall-inline-editor-textarea,
@@ -2449,8 +2450,22 @@ body.comment-history-open {
 }
 
 .wall-inline-editor-textarea {
-    min-height: 90px;
+    min-height: 72px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border, var(--line-strong));
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: inherit;
     resize: vertical;
+    box-sizing: border-box;
+    background: var(--color-bg-input, var(--surface-solid));
+    color: inherit;
+}
+
+.wall-inline-editor-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary, #2563eb);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
 
 .wall-inline-editor-reason {
@@ -2462,6 +2477,7 @@ body.comment-history-open {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    margin-top: 6px;
 }
 
 .wall-reply-banner {
@@ -7675,37 +7691,6 @@ body.is-mobile .details-bookmark-button {
     background: rgba(239, 68, 68, 0.1);
     color: #f87171;
     border-color: rgba(239, 68, 68, 0.18);
-}
-
-/* Инлайн-редактор (общий, используется и в profile.js) */
-.wall-inline-editor {
-    margin-top: 8px;
-}
-
-.wall-inline-editor-textarea {
-    width: 100%;
-    min-height: 72px;
-    padding: 8px 10px;
-    border: 1px solid var(--color-border, #d1d5db);
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-family: inherit;
-    resize: vertical;
-    box-sizing: border-box;
-    background: var(--color-bg-input, #fff);
-    color: inherit;
-}
-
-.wall-inline-editor-textarea:focus {
-    outline: none;
-    border-color: var(--color-accent, #3b82f6);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
-}
-
-.wall-inline-editor-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 6px;
 }
 
 /* Кнопка отправки в состоянии загрузки */
