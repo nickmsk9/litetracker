@@ -354,32 +354,6 @@
   margin: 0;
 }
 
-.release-category-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  max-width: 120px;
-  min-height: 28px;
-  padding: 4px 8px;
-  border: 1px solid #dce5ed;
-  border-radius: 4px;
-  background: #f4f7fa;
-  color: #405366;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.2;
-  text-align: center;
-  text-decoration: none;
-  overflow-wrap: anywhere;
-}
-
-.release-category-chip:hover {
-  background: #fff;
-  border-color: #b9cddd;
-  color: #111;
-  text-decoration: none;
-}
-
 @media (max-width: 760px) {
   .lt-admin-page {
     padding: 0 12px;
