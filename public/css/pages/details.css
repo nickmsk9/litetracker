@@ -994,6 +994,11 @@ body.is-mobile .details-bookmark-button {
   background: #f5fbf4;
 }
 
+body.theme-dark .comment-pinned-block {
+  border-color: #344235;
+  background: #222b24;
+}
+
 .wall-comment {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
@@ -1096,6 +1101,12 @@ body.is-mobile .details-bookmark-button {
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
+}
+
+body.theme-dark .comment-pinned-badge {
+  border-color: #3d6045;
+  background: #263a2b;
+  color: #9fd1a9;
 }
 
 .wall-comment-footer {
