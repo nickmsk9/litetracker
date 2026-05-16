@@ -99,24 +99,6 @@ if ($settingsActiveTabRaw === 'password') {
 					</section>
 
 					<section class="settings-section">
-						<h2 class="settings-section-title">Оформление</h2>
-						<div class="settings-field">
-							<label class="settings-field-label" for="settings_theme_slug">Тема оформления</label>
-							<select id="settings_theme_slug" name="theme_slug">
-								<?php
-								$_settingThemes = (function_exists('lt_themes_get_available') ? lt_themes_get_available() : array());
-								$_settingCurrentTheme = trim((string) ($arr['theme_slug'] ?? ''));
-								foreach ($_settingThemes as $_settingSlug => $_settingTheme) {
-								?>
-								<option value="<?=htmlspecialchars($_settingSlug, ENT_QUOTES, 'UTF-8');?>"<?=($_settingCurrentTheme === $_settingSlug ? ' selected' : '');?>>
-									<?=htmlspecialchars($_settingTheme['title'], ENT_QUOTES, 'UTF-8');?>
-								</option>
-								<?php } unset($_settingThemes, $_settingCurrentTheme, $_settingSlug, $_settingTheme); ?>
-							</select>
-						</div>
-					</section>
-
-					<section class="settings-section">
 						<h2 class="settings-section-title">Экспериментальные настройки</h2>
 						<div class="settings-checkbox-list">
 							<label class="settings-checkbox"><input type="checkbox" name="theme_dark" value="1"<?=(!empty($arr['theme_dark']) ? ' checked' : '');?>> Включить тёмную тему</label>

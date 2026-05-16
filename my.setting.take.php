@@ -334,15 +334,6 @@ if ((int) $arr['theme_dark'] !== $themeDark) {
 	$update[] = "theme_dark='".$themeDark."'";
 }
 
-$themeSlug = trim((string) ($_POST['theme_slug'] ?? ''));
-$themeSlugValidated = (function_exists('lt_themes_validate_slug') ? lt_themes_validate_slug($themeSlug) : '');
-$currentThemeSlug = trim((string) ($arr['theme_slug'] ?? ''));
-if ($currentThemeSlug !== $themeSlugValidated) {
-	$update[] = "theme_slug=?";
-	$updateParams[] = $themeSlugValidated;
-	$updateTypes .= 's';
-}
-
 $avatarFileName = prepare_user_avatar_upload('avatar_upload', $id, $arr);
 if ($avatarFileName !== false) {
 	$update[] = "avatar=?";

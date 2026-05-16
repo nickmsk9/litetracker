@@ -684,29 +684,6 @@ LOCK TABLES `retrackers` WRITE;
 /*!40000 ALTER TABLE `retrackers` DISABLE KEYS */;
 /*!40000 ALTER TABLE `retrackers` ENABLE KEYS */;
 UNLOCK TABLES;
-DROP TABLE IF EXISTS `schema_migrations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `schema_migrations` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `migration` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `checksum` char(40) COLLATE utf8mb4_general_ci NOT NULL COMMENT 'SHA1 of migration SQL content',
-  `batch` int unsigned NOT NULL DEFAULT '0' COMMENT 'batch number for grouped runs',
-  `applied_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'when migration was applied',
-  `execution_time_ms` int unsigned NOT NULL DEFAULT '0' COMMENT 'how long migration took to run',
-  `status` enum('pending','applied','failed','changed') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'pending' COMMENT 'migration state',
-  `error_message` longtext COLLATE utf8mb4_general_ci COMMENT 'error details if failed',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_migrations_name` (`migration`(100)),
-  KEY `idx_migrations_status` (`status`),
-  KEY `idx_migrations_batch` (`batch`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Track database migration history and state';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-LOCK TABLES `schema_migrations` WRITE;
-/*!40000 ALTER TABLE `schema_migrations` DISABLE KEYS */;
-/*!40000 ALTER TABLE `schema_migrations` ENABLE KEYS */;
-UNLOCK TABLES;
 DROP TABLE IF EXISTS `search_query`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
