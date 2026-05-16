@@ -147,9 +147,7 @@
   color: #ffffff;
 }
 
-.profile-card-button-secondary,
 .settings-remove-button,
-.settings-action-link,
 .wall-comment-button {
   display: inline-flex;
   align-items: center;
@@ -164,9 +162,7 @@
   font-weight: 500;
 }
 
-.profile-card-button-secondary:hover,
 .settings-remove-button:hover,
-.settings-action-link:hover,
 .wall-comment-button:hover {
   border-color: var(--line-strong);
   background: var(--surface-muted);
@@ -905,13 +901,6 @@ body.profile-modal-open {
   resize: vertical;
 }
 
-.settings-history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 4px;
-}
-
 .settings-history-item {
   padding: 10px 12px;
   border: 1px solid var(--line);
@@ -930,29 +919,6 @@ body.profile-modal-open {
   color: var(--text);
   font-size: 13px;
   line-height: 1.52;
-}
-
-.settings-inline-note {
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.settings-security-card {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--surface-muted);
-}
-
-.settings-security-value {
-  color: var(--text);
-  font-size: 13px;
-  line-height: 1.6;
 }
 
 .settings-actions {
