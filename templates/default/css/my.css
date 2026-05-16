@@ -1329,7 +1329,6 @@ body.fluid .wrapper {
   color: #ffffff;
 }
 
-.s-icons-vkontakte::before,
 .s-icons-facebook::before,
 .s-icons-twitter::before,
 .s-icons-rss::before {
@@ -1342,10 +1341,6 @@ body.fluid .wrapper {
   font-size: 16px;
   font-weight: 700;
   font-family: Arial, sans-serif;
-}
-
-.s-icons-vkontakte::before {
-  content: "B";
 }
 
 .s-icons-facebook::before {
@@ -1588,14 +1583,6 @@ body.is-mobile .site-header-tools {
 body.is-mobile .site-sidebar {
   width: 100%;
   margin-top: 16px;
-}
-
-/* ── Category grid (forum view, search_forum=1) ─────────── */
-.categories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-  padding: 16px 0;
 }
 
 .category-card {
