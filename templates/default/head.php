@@ -89,6 +89,15 @@ $shouldIncludeAuthPageCss = ($isAuthPageScript || $isAuthModalFrameClass);
 $shouldIncludeDetailsPageCss = ($currentScript === 'details.php');
 $shouldIncludeProfilePageCss = in_array($currentScript, array('profile.php', 'my.setting.php'), true);
 $shouldIncludeUploadPageCss = in_array($currentScript, array('upload.php', 'edit.php'), true);
+$shouldIncludeAdminPageCss = in_array($currentScript, array(
+    'admin.php',
+    'users.php',
+    'wall_reports.php',
+    'categories.php',
+    'multitracker_accounts.php',
+    'edit_priv.php',
+    'messages.php',
+), true);
 ?>
 <!doctype html>
 <html lang="ru">
@@ -116,6 +125,9 @@ $shouldIncludeUploadPageCss = in_array($currentScript, array('upload.php', 'edit
     <?php } ?>
     <?php if ($shouldIncludeUploadPageCss) { ?>
         <link href="public/css/pages/upload.css" rel="stylesheet" type="text/css">
+    <?php } ?>
+    <?php if ($shouldIncludeAdminPageCss) { ?>
+        <link href="public/css/pages/admin.css" rel="stylesheet" type="text/css">
     <?php } ?>
     <link href="templates/<?= $tpl; ?>/css/my.css" rel="stylesheet" type="text/css">
     <?php if (!empty($GLOBALS['LITETRACKER_ENABLE_PHOTOSWIPE'])) { ?>
