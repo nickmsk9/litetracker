@@ -18,7 +18,7 @@ services:
       LITETRACKER_PUBLIC_HOST: "${LITETRACKER_PUBLIC_HOST:-localhost:8094}"
       LITETRACKER_ANNOUNCE_HOST: "${LITETRACKER_ANNOUNCE_HOST:-localhost:8094}"
       LITETRACKER_ANNOUNCE_URL: "${LITETRACKER_ANNOUNCE_URL:-http://localhost:8094/announce.php}"
-      LITETRACKER_DB_PASSWORD: "${LITETRACKER_DB_PASSWORD:-litetracker_local}"
+      LITETRACKER_DB_PASSWORD: "${LITETRACKER_DB_PASSWORD:-}"
       LITETRACKER_CRON_TOKEN: "${LITETRACKER_CRON_TOKEN:-litetracker-local-cron-token}"
       LITETRACKER_TLS_HOSTS: localhost,bt.localhost
       LITETRACKER_CAPTCHA_ENABLED: "${LITETRACKER_CAPTCHA_ENABLED:-${LITETRACKER_RECAPTCHA_ENABLED:-0}}"
@@ -39,7 +39,8 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: lite
-      MYSQL_ROOT_PASSWORD: "${LITETRACKER_DB_PASSWORD:-litetracker_local}"
+      MYSQL_ROOT_PASSWORD: "${LITETRACKER_DB_PASSWORD:-}"
+      MYSQL_ALLOW_EMPTY_PASSWORD: "${LITETRACKER_DB_ALLOW_EMPTY_PASSWORD:-yes}"
     volumes:
       - ./docker-data/mysql:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
