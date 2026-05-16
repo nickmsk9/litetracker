@@ -294,6 +294,38 @@ body.theme-dark .comment-pinned-badge {
   line-height: 1.6;
 }
 
+.comment-reply-button,
+.wall-comment-button.comment-reply-button {
+  min-height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #98a4b0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.comment-reply-button:hover,
+.wall-comment-button.comment-reply-button:hover {
+  border: 0;
+  background: transparent;
+  color: #6f7c88;
+}
+
+.wall-comment-children {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
+  padding-left: 12px;
+  border-left: 1px solid #e8edf2;
+}
+
+.wall-comment-editor-slot {
+  margin-top: 10px;
+}
+
 @media (max-width: 700px) {
   .comment-toolbar {
     align-items: flex-start;
@@ -327,6 +359,10 @@ body.theme-dark .comment-pinned-badge {
     align-items: flex-start;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .wall-comment-children {
+    padding-left: 8px;
   }
 }
 

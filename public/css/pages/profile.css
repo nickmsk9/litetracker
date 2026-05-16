@@ -244,25 +244,6 @@
   border-top: 1px solid var(--line);
 }
 
-.comment-reply-button,
-.wall-comment-button.comment-reply-button {
-  min-height: 18px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #98a4b0;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.comment-reply-button:hover,
-.wall-comment-button.comment-reply-button:hover {
-  border: 0;
-  background: transparent;
-  color: #6f7c88;
-}
-
 .profile-sidebar {
   display: flex;
   flex-direction: column;
@@ -473,25 +454,6 @@
 .profile-card-button-dark-active {
   border-color: #232c36;
   background: #232c36;
-}
-
-.wall-comment-children {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 10px;
-  padding-left: 12px;
-  border-left: 1px solid #e8edf2;
-}
-
-.wall-comment-editor-slot {
-  margin-top: 10px;
-}
-
-@media (max-width: 700px) {
-  .wall-comment-children {
-    padding-left: 8px;
-  }
 }
 
 .profile-torrent-tabs {
@@ -1032,10 +994,6 @@ body.profile-modal-open {
 @media (max-width: 720px) {
   .profile-card {
     flex-direction: column;
-  }
-
-  .comment-entry-body-has-side-actions {
-    padding-right: 0;
   }
 
   .comment-side-actions {
