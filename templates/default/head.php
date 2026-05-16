@@ -98,6 +98,21 @@ $shouldIncludeAdminPageCss = in_array($currentScript, array(
     'edit_priv.php',
     'messages.php',
 ), true);
+$miscPageScripts = array(
+    'notifications.php',
+    'feedback.php',
+    'faq.php',
+    'rules.php',
+    'avatars.php',
+    'donate.php',
+    '404.php',
+    'news.php',
+    'comments.last.php',
+    'disclaimer.php',
+    'complaint.php',
+    'static_pages.php',
+);
+$shouldIncludeMiscPageCss = in_array($currentScript, $miscPageScripts, true) || !$isAuthModalFrameClass;
 ?>
 <!doctype html>
 <html lang="ru">
@@ -128,6 +143,9 @@ $shouldIncludeAdminPageCss = in_array($currentScript, array(
     <?php } ?>
     <?php if ($shouldIncludeAdminPageCss) { ?>
         <link href="public/css/pages/admin.css" rel="stylesheet" type="text/css">
+    <?php } ?>
+    <?php if ($shouldIncludeMiscPageCss) { ?>
+        <link href="public/css/pages/misc.css" rel="stylesheet" type="text/css">
     <?php } ?>
     <link href="templates/<?= $tpl; ?>/css/my.css" rel="stylesheet" type="text/css">
     <?php if (!empty($GLOBALS['LITETRACKER_ENABLE_PHOTOSWIPE'])) { ?>
