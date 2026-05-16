@@ -492,6 +492,28 @@ function lt_torrent_template_example_map($categoryNameOrKey = 'movies')
 	return $result;
 }
 
+function lt_torrent_category_template_map($categories)
+{
+	$result = array();
+
+	foreach ((array) $categories as $category) {
+		$result[(int) $category['id']] = lt_torrent_description_template_key((string) ($category['name'] ?? ''));
+	}
+
+	return $result;
+}
+
+function lt_torrent_template_examples_map($descriptionTemplates)
+{
+	$result = array();
+
+	foreach ((array) $descriptionTemplates as $templateKey => $templateInfo) {
+		$result[$templateKey] = lt_torrent_template_example_map($templateKey);
+	}
+
+	return $result;
+}
+
 function lt_torrent_template_example_lines($categoryNameOrKey = 'movies', $limit = 5)
 {
 	$template = lt_torrent_description_template($categoryNameOrKey);
