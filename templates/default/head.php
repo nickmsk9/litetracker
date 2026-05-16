@@ -86,6 +86,8 @@ $isAuthPageScript = ($currentScript === 'login.php' || $currentScript === 'signu
 $shouldIncludeBrowsePageCss = ($currentScript === 'browse.php' || $currentScript === 'index.php');
 $isAuthModalFrameClass = in_array('auth-modal-frame', $bodyClasses, true);
 $shouldIncludeAuthPageCss = ($isAuthPageScript || $isAuthModalFrameClass);
+$shouldIncludeDetailsPageCss = ($currentScript === 'details.php');
+$shouldIncludeProfilePageCss = in_array($currentScript, array('profile.php', 'my.setting.php'), true);
 ?>
 <!doctype html>
 <html lang="ru">
@@ -104,6 +106,12 @@ $shouldIncludeAuthPageCss = ($isAuthPageScript || $isAuthModalFrameClass);
     <?php } ?>
     <?php if ($shouldIncludeAuthPageCss) { ?>
         <link href="public/css/pages/auth.css" rel="stylesheet" type="text/css">
+    <?php } ?>
+    <?php if ($shouldIncludeDetailsPageCss) { ?>
+        <link href="public/css/pages/details.css" rel="stylesheet" type="text/css">
+    <?php } ?>
+    <?php if ($shouldIncludeProfilePageCss) { ?>
+        <link href="public/css/pages/profile.css" rel="stylesheet" type="text/css">
     <?php } ?>
     <link href="templates/<?= $tpl; ?>/css/my.css" rel="stylesheet" type="text/css">
     <?php if (!empty($GLOBALS['LITETRACKER_ENABLE_PHOTOSWIPE'])) { ?>
