@@ -645,6 +645,32 @@ function lt_debug_mask_text($value)
 	return $value;
 }
 
+function lt_debug_runtime_label($runtime)
+{
+	$runtime = strtolower(trim((string) $runtime));
+	$labels = array(
+		'docker' => 'Docker',
+		'local' => 'Локальный',
+		'production' => 'Production',
+		'unknown' => 'Неизвестно',
+	);
+
+	return $labels[$runtime] ?? 'Неизвестно';
+}
+
+function lt_debug_cache_driver_label($driver)
+{
+	$driver = strtolower(trim((string) $driver));
+	if ($driver === 'memcached') {
+		return 'Memcached';
+	}
+	if ($driver === 'filecache') {
+		return 'файловый кеш';
+	}
+
+	return 'отключён';
+}
+
 function lt_debug_render_panel()
 {
 	if (!lt_debug_panel_allowed()) {
@@ -663,10 +689,34 @@ function lt_debug_render_panel()
 		'sets' => 0,
 		'deletes' => 0,
 		'errors' => 0,
+		'driver' => 'unknown',
+		'fallback_reason' => '',
+		'memcached_online' => null,
+	);
+
+	$timer = (array) ($GLOBALS['timer'] ?? array());
+	$requestTime = (!empty($timer['a']) ? max(0, microtime(true) - (float) $timer['a']) : 0.0);
+	$sqlTime = (float) ($db->MySQL_time_taken ?? 0);
+	$sqlPercent = ($requestTime > 0 ? min(100, ($sqlTime / $requestTime) * 100) : 0);
+	$cacheTotalReads = (int) $cacheStats['hits'] + (int) $cacheStats['misses'];
+	$hitRatio = ($cacheTotalReads > 0 ? ((int) $cacheStats['hits'] / $cacheTotalReads) * 100 : 0);
+	$mysql = (array) ($GLOBALS['mysql'] ?? array());
+	$cacheInfo = function_exists('lt_cache_runtime_info') ? lt_cache_runtime_info() : array();
+	$cacheInfo += array(
+		'configured_driver' => '',
+		'active_driver' => (string) ($cacheStats['driver'] ?? 'unknown'),
+		'fallback_reason' => '',
+		'memcached_host' => '',
+		'memcached_port' => 0,
+		'memcached_online' => ($cacheStats['memcached_online'] ?? null),
+		'namespace' => '',
 	);
 
 	$pageUrl = (string) ($_SERVER['REQUEST_URI'] ?? 'CLI');
 	$pageUrl = lt_debug_mask_text($pageUrl);
+	$isHttps = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off') || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+	$fullUrl = (!empty($_SERVER['HTTP_HOST']) ? (($isHttps ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$pageUrl) : $pageUrl);
+	$fullUrl = lt_debug_mask_text($fullUrl);
 	$queryList = (array) ($db->query_list ?? array());
 	$slowQueries = array();
 	foreach ($queryList as $queryInfo) {
@@ -675,24 +725,64 @@ function lt_debug_render_panel()
 		}
 	}
 
-	echo '<div style="margin:24px auto 12px;max-width:1180px;padding:12px;border:1px solid #c8d3df;background:#f7fafc;color:#1f2933;font:12px/1.45 Arial, sans-serif;text-align:left;">';
-	echo '<div style="font-weight:bold;margin-bottom:8px;">LiteTracker Debug Panel</div>';
-	echo '<div>Page URL: <code>'.htmlspecialchars($pageUrl, ENT_QUOTES, 'UTF-8').'</code></div>';
-	echo '<div>SQL queries count: <b>'.(int) ($db->query_num ?? count($queryList)).'</b></div>';
-	echo '<div>Total SQL time: <b>'.number_format((float) ($db->MySQL_time_taken ?? 0), 6, '.', '').' sec</b></div>';
-	echo '<div>Memory usage: <b>'.lt_debug_format_bytes(memory_get_usage(true)).'</b>; peak: <b>'.lt_debug_format_bytes(memory_get_peak_usage(true)).'</b></div>';
-	echo '<div>Cache hits/misses/sets/deletes/errors: <b>'.(int) $cacheStats['hits'].'</b> / <b>'.(int) $cacheStats['misses'].'</b> / <b>'.(int) $cacheStats['sets'].'</b> / <b>'.(int) $cacheStats['deletes'].'</b> / <b>'.(int) $cacheStats['errors'].'</b></div>';
+	echo '<div style="margin:24px auto 12px;max-width:1180px;padding:14px;border:1px solid #c8d3df;border-radius:8px;background:#f7fafc;color:#1f2933;font:12px/1.45 Arial, sans-serif;text-align:left;box-shadow:0 1px 4px rgba(15,23,42,.08);">';
+	echo '<div style="font-weight:bold;margin-bottom:10px;font-size:14px;">LiteTracker Отладка</div>';
+	echo '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">';
+	echo '<section style="padding:10px;border:1px solid #d8e2ec;border-radius:6px;background:#fff;">';
+	echo '<div style="font-weight:bold;margin-bottom:6px;">Производительность</div>';
+	echo '<div>URL страницы: <code>'.htmlspecialchars($pageUrl, ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>Количество SQL-запросов: <b>'.(int) ($db->query_num ?? count($queryList)).'</b></div>';
+	echo '<div>Общее время SQL: <b>'.number_format($sqlTime, 6, '.', '').' сек</b></div>';
+	echo '<div>Доля SQL во времени запроса: <b>'.number_format($sqlPercent, 1, '.', '').'%</b></div>';
+	echo '<div>Общее время запроса: <b>'.number_format($requestTime, 6, '.', '').' сек</b></div>';
+	echo '<div>Использование памяти: <b>'.lt_debug_format_bytes(memory_get_usage(true)).'</b></div>';
+	echo '<div>Пиковая память: <b>'.lt_debug_format_bytes(memory_get_peak_usage(true)).'</b></div>';
+	echo '</section>';
+
+	echo '<section style="padding:10px;border:1px solid #d8e2ec;border-radius:6px;background:#fff;">';
+	echo '<div style="font-weight:bold;margin-bottom:6px;">Кеширование</div>';
+	echo '<div>Активный кеш: <b>'.htmlspecialchars(lt_debug_cache_driver_label($cacheInfo['active_driver']), ENT_QUOTES, 'UTF-8').'</b></div>';
+	echo '<div>Попадания кеша: <b>'.(int) $cacheStats['hits'].'</b></div>';
+	echo '<div>Промахи кеша: <b>'.(int) $cacheStats['misses'].'</b></div>';
+	echo '<div>Процент попаданий: <b>'.number_format($hitRatio, 1, '.', '').'%</b></div>';
+	echo '<div>Записи в кеш: <b>'.(int) $cacheStats['sets'].'</b></div>';
+	echo '<div>Удаления из кеша: <b>'.(int) $cacheStats['deletes'].'</b></div>';
+	echo '<div>Ошибки кеша: <b>'.(int) $cacheStats['errors'].'</b></div>';
+	if ((string) $cacheInfo['fallback_reason'] !== '') {
+		echo '<div>Причина fallback: <code>'.htmlspecialchars((string) $cacheInfo['fallback_reason'], ENT_QUOTES, 'UTF-8').'</code></div>';
+	}
+	echo '</section>';
+
+	echo '<section style="padding:10px;border:1px solid #d8e2ec;border-radius:6px;background:#fff;">';
+	echo '<div style="font-weight:bold;margin-bottom:6px;">Окружение</div>';
+	echo '<div>Режим запуска: <b>'.htmlspecialchars(lt_debug_runtime_label(function_exists('lt_runtime_environment') ? lt_runtime_environment() : 'unknown'), ENT_QUOTES, 'UTF-8').'</b></div>';
+	echo '<div>MySQL host: <code>'.htmlspecialchars((string) ($mysql['host'] ?? ''), ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>MySQL порт: <b>'.(int) ($mysql['port'] ?? 3306).'</b></div>';
+	echo '<div>MySQL база данных: <code>'.htmlspecialchars((string) ($mysql['db'] ?? ''), ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>MySQL кодировка: <code>'.htmlspecialchars((string) ($mysql['charset'] ?? ''), ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>Memcached host: <code>'.htmlspecialchars((string) $cacheInfo['memcached_host'], ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>Memcached порт: <b>'.(int) $cacheInfo['memcached_port'].'</b></div>';
+	$memcachedOnline = $cacheInfo['memcached_online'];
+	echo '<div>Memcached: <b>'.($memcachedOnline === true ? 'доступен' : ($memcachedOnline === false ? 'недоступен' : 'не проверялся')).'</b></div>';
+	echo '<div>Namespace кеша: <code>'.htmlspecialchars((string) $cacheInfo['namespace'], ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>Версия PHP: <b>'.htmlspecialchars(PHP_VERSION, ENT_QUOTES, 'UTF-8').'</b></div>';
+	echo '<div>OS / PHP SAPI: <b>'.htmlspecialchars(PHP_OS.' / '.PHP_SAPI, ENT_QUOTES, 'UTF-8').'</b></div>';
+	echo '<div>Лимит памяти: <b>'.htmlspecialchars((string) ini_get('memory_limit'), ENT_QUOTES, 'UTF-8').'</b></div>';
+	echo '<div>Метод запроса: <b>'.htmlspecialchars((string) ($_SERVER['REQUEST_METHOD'] ?? 'CLI'), ENT_QUOTES, 'UTF-8').'</b></div>';
+	echo '<div>URL страницы: <code>'.htmlspecialchars($fullUrl, ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '</section>';
+	echo '</div>';
 
 	if (!empty($db->sql_errors)) {
-		echo '<div style="margin-top:8px;color:#991b1b;font-weight:bold;">SQL errors: '.count((array) $db->sql_errors).'</div>';
+		echo '<div style="margin-top:8px;color:#991b1b;font-weight:bold;">Ошибки SQL: '.count((array) $db->sql_errors).'</div>';
 	}
 
 	if ($slowQueries) {
-		echo '<div style="margin-top:8px;color:#991b1b;font-weight:bold;">Slow queries &gt; 0.05 sec: '.count($slowQueries).'</div>';
+		echo '<div style="margin-top:8px;color:#991b1b;font-weight:bold;">Медленные SQL-запросы &gt; 0.05 сек: '.count($slowQueries).'</div>';
 	}
 
 	if ($queryList) {
-		echo '<details open style="margin-top:10px;"><summary style="cursor:pointer;font-weight:bold;">SQL queries</summary>';
+		echo '<details open style="margin-top:10px;"><summary style="cursor:pointer;font-weight:bold;">SQL-запросы</summary>';
 		echo '<ol style="margin:8px 0 0 22px;padding:0;">';
 		foreach ($queryList as $queryInfo) {
 			$time = (float) ($queryInfo['time'] ?? 0);
@@ -704,12 +794,12 @@ function lt_debug_render_panel()
 			}
 
 			echo '<li style="'.$itemStyle.'">';
-			echo '<span style="font-weight:bold;">'.number_format($time, 6, '.', '').' sec</span>';
+			echo '<span style="font-weight:bold;">'.number_format($time, 6, '.', '').' сек</span>';
 			if ($isSlow) {
-				echo ' <span style="color:#991b1b;font-weight:bold;">slow</span>';
+				echo ' <span style="color:#991b1b;font-weight:bold;">медленный</span>';
 			}
 			if ($error !== '') {
-				echo ' <span style="color:#991b1b;font-weight:bold;">SQL error '.(int) ($queryInfo['error_num'] ?? 0).'</span>';
+				echo ' <span style="color:#991b1b;font-weight:bold;">Ошибка SQL '.(int) ($queryInfo['error_num'] ?? 0).'</span>';
 			}
 			echo '<pre style="white-space:pre-wrap;word-break:break-word;margin:4px 0 0;font:12px/1.35 Consolas, monospace;">'.htmlspecialchars((string) ($queryInfo['query'] ?? ''), ENT_QUOTES, 'UTF-8').'</pre>';
 			if ($error !== '') {

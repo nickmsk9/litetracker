@@ -9,11 +9,18 @@ by Nick
 ===================================================================
 */
 
+if (!function_exists('lt_env')) {
+    function lt_env($name, $default = null)
+    {
+        $value = getenv($name);
+        return ($value === false || $value === null || $value === '' ? $default : $value);
+    }
+}
+
 if (!function_exists('lt_env_value')) {
     function lt_env_value($name, $default = null)
     {
-        $value = getenv($name);
-        return ($value === false || $value === '' ? $default : $value);
+        return lt_env($name, $default);
     }
 }
 
@@ -30,10 +37,50 @@ if (!function_exists('lt_env_bool')) {
     }
 }
 
+if (!function_exists('lt_runtime_environment')) {
+    function lt_runtime_environment()
+    {
+        static $runtime = null;
+
+        if ($runtime !== null) {
+            return $runtime;
+        }
+
+        $env = strtolower(trim((string) lt_env('LITETRACKER_RUNTIME', '')));
+        if (in_array($env, array('docker', 'local', 'production'), true)) {
+            $runtime = $env;
+            return $runtime;
+        }
+
+        if (is_file('/.dockerenv')) {
+            $runtime = 'docker';
+            return $runtime;
+        }
+
+        $appEnv = strtolower(trim((string) lt_env('APP_ENV', lt_env('ENVIRONMENT', ''))));
+        if (in_array($appEnv, array('prod', 'production'), true)) {
+            $runtime = 'production';
+            return $runtime;
+        }
+
+        $serverName = strtolower((string) ($_SERVER['SERVER_NAME'] ?? ''));
+        if ($serverName === 'localhost' || $serverName === '127.0.0.1' || $serverName === '::1' || PHP_SAPI === 'cli') {
+            $runtime = 'local';
+            return $runtime;
+        }
+
+        $runtime = 'unknown';
+        return $runtime;
+    }
+}
+
 $ltRootDir = dirname(__DIR__, 2);
-$ltCacheDriver = trim((string) lt_env_value('LITETRACKER_CACHE_DRIVER', 'memcached'));
-$ltCacheHost = trim((string) lt_env_value('LITETRACKER_CACHE_HOST', '127.0.0.1'));
-$ltCachePort = (int) lt_env_value('LITETRACKER_CACHE_PORT', 11213);
+$ltRuntimeEnvironment = lt_runtime_environment();
+$ltCacheDriver = trim((string) lt_env('LITETRACKER_CACHE_DRIVER', 'memcached'));
+$ltDefaultMemcachedHost = ($ltRuntimeEnvironment === 'docker' ? 'memcached' : '127.0.0.1');
+$ltCacheHost = trim((string) lt_env('LITETRACKER_MEMCACHED_HOST', lt_env('LITETRACKER_CACHE_HOST', $ltDefaultMemcachedHost)));
+$ltCachePort = (int) lt_env('LITETRACKER_MEMCACHED_PORT', lt_env('LITETRACKER_CACHE_PORT', 11211));
+$ltCacheNamespace = trim((string) lt_env('LITETRACKER_CACHE_NAMESPACE', 'litetracker'));
 $ltCronMode = strtolower(trim((string) lt_env_value('LITETRACKER_CRON_MODE', 'browser')));
 $ltUseExternalCron = (int) in_array($ltCronMode, array('external', 'scheduler', 'cron'), true);
 $ltDebug = lt_env_bool('LITETRACKER_DEBUG', 1);
@@ -158,9 +205,11 @@ $config  = array(
     //Настройка кеша
     'cache' => array(
         'driver' => $ltCacheDriver, //filecache | memcached
+        'namespace' => $ltCacheNamespace,
         'memcached' => array(
             'host' => $ltCacheHost,
             'port' => $ltCachePort,
+            'namespace' => $ltCacheNamespace,
             'connect_timeout_ms' => 150,
             'poll_timeout_ms' => 150,
             'send_timeout_ms' => 150,

@@ -24,9 +24,24 @@ class db
 	public $sql_errors = array();
 	public $slow_query_threshold = 0.05;
 
-	function connect($db_user, $db_pass, $db_name, $db_location = 'localhost', $show_error=1)
+	function connect($db_user, $db_pass, $db_name, $db_location = 'localhost', $show_error=1, $db_port = null, $connect_timeout = null)
 	{
-		$this->db_id = mysqli_connect($db_location, $db_user, $db_pass, $db_name);
+		$db_port = ($db_port !== null ? (int) $db_port : (defined('DBPORT') ? (int) DBPORT : 3306));
+		$connect_timeout = ($connect_timeout !== null ? (int) $connect_timeout : (int) ($GLOBALS['mysql']['connect_timeout'] ?? 5));
+		if ($db_port <= 0) {
+			$db_port = 3306;
+		}
+		if ($connect_timeout <= 0) {
+			$connect_timeout = 5;
+		}
+
+		$link = mysqli_init();
+		if ($link instanceof mysqli) {
+			mysqli_options($link, MYSQLI_OPT_CONNECT_TIMEOUT, $connect_timeout);
+			$this->db_id = @mysqli_real_connect($link, $db_location, $db_user, $db_pass, $db_name, $db_port) ? $link : false;
+		} else {
+			$this->db_id = mysqli_connect($db_location, $db_user, $db_pass, $db_name, $db_port);
+		}
 		if(!$this->db_id) {
 			if($show_error == 1) {
 				$this->display_error(mysqli_connect_error(), mysqli_connect_errno());
@@ -58,7 +73,7 @@ class db
 	{
 		$time_before = $this->get_real_time();
 
-		if(!$this->connected) $this->connect(DBUSER, DBPASS, DBNAME, DBHOST);
+		if(!$this->connected) $this->connect(DBUSER, DBPASS, DBNAME, DBHOST, 1, (defined('DBPORT') ? DBPORT : 3306));
 
 		$this->query_id = mysqli_query($this->db_id, $query);
 		$elapsed = $this->get_real_time() - $time_before;
@@ -179,7 +194,7 @@ class db
 	{
 		$time_before = $this->get_real_time();
 
-		if (!$this->connected) $this->connect(DBUSER, DBPASS, DBNAME, DBHOST);
+		if (!$this->connected) $this->connect(DBUSER, DBPASS, DBNAME, DBHOST, 1, (defined('DBPORT') ? DBPORT : 3306));
 
 		$stmt = mysqli_prepare($this->db_id, $sql);
 		if (!$stmt) {

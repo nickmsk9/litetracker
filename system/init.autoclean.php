@@ -71,7 +71,10 @@ gzip();
 
 //Запускаем подключение  к mysql
 $db = new db;
-$db->connect($mysql['user'] , $mysql['password'] , $mysql['db'] ,  $mysql['host']);
+$db->connect($mysql['user'] , $mysql['password'] , $mysql['db'] ,  $mysql['host'], 1, ($mysql['port'] ?? 3306), ($mysql['connect_timeout'] ?? 5));
+if (!empty($mysql['timezone'])) {
+	$db->pquery("SET time_zone = ?", 's', [$mysql['timezone']], 0);
+}
 
 
 
