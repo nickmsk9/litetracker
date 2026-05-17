@@ -83,12 +83,10 @@ if ($id_category > 0) {
 	$where[] = 't.id_category = '.$db->safesql($id_category);
 }
 
-$db->query("SELECT t.id
+$countRow = $db->super_query("SELECT COUNT(DISTINCT t.id) AS cnt
 	FROM torrents AS t
-	LEFT JOIN trackers AS tr ON tr.torrent = t.id
-	".($where ? 'WHERE '.implode(' AND ', $where) : '')."
-	GROUP BY t.id", 1);
-$countTorrent = $db->num_rows();
+	".($where ? 'WHERE '.implode(' AND ', $where) : ''));
+$countTorrent = (int) ($countRow['cnt'] ?? 0);
 
 $pagerParams = array(
 	'view' => $view,
@@ -104,7 +102,7 @@ list($pagertop, $pagerbottom, $limit) = pager('5', $countTorrent, $pagerHref);
 $rows = array();
 $sql = $db->query("SELECT t.*, COALESCE(SUM(tr.seeders), 0) AS seeders, COALESCE(SUM(tr.leechers), 0) AS leechers,
 	COALESCE(SUM(CASE WHEN tr.tracker <> 'localhost' THEN 1 ELSE 0 END), 0) AS external_tracker_count,
-	IF((SELECT SUM(seeders) FROM trackers WHERE torrent = t.id AND tracker = 'localhost' GROUP BY tracker) > 0, true, false) AS local_seeders,
+	IF(COALESCE(SUM(CASE WHEN tr.tracker = 'localhost' THEN tr.seeders ELSE 0 END), 0) > 0, true, false) AS local_seeders,
 	IF(ADDDATE(t.added, INTERVAL ".$config['releases_news']." DAY) > NOW() AND t.news = '1', 1, 0) AS new_release
 	FROM torrents AS t
 	LEFT JOIN trackers AS tr ON tr.torrent = t.id

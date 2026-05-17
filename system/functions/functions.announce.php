@@ -131,11 +131,11 @@ function announce_escape($value)
 {
 	global $db;
 
-	if (!is_numeric($value)) {
-		return "'".$db->safesql((string) $value)."'";
+	if (is_int($value) || is_float($value)) {
+		return (string) $value;
 	}
 
-	return (string) $value;
+	return "'".$db->safesql((string) $value)."'";
 }
 
 function announce_fetch_ip_ban($ipLong)
