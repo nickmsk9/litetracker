@@ -275,6 +275,18 @@ function lt_details_views_table_ready()
 	return $ready;
 }
 
+function lt_details_cache_get($key)
+{
+	return (function_exists('lt_cache_get') ? lt_cache_get($key, lt_cache_key_torrents_ns()) : false);
+}
+
+function lt_details_cache_set($key, $value, $ttl)
+{
+	if (function_exists('lt_cache_set')) {
+		lt_cache_set($key, $value, (int) $ttl, lt_cache_key_torrents_ns());
+	}
+}
+
 function lt_details_register_view($torrentId)
 {
 	global $db, $USER;
@@ -293,8 +305,17 @@ function lt_details_register_view($torrentId)
 		VALUES (".$torrentId.", ".$userId.", '".$db->safesql($visitorHash)."', NOW())"
 	);
 
+	$cacheKey = lt_cache_key_details_view_count($torrentId);
+	$cached = lt_details_cache_get($cacheKey);
+	if ($cached !== false && is_numeric($cached)) {
+		return (int) $cached;
+	}
+
 	$row = $db->super_query("SELECT COUNT(*) AS cnt FROM torrent_views WHERE torrent_id = ".$torrentId);
-	return (int) ($row['cnt'] ?? 0);
+	$count = (int) ($row['cnt'] ?? 0);
+	lt_details_cache_set($cacheKey, $count, 60);
+
+	return $count;
 }
 
 function lt_details_load_torrent($torrentId)
@@ -306,7 +327,13 @@ function lt_details_load_torrent($torrentId)
 		return array();
 	}
 
-	return $db->super_query(
+	$cacheKey = lt_cache_key_details_static($torrentId);
+	$cached = lt_details_cache_get($cacheKey);
+	if ($cached !== false && is_array($cached)) {
+		return $cached;
+	}
+
+	$row = $db->super_query(
 		"SELECT t.*,
 			COALESCE(trs.seeders, 0) AS seeders,
 			COALESCE(trs.leechers, 0) AS leechers,
@@ -334,6 +361,11 @@ function lt_details_load_torrent($torrentId)
 		WHERE t.id = ".$torrentId."
 		LIMIT 1"
 	);
+	if (is_array($row) && !empty($row['id'])) {
+		lt_details_cache_set($cacheKey, $row, 300);
+	}
+
+	return (is_array($row) ? $row : array());
 }
 
 function lt_details_check_access($torrent)
@@ -419,16 +451,12 @@ function lt_details_prepare_rating($torrentId)
 	$score = 0;
 
 	if ($tableReady) {
-		$userRatingSelect = (!empty($USER['id']) ? ', MAX(CASE WHEN user_id = '.(int) $USER['id'].' THEN rating ELSE 0 END) AS user_rating' : '');
-		$stats = $db->super_query(
-			"SELECT COUNT(*) AS cnt, COALESCE(SUM(rating), 0) AS total_rating".$userRatingSelect." FROM torrent_ratings WHERE torrent_id = ".$torrentId
-		);
-		$votes = (int) ($stats['cnt'] ?? 0);
-		if ($votes > 0) {
-			$score = round(((float) ($stats['total_rating'] ?? 0) / $votes), 1);
-		}
-		if (!empty($USER['id'])) {
-			$userValue = (int) ($stats['user_rating'] ?? 0);
+		$summary = lt_details_rating_summary($torrentId);
+		$votes = (int) ($summary['votes'] ?? 0);
+		$score = (float) ($summary['score'] ?? 0);
+		if (!empty($USER['id']) && $votes > 0) {
+			$userRating = $db->super_query("SELECT rating FROM torrent_ratings WHERE torrent_id = ".$torrentId." AND user_id = ".(int) $USER['id']." LIMIT 1");
+			$userValue = (int) ($userRating['rating'] ?? 0);
 		}
 	}
 
@@ -461,6 +489,35 @@ function lt_details_prepare_rating($torrentId)
 	);
 }
 
+function lt_details_rating_summary($torrentId)
+{
+	global $db;
+
+	$torrentId = (int) $torrentId;
+	$result = array('votes' => 0, 'score' => 0.0, 'total_rating' => 0);
+	if ($torrentId <= 0 || !lt_details_rating_table_ready()) {
+		return $result;
+	}
+
+	$cacheKey = lt_cache_key_details_rating_summary($torrentId);
+	$cached = lt_details_cache_get($cacheKey);
+	if ($cached !== false && is_array($cached)) {
+		return $cached + $result;
+	}
+
+	$stats = $db->super_query("SELECT COUNT(*) AS cnt, COALESCE(SUM(rating), 0) AS total_rating FROM torrent_ratings WHERE torrent_id = ".$torrentId);
+	$votes = (int) ($stats['cnt'] ?? 0);
+	$total = (float) ($stats['total_rating'] ?? 0);
+	$result = array(
+		'votes' => $votes,
+		'score' => ($votes > 0 ? round($total / $votes, 1) : 0.0),
+		'total_rating' => $total,
+	);
+	lt_details_cache_set($cacheKey, $result, 120);
+
+	return $result;
+}
+
 function lt_details_rating_stats($torrentId, $userId = 0)
 {
 	global $db;
@@ -477,19 +534,13 @@ function lt_details_rating_stats($torrentId, $userId = 0)
 		return $result;
 	}
 
-	$userRatingSelect = ($userId > 0 ? ', MAX(CASE WHEN user_id = '.$userId.' THEN rating ELSE 0 END) AS user_rating' : '');
-	$row = $db->super_query(
-		"SELECT COUNT(*) AS cnt, COALESCE(SUM(rating), 0) AS total_rating".$userRatingSelect."
-		 FROM torrent_ratings
-		 WHERE torrent_id = ".$torrentId
-	);
-
-	$count = (int) ($row['cnt'] ?? 0);
-	$total = (float) ($row['total_rating'] ?? 0);
-
-	$result['rating_count'] = $count;
-	$result['rating_avg'] = ($count > 0 ? round($total / $count, 1) : 0.0);
-	$result['user_rating'] = ($userId > 0 ? (int) ($row['user_rating'] ?? 0) : 0);
+	$summary = lt_details_rating_summary($torrentId);
+	$result['rating_count'] = (int) ($summary['votes'] ?? 0);
+	$result['rating_avg'] = (float) ($summary['score'] ?? 0);
+	if ($userId > 0 && $result['rating_count'] > 0) {
+		$row = $db->super_query("SELECT rating FROM torrent_ratings WHERE torrent_id = ".$torrentId." AND user_id = ".$userId." LIMIT 1");
+		$result['user_rating'] = (int) ($row['rating'] ?? 0);
+	}
 
 	return $result;
 }
@@ -543,6 +594,12 @@ function lt_details_prepare_file_rows($torrent)
 		return $rows;
 	}
 
+	$cacheKey = lt_cache_key_details_files($torrentId);
+	$cached = lt_details_cache_get($cacheKey);
+	if ($cached !== false && is_array($cached)) {
+		return $cached;
+	}
+
 	$sql = $db->query("SELECT filename, size FROM files WHERE id_torrent = ".$torrentId." ORDER BY id");
 	while ($fileRow = $db->get_row($sql)) {
 		$rows[] = array(
@@ -550,6 +607,7 @@ function lt_details_prepare_file_rows($torrent)
 			'size' => mksize((float) ($fileRow['size'] ?? 0)),
 		);
 	}
+	lt_details_cache_set($cacheKey, $rows, 600);
 
 	return $rows;
 }
@@ -764,8 +822,6 @@ function lt_details_normalize_tracker_state($trackerUrl, $state)
 
 function lt_details_prepare_tracker_rows($torrent)
 {
-	global $db;
-
 	$torrentId = (int) ($torrent['id'] ?? 0);
 	$rows = array();
 	$externalCount = (int) ($torrent['external_tracker_count'] ?? 0);
@@ -789,13 +845,7 @@ function lt_details_prepare_tracker_rows($torrent)
 
 	$canViewRaw = lt_details_can_view_raw_tracker_data();
 	$lastCheckedMax = 0;
-	$trackerSql = $db->query(
-		"SELECT tracker, GREATEST(seeders, 0) AS seeders, GREATEST(leechers, 0) AS leechers, lastchecked, state
-		FROM trackers
-		WHERE tracker <> 'localhost' AND torrent = ".$torrentId."
-		ORDER BY seeders DESC, leechers DESC, tracker ASC"
-	);
-	while ($trackerRow = $db->get_row($trackerSql)) {
+	foreach (lt_details_external_tracker_rows($torrentId) as $trackerRow) {
 		$lastChecked = (int) ($trackerRow['lastchecked'] ?? 0);
 		$trackerUrl = (string) ($trackerRow['tracker'] ?? '');
 		$stateRaw = trim((string) ($trackerRow['state'] ?? ''));
@@ -840,6 +890,36 @@ function lt_details_prepare_tracker_rows($torrent)
 		'summary' => $summary,
 		'update_href' => (lt_details_can_manage_trackers($torrent) ? 'update.peers.php?id='.$torrentId.'&return='.rawurlencode('details.php?id='.$torrentId) : ''),
 	);
+}
+
+function lt_details_external_tracker_rows($torrentId)
+{
+	global $db;
+
+	$torrentId = (int) $torrentId;
+	if ($torrentId <= 0) {
+		return array();
+	}
+
+	$cacheKey = lt_cache_key_details_trackers($torrentId);
+	$cached = lt_details_cache_get($cacheKey);
+	if ($cached !== false && is_array($cached)) {
+		return $cached;
+	}
+
+	$rows = array();
+	$trackerSql = $db->query(
+		"SELECT tracker, GREATEST(seeders, 0) AS seeders, GREATEST(leechers, 0) AS leechers, lastchecked, state
+		FROM trackers
+		WHERE tracker <> 'localhost' AND torrent = ".$torrentId."
+		ORDER BY seeders DESC, leechers DESC, tracker ASC"
+	);
+	while ($trackerRow = $db->get_row($trackerSql)) {
+		$rows[] = $trackerRow;
+	}
+	lt_details_cache_set($cacheKey, $rows, 60);
+
+	return $rows;
 }
 
 function lt_details_prepare_bookmark($torrentId)
@@ -943,6 +1023,42 @@ function lt_details_prepare_description_view($torrent, $categoryName)
 		'extra_sections' => $extraSections,
 		'summary_text' => '',
 		'has_structured_content' => (!empty($mainItems) || !empty($extraSections)),
+	);
+}
+
+function lt_details_static_model($torrentId)
+{
+	$torrentId = (int) $torrentId;
+	$torrent = lt_details_load_torrent($torrentId);
+
+	return array(
+		'torrent' => $torrent,
+		'rating_summary' => (!empty($torrent['id']) ? lt_details_rating_summary($torrentId) : array('votes' => 0, 'score' => 0.0, 'total_rating' => 0)),
+	);
+}
+
+function lt_details_user_model($torrentId, $userId)
+{
+	$torrentId = (int) $torrentId;
+	$userId = (int) $userId;
+
+	return array(
+		'user_id' => $userId,
+		'rating' => lt_details_prepare_rating($torrentId),
+	);
+}
+
+function lt_details_view_model($torrentId, $userId = 0)
+{
+	$static = lt_details_static_model($torrentId);
+	$torrent = (array) ($static['torrent'] ?? array());
+	$user = lt_details_user_model((int) ($torrent['id'] ?? $torrentId), $userId);
+
+	return array(
+		'static' => $static,
+		'user' => $user,
+		'torrent' => $torrent,
+		'rating' => (array) ($user['rating'] ?? array()),
 	);
 }
 

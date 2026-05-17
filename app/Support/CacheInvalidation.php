@@ -110,6 +110,13 @@ if (!function_exists('lt_cache_invalidate_torrent')) {
             return;
         }
         lt_cache_delete(lt_cache_key_torrent($torrentId), lt_cache_key_torrents_ns());
+        if (function_exists('lt_cache_key_details_static')) {
+            lt_cache_delete(lt_cache_key_details_static($torrentId), lt_cache_key_torrents_ns());
+            lt_cache_delete(lt_cache_key_details_files($torrentId), lt_cache_key_torrents_ns());
+            lt_cache_delete(lt_cache_key_details_trackers($torrentId), lt_cache_key_torrents_ns());
+            lt_cache_delete(lt_cache_key_details_rating_summary($torrentId), lt_cache_key_torrents_ns());
+            lt_cache_delete(lt_cache_key_details_view_count($torrentId), lt_cache_key_torrents_ns());
+        }
     }
 }
 

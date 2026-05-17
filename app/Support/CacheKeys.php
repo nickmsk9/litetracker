@@ -191,6 +191,46 @@ if (!function_exists('lt_cache_key_torrents_ns')) {
     }
 }
 
+if (!function_exists('lt_cache_key_details_static')) {
+    /** @param int $id torrent ID */
+    function lt_cache_key_details_static($id)
+    {
+        return 'details:static:'.(int) $id.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_details_files')) {
+    /** @param int $id torrent ID */
+    function lt_cache_key_details_files($id)
+    {
+        return 'details:files:'.(int) $id.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_details_trackers')) {
+    /** @param int $id torrent ID */
+    function lt_cache_key_details_trackers($id)
+    {
+        return 'details:trackers:'.(int) $id.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_details_rating_summary')) {
+    /** @param int $id torrent ID */
+    function lt_cache_key_details_rating_summary($id)
+    {
+        return 'details:rating-summary:'.(int) $id.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_details_view_count')) {
+    /** @param int $id torrent ID */
+    function lt_cache_key_details_view_count($id)
+    {
+        return 'details:view-count:'.(int) $id.':v1';
+    }
+}
+
 // ---------------------------------------------------------------------------
 // EXTERNAL METADATA (movie/series lookups)
 // namespace: 'meta'

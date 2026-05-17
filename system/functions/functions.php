@@ -790,6 +790,14 @@ function user_check() {
 		// $memcached->delete('user_'.$uid);
         $sql = $db->query("UPDATE LOW_PRIORITY users SET ".implode(", ", $updateset)." WHERE id=" . $row["id"]);
 		// $db->free($sql);
+		foreach ($updateset as $updateSql) {
+			if (strpos($updateSql, 'last_access = ') === 0) {
+				$row['last_access'] = get_date_time();
+			} elseif (strpos($updateSql, 'ip = ') === 0) {
+				$row['ip'] = $ip;
+			}
+		}
+		lt_cache_invalidate_user((int) $row['id']);
 	}
 
 	//Определяем IP-адрем пользователя
