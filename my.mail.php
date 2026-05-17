@@ -183,6 +183,24 @@ function mail_conversation_where($currentUserId, $targetUserId = 0, $system = fa
 	return "((".$prefix."id_user_in = {$currentUserId} AND ".$prefix."id_user_out = {$targetUserId} AND ".$prefix."delete_in = 0) OR (".$prefix."id_user_out = {$currentUserId} AND ".$prefix."id_user_in = {$targetUserId} AND ".$prefix."delete_out = 0))";
 }
 
+function mail_invalidate_user_cache($userId)
+{
+	$userId = (int) $userId;
+	if ($userId <= 0) {
+		return;
+	}
+
+	if (function_exists('lt_cache_invalidate_user')) {
+		lt_cache_invalidate_user($userId);
+		return;
+	}
+
+	global $memcached;
+	if (is_object($memcached) && method_exists($memcached, 'delete')) {
+		$memcached->delete('user_'.$userId, 0);
+	}
+}
+
 function mail_load_message($messageId, $currentUserId)
 {
 	global $db;
@@ -220,7 +238,7 @@ function mail_mark_system_read($currentUserId)
 
 function mail_mark_conversation_read($currentUserId, $targetUserId, $systemConversation = false)
 {
-	global $db, $USER, $memcached;
+	global $db, $USER;
 
 	$currentUserId = (int) $currentUserId;
 	$targetUserId = (int) $targetUserId;
@@ -243,7 +261,7 @@ function mail_mark_conversation_read($currentUserId, $targetUserId, $systemConve
 		$db->query("UPDATE mail SET reading = '1' WHERE id_user_in = {$currentUserId} AND id_user_out = {$targetUserId} AND delete_in = 0 AND reading = 0");
 		$db->query("UPDATE users SET num_messages = GREATEST(num_messages - {$unreadCount}, 0) WHERE id = {$currentUserId}");
 		$USER['num_messages'] = max(0, (int) ($USER['num_messages'] ?? 0) - $unreadCount);
-		$memcached->delete('user_'.$currentUserId, 0);
+		mail_invalidate_user_cache($currentUserId);
 	}
 
 	return $unreadCount;
@@ -442,7 +460,7 @@ if ($postAct === 'restore') {
 		if (!(int) $message['reading']) {
 			$db->query("UPDATE users SET num_messages = (num_messages + 1) WHERE id = ".$currentUserId);
 			$USER['num_messages'] = (int) $USER['num_messages'] + 1;
-			$memcached->delete('user_'.$currentUserId, 0);
+			mail_invalidate_user_cache($currentUserId);
 		}
 	}
 
@@ -483,7 +501,7 @@ if ($postAct === 'del') {
 		if (!(int) $message['reading'] && (int) $USER['num_messages'] > 0) {
 			$db->query("UPDATE users SET num_messages = GREATEST(num_messages - 1, 0) WHERE id = ".$currentUserId);
 			$USER['num_messages'] = max(0, (int) $USER['num_messages'] - 1);
-			$memcached->delete('user_'.$currentUserId, 0);
+			mail_invalidate_user_cache($currentUserId);
 		}
 	}
 
@@ -609,7 +627,7 @@ if ($act === 'conversation') {
 		$db->query("INSERT INTO mail (name, text, date, id_user_in, id_user_out, delete_in, delete_out) VALUES ('".$db->safesql($subject)."', '".$db->safesql($text)."', NOW(), ".$targetUserId.", ".$currentUserId.", 0, 0)");
 		$newMessageId = (int) $db->insert_id();
 		$db->query("UPDATE users SET num_messages = (num_messages + 1) WHERE id = ".$targetUserId);
-		$memcached->delete('user_'.$targetUserId, 0);
+		mail_invalidate_user_cache($targetUserId);
 		lt_notifications_handle_private_message($targetUserId, $currentUserId, $newMessageId, $subject);
 
 		if (mail_is_ajax_request()) {
@@ -697,11 +715,61 @@ if($status === '1') {
 }
 
 $conversations = array();
-$conversationsSql = $db->query("SELECT IF(id_user_in = {$currentUserId}, id_user_out, id_user_in) AS partner_id, MAX(date) AS last_date, COUNT(*) AS total_messages, SUM(IF(id_user_in = {$currentUserId} AND reading = 0 AND delete_in = 0, 1, 0)) AS unread_messages FROM mail WHERE ((id_user_in = {$currentUserId} AND delete_in = 0) OR (id_user_out = {$currentUserId} AND delete_out = 0)) GROUP BY partner_id ORDER BY (unread_messages > 0) DESC, last_date DESC");
+$conversationRows = array();
+$partnerIds = array();
+$lastMessageIds = array();
+$conversationsSql = $db->query(
+	"SELECT partner_id,
+	        MAX(date) AS last_date,
+	        SUBSTRING_INDEX(GROUP_CONCAT(id ORDER BY date DESC, id DESC), ',', 1) AS last_message_id,
+	        COUNT(*) AS total_messages,
+	        SUM(unread) AS unread_messages
+	 FROM (
+		SELECT id, date, id_user_out AS partner_id, IF(reading = 0, 1, 0) AS unread
+		FROM mail
+		WHERE id_user_in = {$currentUserId} AND delete_in = 0
+		UNION ALL
+		SELECT id, date, id_user_in AS partner_id, 0 AS unread
+		FROM mail
+		WHERE id_user_out = {$currentUserId} AND delete_out = 0
+	 ) AS visible_mail
+	 GROUP BY partner_id
+	 ORDER BY (unread_messages > 0) DESC, last_date DESC, last_message_id DESC"
+);
 
-while($conversation = $db->get_row($conversationsSql)) {
+while ($conversation = $db->get_row($conversationsSql)) {
+	$partnerId = (int) ($conversation['partner_id'] ?? 0);
+	$lastMessageId = (int) ($conversation['last_message_id'] ?? 0);
+
+	$conversationRows[] = $conversation;
+	if ($partnerId > 0) {
+		$partnerIds[$partnerId] = $partnerId;
+	}
+	if ($lastMessageId > 0) {
+		$lastMessageIds[$lastMessageId] = $lastMessageId;
+	}
+}
+
+$partnersById = array();
+if ($partnerIds) {
+	$partnersSql = $db->query("SELECT id, name, class, avatar, last_access FROM users WHERE id IN (".implode(',', $partnerIds).")");
+	while ($partnerRow = $db->get_row($partnersSql)) {
+		$partnersById[(int) $partnerRow['id']] = $partnerRow;
+	}
+}
+
+$lastMessagesById = array();
+if ($lastMessageIds) {
+	$lastMessagesSql = $db->query("SELECT * FROM mail WHERE id IN (".implode(',', $lastMessageIds).")");
+	while ($messageRow = $db->get_row($lastMessagesSql)) {
+		$lastMessagesById[(int) $messageRow['id']] = $messageRow;
+	}
+}
+
+foreach ($conversationRows as $conversation) {
 	$partnerId = (int) $conversation['partner_id'];
 	$isSystem = ($partnerId === 0);
+	$lastMessage = (array) ($lastMessagesById[(int) ($conversation['last_message_id'] ?? 0)] ?? array());
 
 	if ($isSystem) {
 		$partner = array(
@@ -711,15 +779,13 @@ while($conversation = $db->get_row($conversationsSql)) {
 			'class' => 0,
 			'last_access' => '',
 		);
-		$lastMessage = $db->super_query("SELECT * FROM mail WHERE id_user_in = {$currentUserId} AND id_user_out = 0 AND delete_in = 0 ORDER BY date DESC, id DESC LIMIT 1");
 		$subtitle = 'Системные уведомления';
 	} else {
-		$partner = get_user_info($partnerId);
+		$partner = (array) ($partnersById[$partnerId] ?? array());
 		if (!$partner) {
 			continue;
 		}
 
-		$lastMessage = $db->super_query("SELECT * FROM mail WHERE ".mail_conversation_where($currentUserId, $partnerId, false, '')." ORDER BY date DESC, id DESC LIMIT 1");
 		$subtitle = 'Был на сайте '.convent_date($partner['last_access']);
 	}
 

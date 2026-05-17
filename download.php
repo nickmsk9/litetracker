@@ -13,6 +13,33 @@ by Nick
 require 'system/init.php';
 require 'system/functions/functions.benc.php';
 
+function download_content_disposition_filename($filename, $fallbackId)
+{
+	$filename = trim((string) $filename);
+	$filename = str_replace(array("\r", "\n", "\0"), '', $filename);
+	$filename = str_replace(array('"', '\\'), '', $filename);
+	$filename = preg_replace('~[\/]+~', '_', $filename);
+	$filename = trim((string) $filename);
+
+	if ($filename === '') {
+		$filename = 'torrent-'.(int) $fallbackId.'.torrent';
+	}
+
+	$ascii = (function_exists('iconv') ? iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $filename) : '');
+	if (!is_string($ascii) || trim($ascii) === '') {
+		$ascii = 'torrent-'.(int) $fallbackId.'.torrent';
+	}
+
+	$ascii = preg_replace('~[^A-Za-z0-9._ -]+~', '_', $ascii);
+	$ascii = preg_replace('~\s+~', ' ', trim((string) $ascii));
+	$ascii = trim($ascii, '. ');
+	if ($ascii === '') {
+		$ascii = 'torrent-'.(int) $fallbackId.'.torrent';
+	}
+
+	return 'attachment; filename="'.$ascii.'"; filename*=UTF-8\'\''.rawurlencode($filename);
+}
+
 
 if(!$PRIV['details_view']) {
 	err($language['default_1'] , $language['details_29'] , 1);
@@ -126,7 +153,7 @@ if(!$PRIV['download_torrent']) {
 }
 
 //Filename
-$filename = str_replace(array(',', ';'), '', $arr['filename']);
+$contentDisposition = download_content_disposition_filename((string) ($arr['filename'] ?? ''), $id);
 
 //Выдаем на сохранение torrent - файл
 $dict = lt_torrent_decode_file($file_path);
@@ -168,7 +195,7 @@ header ("Pragma: no-cache");
 header ("Accept-Ranges: bytes");
 header ("Connection: close");
 header ("Content-Transfer-Encoding: binary");
-header ("Content-Disposition: attachment; filename=\"".$filename."\"");
+header ("Content-Disposition: ".$contentDisposition);
 header ("Content-Type: application/x-bittorrent");
 
 
