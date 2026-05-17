@@ -22,7 +22,6 @@ $state = array(
 	'peer_ids' => array(),
 	'torrent' => null,
 	'user' => null,
-	'peer_insert_blocker' => '',
 	'tracker_snapshot' => null,
 	'torrent_snapshot' => null,
 );
@@ -287,13 +286,6 @@ try {
 	}
 
 	$state['user'] = p15_row("SELECT id, passkey FROM users WHERE passkey IS NOT NULL AND passkey <> '' ORDER BY id LIMIT 1");
-	$prevAction = p15_row(
-		"SELECT IS_NULLABLE, COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS ".
-		"WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'peers' AND COLUMN_NAME = 'prev_action' LIMIT 1"
-	);
-	if ($prevAction && $prevAction['IS_NULLABLE'] === 'NO' && $prevAction['COLUMN_DEFAULT'] === null) {
-		$state['peer_insert_blocker'] = 'peers.prev_action is NOT NULL with no default; current announce INSERT does not provide it';
-	}
 	$state['tracker_snapshot'] = p15_row(
 		"SELECT torrent, seeders, leechers, lastchecked FROM trackers WHERE torrent=".(int) $state['torrent']['id']." AND tracker='localhost' LIMIT 1"
 	);
@@ -355,10 +347,6 @@ try {
 	});
 
 	p15_record('event=started does not crash', function () {
-		global $state;
-		if ($state['peer_insert_blocker'] !== '') {
-			throw new RuntimeException('SKIP:'.$state['peer_insert_blocker']);
-		}
 		$params = p15_base_params(p15_peer_id('STARTED'), array('event' => 'started'));
 		$decoded = p15_assert_bencoded_dict('started announce', p15_run_target('announce.php', $params));
 		if (isset($decoded['failure reason'])) {
@@ -377,10 +365,6 @@ try {
 	});
 
 	p15_record('left=0 seeder logic does not crash', function () {
-		global $state;
-		if ($state['peer_insert_blocker'] !== '') {
-			throw new RuntimeException('SKIP:'.$state['peer_insert_blocker']);
-		}
 		$params = p15_base_params(p15_peer_id('SEEDER'), array('left' => 0));
 		$decoded = p15_assert_bencoded_dict('seeder announce', p15_run_target('announce.php', $params));
 		if (isset($decoded['failure reason'])) {

@@ -146,7 +146,11 @@ foreach ($peer_candidates as $row) {
 		. 'e';
 }
 
-$resp .= ($compact ? benc_str($plist) : '') . (substr($peer_id, 0, 4) == '-BC0' ? "e7:privatei1ee" : "ee");
+if ($compact) {
+	$resp .= benc_str($plist) . (substr($peer_id, 0, 4) == '-BC0' ? "7:privatei1ee" : "e");
+} else {
+	$resp .= (substr($peer_id, 0, 4) == '-BC0' ? "e7:privatei1ee" : "ee");
+}
 
 if ($self === null) {
 	$row = announce_fetch_self_peer($torrentid, $peer_id, $fields);
@@ -284,8 +288,8 @@ if ($event === 'stopped') {
 		}
 
 		$ret = announce_safe_query(
-			"INSERT INTO peers (connectable, torrent, peer_id, ip, port, uploaded, downloaded, to_go, started, last_action, seeder, userid, agent, uploadoffset, downloadoffset, passkey)
-			 VALUES ('".$connectable."', ".$torrentid.", ".announce_escape($peer_id).", ".announce_escape($ip).", ".$port.", ".$uploaded.", ".$downloaded.", ".$left.", NOW(), NOW(), '".$seeder."', '".$userid."', ".announce_escape($agent).", ".$uploaded.", ".$downloaded.", ".announce_escape($passkey).")"
+			"INSERT INTO peers (connectable, torrent, peer_id, ip, port, uploaded, downloaded, to_go, started, last_action, prev_action, seeder, userid, agent, uploadoffset, downloadoffset, passkey)
+			 VALUES ('".$connectable."', ".$torrentid.", ".announce_escape($peer_id).", ".announce_escape($ip).", ".$port.", ".$uploaded.", ".$downloaded.", ".$left.", NOW(), NOW(), NOW(), '".$seeder."', '".$userid."', ".announce_escape($agent).", ".$uploaded.", ".$downloaded.", ".announce_escape($passkey).")"
 		);
 
 		if ($ret) {
