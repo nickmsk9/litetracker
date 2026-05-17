@@ -388,6 +388,19 @@ function announce_load_peer_context($torrentId, $peerId, $numwant, $numpeers)
 	return announce_load_peer_pool($torrentId, $peerId, $numwant, $numpeers, announce_peer_fields());
 }
 
+function announce_load_peer_write_context($torrentId, $peerId)
+{
+	$self = announce_fetch_self_peer((int) $torrentId, (string) $peerId, announce_peer_fields());
+	if (empty($self['peer_id'])) {
+		$self = null;
+	}
+
+	return array(
+		'self' => $self,
+		'userid' => ($self === null ? 0 : (int) ($self['userid'] ?? 0)),
+	);
+}
+
 function announce_debug_enabled(array $request, $ip)
 {
 	if (empty($request['announce_debug'])) {
@@ -416,10 +429,17 @@ function announce_debug_log(array $request, $startTime, $peerCount, $ip)
 
 function announce_prepare_authenticated_write_context($guest, $self, $torrentId, $passkey, $seeder, array $user, $uploaded, $downloaded, $left, $userid)
 {
+	$result = announce_prepare_authenticated_write_result($guest, $self, $torrentId, $passkey, $seeder, $user, $uploaded, $downloaded, $left, $userid);
+
+	return (int) $result['userid'];
+}
+
+function announce_prepare_authenticated_write_result($guest, $self, $torrentId, $passkey, $seeder, array $user, $uploaded, $downloaded, $left, $userid)
+{
 	global $config, $language;
 
 	if ($guest) {
-		return (int) $userid;
+		return array('userid' => (int) $userid, 'user_touched' => false);
 	}
 
 	$torrentId = (int) $torrentId;
@@ -445,21 +465,16 @@ function announce_prepare_authenticated_write_context($guest, $self, $torrentId,
 			err(sprintf($language['announce_10'], (string) ($config['sitename'] ?? 'LiteTracker')));
 		}
 
-		return (int) $az['id'];
+		return array('userid' => (int) $az['id'], 'user_touched' => false);
 	}
 
 	if (!announce_validate_stats($uploaded, $downloaded, $left)) {
 		err('Invalid statistics (possible tracker abuse).');
 	}
 
-	$upthis = max(0, (int) $uploaded - (int) $self['uploaded']);
-	$downthis = max(0, (int) $downloaded - (int) $self['downloaded']);
+	$userTouched = announce_apply_user_transfer_delta((int) $userid, announce_calculate_transfer_delta($uploaded, $downloaded, $self));
 
-	if ($upthis > 0 || $downthis > 0) {
-		announce_safe_query('UPDATE users SET uploaded = uploaded + '.$upthis.', downloaded = downloaded + '.$downthis.' WHERE id='.(int) $userid);
-	}
-
-	return (int) $userid;
+	return array('userid' => (int) $userid, 'user_touched' => $userTouched);
 }
 
 function announce_probe_connectable($ip, $port)
@@ -484,143 +499,394 @@ function announce_probe_connectable($ip, $port)
 	return $connectable;
 }
 
-function announce_process_event_write_path($event, $self, $userid, $torrentId, $peerId, $uploaded, $downloaded, $left, $seeder, $port, $ip, $agent, $passkey)
+function announce_write_result($event)
 {
-	$torrentId = (int) $torrentId;
-	$userid = (int) $userid;
-	$uploaded = (int) $uploaded;
-	$downloaded = (int) $downloaded;
-	$left = (int) $left;
-	$port = (int) $port;
-	$seeder = (string) $seeder;
-	$dt = announce_escape(date('Y-m-d H:i:s', time()));
-	$updateset = array();
-	$snatch_updateset = array();
-	$trupdateset = array();
-
-	if ($event === 'stopped') {
-		if ($self !== null) {
-			announce_safe_query('DELETE FROM peers WHERE torrent = '.$torrentId.' AND peer_id = '.announce_escape($peerId));
-			if (announce_rows_affected()) {
-				if (!empty($self['seeder'])) {
-					$trupdateset[] = 'seeders = IF(seeders > 0, seeders - 1, 0)';
-				} else {
-					$trupdateset[] = 'leechers = IF(leechers > 0, leechers - 1, 0)';
-				}
-			}
-		}
-	} else {
-		if ($event === 'completed' && $left === 0) {
-			$can_count_completed = true;
-			if ($userid > 0) {
-				$snatched_state = announce_super_query('SELECT finished FROM snatched WHERE torrent = '.$torrentId.' AND userid = '.(int) $userid.' LIMIT 1');
-				$can_count_completed = empty($snatched_state['finished']);
-			} elseif ($self !== null && !empty($self['seeder'])) {
-				$can_count_completed = false;
-			}
-
-			if ($can_count_completed) {
-				$snatch_updateset[] = "finished = 1";
-				$snatch_updateset[] = "completedat = ".time();
-				$updateset[] = 'completed = completed + 1';
-			}
-		} elseif ($event === 'completed' && $left !== 0) {
-			err('Invalid completed event (torrent not fully downloaded).');
-		}
-
-		if ($self !== null) {
-			$downloaded2 = max(0, $downloaded - (int) $self['downloaded']);
-			$uploaded2 = max(0, $uploaded - (int) $self['uploaded']);
-
-			if ($downloaded2 > 0 || $uploaded2 > 0) {
-				$snatch_updateset[] = "uploaded = uploaded + ".$uploaded2;
-				$snatch_updateset[] = "downloaded = downloaded + ".$downloaded2;
-			}
-
-			announce_safe_query(
-				"UPDATE peers
-				 SET uploaded = ".$uploaded.",
-				     downloaded = ".$downloaded.",
-				     uploadoffset = ".$uploaded2.",
-				     downloadoffset = ".$downloaded2.",
-				     to_go = ".$left.",
-				     last_action = NOW(),
-				     seeder = '".$seeder."'"
-				. ($seeder === "1" && (string) ($self["seeder"] ?? '') !== $seeder ? ", finishedat = ".time() : "")
-				. " WHERE torrent = ".$torrentId." AND peer_id = ".announce_escape($peerId)
-			);
-
-			if (announce_rows_affected() && (string) ($self['seeder'] ?? '') !== $seeder) {
-				if ($seeder === '1') {
-					$trupdateset[] = 'seeders = seeders + 1';
-					$trupdateset[] = 'leechers = IF(leechers > 0, leechers - 1, 0)';
-				} else {
-					$trupdateset[] = 'leechers = leechers + 1';
-					$trupdateset[] = 'seeders = IF(seeders > 0, seeders - 1, 0)';
-				}
-			}
-		} else {
-			if (portblacklisted($port)) {
-				err('Port '.$port.' is blacklisted.');
-			}
-
-			$connectable = announce_probe_connectable($ip, $port);
-			$ret = announce_safe_query(
-				"INSERT INTO peers (connectable, torrent, peer_id, ip, port, uploaded, downloaded, to_go, started, last_action, prev_action, seeder, userid, agent, uploadoffset, downloadoffset, passkey)
-				 VALUES ('".$connectable."', ".$torrentId.", ".announce_escape($peerId).", ".announce_escape($ip).", ".$port.", ".$uploaded.", ".$downloaded.", ".$left.", NOW(), NOW(), NOW(), '".$seeder."', '".$userid."', ".announce_escape($agent).", ".$uploaded.", ".$downloaded.", ".announce_escape($passkey).")"
-			);
-
-			if ($ret) {
-				if ($seeder === '1') {
-					$trupdateset[] = 'seeders = seeders + 1';
-				} else {
-					$trupdateset[] = 'leechers = leechers + 1';
-				}
-
-				if ($userid > 0) {
-					$ts_now = (int) time();
-					announce_safe_query(
-						"INSERT INTO snatched (userid, torrent, uploaded, downloaded, startedat, completedat, finished)"
-						." VALUES (".$userid.", ".$torrentId.", 0, 0, ".$ts_now.", 0, 0)"
-						." ON DUPLICATE KEY UPDATE startedat = IF(startedat = 0, ".$ts_now.", startedat)"
-					);
-				}
-			}
-		}
-	}
-
-	if ($seeder === '1') {
-		$updateset[] = 'last_action = '.$dt;
-	}
-
 	return array(
-		'trupdateset' => $trupdateset,
-		'updateset' => $updateset,
-		'snatch_updateset' => $snatch_updateset,
+		'event' => announce_normalize_event($event),
+		'peer_inserted' => false,
+		'peer_updated' => false,
+		'peer_deleted' => false,
+		'completed_counted' => false,
+		'tracker_counters_touched' => false,
+		'torrent_touched' => false,
+		'user_touched' => false,
+		'response_state' => 'ok',
+		'trupdateset' => array(),
+		'updateset' => array(),
+		'snatch_updateset' => array(),
 	);
 }
 
-function announce_flush_event_updates(array $eventUpdates, $torrentId, $userid, $infoHashHex)
+function announce_calculate_transfer_delta($uploaded, $downloaded, $self)
 {
-	$trupdateset = $eventUpdates['trupdateset'] ?? array();
-	$updateset = $eventUpdates['updateset'] ?? array();
-	$snatch_updateset = $eventUpdates['snatch_updateset'] ?? array();
+	$uploaded = (int) $uploaded;
+	$downloaded = (int) $downloaded;
+	$self = (is_array($self) ? $self : array());
+
+	return array(
+		'uploaded' => max(0, $uploaded - (int) ($self['uploaded'] ?? 0)),
+		'downloaded' => max(0, $downloaded - (int) ($self['downloaded'] ?? 0)),
+	);
+}
+
+function announce_apply_user_transfer_delta($userid, array $delta)
+{
+	$userid = (int) $userid;
+	$upthis = (int) ($delta['uploaded'] ?? 0);
+	$downthis = (int) ($delta['downloaded'] ?? 0);
+
+	if ($userid > 0 && ($upthis > 0 || $downthis > 0)) {
+		announce_safe_query('UPDATE users SET uploaded = uploaded + '.$upthis.', downloaded = downloaded + '.$downthis.' WHERE id='.$userid);
+		return true;
+	}
+
+	return false;
+}
+
+function announce_update_snatched_row($torrentId, $userid, array $snatchUpdates)
+{
 	$torrentId = (int) $torrentId;
 	$userid = (int) $userid;
 
-	if ($trupdateset) {
-		announce_safe_query('UPDATE trackers SET ' . join(", ", $trupdateset) . ' WHERE torrent = '.$torrentId.' AND tracker="localhost"');
-		lt_cache_delete('torrent:'.$infoHashHex, 'announce');
+	if ($userid > 0 && $snatchUpdates) {
+		announce_safe_query('UPDATE snatched SET ' . join(", ", $snatchUpdates) . ' WHERE torrent = '.$torrentId.' AND userid = '.$userid);
+		return true;
 	}
+
+	return false;
+}
+
+function announce_maybe_count_completed($torrentId, $userid, $self, $left)
+{
+	$torrentId = (int) $torrentId;
+	$userid = (int) $userid;
+	$left = (int) $left;
+
+	if ($left !== 0) {
+		err('Invalid completed event (torrent not fully downloaded).');
+	}
+
+	$canCountCompleted = true;
+	if ($userid > 0) {
+		$snatched_state = announce_super_query('SELECT finished FROM snatched WHERE torrent = '.$torrentId.' AND userid = '.$userid.' LIMIT 1');
+		$canCountCompleted = empty($snatched_state['finished']);
+	} elseif ($self !== null && !empty($self['seeder'])) {
+		$canCountCompleted = false;
+	}
+
+	if (!$canCountCompleted) {
+		return array(
+			'completed_counted' => false,
+			'snatch_updateset' => array(),
+			'updateset' => array(),
+		);
+	}
+
+	return array(
+		'completed_counted' => true,
+		'snatch_updateset' => array('finished = 1', 'completedat = '.time()),
+		'updateset' => array('completed = completed + 1'),
+	);
+}
+
+function announce_update_torrent_counters($torrentId, array $updateset, $infoHashHex)
+{
+	$torrentId = (int) $torrentId;
 
 	if ($updateset) {
 		announce_safe_query('UPDATE torrents SET ' . join(", ", $updateset) . ' WHERE id = '.$torrentId);
 		lt_cache_delete('torrent:'.$infoHashHex, 'announce');
+		return true;
 	}
 
-	if ($userid > 0 && $snatch_updateset) {
-		announce_safe_query('UPDATE snatched SET ' . join(", ", $snatch_updateset) . ' WHERE torrent = '.$torrentId.' AND userid = '.(int) $userid);
+	return false;
+}
+
+function announce_update_tracker_counters($torrentId, array $trupdateset, $infoHashHex)
+{
+	$torrentId = (int) $torrentId;
+
+	if ($trupdateset) {
+		announce_safe_query('UPDATE trackers SET ' . join(", ", $trupdateset) . ' WHERE torrent = '.$torrentId.' AND tracker="localhost"');
+		lt_cache_delete('torrent:'.$infoHashHex, 'announce');
+		return true;
 	}
+
+	return false;
+}
+
+function announce_delete_peer($torrentId, $peerId)
+{
+	announce_safe_query('DELETE FROM peers WHERE torrent = '.(int) $torrentId.' AND peer_id = '.announce_escape($peerId));
+
+	return (announce_rows_affected() > 0);
+}
+
+function announce_update_peer($torrentId, $peerId, array $request, $self, array $delta)
+{
+	$torrentId = (int) $torrentId;
+	$uploaded = (int) ($request['uploaded'] ?? 0);
+	$downloaded = (int) ($request['downloaded'] ?? 0);
+	$left = (int) ($request['left'] ?? 0);
+	$seeder = (string) ($request['seeder'] ?? ($left === 0 ? '1' : '0'));
+	$uploaded2 = (int) ($delta['uploaded'] ?? 0);
+	$downloaded2 = (int) ($delta['downloaded'] ?? 0);
+
+	announce_safe_query(
+		"UPDATE peers
+		 SET uploaded = ".$uploaded.",
+		     downloaded = ".$downloaded.",
+		     uploadoffset = ".$uploaded2.",
+		     downloadoffset = ".$downloaded2.",
+		     to_go = ".$left.",
+		     last_action = NOW(),
+		     seeder = '".$seeder."'"
+		. ($seeder === "1" && (string) ($self["seeder"] ?? '') !== $seeder ? ", finishedat = ".time() : "")
+		. " WHERE torrent = ".$torrentId." AND peer_id = ".announce_escape($peerId)
+	);
+
+	return (announce_rows_affected() > 0);
+}
+
+function announce_insert_peer($torrentId, $userid, array $request, $ip)
+{
+	$torrentId = (int) $torrentId;
+	$userid = (int) $userid;
+	$port = (int) ($request['port'] ?? 0);
+	$uploaded = (int) ($request['uploaded'] ?? 0);
+	$downloaded = (int) ($request['downloaded'] ?? 0);
+	$left = (int) ($request['left'] ?? 0);
+	$seeder = (string) ($request['seeder'] ?? ($left === 0 ? '1' : '0'));
+	$peerId = (string) ($request['peer_id'] ?? '');
+	$agent = (string) ($request['agent'] ?? '');
+	$passkey = (string) ($request['passkey'] ?? '');
+
+	if (portblacklisted($port)) {
+		err('Port '.$port.' is blacklisted.');
+	}
+
+	$connectable = announce_probe_connectable($ip, $port);
+	return (bool) announce_safe_query(
+		"INSERT INTO peers (connectable, torrent, peer_id, ip, port, uploaded, downloaded, to_go, started, last_action, prev_action, seeder, userid, agent, uploadoffset, downloadoffset, passkey)
+		 VALUES ('".$connectable."', ".$torrentId.", ".announce_escape($peerId).", ".announce_escape($ip).", ".$port.", ".$uploaded.", ".$downloaded.", ".$left.", NOW(), NOW(), NOW(), '".$seeder."', '".$userid."', ".announce_escape($agent).", ".$uploaded.", ".$downloaded.", ".announce_escape($passkey).")"
+	);
+}
+
+function announce_ensure_snatched_started($torrentId, $userid)
+{
+	$torrentId = (int) $torrentId;
+	$userid = (int) $userid;
+
+	if ($userid > 0) {
+		$ts_now = (int) time();
+		announce_safe_query(
+			"INSERT INTO snatched (userid, torrent, uploaded, downloaded, startedat, completedat, finished)"
+			." VALUES (".$userid.", ".$torrentId.", 0, 0, ".$ts_now.", 0, 0)"
+			." ON DUPLICATE KEY UPDATE startedat = IF(startedat = 0, ".$ts_now.", startedat)"
+		);
+		return true;
+	}
+
+	return false;
+}
+
+function announce_mark_peer_seeder_state($self, $seeder)
+{
+	$seeder = (string) $seeder;
+	if ($self !== null && (string) ($self['seeder'] ?? '') !== $seeder) {
+		if ($seeder === '1') {
+			return array('seeders = seeders + 1', 'leechers = IF(leechers > 0, leechers - 1, 0)');
+		}
+
+		return array('leechers = leechers + 1', 'seeders = IF(seeders > 0, seeders - 1, 0)');
+	}
+
+	return array();
+}
+
+function announce_apply_pending_write_updates(array $result, array $context)
+{
+	$torrentId = (int) ($context['torrentid'] ?? 0);
+	$userid = (int) ($context['userid'] ?? 0);
+	$infoHashHex = (string) ($context['info_hash_hex'] ?? '');
+
+	// Transaction-ready boundary: P25 can wrap this ordered flush for completed writes.
+	$result['user_touched'] = !empty($result['user_touched']) || !empty($context['user_touched']);
+	$result['tracker_counters_touched'] = announce_update_tracker_counters($torrentId, $result['trupdateset'], $infoHashHex);
+	$result['torrent_touched'] = announce_update_torrent_counters($torrentId, $result['updateset'], $infoHashHex);
+	announce_update_snatched_row($torrentId, $userid, $result['snatch_updateset']);
+
+	return $result;
+}
+
+function announce_handle_started_event(array $context, array $request)
+{
+	return announce_handle_regular_event($context, $request);
+}
+
+function announce_prepare_regular_write_result(array $context, array $request)
+{
+	$result = announce_write_result($request['event'] ?? '');
+	$self = $context['self'] ?? null;
+	$torrentId = (int) ($context['torrentid'] ?? 0);
+	$userid = (int) ($context['userid'] ?? 0);
+	$seeder = (string) ($request['seeder'] ?? '0');
+
+	if ($self !== null) {
+		$delta = announce_calculate_transfer_delta($request['uploaded'] ?? 0, $request['downloaded'] ?? 0, $self);
+		if ((int) $delta['downloaded'] > 0 || (int) $delta['uploaded'] > 0) {
+			$result['snatch_updateset'][] = "uploaded = uploaded + ".(int) $delta['uploaded'];
+			$result['snatch_updateset'][] = "downloaded = downloaded + ".(int) $delta['downloaded'];
+		}
+
+		$result['peer_updated'] = announce_update_peer($torrentId, (string) ($request['peer_id'] ?? ''), $request, $self, $delta);
+		if ($result['peer_updated']) {
+			$result['trupdateset'] = array_merge($result['trupdateset'], announce_mark_peer_seeder_state($self, $seeder));
+		}
+	} else {
+		$result['peer_inserted'] = announce_insert_peer($torrentId, $userid, $request, (string) ($context['ip'] ?? ''));
+		if ($result['peer_inserted']) {
+			$result['trupdateset'][] = ($seeder === '1' ? 'seeders = seeders + 1' : 'leechers = leechers + 1');
+			announce_ensure_snatched_started($torrentId, $userid);
+		}
+	}
+
+	if ($seeder === '1') {
+		$result['updateset'][] = 'last_action = '.announce_escape(date('Y-m-d H:i:s', time()));
+	}
+
+	return $result;
+}
+
+function announce_handle_regular_event(array $context, array $request)
+{
+	return announce_apply_pending_write_updates(announce_prepare_regular_write_result($context, $request), $context);
+}
+
+function announce_handle_completed_event(array $context, array $request)
+{
+	$result = announce_write_result('completed');
+	$completed = announce_maybe_count_completed(
+		(int) ($context['torrentid'] ?? 0),
+		(int) ($context['userid'] ?? 0),
+		$context['self'] ?? null,
+		(int) ($request['left'] ?? 0)
+	);
+	$result['completed_counted'] = (bool) $completed['completed_counted'];
+	$result['snatch_updateset'] = array_merge($result['snatch_updateset'], $completed['snatch_updateset']);
+	$result['updateset'] = array_merge($result['updateset'], $completed['updateset']);
+
+	$regular = announce_prepare_regular_write_result($context, $request);
+	foreach (array('peer_inserted', 'peer_updated', 'peer_deleted', 'tracker_counters_touched', 'torrent_touched', 'user_touched') as $flag) {
+		$result[$flag] = !empty($result[$flag]) || !empty($regular[$flag]);
+	}
+	$result['trupdateset'] = array_merge($result['trupdateset'], $regular['trupdateset']);
+	$result['snatch_updateset'] = array_merge($result['snatch_updateset'], $regular['snatch_updateset']);
+	$result['updateset'] = array_merge($result['updateset'], $regular['updateset']);
+
+	return announce_apply_pending_write_updates($result, $context);
+}
+
+function announce_prepare_stopped_write_result(array $context, array $request)
+{
+	$result = announce_write_result('stopped');
+	$self = $context['self'] ?? null;
+
+	if ($self !== null) {
+		$result['peer_deleted'] = announce_delete_peer((int) ($context['torrentid'] ?? 0), (string) ($request['peer_id'] ?? ''));
+		if ($result['peer_deleted']) {
+			if (!empty($self['seeder'])) {
+				$result['trupdateset'][] = 'seeders = IF(seeders > 0, seeders - 1, 0)';
+			} else {
+				$result['trupdateset'][] = 'leechers = IF(leechers > 0, leechers - 1, 0)';
+			}
+		}
+	}
+
+	if ((string) ($request['seeder'] ?? '0') === '1') {
+		$result['updateset'][] = 'last_action = '.announce_escape(date('Y-m-d H:i:s', time()));
+	}
+
+	return $result;
+}
+
+function announce_handle_stopped_event(array $context, array $request)
+{
+	return announce_apply_pending_write_updates(announce_prepare_stopped_write_result($context, $request), $context);
+}
+
+function announce_dispatch_event_write_handler(array $context, array $request)
+{
+	$event = announce_normalize_event($request['event'] ?? '');
+
+	if ($event === 'started') {
+		return announce_handle_started_event($context, $request);
+	}
+
+	if ($event === 'stopped') {
+		return announce_handle_stopped_event($context, $request);
+	}
+
+	if ($event === 'completed') {
+		return announce_handle_completed_event($context, $request);
+	}
+
+	return announce_handle_regular_event($context, $request);
+}
+
+function announce_process_event_write_path($event, $self, $userid, $torrentId, $peerId, $uploaded, $downloaded, $left, $seeder, $port, $ip, $agent, $passkey)
+{
+	$context = array(
+		'torrentid' => (int) $torrentId,
+		'userid' => (int) $userid,
+		'self' => $self,
+		'ip' => (string) $ip,
+	);
+	$request = array(
+		'event' => announce_normalize_event($event),
+		'peer_id' => (string) $peerId,
+		'uploaded' => (int) $uploaded,
+		'downloaded' => (int) $downloaded,
+		'left' => (int) $left,
+		'seeder' => (string) $seeder,
+		'port' => (int) $port,
+		'agent' => (string) $agent,
+		'passkey' => (string) $passkey,
+	);
+
+	if ($request['event'] === 'stopped') {
+		return announce_prepare_stopped_write_result($context, $request);
+	}
+
+	if ($request['event'] === 'completed') {
+		$result = announce_write_result('completed');
+		$completed = announce_maybe_count_completed((int) $torrentId, (int) $userid, $self, (int) $left);
+		$result['completed_counted'] = (bool) $completed['completed_counted'];
+		$result['snatch_updateset'] = array_merge($result['snatch_updateset'], $completed['snatch_updateset']);
+		$result['updateset'] = array_merge($result['updateset'], $completed['updateset']);
+		$regular = announce_prepare_regular_write_result($context, $request);
+		foreach (array('peer_inserted', 'peer_updated', 'peer_deleted') as $flag) {
+			$result[$flag] = !empty($result[$flag]) || !empty($regular[$flag]);
+		}
+		$result['trupdateset'] = array_merge($result['trupdateset'], $regular['trupdateset']);
+		$result['snatch_updateset'] = array_merge($result['snatch_updateset'], $regular['snatch_updateset']);
+		$result['updateset'] = array_merge($result['updateset'], $regular['updateset']);
+		return $result;
+	}
+
+	return announce_prepare_regular_write_result($context, $request);
+}
+
+function announce_flush_event_updates(array $eventUpdates, $torrentId, $userid, $infoHashHex)
+{
+	return announce_apply_pending_write_updates(
+		$eventUpdates,
+		array(
+			'torrentid' => (int) $torrentId,
+			'userid' => (int) $userid,
+			'info_hash_hex' => (string) $infoHashHex,
+		)
+	);
 }
 
 	/**

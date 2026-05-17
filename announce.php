@@ -100,23 +100,30 @@ if ($torrent_size > 0 && $left > $torrent_size) {
 
 $torrentid = (int) $torrent_context['torrentid'];
 $numpeers = (int) $torrent_context['numpeers'];
-$peer_context = announce_load_peer_context($torrentid, $peer_id, $rsize, $numpeers);
-
-$trupdateset = array();
-$self = $peer_context['self'];
-$userid = (int) $peer_context['userid'];
-$peer_candidates = $peer_context['candidates'];
-
-$resp = announce_success_response($announce_interval, $peer_candidates, $compact, $no_peer_id, $peer_id);
+$peer_write_context = announce_load_peer_write_context($torrentid, $peer_id);
+$self = $peer_write_context['self'];
+$userid = (int) $peer_write_context['userid'];
 
 $announce_wait = 15 * 60;
 if ($self !== null && !empty($self['prevts']) && !empty($self['nowts']) && (int) $self['prevts'] > ((int) $self['nowts'] - $announce_wait)) {
 	err(sprintf($language['announce_8'], $announce_wait));
 }
 
-$userid = announce_prepare_authenticated_write_context($GUEST, $self, $torrentid, $passkey, $seeder, $user, $uploaded, $downloaded, $left, $userid);
-$event_updates = announce_process_event_write_path($event, $self, $userid, $torrentid, $peer_id, $uploaded, $downloaded, $left, $seeder, $port, $ip, $agent, $passkey);
-announce_flush_event_updates($event_updates, $torrentid, $userid, $info_hash_hex);
+$auth_write = announce_prepare_authenticated_write_result($GUEST, $self, $torrentid, $passkey, $seeder, $user, $uploaded, $downloaded, $left, $userid);
+$userid = (int) $auth_write['userid'];
+$write_context = array(
+	'torrentid' => $torrentid,
+	'userid' => $userid,
+	'self' => $self,
+	'ip' => $ip,
+	'info_hash_hex' => $info_hash_hex,
+	'user_touched' => !empty($auth_write['user_touched']),
+);
+$write_request = array_merge($request, array('seeder' => $seeder));
+announce_dispatch_event_write_handler($write_context, $write_request);
+
+$peer_context = announce_load_peer_context($torrentid, $peer_id, $rsize, $numpeers);
+$resp = announce_success_response($announce_interval, $peer_context['candidates'], $compact, $no_peer_id, $peer_id);
 
 announce_debug_log($request, $announce_start, (int) $peer_context['returned_peer_count'], $ip);
 benc_resp_raw($resp);
