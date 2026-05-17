@@ -15,7 +15,7 @@ $request = announce_parse_request();
 
 $info_hash = $request['info_hash'];
 $peer_id = $request['peer_id'];
-$event = trim((string) $request['event']);
+$event = $request['event'];
 $port = (int) $request['port'];
 $downloaded = (int) $request['downloaded'];
 $uploaded = (int) $request['uploaded'];
@@ -23,6 +23,9 @@ $left = (int) $request['left'];
 $passkey = trim((string) $request['passkey']);
 $compact = !empty($request['compact']);
 $no_peer_id = !empty($request['no_peer_id']);
+$rsize = (int) $request['numwant'];
+$agent = (string) $request['agent'];
+$client_flags = $request['client_flags'];
 $GUEST = ($passkey === '' ? 1 : 0);
 $ip = getip();
 $ip_ban = ip2long_db($ip);
@@ -53,9 +56,6 @@ if (!empty($ban_resource)) {
 	err('Please note, your IP ('.long2ip($ip_ban).') has been banned '.convent_date($ban_resource['date']).'');
 }
 
-$rsize = announce_numwant(50);
-$agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-
 if (!$port || $port < 1 || $port > 0xffff) {
 	err($language['announce_4']);
 }
@@ -69,9 +69,8 @@ if (!announce_validate_stats($uploaded, $downloaded, $left)) {
 }
 
 $seeder = ($left === 0 ? '1' : '0');
-$headers = (function_exists('getallheaders') ? getallheaders() : emu_getallheaders());
 
-if (isset($headers['Cookie']) || isset($headers['Accept-Language']) || isset($headers['Accept-Charset'])) {
+if (!empty($client_flags['has_browser_headers'])) {
 	err($language['announce_5']);
 }
 
@@ -105,8 +104,6 @@ if ($numpeers > 0) {
 $limitSql = 'ORDER BY last_action DESC LIMIT '.$peerPoolLimit;
 $peers_sql = announce_fetch_peer_rows($torrentid, $fields, $limitSql);
 
-$resp = "d" . benc_str("interval") . "i" . $announce_interval . "e" . benc_str("peers") . ($compact ? '' : 'l');
-$plist = '';
 $trupdateset = array();
 $self = null;
 $userid = 0;
@@ -129,28 +126,7 @@ if ($peer_candidates) {
 	}
 }
 
-foreach ($peer_candidates as $row) {
-
-	if ($compact) {
-		$peer_ip = explode('.', (string) $row['ip']);
-		if (count($peer_ip) === 4) {
-			$plist .= pack("C*", (int) $peer_ip[0], (int) $peer_ip[1], (int) $peer_ip[2], (int) $peer_ip[3]) . pack("n*", (int) $row["port"]);
-		}
-		continue;
-	}
-
-	$resp .= 'd'
-		. benc_str('ip') . benc_str((string) $row['ip'])
-		. (!$no_peer_id ? benc_str("peer id") . benc_str((string) $row["peer_id"]) : '')
-		. benc_str('port') . 'i' . (int) $row['port'] . 'e'
-		. 'e';
-}
-
-if ($compact) {
-	$resp .= benc_str($plist) . (substr($peer_id, 0, 4) == '-BC0' ? "7:privatei1ee" : "e");
-} else {
-	$resp .= (substr($peer_id, 0, 4) == '-BC0' ? "e7:privatei1ee" : "ee");
-}
+$resp = announce_success_response($announce_interval, $peer_candidates, $compact, $no_peer_id, $peer_id);
 
 if ($self === null) {
 	$row = announce_fetch_self_peer($torrentid, $peer_id, $fields);
