@@ -36,6 +36,18 @@ $state = array(
 	'user' => null,
 	'tracker_snapshot' => null,
 	'torrent_snapshot' => null,
+	'user_snapshot' => null,
+	'snatched_snapshot' => null,
+	'auth_fixture_skip' => '',
+	'cleanup_done' => false,
+	'touched' => array(
+		'peers_deleted' => 0,
+		'tracker_restored' => false,
+		'torrent_restored' => false,
+		'user_restored' => false,
+		'snatched_restored' => false,
+		'snatched_deleted' => false,
+	),
 );
 
 function p15_line($status, $name, $message = '')
@@ -153,7 +165,8 @@ function p15_decode_response($payload)
 function p15_peer_id($tag)
 {
 	global $state;
-	$id = substr('-P15SMK-'.$tag.str_repeat('X', 20), 0, 20);
+	$prefix = (str_starts_with((string) $tag, 'AUTH') ? '-P19SMK-' : '-P15SMK-');
+	$id = substr($prefix.$tag.str_repeat('X', 20), 0, 20);
 	$state['peer_ids'][] = $id;
 	return $id;
 }
@@ -259,9 +272,51 @@ function p15_record($name, $fn)
 	}
 }
 
+function p15_require_auth_fixture()
+{
+	global $state;
+
+	if ($state['auth_fixture_skip'] !== '') {
+		throw new RuntimeException('SKIP:'.$state['auth_fixture_skip']);
+	}
+}
+
+function p15_assert_success($name, array $decoded)
+{
+	if (isset($decoded['failure reason'])) {
+		throw new RuntimeException($name.' failure reason: '.$decoded['failure reason']);
+	}
+	if (!array_key_exists('interval', $decoded) || !array_key_exists('peers', $decoded)) {
+		throw new RuntimeException($name.' missing interval or peers');
+	}
+}
+
+function p15_auth_params($peerId, array $overrides = array())
+{
+	global $state;
+
+	p15_require_auth_fixture();
+	return p15_base_params($peerId, array_merge(array(
+		'passkey' => (string) $state['user']['passkey'],
+	), $overrides));
+}
+
+function p15_age_peer($peerId)
+{
+	p15_exec(
+		"UPDATE peers SET last_action = DATE_SUB(NOW(), INTERVAL 3600 SECOND), prev_action = DATE_SUB(NOW(), INTERVAL 3600 SECOND) ".
+		"WHERE peer_id = '".p15_escape($peerId)."'"
+	);
+}
+
 function p15_cleanup()
 {
 	global $state;
+
+	if (!empty($state['cleanup_done'])) {
+		return;
+	}
+	$state['cleanup_done'] = true;
 
 	if ($state['peer_ids']) {
 		$ids = array();
@@ -269,6 +324,7 @@ function p15_cleanup()
 			$ids[] = "'".p15_escape($peerId)."'";
 		}
 		p15_exec('DELETE FROM peers WHERE peer_id IN ('.implode(',', $ids).')');
+		$state['touched']['peers_deleted'] = p15_db()->affected_rows;
 	}
 
 	if ($state['tracker_snapshot']) {
@@ -277,17 +333,48 @@ function p15_cleanup()
 			"UPDATE trackers SET seeders=".(int) $s['seeders'].
 			", leechers=".(int) $s['leechers'].
 			", lastchecked=".(int) $s['lastchecked'].
-			" WHERE torrent=".(int) $s['torrent']." AND tracker='localhost'"
+				" WHERE torrent=".(int) $s['torrent']." AND tracker='localhost'"
 		);
+		$state['touched']['tracker_restored'] = true;
 	}
 
 	if ($state['torrent_snapshot']) {
 		$s = $state['torrent_snapshot'];
 		p15_exec(
 			"UPDATE torrents SET completed=".(int) $s['completed'].
-			", last_action='".p15_escape($s['last_action'])."'".
+				", last_action='".p15_escape($s['last_action'])."'".
+				" WHERE id=".(int) $s['id']
+		);
+		$state['touched']['torrent_restored'] = true;
+	}
+
+	if ($state['user_snapshot']) {
+		$s = $state['user_snapshot'];
+		p15_exec(
+			"UPDATE users SET uploaded=".(int) $s['uploaded'].
+			", downloaded=".(int) $s['downloaded'].
 			" WHERE id=".(int) $s['id']
 		);
+		$state['touched']['user_restored'] = true;
+	}
+
+	if ($state['snatched_snapshot']) {
+		$s = $state['snatched_snapshot'];
+		p15_exec(
+			"UPDATE snatched SET uploaded=".(int) $s['uploaded'].
+			", downloaded=".(int) $s['downloaded'].
+			", startedat=".(int) $s['startedat'].
+			", completedat=".(int) $s['completedat'].
+			", finished=".(int) $s['finished'].
+			" WHERE torrent=".(int) $s['torrent']." AND userid=".(int) $s['userid']
+		);
+		$state['touched']['snatched_restored'] = true;
+	} elseif ($state['user'] && $state['torrent']) {
+		p15_exec(
+			"DELETE FROM snatched WHERE torrent=".(int) $state['torrent']['id'].
+			" AND userid=".(int) $state['user']['id']
+		);
+		$state['touched']['snatched_deleted'] = (p15_db()->affected_rows > 0);
 	}
 }
 
@@ -297,15 +384,38 @@ try {
 		throw new RuntimeException('No local torrent with infohash found.');
 	}
 
-	$state['user'] = p15_row("SELECT id, passkey FROM users WHERE passkey IS NOT NULL AND passkey <> '' ORDER BY id LIMIT 1");
+	$state['user'] = p15_row("SELECT id, passkey, uploaded, downloaded FROM users WHERE passkey IS NOT NULL AND passkey <> '' ORDER BY id LIMIT 1");
+	$slotsColumn = p15_row(
+		"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS ".
+		"WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'slots' LIMIT 1"
+	);
+	if (!$state['user']) {
+		$state['auth_fixture_skip'] = 'missing user with non-empty passkey';
+	} elseif (!$slotsColumn) {
+		$state['auth_fixture_skip'] = 'users.slots column is missing; current authenticated announce lookup cannot run';
+	}
 	$state['tracker_snapshot'] = p15_row(
 		"SELECT torrent, seeders, leechers, lastchecked FROM trackers WHERE torrent=".(int) $state['torrent']['id']." AND tracker='localhost' LIMIT 1"
 	);
+	if (!$state['tracker_snapshot'] && $state['auth_fixture_skip'] === '') {
+		$state['auth_fixture_skip'] = 'missing localhost tracker row for selected torrent';
+	}
 	$state['torrent_snapshot'] = array(
 		'id' => $state['torrent']['id'],
 		'completed' => $state['torrent']['completed'],
 		'last_action' => $state['torrent']['last_action'],
 	);
+	if ($state['user']) {
+		$state['user_snapshot'] = array(
+			'id' => $state['user']['id'],
+			'uploaded' => $state['user']['uploaded'],
+			'downloaded' => $state['user']['downloaded'],
+		);
+		$state['snatched_snapshot'] = p15_row(
+			"SELECT userid, torrent, uploaded, downloaded, startedat, completedat, finished ".
+			"FROM snatched WHERE torrent=".(int) $state['torrent']['id']." AND userid=".(int) $state['user']['id']." LIMIT 1"
+		);
+	}
 
 	register_shutdown_function('p15_cleanup');
 
@@ -395,6 +505,55 @@ try {
 		return 'files dictionary present';
 	});
 
+	p15_record('authenticated fixture ready', function () {
+		global $state;
+		p15_require_auth_fixture();
+		return 'user #'.(int) $state['user']['id'].' torrent #'.(int) $state['torrent']['id'];
+	});
+
+	$authPeerId = p15_peer_id('AUTHFLOW');
+	p15_record('authenticated started', function () use ($authPeerId) {
+		$params = p15_auth_params($authPeerId, array('event' => 'started'));
+		$decoded = p15_assert_bencoded_dict('authenticated started', p15_run_target('announce.php', $params));
+		p15_assert_success('authenticated started', $decoded);
+		return 'accepted';
+	});
+
+	p15_record('authenticated regular announce', function () use ($authPeerId) {
+		p15_require_auth_fixture();
+		p15_age_peer($authPeerId);
+		$params = p15_auth_params($authPeerId);
+		$decoded = p15_assert_bencoded_dict('authenticated regular', p15_run_target('announce.php', $params));
+		p15_assert_success('authenticated regular', $decoded);
+		return 'accepted';
+	});
+
+	p15_record('authenticated completed', function () use ($authPeerId) {
+		p15_require_auth_fixture();
+		p15_age_peer($authPeerId);
+		$params = p15_auth_params($authPeerId, array('event' => 'completed', 'left' => 0));
+		$decoded = p15_assert_bencoded_dict('authenticated completed', p15_run_target('announce.php', $params));
+		p15_assert_success('authenticated completed', $decoded);
+		return 'accepted';
+	});
+
+	p15_record('authenticated stopped', function () use ($authPeerId) {
+		p15_require_auth_fixture();
+		p15_age_peer($authPeerId);
+		$params = p15_auth_params($authPeerId, array('event' => 'stopped', 'left' => 0));
+		$decoded = p15_assert_bencoded_dict('authenticated stopped', p15_run_target('announce.php', $params));
+		p15_assert_success('authenticated stopped', $decoded);
+		return 'accepted';
+	});
+
+	p15_record('authenticated seeder left=0', function () {
+		$peerId = p15_peer_id('AUTHSEED');
+		$params = p15_auth_params($peerId, array('left' => 0));
+		$decoded = p15_assert_bencoded_dict('authenticated seeder', p15_run_target('announce.php', $params));
+		p15_assert_success('authenticated seeder', $decoded);
+		return 'accepted';
+	});
+
 	echo "\n";
 	$failed = 0;
 	foreach ($state['tests'] as $test) {
@@ -402,7 +561,14 @@ try {
 			$failed++;
 		}
 	}
+	p15_cleanup();
 	echo 'Result: '.($failed ? 'FAIL' : 'PASS').' ('.count($state['tests'])." scenarios, ".$failed." failed)\n";
+	echo 'Touched rows: peers_deleted='.(int) $state['touched']['peers_deleted'].
+		' tracker_restored='.(int) $state['touched']['tracker_restored'].
+		' torrent_restored='.(int) $state['touched']['torrent_restored'].
+		' user_restored='.(int) $state['touched']['user_restored'].
+		' snatched_restored='.(int) $state['touched']['snatched_restored'].
+		' snatched_deleted='.(int) $state['touched']['snatched_deleted']."\n";
 	exit($failed ? 1 : 0);
 } catch (Throwable $e) {
 	fwrite(STDERR, 'P15 smoke setup failed: '.$e->getMessage()."\n");
