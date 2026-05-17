@@ -175,11 +175,11 @@ if ($event === 'stopped') {
 			$can_count_completed = false;
 		}
 
-		if ($can_count_completed) {
-			$snatch_updateset[] = "finished = 1";
-			$snatch_updateset[] = "completedat = ".$dt;
-			$updateset[] = 'completed = completed + 1';
-		}
+			if ($can_count_completed) {
+				$snatch_updateset[] = "finished = 1";
+				$snatch_updateset[] = "completedat = ".time();
+				$updateset[] = 'completed = completed + 1';
+			}
 	} elseif ($event === 'completed' && $left !== 0) {
 		err('Invalid completed event (torrent not fully downloaded).');
 	}

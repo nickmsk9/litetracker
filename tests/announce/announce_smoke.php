@@ -527,9 +527,6 @@ try {
 		p15_age_peer($authPeerId);
 		$params = p15_auth_params($authPeerId, array('event' => 'completed', 'left' => 0));
 		$decoded = p15_assert_bencoded_dict('authenticated completed', p15_run_target('announce.php', $params));
-		if (($decoded['failure reason'] ?? '') === 'Не удалось обработать запрос трекера.') {
-			throw new RuntimeException('SKIP:completed path reached next known blocker: snatched.completedat strict-mode write');
-		}
 		p15_assert_success('authenticated completed', $decoded);
 		return 'accepted';
 	});
