@@ -83,7 +83,7 @@ if ($USER && !empty($_SESSION['lt_welcome_banner'])) {
 }
 $currentScript = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
 $isAuthPageScript = ($currentScript === 'login.php' || $currentScript === 'signup.php');
-$shouldIncludeBrowsePageCss = ($currentScript === 'browse.php' || $currentScript === 'index.php');
+$shouldIncludeBrowsePageCss = in_array($currentScript, array('browse.php', 'index.php', 'my.book.php'), true);
 $isAuthModalFrameClass = in_array('auth-modal-frame', $bodyClasses, true);
 $shouldIncludeAuthPageCss = ($isAuthPageScript || $isAuthModalFrameClass);
 $shouldIncludeDetailsPageCss = ($currentScript === 'details.php');
