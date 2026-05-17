@@ -75,7 +75,6 @@ function lt_sync_user_unread_messages($userId)
 
 function lt_table_exists($tableName, $refresh = false)
 {
-	global $db;
 	static $cache = array();
 
 	$tableName = lt_schema_identifier($tableName);
@@ -89,30 +88,13 @@ function lt_table_exists($tableName, $refresh = false)
 		return $cache[$tableName];
 	}
 
-	$cacheKey = lt_schema_table_cache_key($tableName);
-	$cached = (!$refresh ? lt_schema_cache_get($cacheKey) : false);
-	if (!$refresh && is_array($cached) && array_key_exists('exists', $cached)) {
-		$cache[$tableName] = (bool) $cached['exists'];
-		return $cache[$tableName];
-	}
-
-	$sql = $db->query("SHOW TABLES LIKE '".$db->safesql($tableName)."'", 0);
-	if ($sql === false) {
-		$cache[$tableName] = false;
-		return false;
-	}
-
-	$row = $db->get_row($sql);
-	$db->free($sql);
-	$cache[$tableName] = !empty($row);
-	lt_schema_cache_set($cacheKey, array('exists' => $cache[$tableName]));
+	$cache[$tableName] = lt_schema_has_table($tableName, $refresh);
 
 	return $cache[$tableName];
 }
 
 function lt_column_exists($tableName, $columnName, $refresh = false)
 {
-	global $db;
 	static $cache = array();
 
 	$tableName = lt_schema_identifier($tableName);
@@ -129,30 +111,134 @@ function lt_column_exists($tableName, $columnName, $refresh = false)
 		return $cache[$key];
 	}
 
-	if (!lt_table_exists($tableName, $refresh)) {
-		$cache[$key] = false;
-		return false;
-	}
-
-	$cacheKey = lt_schema_column_cache_key($tableName, $columnName);
-	$cached = (!$refresh ? lt_schema_cache_get($cacheKey) : false);
-	if (!$refresh && is_array($cached) && array_key_exists('exists', $cached)) {
-		$cache[$key] = (bool) $cached['exists'];
-		return $cache[$key];
-	}
-
-	$sql = $db->query("SHOW COLUMNS FROM `".$tableName."` LIKE '".$db->safesql($columnName)."'", 0);
-	if ($sql === false) {
-		$cache[$key] = false;
-		return false;
-	}
-
-	$row = $db->get_row($sql);
-	$db->free($sql);
-	$cache[$key] = !empty($row['Field']);
-	lt_schema_cache_set($cacheKey, array('exists' => $cache[$key]));
+	$cache[$key] = lt_schema_has_column($tableName, $columnName, $refresh);
 
 	return $cache[$key];
+}
+
+function lt_schema_capabilities($refresh = false)
+{
+	global $db;
+	static $capabilities = null;
+
+	$refresh = (bool) $refresh;
+	if (!$refresh && is_array($capabilities)) {
+		return $capabilities;
+	}
+
+	$cacheKey = lt_schema_capabilities_cache_key();
+	$cached = (!$refresh ? lt_schema_cache_get($cacheKey) : false);
+	if (!$refresh && is_array($cached) && isset($cached['tables'], $cached['columns'], $cached['indexes'])) {
+		$capabilities = $cached;
+		return $capabilities;
+	}
+
+	$capabilities = array(
+		'version' => 1,
+		'loaded_at' => time(),
+		'tables' => array(),
+		'columns' => array(),
+		'indexes' => array(),
+	);
+
+	$tables = $db->query(
+		"SELECT TABLE_NAME
+		 FROM INFORMATION_SCHEMA.TABLES
+		 WHERE TABLE_SCHEMA = DATABASE()",
+		0
+	);
+	if ($tables === false) {
+		return $capabilities;
+	}
+	while ($row = $db->get_row($tables)) {
+		$tableName = (string) ($row['TABLE_NAME'] ?? '');
+		if ($tableName !== '') {
+			$capabilities['tables'][$tableName] = true;
+		}
+	}
+	$db->free($tables);
+
+	$columns = $db->query(
+		"SELECT TABLE_NAME, COLUMN_NAME
+		 FROM INFORMATION_SCHEMA.COLUMNS
+		 WHERE TABLE_SCHEMA = DATABASE()",
+		0
+	);
+	if ($columns !== false) {
+		while ($row = $db->get_row($columns)) {
+			$tableName = (string) ($row['TABLE_NAME'] ?? '');
+			$columnName = (string) ($row['COLUMN_NAME'] ?? '');
+			if ($tableName !== '' && $columnName !== '') {
+				if (!isset($capabilities['columns'][$tableName])) {
+					$capabilities['columns'][$tableName] = array();
+				}
+				$capabilities['columns'][$tableName][$columnName] = true;
+			}
+		}
+		$db->free($columns);
+	}
+
+	$indexes = $db->query(
+		"SELECT TABLE_NAME, INDEX_NAME
+		 FROM INFORMATION_SCHEMA.STATISTICS
+		 WHERE TABLE_SCHEMA = DATABASE()",
+		0
+	);
+	if ($indexes !== false) {
+		while ($row = $db->get_row($indexes)) {
+			$tableName = (string) ($row['TABLE_NAME'] ?? '');
+			$indexName = (string) ($row['INDEX_NAME'] ?? '');
+			if ($tableName !== '' && $indexName !== '') {
+				if (!isset($capabilities['indexes'][$tableName])) {
+					$capabilities['indexes'][$tableName] = array();
+				}
+				$capabilities['indexes'][$tableName][$indexName] = true;
+			}
+		}
+		$db->free($indexes);
+	}
+
+	lt_schema_cache_set($cacheKey, $capabilities);
+
+	return $capabilities;
+}
+
+function lt_schema_has_table($tableName, $refresh = false)
+{
+	$tableName = lt_schema_identifier($tableName);
+	if ($tableName === '') {
+		return false;
+	}
+
+	$capabilities = lt_schema_capabilities($refresh);
+
+	return !empty($capabilities['tables'][$tableName]);
+}
+
+function lt_schema_has_column($tableName, $columnName, $refresh = false)
+{
+	$tableName = lt_schema_identifier($tableName);
+	$columnName = lt_schema_identifier($columnName);
+	if ($tableName === '' || $columnName === '') {
+		return false;
+	}
+
+	$capabilities = lt_schema_capabilities($refresh);
+
+	return !empty($capabilities['columns'][$tableName][$columnName]);
+}
+
+function lt_schema_has_index($tableName, $indexName, $refresh = false)
+{
+	$tableName = lt_schema_identifier($tableName);
+	$indexName = lt_schema_identifier($indexName);
+	if ($tableName === '' || $indexName === '') {
+		return false;
+	}
+
+	$capabilities = lt_schema_capabilities($refresh);
+
+	return !empty($capabilities['indexes'][$tableName][$indexName]);
 }
 
 function lt_schema_identifier($value)
@@ -165,6 +251,11 @@ function lt_schema_identifier($value)
 function lt_schema_cache_ttl()
 {
 	return 6 * 60 * 60;
+}
+
+function lt_schema_capabilities_cache_key()
+{
+	return 'schema:capabilities:v1';
 }
 
 function lt_schema_table_cache_key($tableName)
@@ -193,6 +284,7 @@ function lt_schema_cache_delete($key)
 {
 	if (function_exists('lt_cache_delete')) {
 		lt_cache_delete($key, 'schema');
+		lt_cache_delete(lt_schema_capabilities_cache_key(), 'schema');
 	}
 }
 

@@ -109,11 +109,10 @@ function comments_reports_ensure_table()
 
 function comments_index_exists($tableName, $indexName)
 {
-    global $db;
     static $cache = array();
 
     $tableName = preg_replace('~[^a-z0-9_]~i', '', (string) $tableName);
-    $indexName = trim((string) $indexName);
+    $indexName = preg_replace('~[^a-z0-9_]~i', '', (string) $indexName);
     if ($tableName === '' || $indexName === '') {
         return false;
     }
@@ -123,23 +122,7 @@ function comments_index_exists($tableName, $indexName)
         return $cache[$key];
     }
 
-    $cacheKey = 'schema:index:'.$tableName.':'.$indexName.':exists';
-    $cached = lt_schema_cache_get($cacheKey);
-    if (is_array($cached) && array_key_exists('exists', $cached)) {
-        $cache[$key] = (bool) $cached['exists'];
-        return $cache[$key];
-    }
-
-    $sql = $db->query("SHOW INDEX FROM `".$tableName."` WHERE Key_name = '".$db->safesql($indexName)."'", 0);
-    if ($sql === false) {
-        $cache[$key] = false;
-        return false;
-    }
-
-    $row = $db->get_row($sql);
-    $db->free($sql);
-    $cache[$key] = !empty($row);
-    lt_schema_cache_set($cacheKey, array('exists' => $cache[$key]));
+    $cache[$key] = lt_schema_has_index($tableName, $indexName);
 
     return $cache[$key];
 }
