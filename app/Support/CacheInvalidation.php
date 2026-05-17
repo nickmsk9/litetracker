@@ -121,6 +121,26 @@ if (!function_exists('lt_cache_invalidate_torrent')) {
 }
 
 // ---------------------------------------------------------------------------
+// COMMENTS invalidation
+// ---------------------------------------------------------------------------
+
+if (!function_exists('lt_cache_invalidate_comments')) {
+    function lt_cache_invalidate_comments($contextType, $contextId)
+    {
+        $contextType = preg_replace('~[^a-z0-9_]~i', '', (string) $contextType);
+        $contextId = (int) $contextId;
+        if ($contextType === '' || $contextId <= 0 || !function_exists('lt_cache_key_comments_ns')) {
+            return;
+        }
+
+        $namespace = lt_cache_key_comments_ns();
+        lt_cache_delete(lt_cache_key_comments_payload($contextType, $contextId), $namespace);
+        lt_cache_delete(lt_cache_key_comments_reactions_summary($contextType, $contextId), $namespace);
+        lt_cache_delete(lt_cache_key_comments_pin($contextType, $contextId), $namespace);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // SYSTEM invalidation (CRON, IP bans)
 // ---------------------------------------------------------------------------
 

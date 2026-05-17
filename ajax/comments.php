@@ -155,6 +155,8 @@ if ($action === 'add') {
         lt_comment_notify_wall_owner($objectId, $USER);
     }
 
+    comments_invalidate_payload($type, $objectId);
+
     ajax_cm_response(1, 'Комментарий добавлен.', array(
         'html'       => ajax_cm_stream_html($type, $objectId, $file, $commentsSort),
         'comment_id' => $newId,
@@ -207,6 +209,8 @@ if ($action === 'edit') {
     if (!$updated) {
         ajax_cm_response(0, 'Не удалось обновить комментарий.');
     }
+
+    comments_invalidate_payload($type, $objectId);
 
     ajax_cm_response(1, 'Комментарий обновлён.', array(
         'html'       => ajax_cm_stream_html($type, $objectId, $file, $commentsSort),
@@ -273,6 +277,7 @@ if ($action === 'delete') {
         comments_unpin($type, $objectId);
     }
     lt_comment_notify_deleted($type, $objectId, $commentId, (int)$comment['id_user'], (int)$USER['id'], $deletedByAdmin);
+    comments_invalidate_payload($type, $objectId);
 
     ajax_cm_response(1, 'Комментарий удалён.', array(
         'html'       => ajax_cm_stream_html($type, $objectId, $file, $commentsSort),
@@ -327,6 +332,8 @@ if ($action === 'restore') {
         0
     );
 
+    comments_invalidate_payload($type, $objectId);
+
     ajax_cm_response(1, 'Комментарий восстановлен.', array(
         'html' => ajax_cm_stream_html($type, $objectId, $file, $commentsSort),
         'comment_id' => $commentId,
@@ -375,6 +382,8 @@ if ($action === 'react') {
         );
         $currentReaction = $reaction;
     }
+
+    comments_invalidate_payload($type, $objectId);
 
     $counts = comments_reaction_counts($type, array($commentId), (int)$USER['id']);
     ajax_cm_response(1, 'Реакция сохранена.', array(

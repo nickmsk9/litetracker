@@ -232,6 +232,39 @@ if (!function_exists('lt_cache_key_details_view_count')) {
 }
 
 // ---------------------------------------------------------------------------
+// COMMENTS
+// namespace: 'comments'
+// ---------------------------------------------------------------------------
+
+if (!function_exists('lt_cache_key_comments_ns')) {
+    function lt_cache_key_comments_ns()
+    {
+        return 'comments';
+    }
+}
+
+if (!function_exists('lt_cache_key_comments_payload')) {
+    function lt_cache_key_comments_payload($contextType, $contextId)
+    {
+        return 'comments:payload:'.preg_replace('~[^a-z0-9_]~i', '', (string) $contextType).':'.(int) $contextId.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_comments_reactions_summary')) {
+    function lt_cache_key_comments_reactions_summary($contextType, $contextId)
+    {
+        return 'comments:reactions-summary:'.preg_replace('~[^a-z0-9_]~i', '', (string) $contextType).':'.(int) $contextId.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_comments_pin')) {
+    function lt_cache_key_comments_pin($contextType, $contextId)
+    {
+        return 'comments:pin:'.preg_replace('~[^a-z0-9_]~i', '', (string) $contextType).':'.(int) $contextId.':v1';
+    }
+}
+
+// ---------------------------------------------------------------------------
 // EXTERNAL METADATA (movie/series lookups)
 // namespace: 'meta'
 // ---------------------------------------------------------------------------
