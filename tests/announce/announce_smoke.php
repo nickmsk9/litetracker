@@ -16,6 +16,18 @@ chdir($root);
 
 require_once $root.'/system/config/config.mysql.php';
 
+if (
+	empty($_ENV['P15_NO_DOCKER_FALLBACK'])
+	&& empty(getenv('P15_NO_DOCKER_FALLBACK'))
+	&& !file_exists('/.dockerenv')
+	&& (string) ($mysql['host'] ?? '') === 'db'
+	&& gethostbyname('db') === 'db'
+) {
+	$cmd = 'docker compose exec -T -e P15_NO_DOCKER_FALLBACK=1 php php tests/announce/announce_smoke.php';
+	passthru($cmd, $exitCode);
+	exit((int) $exitCode);
+}
+
 $state = array(
 	'root' => $root,
 	'tests' => array(),

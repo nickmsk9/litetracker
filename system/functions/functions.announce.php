@@ -113,6 +113,7 @@ function announce_parse_request($get = null, $server = null)
 		'compact' => ((int) ($get['compact'] ?? 0) === 1),
 		'no_peer_id' => ((int) ($get['no_peer_id'] ?? 0) === 1),
 		'numwant' => announce_normalize_numwant($get, 50),
+		'announce_debug' => ((int) ($get['announce_debug'] ?? 0) === 1),
 		'client_flags' => $clientFlags,
 		'agent' => $clientFlags['agent'],
 	);
@@ -214,7 +215,7 @@ function announce_fetch_user_by_passkey($passkey)
 		return array();
 	}
 
-	return announce_super_query("SELECT id, slots FROM users WHERE passkey = ".announce_escape($passkey)." LIMIT 1");
+	return announce_super_query("SELECT id, slots, uploaded, downloaded, class FROM users WHERE passkey = ".announce_escape($passkey)." LIMIT 1");
 }
 
 function announce_fetch_user_stats_by_passkey($passkey)
@@ -270,6 +271,147 @@ function announce_count_peers_by_passkey($torrentId, $passkey)
 	$row = announce_super_query("SELECT COUNT(*) AS cnt FROM peers WHERE torrent = ".(int) $torrentId." AND passkey = ".announce_escape($passkey));
 
 	return (int) ($row['cnt'] ?? 0);
+}
+
+function announce_load_ban_context($ip)
+{
+	$ip = (string) $ip;
+	$ipBan = ip2long_db($ip);
+
+	return array(
+		'ip' => $ip,
+		'ip_ban' => $ipBan,
+		'ban' => announce_fetch_ip_ban($ipBan),
+	);
+}
+
+function announce_load_user_context($passkey, $guest)
+{
+	$passkey = trim((string) $passkey);
+	$guest = (bool) $guest;
+
+	return array(
+		'guest' => $guest,
+		'passkey' => $passkey,
+		'user' => ($guest ? array() : announce_fetch_user_by_passkey($passkey)),
+	);
+}
+
+function announce_load_tracker_context(array $torrent)
+{
+	return array(
+		'tracker' => 'localhost',
+		'numpeers' => (int) ($torrent['numpeers'] ?? 0),
+	);
+}
+
+function announce_load_torrent_context($infoHash)
+{
+	$infoHashHex = bin2hex((string) $infoHash);
+	$torrent = announce_fetch_torrent($infoHashHex);
+	if (!is_array($torrent)) {
+		$torrent = array();
+	}
+	$tracker = announce_load_tracker_context($torrent);
+
+	return array(
+		'info_hash_hex' => $infoHashHex,
+		'torrent' => $torrent,
+		'tracker' => $tracker,
+		'torrentid' => (int) ($torrent['id'] ?? 0),
+		'torrent_size' => (int) ($torrent['size'] ?? 0),
+		'numpeers' => (int) ($tracker['numpeers'] ?? 0),
+	);
+}
+
+function announce_peer_fields()
+{
+	return "seeder, peer_id, ip, port, uploaded, downloaded, userid, UNIX_TIMESTAMP(last_action) AS prevts, UNIX_TIMESTAMP(NOW()) AS nowts, last_action";
+}
+
+function announce_load_peer_pool($torrentId, $peerId, $numwant, $numpeers, $fields = null)
+{
+	global $db;
+
+	$torrentId = (int) $torrentId;
+	$peerId = (string) $peerId;
+	$numwant = (int) $numwant;
+	$numpeers = (int) $numpeers;
+	$fields = ($fields === null ? announce_peer_fields() : (string) $fields);
+	$peerPoolLimit = max(100, min(1000, $numwant * 4));
+	if ($numpeers > 0) {
+		$peerPoolLimit = min($peerPoolLimit, $numpeers);
+	}
+
+	$peersSql = announce_fetch_peer_rows($torrentId, $fields, 'ORDER BY last_action DESC LIMIT '.$peerPoolLimit);
+	$self = null;
+	$userid = 0;
+	$peerCandidates = array();
+
+	while ($row = $db->get_row($peersSql)) {
+		if ((string) ($row['peer_id'] ?? '') === $peerId) {
+			$userid = (int) ($row['userid'] ?? 0);
+			$self = $row;
+			continue;
+		}
+
+		$peerCandidates[] = $row;
+	}
+
+	if ($peerCandidates) {
+		shuffle($peerCandidates);
+		if (count($peerCandidates) > $numwant) {
+			$peerCandidates = array_slice($peerCandidates, 0, $numwant);
+		}
+	}
+
+	if ($self === null) {
+		$row = announce_fetch_self_peer($torrentId, $peerId, $fields);
+		if (!empty($row['peer_id'])) {
+			$userid = (int) ($row['userid'] ?? 0);
+			$self = $row;
+		}
+	}
+
+	return array(
+		'fields' => $fields,
+		'pool_limit' => $peerPoolLimit,
+		'candidates' => $peerCandidates,
+		'self' => $self,
+		'userid' => $userid,
+		'returned_peer_count' => count($peerCandidates),
+	);
+}
+
+function announce_load_peer_context($torrentId, $peerId, $numwant, $numpeers)
+{
+	return announce_load_peer_pool($torrentId, $peerId, $numwant, $numpeers, announce_peer_fields());
+}
+
+function announce_debug_enabled(array $request, $ip)
+{
+	if (empty($request['announce_debug'])) {
+		return false;
+	}
+
+	return in_array((string) $ip, array('127.0.0.1', '::1', '0.0.0.0'), true);
+}
+
+function announce_debug_log(array $request, $startTime, $peerCount, $ip)
+{
+	global $db;
+
+	if (!announce_debug_enabled($request, $ip)) {
+		return;
+	}
+
+	$durationMs = round((microtime(true) - (float) $startTime) * 1000, 2);
+	error_log(
+		'announce_debug event=' . announce_normalize_event($request['event'] ?? '') .
+		' queries=' . (int) ($db->query_num ?? 0) .
+		' duration_ms=' . $durationMs .
+		' peers=' . (int) $peerCount
+	);
 }
 
 /**

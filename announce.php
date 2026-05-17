@@ -12,6 +12,7 @@ define('ANNOUNCE', true);
 require 'system/init.announce.php';
 
 $request = announce_parse_request();
+$announce_start = microtime(true);
 
 $info_hash = $request['info_hash'];
 $peer_id = $request['peer_id'];
@@ -28,7 +29,6 @@ $agent = (string) $request['agent'];
 $client_flags = $request['client_flags'];
 $GUEST = ($passkey === '' ? 1 : 0);
 $ip = getip();
-$ip_ban = ip2long_db($ip);
 $announce_interval = (int) ($config['announce_interval'] ?? 1800);
 
 if (!$GUEST && strlen($passkey) !== 32) {
@@ -51,7 +51,9 @@ announce_apply_rate_limit(
 	'Слишком много запросов с вашего IP. Повторите попытку чуть позже.'
 );
 
-$ban_resource = announce_fetch_ip_ban($ip_ban);
+$ban_context = announce_load_ban_context($ip);
+$ip_ban = $ban_context['ip_ban'];
+$ban_resource = $ban_context['ban'];
 if (!empty($ban_resource)) {
 	err('Please note, your IP ('.long2ip($ip_ban).') has been banned '.convent_date($ban_resource['date']).'');
 }
@@ -76,65 +78,36 @@ if (!empty($client_flags['has_browser_headers'])) {
 
 checkclient($peer_id);
 
+$user_context = announce_load_user_context($passkey, $GUEST);
+$user = $user_context['user'];
 if (!$GUEST) {
-	$user = announce_fetch_user_by_passkey($passkey);
 	if (empty($user['id'])) {
 		err($language['announce_6']);
 	}
 }
 
-$info_hash_hex = bin2hex($info_hash);
-$torrent = announce_fetch_torrent($info_hash_hex);
+$torrent_context = announce_load_torrent_context($info_hash);
+$info_hash_hex = $torrent_context['info_hash_hex'];
+$torrent = $torrent_context['torrent'];
 if (empty($torrent['id'])) {
 	err($language['announce_7']);
 }
 
-$torrent_size = (int) ($torrent['size'] ?? 0);
+$torrent_size = (int) $torrent_context['torrent_size'];
 if ($torrent_size > 0 && $left > $torrent_size) {
 	err('Invalid left value (greater than torrent size).');
 }
 
-$torrentid = (int) $torrent['id'];
-$numpeers = (int) ($torrent['numpeers'] ?? 0);
-$fields = "seeder, peer_id, ip, port, uploaded, downloaded, userid, UNIX_TIMESTAMP(last_action) AS prevts, UNIX_TIMESTAMP(NOW()) AS nowts, last_action";
-$peerPoolLimit = max(100, min(1000, $rsize * 4));
-if ($numpeers > 0) {
-	$peerPoolLimit = min($peerPoolLimit, $numpeers);
-}
-$limitSql = 'ORDER BY last_action DESC LIMIT '.$peerPoolLimit;
-$peers_sql = announce_fetch_peer_rows($torrentid, $fields, $limitSql);
+$torrentid = (int) $torrent_context['torrentid'];
+$numpeers = (int) $torrent_context['numpeers'];
+$peer_context = announce_load_peer_context($torrentid, $peer_id, $rsize, $numpeers);
 
 $trupdateset = array();
-$self = null;
-$userid = 0;
-$peer_candidates = array();
-
-while ($row = $db->get_row($peers_sql)) {
-	if ((string) ($row['peer_id'] ?? '') === $peer_id) {
-		$userid = (int) ($row['userid'] ?? 0);
-		$self = $row;
-		continue;
-	}
-
-	$peer_candidates[] = $row;
-}
-
-if ($peer_candidates) {
-	shuffle($peer_candidates);
-	if (count($peer_candidates) > $rsize) {
-		$peer_candidates = array_slice($peer_candidates, 0, $rsize);
-	}
-}
+$self = $peer_context['self'];
+$userid = (int) $peer_context['userid'];
+$peer_candidates = $peer_context['candidates'];
 
 $resp = announce_success_response($announce_interval, $peer_candidates, $compact, $no_peer_id, $peer_id);
-
-if ($self === null) {
-	$row = announce_fetch_self_peer($torrentid, $peer_id, $fields);
-	if (!empty($row['peer_id'])) {
-		$userid = (int) ($row['userid'] ?? 0);
-		$self = $row;
-	}
-}
 
 $announce_wait = 15 * 60;
 if ($self !== null && !empty($self['prevts']) && !empty($self['nowts']) && (int) $self['prevts'] > ((int) $self['nowts'] - $announce_wait)) {
@@ -156,10 +129,10 @@ if (!$GUEST) {
 			err($language['announce_9']);
 		}
 
-		$az = announce_fetch_user_stats_by_passkey($passkey);
-		if (empty($az['id'])) {
-			err(sprintf($language['announce_10'], (string) ($config['sitename'] ?? 'LiteTracker')));
-		}
+			$az = $user;
+			if (empty($az['id'])) {
+				err(sprintf($language['announce_10'], (string) ($config['sitename'] ?? 'LiteTracker')));
+			}
 
 		$PRIV = get_priv_info((int) $az['class']);
 		$userid = (int) $az['id'];
@@ -308,4 +281,5 @@ if ($userid > 0 && $snatch_updateset) {
 	announce_safe_query('UPDATE snatched SET ' . join(", ", $snatch_updateset) . ' WHERE torrent = '.$torrentid.' AND userid = '.(int) $userid);
 }
 
+announce_debug_log($request, $announce_start, (int) $peer_context['returned_peer_count'], $ip);
 benc_resp_raw($resp);
