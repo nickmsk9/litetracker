@@ -192,7 +192,9 @@ function mail_invalidate_user_cache($userId)
 
 	if (function_exists('lt_cache_invalidate_user')) {
 		lt_cache_invalidate_user($userId);
-		return;
+	}
+	if (function_exists('lt_cache_invalidate_user_unread_mail_count')) {
+		lt_cache_invalidate_user_unread_mail_count($userId);
 	}
 
 	global $memcached;

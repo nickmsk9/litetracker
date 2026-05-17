@@ -53,6 +53,21 @@ if (!function_exists('lt_cache_key_user_ns')) {
     }
 }
 
+if (!function_exists('lt_cache_key_user_unread_mail_count')) {
+    /** @param int $id user ID */
+    function lt_cache_key_user_unread_mail_count($id)
+    {
+        return 'user:unread_mail_count:'.(int) $id.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_admin_open_comment_reports_count')) {
+    function lt_cache_key_admin_open_comment_reports_count()
+    {
+        return 'admin:open_comment_reports_count:v1';
+    }
+}
+
 // ---------------------------------------------------------------------------
 // SYSTEM (CRON, IP bans)
 // namespace: 'sys'
@@ -228,6 +243,14 @@ if (!function_exists('lt_cache_key_details_view_count')) {
     function lt_cache_key_details_view_count($id)
     {
         return 'details:view-count:'.(int) $id.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_details_view_seen')) {
+    /** @param string $visitorHash sha1 user/guest visitor hash */
+    function lt_cache_key_details_view_seen($id, $visitorHash)
+    {
+        return 'details:view-seen:'.(int) $id.':'.preg_replace('~[^a-f0-9]~i', '', (string) $visitorHash).':v1';
     }
 }
 

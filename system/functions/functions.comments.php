@@ -819,6 +819,8 @@ function comments_current_user_reactions($type, array $ids, $userId)
 {
     global $db;
 
+    static $requestCache = array();
+
     comments_ensure_modern_tables();
     $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
     $userId = (int) $userId;
@@ -835,6 +837,11 @@ function comments_current_user_reactions($type, array $ids, $userId)
     }
     if (!$safeIds) {
         return array();
+    }
+
+    $cacheKey = $type.':'.$userId.':'.md5(implode(',', $safeIds));
+    if (isset($requestCache[$cacheKey])) {
+        return $requestCache[$cacheKey];
     }
 
     $result = array();
@@ -855,6 +862,8 @@ function comments_current_user_reactions($type, array $ids, $userId)
         }
         $db->free($sql);
     }
+
+    $requestCache[$cacheKey] = $result;
 
     return $result;
 }
@@ -1640,6 +1649,28 @@ function user_wall_reports_href($status = 'open')
     }
 
     return 'wall_reports.php'.($params ? '?'.http_build_query($params) : '');
+}
+
+function user_wall_reports_open_count()
+{
+    global $db;
+
+    if (!user_wall_reports_can_moderate()) {
+        return 0;
+    }
+
+    $cacheKey = lt_cache_key_admin_open_comment_reports_count();
+    $cached = lt_cache_get($cacheKey, lt_cache_key_user_ns());
+    if ($cached !== false && is_numeric($cached)) {
+        return (int) $cached;
+    }
+
+    user_wall_reports_ensure_table();
+    $row = $db->super_query("SELECT COUNT(*) AS c FROM `" . user_wall_reports_table_name() . "` WHERE status = 'open'");
+    $count = (int) ($row['c'] ?? 0);
+    lt_cache_set($cacheKey, $count, 20, lt_cache_key_user_ns());
+
+    return $count;
 }
 
 function user_wall_fetch_rows($objectId)

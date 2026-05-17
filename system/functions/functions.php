@@ -45,9 +45,17 @@ function lt_unread_messages_count($userId)
 		return 0;
 	}
 
-	$row = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = ".$userId." AND delete_in = 0 AND reading = 0");
+	$cacheKey = lt_cache_key_user_unread_mail_count($userId);
+	$cached = lt_cache_get($cacheKey, lt_cache_key_user_ns());
+	if ($cached !== false && is_numeric($cached)) {
+		return (int) $cached;
+	}
 
-	return (int) ($row['c'] ?? 0);
+	$row = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = ".$userId." AND delete_in = 0 AND reading = 0");
+	$count = (int) ($row['c'] ?? 0);
+	lt_cache_set($cacheKey, $count, 20, lt_cache_key_user_ns());
+
+	return $count;
 }
 
 function lt_sync_user_unread_messages($userId)
@@ -65,6 +73,7 @@ function lt_sync_user_unread_messages($userId)
 	if (!$isCurrentUser || $currentStoredCount !== $count) {
 		$db->query("UPDATE users SET num_messages = ".$count." WHERE id = ".$userId);
 		lt_cache_invalidate_user($userId);
+		lt_cache_invalidate_user_unread_mail_count($userId);
 	}
 	if ($isCurrentUser) {
 		$USER['num_messages'] = $count;
@@ -1486,6 +1495,7 @@ function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {
 	$db->pquery("INSERT INTO mail(name, text, id_user_in, id_user_out, date, delete_in, delete_out) VALUES (?, ?, ".$user_in.", ".$user_out.", NOW(), 0, 0)", 'ss', [$name, $text]);
 	$db->query("UPDATE users SET num_messages=(num_messages+1) WHERE id=".$user_in);
 	lt_cache_invalidate_user($user_in);
+	lt_cache_invalidate_user_unread_mail_count($user_in);
 	return 1;
 }
 

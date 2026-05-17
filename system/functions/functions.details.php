@@ -299,11 +299,15 @@ function lt_details_register_view($torrentId)
 	$userId = (!empty($USER['id']) ? (int) $USER['id'] : 0);
 	$visitorKey = ($userId > 0 ? 'user:'.$userId : 'guest:'.getip().'|'.($_SERVER['HTTP_USER_AGENT'] ?? ''));
 	$visitorHash = sha1($visitorKey.'|'.COOKIE_SALT);
+	$seenKey = lt_cache_key_details_view_seen($torrentId, $visitorHash);
 
-	$db->query(
-		"INSERT IGNORE INTO torrent_views (torrent_id, user_id, visitor_hash, date)
-		VALUES (".$torrentId.", ".$userId.", '".$db->safesql($visitorHash)."', NOW())"
-	);
+	if (false === lt_details_cache_get($seenKey)) {
+		$db->query(
+			"INSERT IGNORE INTO torrent_views (torrent_id, user_id, visitor_hash, date)
+			VALUES (".$torrentId.", ".$userId.", '".$db->safesql($visitorHash)."', NOW())"
+		);
+		lt_details_cache_set($seenKey, 1, 600);
+	}
 
 	$cacheKey = lt_cache_key_details_view_count($torrentId);
 	$cached = lt_details_cache_get($cacheKey);
@@ -441,7 +445,7 @@ function lt_details_prepare_moderation_view($torrent, $viewerCanModerate, $isOwn
 
 function lt_details_prepare_rating($torrentId)
 {
-	global $db, $USER;
+	global $USER;
 
 	$torrentId = (int) $torrentId;
 	$cookieName = 'lt_torrent_rating_'.$torrentId;
@@ -455,8 +459,8 @@ function lt_details_prepare_rating($torrentId)
 		$votes = (int) ($summary['votes'] ?? 0);
 		$score = (float) ($summary['score'] ?? 0);
 		if (!empty($USER['id']) && $votes > 0) {
-			$userRating = $db->super_query("SELECT rating FROM torrent_ratings WHERE torrent_id = ".$torrentId." AND user_id = ".(int) $USER['id']." LIMIT 1");
-			$userValue = (int) ($userRating['rating'] ?? 0);
+			$userState = lt_details_user_state($torrentId, (int) $USER['id']);
+			$userValue = (int) ($userState['user_rating'] ?? 0);
 		}
 	}
 
@@ -520,8 +524,6 @@ function lt_details_rating_summary($torrentId)
 
 function lt_details_rating_stats($torrentId, $userId = 0)
 {
-	global $db;
-
 	$torrentId = (int) $torrentId;
 	$userId = (int) $userId;
 	$result = array(
@@ -538,8 +540,8 @@ function lt_details_rating_stats($torrentId, $userId = 0)
 	$result['rating_count'] = (int) ($summary['votes'] ?? 0);
 	$result['rating_avg'] = (float) ($summary['score'] ?? 0);
 	if ($userId > 0 && $result['rating_count'] > 0) {
-		$row = $db->super_query("SELECT rating FROM torrent_ratings WHERE torrent_id = ".$torrentId." AND user_id = ".$userId." LIMIT 1");
-		$result['user_rating'] = (int) ($row['rating'] ?? 0);
+		$userState = lt_details_user_state($torrentId, $userId);
+		$result['user_rating'] = (int) ($userState['user_rating'] ?? 0);
 	}
 
 	return $result;
@@ -924,17 +926,17 @@ function lt_details_external_tracker_rows($torrentId)
 
 function lt_details_prepare_bookmark($torrentId)
 {
-	global $db, $USER, $config, $language;
+	global $USER, $config, $language;
 
 	$torrentId = (int) $torrentId;
-	$count = array('count' => 0);
 	if (!empty($USER['id'])) {
-		$count = $db->super_query("SELECT COUNT(*) AS count FROM books WHERE id_torrent=".$torrentId." AND id_user=".(int) $USER['id']);
+		$userState = lt_details_user_state($torrentId, (int) $USER['id']);
+		$bookmarked = !empty($userState['bookmark_exists']);
 		return array(
-			'legacy_html' => '<a class="proleft" href="my.book.php?id='.$torrentId.'&act='.(!empty($count['count']) ? 'delete' : 'add').'">'.(!empty($count['count']) ? $language['details_26'] : $language['details_25']).'</a>',
-			'href' => 'my.book.php?id='.$torrentId.'&act='.(!empty($count['count']) ? 'delete' : 'add'),
-			'label' => (!empty($count['count']) ? $language['details_26'] : $language['details_25']),
-			'bookmarked' => !empty($count['count']),
+			'legacy_html' => '<a class="proleft" href="my.book.php?id='.$torrentId.'&act='.($bookmarked ? 'delete' : 'add').'">'.($bookmarked ? $language['details_26'] : $language['details_25']).'</a>',
+			'href' => 'my.book.php?id='.$torrentId.'&act='.($bookmarked ? 'delete' : 'add'),
+			'label' => ($bookmarked ? $language['details_26'] : $language['details_25']),
+			'bookmarked' => $bookmarked,
 			'guest_register_href' => '',
 			'guest_login_href' => '',
 			'guest_notice' => 'Чтобы скачать этот торрент, вам необходимо зарегистрироваться или войти на сайт.',
@@ -950,6 +952,58 @@ function lt_details_prepare_bookmark($torrentId)
 		'guest_login_href' => 'login.php?referer='.rawurlencode('details.php?id='.$torrentId),
 		'guest_notice' => 'Чтобы скачать этот торрент, вам необходимо зарегистрироваться или войти на сайт.',
 	);
+}
+
+function lt_details_user_state($torrentId, $userId, $commentIds = array())
+{
+	global $db;
+
+	static $requestCache = array();
+
+	$torrentId = (int) $torrentId;
+	$userId = (int) $userId;
+	$result = array(
+		'user_rating' => 0,
+		'bookmark_exists' => false,
+		'current_user_reactions' => array(),
+	);
+	if ($torrentId <= 0 || $userId <= 0) {
+		return $result;
+	}
+
+	$key = $torrentId.':'.$userId;
+	if (!isset($requestCache[$key])) {
+		if (lt_details_rating_table_ready()) {
+			$row = $db->super_query(
+				"SELECT
+					COALESCE(MAX(CASE WHEN r.user_id = ".$userId." THEN r.rating ELSE 0 END), 0) AS user_rating,
+					EXISTS(SELECT 1 FROM books AS b WHERE b.id_torrent = ".$torrentId." AND b.id_user = ".$userId." LIMIT 1) AS bookmark_exists
+				 FROM torrent_ratings AS r
+				 WHERE r.torrent_id = ".$torrentId
+			);
+		} else {
+			$row = $db->super_query(
+				"SELECT
+					0 AS user_rating,
+					EXISTS(SELECT 1 FROM books AS b WHERE b.id_torrent = ".$torrentId." AND b.id_user = ".$userId." LIMIT 1) AS bookmark_exists"
+			);
+		}
+
+		$requestCache[$key] = array(
+			'user_rating' => (int) ($row['user_rating'] ?? 0),
+			'bookmark_exists' => !empty($row['bookmark_exists']),
+		);
+	}
+
+	$result['user_rating'] = (int) ($requestCache[$key]['user_rating'] ?? 0);
+	$result['bookmark_exists'] = !empty($requestCache[$key]['bookmark_exists']);
+
+	$commentIds = array_values(array_filter(array_map('intval', (array) $commentIds)));
+	if ($commentIds && function_exists('comments_current_user_reactions')) {
+		$result['current_user_reactions'] = comments_current_user_reactions('torrents', $commentIds, $userId);
+	}
+
+	return $result;
 }
 
 function lt_details_prepare_description_view($torrent, $categoryName)

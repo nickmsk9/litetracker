@@ -520,6 +520,7 @@ if ($action === 'report') {
             "INSERT INTO `{$reportsTable}` (`comment_id`, `object_id`, `comment_user_id`, `reporter_user_id`, `comment_text_snapshot`, `status`, `created_at`)
              VALUES ({$commentId}, {$objectId}, " . (int)$comment['id_user'] . ", " . (int)$USER['id'] . ", '" . $db->safesql((string)($comment['text'] ?? '')) . "', 'open', NOW())"
         );
+        lt_cache_invalidate_admin_open_comment_reports_count();
         user_wall_reports_notify_moderators((int)$db->insert_id(), $objectId, $commentId, (string)($USER['name'] ?? ''));
     } else {
         $db->query(
@@ -535,6 +536,7 @@ if ($action === 'report') {
                 NOW()
              )"
         );
+        lt_cache_invalidate_admin_open_comment_reports_count();
     }
 
     ajax_cm_response(1, 'Жалоба отправлена администрации.');

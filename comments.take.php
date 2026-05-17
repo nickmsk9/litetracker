@@ -157,6 +157,7 @@ if ($act === 'report' && !empty($_REQUEST['id_comment'])) {
              VALUES (?, {$id_comment}, {$object_id}, ".(int) $arr['id_user'].", ".(int) $USER['id'].", ?, 'open', NOW())",
             'ss', [$type, (string) ($arr['text'] ?? '')]
         );
+        lt_cache_invalidate_admin_open_comment_reports_count();
     }
 
     header('Location:' . lt_comment_return_url($file, $object_id, '#wall-comment-' . $id_comment));
