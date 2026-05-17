@@ -215,7 +215,7 @@ function announce_fetch_user_by_passkey($passkey)
 		return array();
 	}
 
-	return announce_super_query("SELECT id, slots, uploaded, downloaded, class FROM users WHERE passkey = ".announce_escape($passkey)." LIMIT 1");
+	return announce_super_query("SELECT id, uploaded, downloaded, class FROM users WHERE passkey = ".announce_escape($passkey)." LIMIT 1");
 }
 
 function announce_fetch_user_stats_by_passkey($passkey)

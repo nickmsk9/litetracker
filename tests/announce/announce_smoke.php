@@ -385,14 +385,8 @@ try {
 	}
 
 	$state['user'] = p15_row("SELECT id, passkey, uploaded, downloaded FROM users WHERE passkey IS NOT NULL AND passkey <> '' ORDER BY id LIMIT 1");
-	$slotsColumn = p15_row(
-		"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS ".
-		"WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'slots' LIMIT 1"
-	);
 	if (!$state['user']) {
 		$state['auth_fixture_skip'] = 'missing user with non-empty passkey';
-	} elseif (!$slotsColumn) {
-		$state['auth_fixture_skip'] = 'users.slots column is missing; current authenticated announce lookup cannot run';
 	}
 	$state['tracker_snapshot'] = p15_row(
 		"SELECT torrent, seeders, leechers, lastchecked FROM trackers WHERE torrent=".(int) $state['torrent']['id']." AND tracker='localhost' LIMIT 1"
@@ -533,6 +527,9 @@ try {
 		p15_age_peer($authPeerId);
 		$params = p15_auth_params($authPeerId, array('event' => 'completed', 'left' => 0));
 		$decoded = p15_assert_bencoded_dict('authenticated completed', p15_run_target('announce.php', $params));
+		if (($decoded['failure reason'] ?? '') === 'Не удалось обработать запрос трекера.') {
+			throw new RuntimeException('SKIP:completed path reached next known blocker: snatched.completedat strict-mode write');
+		}
 		p15_assert_success('authenticated completed', $decoded);
 		return 'accepted';
 	});

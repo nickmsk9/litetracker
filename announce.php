@@ -134,8 +134,7 @@ if (!$GUEST) {
 				err(sprintf($language['announce_10'], (string) ($config['sitename'] ?? 'LiteTracker')));
 			}
 
-		$PRIV = get_priv_info((int) $az['class']);
-		$userid = (int) $az['id'];
+			$userid = (int) $az['id'];
 
 	} else {
 		if (!announce_validate_stats($uploaded, $downloaded, $left)) {
