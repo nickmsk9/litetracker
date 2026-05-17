@@ -38,6 +38,7 @@ $state = array(
 	'torrent_snapshot' => null,
 	'user_snapshot' => null,
 	'snatched_snapshot' => null,
+	'cleanup_verified' => false,
 	'auth_fixture_skip' => '',
 	'cleanup_done' => false,
 	'touched' => array(
@@ -165,7 +166,7 @@ function p15_decode_response($payload)
 function p15_peer_id($tag)
 {
 	global $state;
-	$prefix = (str_starts_with((string) $tag, 'AUTH') ? '-P19SMK-' : '-P15SMK-');
+	$prefix = (str_starts_with((string) $tag, 'AUTH') || str_starts_with((string) $tag, 'P23') ? '-P23SMK-' : '-P15SMK-');
 	$id = substr($prefix.$tag.str_repeat('X', 20), 0, 20);
 	$state['peer_ids'][] = $id;
 	return $id;
@@ -291,6 +292,96 @@ function p15_assert_success($name, array $decoded)
 	}
 }
 
+function p15_int($row, $key)
+{
+	return (int) ($row[$key] ?? 0);
+}
+
+function p15_user_row()
+{
+	global $state;
+	return p15_row("SELECT id, uploaded, downloaded FROM users WHERE id=".(int) $state['user']['id']." LIMIT 1");
+}
+
+function p15_torrent_row()
+{
+	global $state;
+	return p15_row("SELECT id, completed, last_action FROM torrents WHERE id=".(int) $state['torrent']['id']." LIMIT 1");
+}
+
+function p15_tracker_row()
+{
+	global $state;
+	static $fields = null;
+
+	if ($fields === null) {
+		$fields = array('torrent', 'seeders', 'leechers', 'lastchecked');
+		$res = p15_db()->query("SHOW COLUMNS FROM trackers");
+		if (!$res instanceof mysqli_result) {
+			throw new RuntimeException('Query failed: '.p15_db()->error);
+		}
+		$columns = array();
+		while ($row = $res->fetch_assoc()) {
+			$columns[(string) $row['Field']] = true;
+		}
+		$res->free();
+		foreach (array('completed', 'downloaded') as $optional) {
+			if (isset($columns[$optional])) {
+				$fields[] = $optional;
+			}
+		}
+	}
+
+	return p15_row(
+		"SELECT ".implode(', ', $fields)." ".
+		"FROM trackers WHERE torrent=".(int) $state['torrent']['id']." AND tracker='localhost' LIMIT 1"
+	);
+}
+
+function p15_snatched_row()
+{
+	global $state;
+	return p15_row(
+		"SELECT userid, torrent, uploaded, downloaded, startedat, completedat, finished ".
+		"FROM snatched WHERE torrent=".(int) $state['torrent']['id']." AND userid=".(int) $state['user']['id']." LIMIT 1"
+	);
+}
+
+function p15_peer_row($peerId)
+{
+	global $state;
+	return p15_row(
+		"SELECT id, torrent, peer_id, uploaded, downloaded, uploadoffset, downloadoffset, to_go, seeder, userid, passkey ".
+		"FROM peers WHERE torrent=".(int) $state['torrent']['id']." AND peer_id='".p15_escape($peerId)."' LIMIT 1"
+	);
+}
+
+function p15_assert_equals($label, $expected, $actual)
+{
+	if ((string) $expected !== (string) $actual) {
+		throw new RuntimeException($label.' expected '.var_export($expected, true).', got '.var_export($actual, true));
+	}
+}
+
+function p15_assert_tracker_non_negative(array $tracker)
+{
+	foreach (array('seeders', 'leechers', 'completed', 'downloaded') as $field) {
+		if (array_key_exists($field, $tracker) && (int) $tracker[$field] < 0) {
+			throw new RuntimeException('tracker '.$field.' became negative');
+		}
+	}
+}
+
+function p15_insert_foreign_peer($peerId)
+{
+	global $state;
+
+	p15_exec(
+		"INSERT INTO peers (connectable, torrent, peer_id, ip, port, uploaded, downloaded, to_go, started, last_action, prev_action, seeder, userid, agent, uploadoffset, downloadoffset, passkey) ".
+		"VALUES (1, ".(int) $state['torrent']['id'].", '".p15_escape($peerId)."', '127.0.0.2', 51414, 0, 0, ".(int) $state['torrent']['size'].", NOW(), NOW(), NOW(), 0, ".(int) $state['user']['id'].", 'LiteTracker smoke foreign peer', 0, 0, '".p15_escape($state['user']['passkey'])."')"
+	);
+}
+
 function p15_auth_params($peerId, array $overrides = array())
 {
 	global $state;
@@ -326,6 +417,8 @@ function p15_cleanup()
 		p15_exec('DELETE FROM peers WHERE peer_id IN ('.implode(',', $ids).')');
 		$state['touched']['peers_deleted'] = p15_db()->affected_rows;
 	}
+	p15_exec("DELETE FROM peers WHERE peer_id LIKE '-P19SMK-%' OR peer_id LIKE '-P23SMK-%'");
+	$state['touched']['peers_deleted'] += p15_db()->affected_rows;
 
 	if ($state['tracker_snapshot']) {
 		$s = $state['tracker_snapshot'];
@@ -378,6 +471,53 @@ function p15_cleanup()
 	}
 }
 
+function p15_verify_cleanup()
+{
+	global $state;
+
+	$leaked = p15_row("SELECT COUNT(*) AS c FROM peers WHERE peer_id LIKE '-P19SMK-%' OR peer_id LIKE '-P23SMK-%'");
+	if ((int) ($leaked['c'] ?? 0) !== 0) {
+		throw new RuntimeException('P19/P23 smoke peer rows leaked: '.(int) $leaked['c']);
+	}
+
+	if ($state['tracker_snapshot']) {
+		$current = p15_tracker_row();
+		foreach (array('seeders', 'leechers', 'lastchecked') as $field) {
+			p15_assert_equals('restored tracker '.$field, $state['tracker_snapshot'][$field], $current[$field] ?? null);
+		}
+	}
+
+	if ($state['torrent_snapshot']) {
+		$current = p15_torrent_row();
+		foreach (array('completed', 'last_action') as $field) {
+			p15_assert_equals('restored torrent '.$field, $state['torrent_snapshot'][$field], $current[$field] ?? null);
+		}
+	}
+
+	if ($state['user_snapshot']) {
+		$current = p15_user_row();
+		foreach (array('uploaded', 'downloaded') as $field) {
+			p15_assert_equals('restored user '.$field, $state['user_snapshot'][$field], $current[$field] ?? null);
+		}
+	}
+
+	if ($state['user_snapshot']) {
+		$currentSnatched = p15_snatched_row();
+		if ($state['snatched_snapshot']) {
+			if (!$currentSnatched) {
+				throw new RuntimeException('snatched row missing after restore');
+			}
+			foreach (array('uploaded', 'downloaded', 'startedat', 'completedat', 'finished') as $field) {
+				p15_assert_equals('restored snatched '.$field, $state['snatched_snapshot'][$field], $currentSnatched[$field] ?? null);
+			}
+		} elseif ($currentSnatched) {
+			throw new RuntimeException('snatched row leaked after cleanup');
+		}
+	}
+
+	$state['cleanup_verified'] = true;
+}
+
 try {
 	$state['torrent'] = p15_row("SELECT id, infohash, size, completed, last_action FROM torrents WHERE infohash <> '' ORDER BY id LIMIT 1");
 	if (!$state['torrent']) {
@@ -387,6 +527,8 @@ try {
 	$state['user'] = p15_row("SELECT id, passkey, uploaded, downloaded FROM users WHERE passkey IS NOT NULL AND passkey <> '' ORDER BY id LIMIT 1");
 	if (!$state['user']) {
 		$state['auth_fixture_skip'] = 'missing user with non-empty passkey';
+	} elseif (strlen((string) $state['user']['passkey']) !== 32) {
+		$state['auth_fixture_skip'] = 'selected user passkey is not 32 characters';
 	}
 	$state['tracker_snapshot'] = p15_row(
 		"SELECT torrent, seeders, leechers, lastchecked FROM trackers WHERE torrent=".(int) $state['torrent']['id']." AND tracker='localhost' LIMIT 1"
@@ -525,19 +667,86 @@ try {
 	p15_record('authenticated completed', function () use ($authPeerId) {
 		p15_require_auth_fixture();
 		p15_age_peer($authPeerId);
-		$params = p15_auth_params($authPeerId, array('event' => 'completed', 'left' => 0));
+
+		$beforeUser = p15_user_row();
+		$beforeTorrent = p15_torrent_row();
+		$beforeTracker = p15_tracker_row();
+		$beforeSnatched = p15_snatched_row();
+		$beforePeer = p15_peer_row($authPeerId);
+		if (!$beforeUser || !$beforeTorrent || !$beforeTracker || !$beforePeer || !$beforeSnatched) {
+			throw new RuntimeException('SKIP:missing authenticated rows needed for exact completed accounting assertions');
+		}
+
+		$uploadDelta = 12345;
+		$downloadDelta = 67890;
+		$uploaded = p15_int($beforePeer, 'uploaded') + $uploadDelta;
+		$downloaded = p15_int($beforePeer, 'downloaded') + $downloadDelta;
+		$canCountCompleted = (p15_int($beforeSnatched, 'finished') === 0);
+
+		$params = p15_auth_params($authPeerId, array(
+			'event' => 'completed',
+			'left' => 0,
+			'uploaded' => $uploaded,
+			'downloaded' => $downloaded,
+		));
 		$decoded = p15_assert_bencoded_dict('authenticated completed', p15_run_target('announce.php', $params));
 		p15_assert_success('authenticated completed', $decoded);
-		return 'accepted';
+
+		$afterUser = p15_user_row();
+		$afterTorrent = p15_torrent_row();
+		$afterTracker = p15_tracker_row();
+		$afterSnatched = p15_snatched_row();
+		$afterPeer = p15_peer_row($authPeerId);
+		if (!$afterUser || !$afterTorrent || !$afterTracker || !$afterSnatched || !$afterPeer) {
+			throw new RuntimeException('completed write-path did not leave expected accounting rows');
+		}
+
+		p15_assert_equals('user uploaded delta', $uploadDelta, p15_int($afterUser, 'uploaded') - p15_int($beforeUser, 'uploaded'));
+		p15_assert_equals('user downloaded delta', $downloadDelta, p15_int($afterUser, 'downloaded') - p15_int($beforeUser, 'downloaded'));
+		p15_assert_equals('snatched uploaded delta', $uploadDelta, p15_int($afterSnatched, 'uploaded') - p15_int($beforeSnatched, 'uploaded'));
+		p15_assert_equals('snatched downloaded delta', $downloadDelta, p15_int($afterSnatched, 'downloaded') - p15_int($beforeSnatched, 'downloaded'));
+		p15_assert_equals('torrent completed delta', ($canCountCompleted ? 1 : 0), p15_int($afterTorrent, 'completed') - p15_int($beforeTorrent, 'completed'));
+		p15_assert_equals('peer uploaded', $uploaded, p15_int($afterPeer, 'uploaded'));
+		p15_assert_equals('peer downloaded', $downloaded, p15_int($afterPeer, 'downloaded'));
+		p15_assert_equals('peer to_go', 0, p15_int($afterPeer, 'to_go'));
+		p15_assert_equals('peer seeder', 1, p15_int($afterPeer, 'seeder'));
+		if ($canCountCompleted && (p15_int($afterSnatched, 'finished') !== 1 || p15_int($afterSnatched, 'completedat') <= 0)) {
+			throw new RuntimeException('snatched completed state was not recorded');
+		}
+		if (!$canCountCompleted) {
+			p15_assert_equals('snatched finished unchanged', p15_int($beforeSnatched, 'finished'), p15_int($afterSnatched, 'finished'));
+		}
+		if (strtotime((string) $afterTorrent['last_action']) < strtotime((string) $beforeTorrent['last_action'])) {
+			throw new RuntimeException('torrent last_action moved backwards');
+		}
+		p15_assert_tracker_non_negative($afterTracker);
+
+		$trackerMessage = 'tracker seeders='.(int) $afterTracker['seeders'].' leechers='.(int) $afterTracker['leechers'];
+		return 'accounting deltas asserted; completed_count='.($canCountCompleted ? 'yes' : 'no').'; '.$trackerMessage;
 	});
 
 	p15_record('authenticated stopped', function () use ($authPeerId) {
 		p15_require_auth_fixture();
 		p15_age_peer($authPeerId);
+		$foreignPeerId = p15_peer_id('P23FOREIGN');
+		p15_insert_foreign_peer($foreignPeerId);
+		$beforeForeign = p15_peer_row($foreignPeerId);
+		$beforeSelf = p15_peer_row($authPeerId);
+		if (!$beforeSelf || !$beforeForeign) {
+			throw new RuntimeException('SKIP:missing peer rows needed for stopped deletion assertions');
+		}
+
 		$params = p15_auth_params($authPeerId, array('event' => 'stopped', 'left' => 0));
 		$decoded = p15_assert_bencoded_dict('authenticated stopped', p15_run_target('announce.php', $params));
 		p15_assert_success('authenticated stopped', $decoded);
-		return 'accepted';
+		if (p15_peer_row($authPeerId)) {
+			throw new RuntimeException('stopped did not delete test peer');
+		}
+		if (!p15_peer_row($foreignPeerId)) {
+			throw new RuntimeException('stopped deleted a foreign peer');
+		}
+		p15_assert_tracker_non_negative(p15_tracker_row());
+		return 'test peer deleted; foreign peer preserved';
 	});
 
 	p15_record('authenticated seeder left=0', function () {
@@ -546,6 +755,13 @@ try {
 		$decoded = p15_assert_bencoded_dict('authenticated seeder', p15_run_target('announce.php', $params));
 		p15_assert_success('authenticated seeder', $decoded);
 		return 'accepted';
+	});
+
+	p15_record('cleanup restores accounting snapshots', function () {
+		global $state;
+		p15_cleanup();
+		p15_verify_cleanup();
+		return 'peers removed, snapshots restored';
 	});
 
 	echo "\n";
