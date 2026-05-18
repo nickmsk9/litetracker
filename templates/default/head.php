@@ -41,20 +41,10 @@ if ($USER) {
     }
 }
 
-$messagesCount = 0;
-if ($USER) {
-    $messagesCount = lt_sync_user_unread_messages((int) $USER['id']);
-}
-$notificationsUnreadCount = 0;
-if ($USER) {
-    $notificationsUnreadCount = lt_notifications_unread_count((int) $USER['id']);
-}
-$openWallReportsCount = 0;
-if ($USER && user_wall_reports_can_moderate()) {
-    user_wall_reports_ensure_table();
-    $openWallReportsRow = $db->super_query("SELECT COUNT(*) AS c FROM `" . user_wall_reports_table_name() . "` WHERE status = 'open'");
-    $openWallReportsCount = (int) ($openWallReportsRow['c'] ?? 0);
-}
+$chromeState = ($USER ? lt_current_user_chrome_state(array('include_reports' => false)) : array());
+$messagesCount = (int) ($chromeState['unread_messages'] ?? 0);
+$notificationsUnreadCount = (int) ($chromeState['unread_notifications'] ?? 0);
+$openWallReportsCount = (int) ($chromeState['open_reports'] ?? 0);
 $notificationBadge = ($notificationsUnreadCount > 99 ? '99+' : (string) $notificationsUnreadCount);
 $notificationsLabel = 'Уведомления' . ($notificationsUnreadCount > 0 ? ': ' . $notificationBadge : '');
 $requestUri = ltrim((string) ($_SERVER['REQUEST_URI'] ?? ''), '/');

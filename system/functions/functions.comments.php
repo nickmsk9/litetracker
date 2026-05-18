@@ -1665,8 +1665,12 @@ function user_wall_reports_open_count()
         return (int) $cached;
     }
 
-    user_wall_reports_ensure_table();
-    $row = $db->super_query("SELECT COUNT(*) AS c FROM `" . user_wall_reports_table_name() . "` WHERE status = 'open'");
+    $tableName = user_wall_reports_table_name();
+    if (!lt_table_exists($tableName)) {
+        return 0;
+    }
+
+    $row = $db->super_query("SELECT COUNT(*) AS c FROM `" . $tableName . "` WHERE status = 'open'");
     $count = (int) ($row['c'] ?? 0);
     lt_cache_set($cacheKey, $count, 20, lt_cache_key_user_ns());
 

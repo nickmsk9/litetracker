@@ -53,6 +53,10 @@ function get_user_info($id) {
 		return false;
 	}
 
+	if (!empty($GLOBALS['USER']['id']) && (int) $GLOBALS['USER']['id'] === (int) $id) {
+		return $GLOBALS['USER'];
+	}
+
 	$requestCacheKey = 'user:'.(int) $id;
 	$requestCached = lt_request_cache_get($requestCacheKey, null);
 	if ($requestCached !== null) {
@@ -119,6 +123,65 @@ function lt_sync_user_unread_messages($userId)
 	}
 
 	return $count;
+}
+
+function lt_current_user_chrome_state($options = array())
+{
+	global $db, $USER;
+
+	$options = (is_array($options) ? $options : array());
+	$includeReports = !empty($options['include_reports']);
+	$userId = (int) ($USER['id'] ?? 0);
+	if ($userId <= 0) {
+		return array(
+			'user_id' => 0,
+			'class' => 0,
+			'unread_messages' => 0,
+			'unread_notifications' => 0,
+			'open_reports' => 0,
+			'can_moderate_reports' => false,
+		);
+	}
+
+	$canModerateReports = (function_exists('user_wall_reports_can_moderate') && user_wall_reports_can_moderate());
+	$requestCacheKey = 'current_user_chrome_state:'.$userId.':'.($includeReports && $canModerateReports ? 'reports' : 'base');
+	$cached = lt_request_cache_get($requestCacheKey, null);
+	if ($cached !== null) {
+		return $cached;
+	}
+
+	$selects = array();
+	if (lt_table_exists('mail')) {
+		$selects[] = "(SELECT COUNT(*) FROM mail WHERE id_user_in = ".$userId." AND delete_in = 0 AND reading = 0) AS unread_messages";
+	} else {
+		$selects[] = "0 AS unread_messages";
+	}
+
+	if (lt_table_exists('notifications')) {
+		$selects[] = "(SELECT COUNT(*) FROM notifications WHERE user_id = ".$userId." AND is_read = 0 AND is_archived = 0) AS unread_notifications";
+	} else {
+		$selects[] = "0 AS unread_notifications";
+	}
+
+	if ($includeReports && $canModerateReports && function_exists('user_wall_reports_table_name') && lt_table_exists(user_wall_reports_table_name())) {
+		$selects[] = "(SELECT COUNT(*) FROM `".user_wall_reports_table_name()."` WHERE status = 'open') AS open_reports";
+	} else {
+		$selects[] = "0 AS open_reports";
+	}
+
+	$row = $db->super_query("SELECT ".implode(', ', $selects));
+	$state = array(
+		'user_id' => $userId,
+		'class' => (int) ($USER['class'] ?? 0),
+		'unread_messages' => (int) ($row['unread_messages'] ?? 0),
+		'unread_notifications' => (int) ($row['unread_notifications'] ?? 0),
+		'open_reports' => (int) ($row['open_reports'] ?? 0),
+		'can_moderate_reports' => $canModerateReports,
+	);
+
+	$USER['num_messages'] = $state['unread_messages'];
+
+	return lt_request_cache_set($requestCacheKey, $state);
 }
 
 function lt_table_exists($tableName, $refresh = false)
@@ -742,6 +805,31 @@ function lt_debug_route_sql_budget($route)
 	return ($budgets[$route] ?? 0);
 }
 
+function lt_debug_sql_group($query)
+{
+	$query = strtolower(trim((string) $query));
+	if ($query === '') {
+		return 'payload';
+	}
+
+	if (strpos($query, 'set time_zone') === 0 || strpos($query, 'insert into sessions ') !== false) {
+		return 'infrastructure';
+	}
+
+	if (
+		strpos($query, ' from mail ') !== false
+		|| strpos($query, ' from notifications ') !== false
+		|| strpos($query, ' from `comments_users_reports`') !== false
+		|| strpos($query, ' from comments_users_reports') !== false
+		|| strpos($query, ' from priv ') !== false
+		|| preg_match('/^select\s+\(select count\(\*\) from mail\b/i', $query)
+	) {
+		return 'chrome';
+	}
+
+	return 'payload';
+}
+
 function lt_debug_render_panel()
 {
 	if (!lt_debug_panel_allowed()) {
@@ -814,6 +902,18 @@ function lt_debug_render_panel()
 	}
 	$routeBudget = lt_debug_route_sql_budget($pageUrl);
 	$routeOverBudget = ($routeBudget > 0 && (int) ($db->query_num ?? count($queryList)) > $routeBudget);
+	$sqlGroups = array(
+		'infrastructure' => 0,
+		'chrome' => 0,
+		'payload' => 0,
+	);
+	foreach ($queryList as $queryInfo) {
+		$group = lt_debug_sql_group((string) ($queryInfo['query'] ?? ''));
+		if (!isset($sqlGroups[$group])) {
+			$sqlGroups[$group] = 0;
+		}
+		$sqlGroups[$group]++;
+	}
 	$slowQueries = array();
 	foreach ($queryList as $queryInfo) {
 		if (!empty($queryInfo['slow']) || (float) ($queryInfo['time'] ?? 0) > 0.05) {
@@ -829,6 +929,9 @@ function lt_debug_render_panel()
 	echo '<div>URL страницы: <code>'.htmlspecialchars($pageUrl, ENT_QUOTES, 'UTF-8').'</code></div>';
 	echo '<div>Количество SQL-запросов: <b>'.(int) ($db->query_num ?? count($queryList)).'</b></div>';
 	echo '<div>Бюджет SQL для маршрута: <b>'.($routeBudget > 0 ? (int) $routeBudget : 'не задан').'</b>'.($routeOverBudget ? ' <span style="color:#991b1b;font-weight:bold;">превышен</span>' : '').'</div>';
+	echo '<div>Infrastructure SQL: <b>'.(int) $sqlGroups['infrastructure'].'</b></div>';
+	echo '<div>Chrome SQL: <b>'.(int) $sqlGroups['chrome'].'</b></div>';
+	echo '<div>Payload SQL: <b>'.(int) $sqlGroups['payload'].'</b></div>';
 	echo '<div>Повторные SQL-запросы: <b>'.(int) $duplicateSqlCount.'</b></div>';
 	echo '<div>Общее время SQL: <b>'.number_format($sqlTime, 6, '.', '').' сек</b></div>';
 	echo '<div>Доля SQL во времени запроса: <b>'.number_format($sqlPercent, 1, '.', '').'%</b></div>';

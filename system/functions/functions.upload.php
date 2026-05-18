@@ -886,6 +886,11 @@ function lt_torrent_preload_author_users($rows)
 	$missingIds = array();
 	$cacheNs = lt_cache_key_user_ns();
 	foreach ($ids as $userId) {
+		if (!empty($GLOBALS['USER']['id']) && (int) $GLOBALS['USER']['id'] === (int) $userId) {
+			$users[$userId] = $GLOBALS['USER'];
+			continue;
+		}
+
 		$cachedUser = lt_cache_get(lt_cache_key_user($userId), $cacheNs);
 		if (is_array($cachedUser) && !empty($cachedUser['id'])) {
 			$users[(int) $cachedUser['id']] = $cachedUser;
