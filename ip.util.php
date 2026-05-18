@@ -21,6 +21,7 @@ if(!$PRIV['ip_util']) {
 }
 
 $ipUtilActionScope = 'ip_util_action';
+$act = trim((string) ($_GET['act'] ?? ''));
 
 function ip_util_require_action_token($scope)
 {
@@ -31,9 +32,17 @@ function ip_util_require_action_token($scope)
 	err('Ошибка', 'Защитный токен устарел. Обновите страницу и повторите действие.', 1);
 }
 
-function ip_util_action_query($scope)
+function ip_util_action_form($scope, $action, $id, $buttonText)
 {
-	return lt_csrf_query($scope);
+	$action = htmlspecialchars((string) $action, ENT_QUOTES, 'UTF-8');
+	$id = (int) $id;
+	$buttonText = htmlspecialchars((string) $buttonText, ENT_QUOTES, 'UTF-8');
+
+	return '<form action="ip.util.php?act='.$action.'" method="post" style="margin:0;">'
+		.lt_csrf_input($scope)
+		.'<input type="hidden" name="id" value="'.$id.'">'
+		.'<button type="submit">'.$buttonText.'</button>'
+		.'</form>';
 }
 
 
@@ -42,7 +51,7 @@ function ip_util_action_query($scope)
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //Общее
 /////////////////////////////////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'bans_ip') {
+if($act == 'bans_ip') {
 
 	//Постраничная навигация
 	$db->query("SELECT * FROM bans" , 1);
@@ -89,8 +98,7 @@ if($_GET['act'] == 'bans_ip') {
 		echo '<td>'.convent_date($arr['date']).'</td>';
 		echo '<td><A href="'.profile_href($arr['id_user']).'">'.get_user_color($arr['class_user'] , $arr['user_name']).'</a></td>';
 		echo '<td>'.(empty($arr['text']) ? '<i>Без комментария...</i>' : htmlspecialchars((string) ($arr['text'] ?? ''), ENT_QUOTES, 'UTF-8') ).'</td>';
-		echo '<td><input type="button" value="Разблокировать IP" onClick="window.location.href=\'ip.util.php?id='.$arr['id'].'&act=unlock_ip&'.ip_util_action_query($ipUtilActionScope).'\'">
-		</td>';
+		echo '<td>'.ip_util_action_form($ipUtilActionScope, 'unlock_ip', (int) $arr['id'], 'Разблокировать IP').'</td>';
 
 		echo '</tr>';
 	}
@@ -109,9 +117,16 @@ if($_GET['act'] == 'bans_ip') {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //Разблокировать IP
 /////////////////////////////////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'unlock_ip' && $_GET['id']) {
+if($act == 'unlock_ip') {
+	if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+		err('Ошибка', 'Недопустимый метод запроса.', 1);
+	}
+
 	ip_util_require_action_token($ipUtilActionScope);
-	$id = (int)$_GET['id'];
+	$id = (int) ($_POST['id'] ?? 0);
+	if ($id <= 0) {
+		err('Ошибка' , 'Данной записи не существует' ,1);
+	}
 	$db->query("SELECT * FROM bans WHERE id=".$id."");
 	if(!$db->num_rows() ) {
 		err('Ошибка' , 'Данной записи не существует' ,1);
@@ -125,7 +140,7 @@ if($_GET['act'] == 'unlock_ip' && $_GET['id']) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //Заблокировать IP
 /////////////////////////////////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'banned_ip') {
+if($act == 'banned_ip') {
 
 	//Обработка данных
 	if($_POST) {
@@ -226,7 +241,7 @@ if($_GET['act'] == 'banned_ip') {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //Бан аккаунта
 /////////////////////////////////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'bans_account') {
+if($act == 'bans_account') {
 
 	//Постраничная навигация
 	$count = $db->query("SELECT u.*
@@ -273,9 +288,7 @@ if($_GET['act'] == 'bans_account') {
 		echo '<td>'.htmlspecialchars((string) ($arr['email'] ?? ''), ENT_QUOTES, 'UTF-8').'</td>';
 		echo '<td>'.convent_date($arr['last_access']).'</td>';
 		echo '<td>'.long2ip($arr['ip']).'</td>';
-		echo '<td><input type="button" value="Разбанить аккаунт" onClick="window.location.href=\'ip.util.php?id='.$arr['id'].'&act=banned_account&'.ip_util_action_query($ipUtilActionScope).'\'">
-		<br><br>
-		</td>';
+		echo '<td>'.ip_util_action_form($ipUtilActionScope, 'banned_account', (int) $arr['id'], 'Разбанить аккаунт').'</td>';
 
 		echo '</tr>';
 	}
@@ -297,9 +310,16 @@ if($_GET['act'] == 'bans_account') {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //Бан аккаунта
 /////////////////////////////////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'banned_account' && $_GET['id']) {
+if($act == 'banned_account') {
+	if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+		err('Ошибка', 'Недопустимый метод запроса.', 1);
+	}
+
 	ip_util_require_action_token($ipUtilActionScope);
-	$id = (int)$_GET['id'];
+	$id = (int) ($_POST['id'] ?? 0);
+	if ($id <= 0) {
+		err('Ошибка' , 'Данного пользователя не существует или данный пользователь из администрации' , 1);
+	}
 	$db->query("SELECT u.*
 				FROM users  AS u
 				LEFT JOIN priv AS p ON p.id = u.class
@@ -436,9 +456,7 @@ if($_GET['ip']) {
 			echo '<td>'.htmlspecialchars((string) ($arr['email'] ?? ''), ENT_QUOTES, 'UTF-8').'</td>';
 			echo '<td>'.convent_date($arr['last_access']).'</td>';
 			echo '<td>'.long2ip($arr['ip']).'</td>';
-			echo '<td><input type="button" value="'.(!$arr['banned'] ? 'Забанить аккаунт' : 'Разбанить аккаунт' ).'" onClick="window.location.href=\'ip.util.php?id='.$arr['id'].'&act=banned_account\'">
-
-			</td>';
+			echo '<td>'.ip_util_action_form($ipUtilActionScope, 'banned_account', (int) $arr['id'], (!$arr['banned'] ? 'Забанить аккаунт' : 'Разбанить аккаунт')).'</td>';
 
 			echo '</tr>';
 		}

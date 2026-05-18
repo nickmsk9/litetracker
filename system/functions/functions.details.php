@@ -933,12 +933,15 @@ function lt_details_prepare_bookmark($torrentId)
 		$userState = lt_details_user_state($torrentId, (int) $USER['id']);
 		$bookmarked = !empty($userState['bookmark_exists']);
 		$bookmarkScope = 'bookmarks_action';
-		$bookmarkHref = 'my.book.php?id='.$torrentId.'&act='.($bookmarked ? 'delete' : 'add').'&'.lt_csrf_query($bookmarkScope);
+		$bookmarkHref = 'my.book.php';
 		return array(
 			'legacy_html' => '<a class="proleft" href="'.$bookmarkHref.'">'.($bookmarked ? $language['details_26'] : $language['details_25']).'</a>',
 			'href' => $bookmarkHref,
 			'label' => ($bookmarked ? $language['details_26'] : $language['details_25']),
 			'bookmarked' => $bookmarked,
+			'csrf_token' => lt_csrf_token($bookmarkScope),
+			'endpoint' => 'api/bookmarks.php',
+			'torrent_id' => $torrentId,
 			'guest_register_href' => '',
 			'guest_login_href' => '',
 			'guest_notice' => 'Чтобы скачать этот торрент, вам необходимо зарегистрироваться или войти на сайт.',
@@ -950,6 +953,9 @@ function lt_details_prepare_bookmark($torrentId)
 		'href' => '',
 		'label' => $language['details_25'],
 		'bookmarked' => false,
+		'csrf_token' => '',
+		'endpoint' => '',
+		'torrent_id' => $torrentId,
 		'guest_register_href' => (!empty($config['registeronline']) ? 'signup.php?referer='.rawurlencode('details.php?id='.$torrentId) : ''),
 		'guest_login_href' => 'login.php?referer='.rawurlencode('details.php?id='.$torrentId),
 		'guest_notice' => 'Чтобы скачать этот торрент, вам необходимо зарегистрироваться или войти на сайт.',
@@ -1242,6 +1248,9 @@ function lt_details_prepare_view_model($torrent, array $rating)
 		'details_bookmark_href' => $bookmark['href'],
 		'details_bookmark_label' => $bookmark['label'],
 		'details_bookmarked' => $bookmark['bookmarked'],
+		'details_bookmark_csrf' => $bookmark['csrf_token'],
+		'details_bookmark_endpoint' => $bookmark['endpoint'],
+		'details_bookmark_torrent_id' => $bookmark['torrent_id'],
 		'details_guest_register_href' => $bookmark['guest_register_href'],
 		'details_guest_login_href' => $bookmark['guest_login_href'],
 		'details_guest_notice' => $bookmark['guest_notice'],

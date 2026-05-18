@@ -189,7 +189,7 @@ if(!$PRIV['ip_util']) {
 
 //Определяем passkey для пользователя
 if($USER && strlen($USER['passkey']) != 32) {
-	$USER['passkey'] = bin2hex(random_bytes(16));
+	$USER['passkey'] = lt_generate_unique_passkey();
 	$db->pquery('UPDATE users SET passkey = ? WHERE id = ?', 'si', [$USER['passkey'], (int) $USER['id']]);
 	lt_cache_invalidate_user($USER['id']);
 }

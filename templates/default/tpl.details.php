@@ -44,6 +44,9 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 					href="<?=htmlspecialchars($details_bookmark_href, ENT_QUOTES, 'UTF-8');?>"
 					data-details-bookmark="1"
 					data-bookmarked="<?=(!empty($details_bookmarked) ? '1' : '0');?>"
+					data-bookmark-endpoint="<?=htmlspecialchars((string) $details_bookmark_endpoint, ENT_QUOTES, 'UTF-8');?>"
+					data-bookmark-torrent-id="<?=(int) $details_bookmark_torrent_id;?>"
+					data-bookmark-csrf="<?=htmlspecialchars((string) $details_bookmark_csrf, ENT_QUOTES, 'UTF-8');?>"
 				><?=htmlspecialchars($details_bookmark_label, ENT_QUOTES, 'UTF-8');?></a>
 				<?php } ?>
 
