@@ -16,6 +16,10 @@
 
     button.addEventListener('click', function (event) {
       var href = button.getAttribute('href') || '';
+      var endpoint = button.getAttribute('data-bookmark-endpoint') || 'api/bookmarks.php';
+      var torrentId = button.getAttribute('data-bookmark-torrent-id') || '';
+      var csrfToken = button.getAttribute('data-bookmark-csrf') || (window.LiteTracker && window.LiteTracker.csrfToken) || '';
+      var body;
 
       if (!href || button.classList.contains('is-loading')) {
         return;
@@ -24,30 +28,36 @@
       event.preventDefault();
       button.classList.add('is-loading');
 
-      var requestUrl = href + (href.indexOf('?') === -1 ? '?' : '&') + 'ajax=1';
+      if (!torrentId || !csrfToken) {
+        button.classList.remove('is-loading');
+        window.location.href = href;
+        return;
+      }
 
-      window.fetch(requestUrl, {
-        method: 'GET',
+      body = new URLSearchParams();
+      body.set('action', 'toggle');
+      body.set('torrent_id', String(torrentId));
+      body.set('csrf_token', csrfToken);
+
+      window.fetch(endpoint, {
+        method: 'POST',
         credentials: 'same-origin',
         headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
           'X-Requested-With': 'XMLHttpRequest',
-          'Accept': 'application/json'
-        }
+          'Accept': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: body.toString()
       })
         .then(function (response) {
-          if (!response.ok) {
+          return response.json().catch(function () {
             throw new Error('Request failed');
-          }
-
-          return response.json();
+          });
         })
         .then(function (payload) {
-          if (!payload || !payload.success) {
+          if (!payload || !payload.ok) {
             throw new Error((payload && payload.message) || 'Request failed');
-          }
-
-          if (payload.href) {
-            button.setAttribute('href', payload.href);
           }
 
           if (payload.label) {

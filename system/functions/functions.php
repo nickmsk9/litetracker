@@ -1041,6 +1041,23 @@ function mksecret($length = 32) {
 	return $str;
 }
 
+function lt_generate_passkey()
+{
+	return bin2hex(random_bytes(16));
+}
+
+function lt_generate_unique_passkey()
+{
+	global $db;
+
+	do {
+		$passkey = lt_generate_passkey();
+		$row = $db->psuper_query("SELECT id FROM users WHERE passkey = ? LIMIT 1", 's', array($passkey));
+	} while (!empty($row['id']));
+
+	return $passkey;
+}
+
 function lt_is_https_request()
 {
 	if (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off') {

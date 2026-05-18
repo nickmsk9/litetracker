@@ -1,8 +1,9 @@
-Order deny,allow
-Allow from all
-Deny from none
+RewriteEngine On
 
-# deny PHP in this folder
-<FilesMatch "\.(php|phtml|php4|php5)$">
-	Deny from all
-</FilesMatch>
+RewriteRule ^public/(.*)$ /$1 [L]
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^ index.php [L]

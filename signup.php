@@ -85,7 +85,7 @@ $signupLiveMessages = array(
 	'name_available' => 'Логин доступен.',
 	'email_empty' => 'Введите E-mail.',
 	'email_invalid' => 'Введите корректный E-mail адрес.',
-	'email_available' => 'E-mail доступен.',
+	'email_available' => 'E-mail проверен.',
 	'password_empty' => 'Введите пароль.',
 	'password_ok' => 'Пароль подходит.',
 	'welcome_director' => 'Добро пожаловать! Вы зарегистрировали первый аккаунт и получили роль директора.',
@@ -134,12 +134,8 @@ if ($act === 'validate') {
 		$response['fields']['email']['message'] = $signupLiveMessages['email_invalid'];
 	} else {
 		$emailCheck = $db->pquery("SELECT id FROM users WHERE email=? LIMIT 1", 's', [$email]);
-		if ($db->num_rows($emailCheck) > 0) {
-			$response['fields']['email']['message'] = $language['signup_16'];
-		} else {
-			$response['fields']['email']['valid'] = 1;
-			$response['fields']['email']['message'] = $signupLiveMessages['email_available'];
-		}
+		$response['fields']['email']['valid'] = 1;
+		$response['fields']['email']['message'] = $signupLiveMessages['email_available'];
 	}
 
 	if ($password === '') {
@@ -225,7 +221,7 @@ if($_POST && $signupBlockedMessage === '') {
 	if ($signupModalError === '') {
 		$emailCheck = $db->pquery("SELECT id FROM users WHERE email=? LIMIT 1", 's', [$signupEmail]);
 		if($db->num_rows($emailCheck) >= 1) {
-			signup_error_response($language['default_1'], $language['signup_16'], 1);
+			signup_error_response($language['default_1'], 'Регистрация не может быть завершена. Проверьте введённые данные.', 1);
 		}
 	}
 
@@ -251,15 +247,16 @@ if($_POST && $signupBlockedMessage === '') {
 
 	if ($signupModalError === '') {
 		$passwordHash = lt_password_hash_value($password);
+		$passkey = lt_generate_unique_passkey();
 
 		$countUsers = $db->super_query("SELECT COUNT(*) AS c FROM users");
 		$isDirectorSignup = ((int) ($countUsers['c'] ?? 0) === 0);
 		$classId = (!$isDirectorSignup ? signup_default_class_id() : signup_admin_class_id());
 
 		$db->pquery(
-			"INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$signupBonusColumn.", sex, birthday_date, profile_text, last_chat, num_messages, num_friends, confirm) VALUES (?, '', ?, ?, '', ?, ?, NOW(), NOW(), '', '0', '0', '0', '300', '1', ?, '', '0', '0', '0', '1')",
-			'sssiss',
-			[$signupName, $signupEmail, $passwordHash, ip2long_db(getip()), $classId, $birthdayDate]
+			"INSERT INTO users (name, avatar, email, password, password_code, ip, class, last_access, added, passkey, uploaded, downloaded, money, ".$signupBonusColumn.", sex, birthday_date, profile_text, last_chat, num_messages, num_friends, confirm) VALUES (?, '', ?, ?, '', ?, ?, NOW(), NOW(), ?, '0', '0', '0', '300', '1', ?, '', '0', '0', '0', '1')",
+			'sssiiss',
+			[$signupName, $signupEmail, $passwordHash, ip2long_db(getip()), $classId, $passkey, $birthdayDate]
 		);
 
 		$id = (int) $db->insert_id();

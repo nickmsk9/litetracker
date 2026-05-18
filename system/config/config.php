@@ -83,8 +83,8 @@ $ltCachePort = (int) lt_env('LITETRACKER_MEMCACHED_PORT', lt_env('LITETRACKER_CA
 $ltCacheNamespace = trim((string) lt_env('LITETRACKER_CACHE_NAMESPACE', 'litetracker'));
 $ltCronMode = strtolower(trim((string) lt_env_value('LITETRACKER_CRON_MODE', 'browser')));
 $ltUseExternalCron = (int) in_array($ltCronMode, array('external', 'scheduler', 'cron'), true);
-$ltDebug = lt_env_bool('LITETRACKER_DEBUG', 1);
-$ltSqlDebug = lt_env_bool('LITETRACKER_SQL_DEBUG', 1);
+$ltDebug = lt_env_bool('LITETRACKER_DEBUG', 0);
+$ltSqlDebug = lt_env_bool('LITETRACKER_DEBUG_SQL', lt_env_bool('LITETRACKER_SQL_DEBUG', 0));
 $ltRemoteTrackerTimeout = max(1, (int) lt_env_value('LITETRACKER_REMOTE_TIMEOUT', 2));
 $ltPublicScheme = strtolower(trim((string) lt_env_value('LITETRACKER_PUBLIC_SCHEME', 'https')));
 if (!in_array($ltPublicScheme, array('http', 'https'), true)) {

@@ -118,224 +118,231 @@ if($USER) {
 /////////////////////////////////////////////////////////////////////
 if($op == 'forgot') {
 	$forgotCaptchaEnabled = (!empty($config['captcha']) && !empty($config['reCaptcha_login']));
+	$forgotReferer = login_normalize_referer($_GET['referer'] ?? $_POST['referer'] ?? '');
+	$forgotNotice = 'Если такой аккаунт существует, инструкция по восстановлению будет отправлена на e-mail.';
 
 	//Если не включена функция отправки писем , завершаем работу
 	if(!$config['mail']['use'])  {
 		login_error_response('Ошибка' , 'Администрация отключила данный сервис' , 1);
 	}
 
-	/////////////////////////////////////////////////
-	//Второй шаг
-	/////////////////////////////////////////////////
-	if($step == 2) {
-		//Если все прошло успешно
-		if($ok) {
-			err('Успешно' , 'Новый пароль пришел к вам на E - mail адрес <br> <a href="login.php">Войти</a>');
+	if($ok) {
+		if ($isModalView) {
+			$loginModalNotice = $forgotNotice;
+		} else {
+			err('Успешно' , $forgotNotice , 0 , 'success');
 		}
-
-
-		$check_code = $db->pquery("SELECT * FROM forgot WHERE code=?", 's', [$code]);
-		if(!$db->num_rows($check_code) ) {
-			err('Ошибка' , 'Данный код не найден , или он уже просрочен' , 1);
-		}
-		$row = $db->get_row($check_code);
-
-		//Информация о пользователе
-		$arr = $db->psuper_query("SELECT * FROM users WHERE email=?", 's', [$row['email']]);
-
-		//Генерируем новый пароль
-		$password = mksecret(15);
-		$password_hash = lt_password_hash_value($password);
-
-		//Перезаписываем пароль
-		$db->pquery("UPDATE users SET password=?, password_code='' WHERE id=?", 'si', [$password_hash, (int) $arr['id']]);
-
-		//Удаляем кеш
-		lt_cache_invalidate_user($arr['id']);
-		// logout_cookie();
-		login_cookie($arr['id']  , $password_hash);
-
-		//Отправляем письмо в личные сообщения
-		send_msg(
-			'Успешное восстановление пароля',
-			'Вы успешно восстановили доступ к аккаунту. Пароль был обновлен автоматически, но мы не отправляем его в сообщениях из соображений безопасности. Сразу откройте настройки и установите новый пароль.',
-			$arr['id'],
-			0
-		);
-
-		//Отправляем письмо на email
-		//Заголовок
-		$body = '';
-		$body .= "Здравствуйте, вы успешно восстановили пароль на трекере ".htmlspecialchars((string) ($_SERVER['HTTP_HOST'] ?? ''), ENT_QUOTES, 'UTF-8')."\n\r";
-		$body .= "Теперь вы можете войти под своим аккаунтом\n\r";
-		$body .= "--------------------------------------------------\n\r";
-		$body .= "Пользователь:".$arr['name']."\n\r";
-		$body .= "--------------------------------------------------\n\r";
-		$body .= "Пароль в письме не отправляется из соображений безопасности.\n\r";
-		$body .= "После входа сразу измените пароль в Настройках.\n\r";
-		$body .= "С уважением , администрация трекера\n\r";
-		$body .= "--------------------------------------------------\n\r";
-
-		//Отправка письма
-		$mail = new phpmailer;
-		$mail->AddAddress($row['email'], $arr['name']);
-		$mail->Subject = htmlspecialchars((string) ($_SERVER['HTTP_HOST'] ?? ''), ENT_QUOTES, 'UTF-8').'.Support';
-		$mail->Body = $body;
-		$mail->Send(); // send message
-
-		//Удаляем запись
-		$db->pquery("DELETE FROM forgot WHERE code=?", 's', [$code]);
-
-		//Переадресация
-		header('Location: index.php');
-		die();
 	}
 
+	if($_POST) {
+		if (!lt_csrf_validate('login_forgot')) {
+			login_error_response($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+		}
 
-	/////////////////////////////////////////////////
-	//Обработка отправки письма (1 шаг)
-	/////////////////////////////////////////////////
-	if($step === 0 || $step == 1) {
-		$forgotReferer = login_normalize_referer($_GET['referer'] ?? $_POST['referer'] ?? '');
-
-		//Если все прошло успешно
-		if($ok) {
-			if ($isModalView) {
-				$loginModalNotice = 'Проверьте ваш E-Mail адрес , вам должно было прийти письмо';
-			} else {
-				err('Успешно' , 'Проверьте ваш E-Mail адрес , вам должно было прийти письмо' , 0 , 'success');
+		if ($loginModalError === '') {
+			$forgotRateLimit = lt_rate_limit_hit('login_forgot', $_SERVER['REMOTE_ADDR'] ?? '', 5, 15 * 60);
+			if (!empty($forgotRateLimit['blocked'])) {
+				login_error_response($language['default_1'], 'Слишком много запросов на восстановление пароля. Повторите попытку позже.', 1);
 			}
 		}
 
-		//Обработка
-		if($_POST) {
-			if (!lt_csrf_validate('login_forgot')) {
-				login_error_response($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+		$email = trim((string) ($_POST['email'] ?? ''));
+		if($email === ''){
+			login_error_response('Ошибка' , 'Вы ничего не ввели' , 1);
+		}
+
+		if ($loginModalError === '' && !validemail($email) ) {
+			login_error_response($language['default_1']  , 'E-mail введен не верно' , 1);
+		}
+
+		if ($loginModalError === '' && $forgotCaptchaEnabled) {
+			$resp = lt_captcha_check_answer();
+			if (!$resp->is_valid) {
+				login_error_response($language['default_1'], $language['captcha_2'], 1);
 			}
+		}
 
-			if ($loginModalError === '') {
-				$forgotRateLimit = lt_rate_limit_hit('login_forgot', $_SERVER['REMOTE_ADDR'] ?? '', 5, 15 * 60);
-				if (!empty($forgotRateLimit['blocked'])) {
-					login_error_response($language['default_1'], 'Слишком много запросов на восстановление пароля. Повторите попытку позже.', 1);
-				}
-			}
+		if ($loginModalError === '') {
+			$arr = $db->psuper_query("SELECT id, name, email FROM users WHERE email = ? LIMIT 1", 's', [$email]);
+			if ($arr && !empty($arr['id'])) {
+				$plainToken = bin2hex(random_bytes(32));
+				$tokenHash = hash('sha256', $plainToken);
+				$expiresAt = date('Y-m-d H:i:s', time() + 60 * 60 * 2);
+				$ip = substr((string) getip(), 0, 45);
+				$userAgent = substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
 
-			//Определяем переменные
-			$email = trim((string) ($_POST['email'] ?? ''));
+				$db->pquery(
+					"UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL",
+					'i',
+					[(int) $arr['id']]
+				);
+				$db->pquery(
+					"INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, ip, user_agent) VALUES (?, ?, ?, ?, ?)",
+					'issss',
+					[(int) $arr['id'], $tokenHash, $expiresAt, $ip, $userAgent]
+				);
 
-			//Проверяем введенные данные
-			if(empty($email)){
-				login_error_response('Ошибка' , 'Вы ничего не ввели' , 1);
-			}
+				$announceUrl = trim((string) ($config['announce_url'] ?? ''));
+				$announceParts = parse_url($announceUrl);
+				$scheme = (!empty($announceParts['scheme']) ? $announceParts['scheme'] : (lt_is_https_request() ? 'https' : 'http'));
+				$host = (!empty($announceParts['host']) ? $announceParts['host'] : trim((string) ($_SERVER['HTTP_HOST'] ?? '')));
+				$port = (!empty($announceParts['port']) ? ':'.(int) $announceParts['port'] : '');
+				$origin = $scheme.'://'.$host.$port;
+				$resetLink = $origin.'/login.php?op=reset&token='.rawurlencode($plainToken);
 
-			//Валидность email
-			if ($loginModalError === '' && !validemail($email) ) {
-				login_error_response($language['default_1']  , 'E-mail введен не верно' , 1);
-			}
-
-			if ($loginModalError === '' && $forgotCaptchaEnabled) {
-				$resp = lt_captcha_check_answer();
-				if (!$resp->is_valid) {
-					login_error_response($language['default_1'], $language['captcha_2'], 1);
-				}
-			}
-
-			//Проверяем email на уникальность
-			if ($loginModalError === '') {
-				$arr = $db->psuper_query("SELECT * FROM users WHERE email=?", 's', [$email]);
-				if(!$arr) {
-					login_error_response($language['default_1']   , 'Пользователь с таким E-mail адресом не найден'  , 1);
-				}
-			}
-
-			//Проверяем запись forgot
-			if ($loginModalError === '') {
-				$check_forgot = $db->pquery("SELECT id FROM forgot WHERE email=?", 's', [$email]);
-				if($db->num_rows($check_forgot) ) {
-					login_error_response('Ошибка' , 'Вы уже подавали заявку на восстановление , проверьте свой email' , 1);
-				}
-			}
-
-
-			//Отправляем письмо
-			if ($loginModalError === '') {
-				$code = bin2hex(random_bytes(16)); //Код активации
-				$db->pquery("INSERT INTO forgot (code, date, email) VALUES (?, NOW(), ?)", 'ss', [$code, $email]);
-
-				//Заголовок
 				$body = '';
-				$body .= "Здравствуйте, вы запросили восстановление пароля на нашем трекере ".htmlspecialchars((string) ($_SERVER['HTTP_HOST'] ?? ''), ENT_QUOTES, 'UTF-8')."\n\r";
-				$body .= "Для успешной смены пароля , вы должны подтвердить свой аккаунт\n\r";
-				$body .= "--------------------------------------------------\n\r";
-				$body .= "Пользователь:".$arr['name']."\n\r";
-				$body .= "Cсылка на активацию: http://".htmlspecialchars((string) ($_SERVER['HTTP_HOST'] ?? ''), ENT_QUOTES, 'UTF-8')."/login.php?op=forgot&step=2&code=".$code."\n\r";
-				$body .= "--------------------------------------------------\n\r";
-				$body .= "Внимание! Код действует в течении 15 суток , со дня отправки\n\r";
-				$body .= "С уважением , администрация трекера\n\r";
-				$body .= "--------------------------------------------------\n\r";
+				$body .= "Здравствуйте, вы запросили восстановление пароля на трекере ".$host."\n\r";
+				$body .= "Для смены пароля откройте ссылку ниже:\n\r";
+				$body .= $resetLink."\n\r";
+				$body .= "Ссылка действует 2 часа и используется только один раз.\n\r";
+				$body .= "Если вы не запрашивали восстановление, просто проигнорируйте письмо.\n\r";
 
-				//Отправка письма
 				$mail = new phpmailer;
-				$mail->AddAddress($email, $arr['name']);
-				$mail->Subject = htmlspecialchars((string) ($_SERVER['HTTP_HOST'] ?? ''), ENT_QUOTES, 'UTF-8').'.Support';
+				$mail->AddAddress($arr['email'], $arr['name']);
+				$mail->Subject = $host.'.Support';
 				$mail->Body = $body;
-				$mail->Send(); // send message
-
-				//Переадресация
-				header('Location:'.login_form_action(array('op' => 'forgot', 'step' => 1, 'ok' => 1, 'referer' => $forgotReferer)));
-				die();
+				$mail->Send();
 			}
 
-
-		}
-
-		/////////////////////////////////////////////////
-		//Вывод формы
-		/////////////////////////////////////////////////
-		login_render_start('Восстановление доступа');
-		?>
-		<div class="auth-page login-page">
-			<div class="auth-layout auth-layout-single login-layout">
-				<section class="auth-card auth-card-compact login-card">
-					<h1 class="auth-title login-title">Восстановление доступа</h1>
-					<div class="auth-copy auth-copy-lead"><strong>Для восстановления доступа к аккаунту укажите e-mail, на который он был зарегистрирован.</strong> Мы отправим вам письмо с инструкциями по сбросу пароля.</div>
-					<div class="auth-copy">Если вы утратили доступ к электронной почте, напишите в техподдержку сайта, четко описав свою проблему и уже предпринятые действия для её решения.</div>
-					<?php if ($loginModalNotice !== '') { ?>
-					<div class="auth-alert auth-alert-success"><?=htmlspecialchars($loginModalNotice, ENT_QUOTES, 'UTF-8');?></div>
-					<?php } elseif ($loginModalError !== '') { ?>
-					<div class="auth-alert"><?=htmlspecialchars($loginModalError, ENT_QUOTES, 'UTF-8');?></div>
-					<?php } ?>
-					<form action="<?=login_form_action(array('op' => 'forgot', 'referer' => $forgotReferer));?>" class="auth-form login-form" method="post">
-						<div class="auth-grid auth-grid-single">
-							<div class="auth-field login-field">
-								<label class="auth-label login-label" for="forgot-email">E-mail</label>
-								<input id="forgot-email" type="email" name="email" value="<?=htmlspecialchars((string) ($_POST['email'] ?? ''), ENT_QUOTES, 'UTF-8');?>" autocomplete="email">
-							</div>
-							<?php if ($forgotCaptchaEnabled) { ?>
-							<div class="auth-field login-field">
-								<label class="auth-label login-label">Введите код</label>
-								<div class="auth-captcha-row login-captcha-row">
-									<?=lt_captcha_get_html('login');?>
-								</div>
-							</div>
-							<?php } ?>
-						</div>
-
-						<div class="auth-footer login-footer">
-							<button type="submit">Отправить письмо</button>
-							<a class="auth-link login-forgot-link" href="<?=htmlspecialchars(login_form_action(array('referer' => $forgotReferer)), ENT_QUOTES, 'UTF-8');?>">Вернуться ко входу</a>
-						</div>
-						<input type="hidden" name="referer" value="<?=htmlspecialchars($forgotReferer, ENT_QUOTES, 'UTF-8');?>">
-						<?=lt_csrf_input('login_forgot');?>
-					</form>
-				</section>
-			</div>
-		</div>
-			<?php
-			login_render_end();
+			header('Location:'.login_form_action(array('op' => 'forgot', 'ok' => 1, 'referer' => $forgotReferer)));
 			die();
 		}
 	}
+
+	login_render_start('Восстановление доступа');
+	?>
+	<div class="auth-page login-page">
+		<div class="auth-layout auth-layout-single login-layout">
+			<section class="auth-card auth-card-compact login-card">
+				<h1 class="auth-title login-title">Восстановление доступа</h1>
+				<div class="auth-copy auth-copy-lead"><strong>Для восстановления доступа к аккаунту укажите e-mail, на который он был зарегистрирован.</strong> Мы отправим вам письмо с инструкциями по сбросу пароля.</div>
+				<div class="auth-copy">Если такой аккаунт существует, инструкция по восстановлению будет отправлена на e-mail.</div>
+				<?php if ($loginModalNotice !== '') { ?>
+				<div class="auth-alert auth-alert-success"><?=htmlspecialchars($loginModalNotice, ENT_QUOTES, 'UTF-8');?></div>
+				<?php } elseif ($loginModalError !== '') { ?>
+				<div class="auth-alert"><?=htmlspecialchars($loginModalError, ENT_QUOTES, 'UTF-8');?></div>
+				<?php } ?>
+				<form action="<?=login_form_action(array('op' => 'forgot', 'referer' => $forgotReferer));?>" class="auth-form login-form" method="post">
+					<div class="auth-grid auth-grid-single">
+						<div class="auth-field login-field">
+							<label class="auth-label login-label" for="forgot-email">E-mail</label>
+							<input id="forgot-email" type="email" name="email" value="<?=htmlspecialchars((string) ($_POST['email'] ?? ''), ENT_QUOTES, 'UTF-8');?>" autocomplete="email">
+						</div>
+						<?php if ($forgotCaptchaEnabled) { ?>
+						<div class="auth-field login-field">
+							<label class="auth-label login-label">Введите код</label>
+							<div class="auth-captcha-row login-captcha-row">
+								<?=lt_captcha_get_html('login');?>
+							</div>
+						</div>
+						<?php } ?>
+					</div>
+
+					<div class="auth-footer login-footer">
+						<button type="submit">Отправить письмо</button>
+						<a class="auth-link login-forgot-link" href="<?=htmlspecialchars(login_form_action(array('referer' => $forgotReferer)), ENT_QUOTES, 'UTF-8');?>">Вернуться ко входу</a>
+					</div>
+					<input type="hidden" name="referer" value="<?=htmlspecialchars($forgotReferer, ENT_QUOTES, 'UTF-8');?>">
+					<?=lt_csrf_input('login_forgot');?>
+				</form>
+			</section>
+		</div>
+	</div>
+	<?php
+	login_render_end();
+	die();
+}
+
+if($op == 'reset') {
+	$token = trim((string) ($_GET['token'] ?? $_POST['token'] ?? ''));
+	$password = trim((string) ($_POST['password'] ?? ''));
+	$passwordRepeat = trim((string) ($_POST['password_repeat'] ?? ''));
+
+	if ($token === '') {
+		login_error_response('Ошибка', 'Ссылка для восстановления недействительна или устарела.', 1);
+	}
+
+	if($_POST) {
+		if (!lt_csrf_validate('login_reset')) {
+			login_error_response($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+		}
+
+		if ($password === '' || $passwordRepeat === '') {
+			login_error_response('Ошибка', 'Введите новый пароль и подтверждение.', 1);
+		}
+
+		if (strlen($password) < 6 || strlen($password) > 40) {
+			login_error_response('Ошибка', 'Пароль должен быть длиной от 6 до 40 символов.', 1);
+		}
+
+		if ($password !== $passwordRepeat) {
+			login_error_response('Ошибка', 'Пароли не совпадают.', 1);
+		}
+
+		$tokenHash = hash('sha256', $token);
+		$tokenRow = $db->psuper_query(
+			"SELECT id, user_id FROM password_reset_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW() LIMIT 1",
+			's',
+			[$tokenHash]
+		);
+
+		if (!$tokenRow || empty($tokenRow['id'])) {
+			login_error_response('Ошибка', 'Ссылка для восстановления недействительна или устарела.', 1);
+		}
+
+		$newPasswordHash = lt_password_hash_value($password);
+		$db->pquery("UPDATE users SET password = ?, password_code = '' WHERE id = ? LIMIT 1", 'si', [$newPasswordHash, (int) $tokenRow['user_id']]);
+		$db->pquery("UPDATE password_reset_tokens SET used_at = NOW() WHERE id = ? LIMIT 1", 'i', [(int) $tokenRow['id']]);
+		lt_cache_invalidate_user((int) $tokenRow['user_id']);
+		logout_cookie();
+
+		err('Успешно', 'Пароль изменён. Войдите в аккаунт заново. <br><a href="login.php">Войти</a>', 0, 'success');
+	}
+
+	$tokenHash = hash('sha256', $token);
+	$tokenRow = $db->psuper_query(
+		"SELECT id FROM password_reset_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW() LIMIT 1",
+		's',
+		[$tokenHash]
+	);
+	if (!$tokenRow || empty($tokenRow['id'])) {
+		login_error_response('Ошибка', 'Ссылка для восстановления недействительна или устарела.', 1);
+	}
+
+	login_render_start('Смена пароля');
+	?>
+	<div class="auth-page login-page">
+		<div class="auth-layout auth-layout-single login-layout">
+			<section class="auth-card auth-card-compact login-card">
+				<h1 class="auth-title login-title">Смена пароля</h1>
+				<div class="auth-copy">Введите новый пароль для вашего аккаунта.</div>
+				<?php if ($loginModalError !== '') { ?>
+				<div class="auth-alert"><?=htmlspecialchars($loginModalError, ENT_QUOTES, 'UTF-8');?></div>
+				<?php } ?>
+				<form action="<?=login_form_action(array('op' => 'reset', 'token' => $token));?>" class="auth-form login-form" method="post">
+					<div class="auth-grid auth-grid-single">
+						<div class="auth-field login-field">
+							<label class="auth-label login-label" for="reset-password">Новый пароль</label>
+							<input id="reset-password" type="password" name="password" value="" autocomplete="new-password">
+						</div>
+						<div class="auth-field login-field">
+							<label class="auth-label login-label" for="reset-password-repeat">Подтверждение пароля</label>
+							<input id="reset-password-repeat" type="password" name="password_repeat" value="" autocomplete="new-password">
+						</div>
+					</div>
+					<div class="auth-footer login-footer">
+						<button type="submit">Сменить пароль</button>
+					</div>
+					<input type="hidden" name="token" value="<?=htmlspecialchars($token, ENT_QUOTES, 'UTF-8');?>">
+					<?=lt_csrf_input('login_reset');?>
+				</form>
+			</section>
+		</div>
+	</div>
+	<?php
+	login_render_end();
+	die();
+}
 
 	/////////////////////////////////////////////////////////////////////
 	//Обработка данных

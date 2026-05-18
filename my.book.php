@@ -10,15 +10,7 @@ $GLOBALS['LITETRACKER_HIDE_TOP_BLOCKS'] = true;
 $GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS'] = true;
 $GLOBALS['LITETRACKER_HIDE_STANDARD_SIDEBAR'] = true;
 
-$ltBookmarkAjax = (!empty($_GET['ajax']) || strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest');
 $ltBookmarkActionScope = 'bookmarks_action';
-
-function lt_bookmark_json($payload, $statusCode = 200)
-{
-	header('Content-Type: application/json; charset=UTF-8', true, (int) $statusCode);
-	echo json_encode($payload);
-	die();
-}
 
 function lt_bookmark_parse_tags($value)
 {
@@ -59,16 +51,12 @@ function lt_bookmark_build_url($overrides = array(), $drop = array())
 	return 'my.book.php'.($query !== '' ? '?'.$query : '');
 }
 
-function lt_bookmark_require_action_token($scope, $isAjax = false)
+function lt_bookmark_require_action_token($scope)
 {
 	global $language;
 
 	if (lt_csrf_validate($scope)) {
 		return true;
-	}
-
-	if ($isAjax) {
-		lt_bookmark_json(array('success' => false, 'message' => 'Защитный токен устарел. Обновите страницу и повторите действие.'), 403);
 	}
 
 	err($language['default_1'], 'Защитный токен устарел. Обновите страницу и повторите действие.', 1);
@@ -118,82 +106,8 @@ if($act === 'check_delete') {
 	die();
 }
 
-//////////////////////////////////////////////////////////////////////////////
-// Добавление
-//////////////////////////////////////////////////////////////////////////////
-if($act === 'add') {
-	lt_bookmark_require_action_token($ltBookmarkActionScope, $ltBookmarkAjax);
-
-	$id = (int) ($_REQUEST['id'] ?? 0);
-
-	$count_t = $db->super_query("SELECT COUNT(*) AS count FROM torrents WHERE id=".$id);
-	if(!$count_t['count']) {
-		if ($ltBookmarkAjax) {
-			lt_bookmark_json(array('success' => false, 'message' => $language['download_1']), 404);
-		}
-		err($language['default_1'] , $language['download_1'] , 1);
-	}
-
-	$count_b = $db->super_query("SELECT COUNT(*) AS count FROM books WHERE id_torrent=".$id." AND id_user=".$USER['id']);
-	if($count_b['count']) {
-		if ($ltBookmarkAjax) {
-			lt_bookmark_json(array('success' => false, 'message' => $language['books_1']), 409);
-		}
-		err($language['default_1'] , $language['books_1'] , 1);
-	}
-
-	$db->query("INSERT INTO books(id_torrent , id_user , date ) VALUES (".$id." , ".$USER['id']." , NOW() )");
-
-	if ($ltBookmarkAjax) {
-		lt_bookmark_json(array(
-			'success' => true,
-			'bookmarked' => true,
-			'label' => $language['details_26'],
-			'href' => 'my.book.php?id='.$id.'&act=delete&'.lt_csrf_query($ltBookmarkActionScope),
-		));
-	}
-
-	header("Location:details.php?id=".$id);
-	die();
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Удаление
-//////////////////////////////////////////////////////////////////////////////
-if($act === 'delete') {
-	lt_bookmark_require_action_token($ltBookmarkActionScope, $ltBookmarkAjax);
-
-	$id = (int) ($_REQUEST['id'] ?? 0);
-
-	$count_t = $db->super_query("SELECT COUNT(*) AS count FROM torrents WHERE id=".$id);
-	if(!$count_t['count']) {
-		if ($ltBookmarkAjax) {
-			lt_bookmark_json(array('success' => false, 'message' => $language['download_1']), 404);
-		}
-		err($language['default_1'] , $language['download_1'] , 1);
-	}
-
-	$count_b = $db->super_query("SELECT COUNT(*) AS count FROM books WHERE id_torrent=".$id." AND id_user=".$USER['id']);
-	if(!$count_b['count']) {
-		if ($ltBookmarkAjax) {
-			lt_bookmark_json(array('success' => false, 'message' => $language['books_2']), 409);
-		}
-		err($language['default_1'] , $language['books_2'] , 1);
-	}
-
-	$db->query("DELETE FROM books WHERE id_torrent=".$id." AND id_user=".$USER['id']);
-
-	if ($ltBookmarkAjax) {
-		lt_bookmark_json(array(
-			'success' => true,
-			'bookmarked' => false,
-			'label' => $language['details_25'],
-			'href' => 'my.book.php?id='.$id.'&act=add&'.lt_csrf_query($ltBookmarkActionScope),
-		));
-	}
-
-	header("Location:details.php?id=".$id);
-	die();
+if($act === 'add' || $act === 'delete') {
+	err($language['default_1'], 'Добавление и удаление закладок выполняется только через POST API.', 1);
 }
 
 //////////////////////////////////////////////////////////////////////////////
