@@ -16,6 +16,7 @@ tmp/
 *.orig
 *.sql
 !database/*.sql
+!database/migrations/*.sql
 logs/*
 !logs/.htaccess
 cache/*
