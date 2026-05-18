@@ -37,6 +37,128 @@ function home_build_url($overrides = array(), $drop = array())
 	return 'index.php'.($query !== '' ? '?'.$query : '');
 }
 
+function home_fetch_json($url, $timeout = 4)
+{
+	$context = stream_context_create(array(
+		'http' => array(
+			'timeout' => max(1, (int) $timeout),
+			'ignore_errors' => true,
+		),
+	));
+	$raw = @file_get_contents($url, false, $context);
+	if (!is_string($raw) || $raw === '') {
+		return null;
+	}
+
+	$decoded = json_decode($raw, true);
+
+	return (is_array($decoded) ? $decoded : null);
+}
+
+function home_format_rate_number($value, $decimals = 2, $trim = true)
+{
+	$number = number_format((float) $value, (int) $decimals, '.', '');
+	if (!$trim) {
+		return $number;
+	}
+
+	return rtrim(rtrim($number, '0'), '.');
+}
+
+function home_format_btc_compact($value)
+{
+	$value = (float) $value;
+	if ($value >= 1000) {
+		return home_format_rate_number($value / 1000, 1, true).'K';
+	}
+
+	return home_format_rate_number($value, 2, true);
+}
+
+function home_widget_date_label($timestamp = null)
+{
+	$monthNames = array(
+		'января',
+		'февраля',
+		'марта',
+		'апреля',
+		'мая',
+		'июня',
+		'июля',
+		'августа',
+		'сентября',
+		'октября',
+		'ноября',
+		'декабря',
+	);
+	$now = ($timestamp === null ? time() : (int) $timestamp);
+	$monthIndex = max(0, min(11, (int) date('n', $now) - 1));
+
+	return date('j', $now).' '.$monthNames[$monthIndex];
+}
+
+function home_rates_payload()
+{
+	$dateLabel = home_widget_date_label();
+
+	$result = array(
+		'dateLabel' => $dateLabel,
+		'rates' => array(
+			'usd' => array('label' => 'USD', 'value' => '—', 'trend' => 'neutral'),
+			'eur' => array('label' => 'EUR', 'value' => '—', 'trend' => 'neutral'),
+			'btc' => array('label' => 'BTC/USD', 'value' => '—', 'trend' => 'neutral'),
+			'ton' => array('label' => 'TON/USD', 'value' => '—', 'trend' => 'neutral'),
+		),
+	);
+
+	$fiat = home_fetch_json('https://www.cbr-xml-daily.ru/daily_json.js');
+	if (!empty($fiat['Valute']['USD']) && is_array($fiat['Valute']['USD'])) {
+		$usd = $fiat['Valute']['USD'];
+		$current = (float) ($usd['Value'] ?? 0);
+		$previous = (float) ($usd['Previous'] ?? 0);
+		if ($current > 0) {
+			$result['rates']['usd']['value'] = home_format_rate_number($current, 2, true);
+			$result['rates']['usd']['trend'] = ($current >= $previous ? 'up' : 'down');
+		}
+	}
+	if (!empty($fiat['Valute']['EUR']) && is_array($fiat['Valute']['EUR'])) {
+		$eur = $fiat['Valute']['EUR'];
+		$current = (float) ($eur['Value'] ?? 0);
+		$previous = (float) ($eur['Previous'] ?? 0);
+		if ($current > 0) {
+			$result['rates']['eur']['value'] = home_format_rate_number($current, 2, true);
+			$result['rates']['eur']['trend'] = ($current >= $previous ? 'up' : 'down');
+		}
+	}
+
+	$crypto = home_fetch_json('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,the-open-network&vs_currencies=usd&include_24hr_change=true');
+	if (!empty($crypto['bitcoin']) && is_array($crypto['bitcoin'])) {
+		$btcPrice = (float) ($crypto['bitcoin']['usd'] ?? 0);
+		$btcDelta = (float) ($crypto['bitcoin']['usd_24h_change'] ?? 0);
+		if ($btcPrice > 0) {
+			$result['rates']['btc']['value'] = home_format_btc_compact($btcPrice);
+			$result['rates']['btc']['trend'] = ($btcDelta >= 0 ? 'up' : 'down');
+		}
+	}
+	if (!empty($crypto['the-open-network']) && is_array($crypto['the-open-network'])) {
+		$tonPrice = (float) ($crypto['the-open-network']['usd'] ?? 0);
+		$tonDelta = (float) ($crypto['the-open-network']['usd_24h_change'] ?? 0);
+		if ($tonPrice > 0) {
+			$result['rates']['ton']['value'] = home_format_rate_number($tonPrice, 2, true);
+			$result['rates']['ton']['trend'] = ($tonDelta >= 0 ? 'up' : 'down');
+		}
+	}
+
+	return $result;
+}
+
+if (!empty($_GET['home_widget_rates'])) {
+	header('Content-Type: application/json; charset=utf-8');
+	header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+	echo json_encode(home_rates_payload(), JSON_UNESCAPED_UNICODE);
+	die();
+}
+
 $sort = trim((string) ($_GET['sort'] ?? 'date'));
 $id_category = isset($_GET['id_category']) ? (int) $_GET['id_category'] : 0;
 $view = (string) ($_GET['view'] ?? 'compact');
@@ -152,6 +274,15 @@ if ($isAjaxLoad) {
 head('Главная');
 ?>
 <div class="home-torrents-page">
+	<section class="home-market-strip" data-home-market data-market-url="index.php?home_widget_rates=1">
+		<div class="home-market-date" data-home-market-date><?=htmlspecialchars(home_widget_date_label(), ENT_QUOTES, 'UTF-8');?></div>
+		<div class="home-market-items" data-home-market-items>
+			<span class="home-market-item" data-home-market-item="usd"><span class="home-market-label">USD</span> <span class="home-market-value">—</span> <span class="home-market-trend" data-trend="neutral">•</span></span>
+			<span class="home-market-item" data-home-market-item="eur"><span class="home-market-label">EUR</span> <span class="home-market-value">—</span> <span class="home-market-trend" data-trend="neutral">•</span></span>
+			<span class="home-market-item" data-home-market-item="btc"><span class="home-market-label">BTC/USD</span> <span class="home-market-value">—</span> <span class="home-market-trend" data-trend="neutral">•</span></span>
+			<span class="home-market-item" data-home-market-item="ton"><span class="home-market-label">TON/USD</span> <span class="home-market-value">—</span> <span class="home-market-trend" data-trend="neutral">•</span></span>
+		</div>
+	</section>
 	<?php if ($categories) { ?>
 	<nav class="browse-panel browse-categories" aria-label="Категории торрентов">
 			<a class="browse-category-tab<?=($id_category === 0 ? ' is-active' : '');?>" href="<?=htmlspecialchars(home_build_url(array('id_category' => null, 'page' => null)), ENT_QUOTES, 'UTF-8');?>">Все торренты</a>
@@ -207,6 +338,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	var viewButtons = document.querySelectorAll('[data-browse-view-toggle]');
 	var loadMoreButton = document.querySelector('[data-home-load-more]');
 	var paginationHtml = document.querySelector('[data-home-pagination-html]');
+	var marketRoot = document.querySelector('[data-home-market]');
 	var storageKey = 'litetrackerHomeView';
 	var initialView = list ? (list.getAttribute('data-view') || 'compact') : 'compact';
 	var storedView = '';
@@ -325,6 +457,85 @@ document.addEventListener('DOMContentLoaded', function () {
 					button.textContent = 'Попробовать ещё раз';
 				});
 		});
+	}
+
+	if (marketRoot) {
+		var marketDate = marketRoot.querySelector('[data-home-market-date]');
+		var marketUrl = marketRoot.getAttribute('data-market-url') || 'index.php?home_widget_rates=1';
+		var marketTimers = {
+			refresh: null
+		};
+
+		function setMarketTrend(element, trend) {
+			var marker = element.querySelector('.home-market-trend');
+			if (!marker) {
+				return;
+			}
+
+			if (trend === 'up') {
+				marker.textContent = '▲';
+				marker.setAttribute('data-trend', 'up');
+				return;
+			}
+			if (trend === 'down') {
+				marker.textContent = '▼';
+				marker.setAttribute('data-trend', 'down');
+				return;
+			}
+
+			marker.textContent = '•';
+			marker.setAttribute('data-trend', 'neutral');
+		}
+
+		function renderMarket(payload) {
+			if (!payload || typeof payload !== 'object') {
+				return;
+			}
+
+			if (marketDate && payload.dateLabel) {
+				marketDate.textContent = String(payload.dateLabel);
+			}
+
+			var rates = payload.rates || {};
+			var keys = ['usd', 'eur', 'btc', 'ton'];
+			for (var i = 0; i < keys.length; i++) {
+				var key = keys[i];
+				var entry = marketRoot.querySelector('[data-home-market-item="' + key + '"]');
+				if (!entry) {
+					continue;
+				}
+
+				var data = rates[key] || {};
+				var label = entry.querySelector('.home-market-label');
+				var value = entry.querySelector('.home-market-value');
+				if (label && data.label) {
+					label.textContent = String(data.label);
+				}
+				if (value) {
+					value.textContent = (data.value ? String(data.value) : '—');
+				}
+				setMarketTrend(entry, data.trend || 'neutral');
+			}
+		}
+
+		function loadMarketRates() {
+			var separator = (marketUrl.indexOf('?') === -1 ? '?' : '&');
+			var requestUrl = marketUrl + separator + '_t=' + Date.now();
+			fetch(requestUrl, { headers: {'X-Requested-With': 'XMLHttpRequest'} })
+				.then(function (response) {
+					if (!response.ok) {
+						throw new Error('market load failed');
+					}
+					return response.json();
+				})
+				.then(function (payload) {
+					renderMarket(payload);
+				})
+				.catch(function () {});
+		}
+
+		loadMarketRates();
+		marketTimers.refresh = window.setInterval(loadMarketRates, 300000);
 	}
 
 	setView(initialView, false);
