@@ -11,6 +11,7 @@ $GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS'] = true;
 $GLOBALS['LITETRACKER_HIDE_STANDARD_SIDEBAR'] = true;
 
 $ltBookmarkAjax = (!empty($_GET['ajax']) || strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest');
+$ltBookmarkActionScope = 'bookmarks_action';
 
 function lt_bookmark_json($payload, $statusCode = 200)
 {
@@ -58,13 +59,32 @@ function lt_bookmark_build_url($overrides = array(), $drop = array())
 	return 'my.book.php'.($query !== '' ? '?'.$query : '');
 }
 
+function lt_bookmark_require_action_token($scope, $isAjax = false)
+{
+	global $language;
+
+	if (lt_csrf_validate($scope)) {
+		return true;
+	}
+
+	if ($isAjax) {
+		lt_bookmark_json(array('success' => false, 'message' => 'Защитный токен устарел. Обновите страницу и повторите действие.'), 403);
+	}
+
+	err($language['default_1'], 'Защитный токен устарел. Обновите страницу и повторите действие.', 1);
+}
+
 // безопасный act (фикс warning)
-$act = isset($_GET['act']) ? trim((string) $_GET['act']) : '';
+$act = trim((string) ($_REQUEST['act'] ?? ''));
 
 //////////////////////////////////////////////////////////////////////////////
 // Массовое удаление
 //////////////////////////////////////////////////////////////////////////////
 if($act === 'check_delete') {
+	if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+		err($language['default_1'], 'Действие доступно только через POST.', 1);
+	}
+	lt_bookmark_require_action_token($ltBookmarkActionScope);
 
 	$array = $_POST['check'] ?? [];
 
@@ -102,8 +122,9 @@ if($act === 'check_delete') {
 // Добавление
 //////////////////////////////////////////////////////////////////////////////
 if($act === 'add') {
+	lt_bookmark_require_action_token($ltBookmarkActionScope, $ltBookmarkAjax);
 
-	$id = (int)$_GET['id'];
+	$id = (int) ($_REQUEST['id'] ?? 0);
 
 	$count_t = $db->super_query("SELECT COUNT(*) AS count FROM torrents WHERE id=".$id);
 	if(!$count_t['count']) {
@@ -128,7 +149,7 @@ if($act === 'add') {
 			'success' => true,
 			'bookmarked' => true,
 			'label' => $language['details_26'],
-			'href' => 'my.book.php?id='.$id.'&act=delete',
+			'href' => 'my.book.php?id='.$id.'&act=delete&'.lt_csrf_query($ltBookmarkActionScope),
 		));
 	}
 
@@ -140,8 +161,9 @@ if($act === 'add') {
 // Удаление
 //////////////////////////////////////////////////////////////////////////////
 if($act === 'delete') {
+	lt_bookmark_require_action_token($ltBookmarkActionScope, $ltBookmarkAjax);
 
-	$id = (int)$_GET['id'];
+	$id = (int) ($_REQUEST['id'] ?? 0);
 
 	$count_t = $db->super_query("SELECT COUNT(*) AS count FROM torrents WHERE id=".$id);
 	if(!$count_t['count']) {
@@ -166,7 +188,7 @@ if($act === 'delete') {
 			'success' => true,
 			'bookmarked' => false,
 			'label' => $language['details_25'],
-			'href' => 'my.book.php?id='.$id.'&act=add',
+			'href' => 'my.book.php?id='.$id.'&act=add&'.lt_csrf_query($ltBookmarkActionScope),
 		));
 	}
 

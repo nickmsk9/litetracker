@@ -932,9 +932,11 @@ function lt_details_prepare_bookmark($torrentId)
 	if (!empty($USER['id'])) {
 		$userState = lt_details_user_state($torrentId, (int) $USER['id']);
 		$bookmarked = !empty($userState['bookmark_exists']);
+		$bookmarkScope = 'bookmarks_action';
+		$bookmarkHref = 'my.book.php?id='.$torrentId.'&act='.($bookmarked ? 'delete' : 'add').'&'.lt_csrf_query($bookmarkScope);
 		return array(
-			'legacy_html' => '<a class="proleft" href="my.book.php?id='.$torrentId.'&act='.($bookmarked ? 'delete' : 'add').'">'.($bookmarked ? $language['details_26'] : $language['details_25']).'</a>',
-			'href' => 'my.book.php?id='.$torrentId.'&act='.($bookmarked ? 'delete' : 'add'),
+			'legacy_html' => '<a class="proleft" href="'.$bookmarkHref.'">'.($bookmarked ? $language['details_26'] : $language['details_25']).'</a>',
+			'href' => $bookmarkHref,
 			'label' => ($bookmarked ? $language['details_26'] : $language['details_25']),
 			'bookmarked' => $bookmarked,
 			'guest_register_href' => '',
