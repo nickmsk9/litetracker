@@ -19,21 +19,27 @@ is_login();
 $shopEditScope = 'shop_edit';
 $shopDeleteScope = 'shop_delete';
 $shopBuyScope = 'shop_buy';
+$act = (string) ($_GET['act'] ?? $_POST['act'] ?? '');
+$id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
+$status = (string) ($_GET['status'] ?? '');
 
 
 /////////////////////////////////////////////////////////////////////
 //Удаление товара
 /////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'delete' && $_GET['id']) {
+if($act == 'delete' && $id) {
 	if(!$PRIV['EDIT_PRIV']) {
 		err($language['default_1'] , 'Вам запрещено удалять услуги' , 1);
+	}
+
+	if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+		err($language['default_1'] , 'Удаление товара доступно только POST-запросом.' , 1);
 	}
 
 	if (!lt_csrf_validate($shopDeleteScope)) {
 		err($language['default_1'] , 'Защитный токен устарел. Обновите страницу и попробуйте снова.' , 1);
 	}
 
-	$id = (int)$_GET['id'];
 	$db->query("SELECT * FROM shop WHERE id=".$id);
 	if(!$db->num_rows() ) {
 		err($language['default_1'] , 'Данного товара не существует' , 1);
@@ -47,14 +53,14 @@ if($_GET['act'] == 'delete' && $_GET['id']) {
 /////////////////////////////////////////////////////////////////////
 //Добавление / Редактирование товара
 /////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'edit') {
+if($act == 'edit') {
 	if(!$PRIV['EDIT_PRIV']) {
 		err($language['default_1'] , 'Вам запрещено добавлять/регактировать услуги' , 1);
 	}
+	$arr = array('name' => '', 'voice' => '', 'file' => '');
 
 	//Данные для редактирования
-	if($_GET['id']) {
-		$id = (int)$_GET['id'];
+	if($id) {
 		$db->query("SELECT * FROM shop WHERE id=".$id);
 		if(!$db->num_rows() ) {
 			err($language['default_1'] , 'Данного товара не существует' , 1);
@@ -141,7 +147,7 @@ if($_GET['act'] == 'edit') {
 			$ifile = $_FILES['image']['tmp_name'];
 
 			// Calculate what the next torrent id will be
-			if(!$_GET['id']) {
+			if(!$id) {
 				$row = $db->super_query("SHOW TABLE STATUS LIKE 'shop'");
 				$id = $row['Auto_increment'];
 			}
@@ -161,7 +167,7 @@ if($_GET['act'] == 'edit') {
 		}
 
 		//Добавляем/Обновляем
-		if($_GET['id'] && count($update) ) {
+		if($id && count($update) ) {
 
 			$db->query("UPDATE shop SET ".implode(',' , $update)." WHERE id=".$id);
 		} elseif(count($update) ) {
@@ -244,7 +250,7 @@ if($_GET['act'] == 'edit') {
 		 <span class="grey"></span>
 		</td>
 		<td style="padding: 0px;">
-		 <input type="submit" value="<?=($_GET['id'] ? 'Редактировать' : 'Добавить');?>">
+		 <input type="submit" value="<?=($id ? 'Редактировать' : 'Добавить');?>">
 		</td><td>
 	   </td></tr>
 
@@ -267,13 +273,17 @@ if($_GET['act'] == 'edit') {
 /////////////////////////////////////////////////////////////////////
 //Обработка покупки
 /////////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'voicing' && $_GET['id']) {
+if($act == 'voicing' && $id) {
+	if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+		err($language['default_1'] , 'Покупка товара доступна только POST-запросом.' , 1);
+	}
+
 	if (!lt_csrf_validate($shopBuyScope)) {
 		err($language['default_1'] , 'Защитный токен устарел. Обновите страницу и попробуйте снова.' , 1);
 	}
 
 	//Номер товара
-	$id = (int)$_GET['id'];
+	$id = (int)$id;
 
 	//Запрос в базу данных
 	$db->query("SELECT * FROM shop WHERE id=".$id);
@@ -317,11 +327,11 @@ head('Магазин на трекере');
 
 
 //Статусы
-if($_GET['status'] == '1') {
+if($status == '1') {
 	msg('Покупка успешно совершена');
-}elseif($_GET['status'] == '2') {
+}elseif($status == '2') {
 	msg('Операция успешно выполнена');
-}elseif($_GET['status'] == '3') {
+}elseif($status == '3') {
 	msg('Товар успешно удален');
 }
 
@@ -352,10 +362,20 @@ while($arr = $db->get_row($sql) ) {
 	echo '</td>';
 
 	echo '<td>';
-	echo '<input type="button" value="Купить" onClick="window.location.href=\'shop.php?act=voicing&id='.$arr['id'].'&'.lt_csrf_query($shopBuyScope).'\'">';
+	echo '<form method="post" action="shop.php" style="display:inline;margin:0">';
+	echo lt_csrf_input($shopBuyScope);
+	echo '<input type="hidden" name="act" value="voicing">';
+	echo '<input type="hidden" name="id" value="'.(int)$arr['id'].'">';
+	echo '<input type="submit" value="Купить">';
+	echo '</form>';
 	if($PRIV['EDIT_PRIV']) {
 		echo '&nbsp<input type="button" value="Редактировать" onClick="window.location.href=\'shop.php?act=edit&id='.$arr['id'].'\'">';
-		echo '&nbsp<input type="button" value="Удалить" onClick="window.location.href=\'shop.php?act=delete&id='.$arr['id'].'&'.lt_csrf_query($shopDeleteScope).'\'">';
+		echo '&nbsp<form method="post" action="shop.php" style="display:inline;margin:0" onsubmit="return confirm(\'Удалить этот товар?\');">';
+		echo lt_csrf_input($shopDeleteScope);
+		echo '<input type="hidden" name="act" value="delete">';
+		echo '<input type="hidden" name="id" value="'.(int)$arr['id'].'">';
+		echo '<input type="submit" value="Удалить">';
+		echo '</form>';
 	}
 	echo '</td>';
 

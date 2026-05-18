@@ -35,6 +35,10 @@ $object_name = 'id_' . $type;
 comments_ensure_thread_support($type);
 $commentCsrfScope = 'comments_' . $type . '_' . $object_id;
 $commentRateLimitId = ((int) ($USER['id'] ?? 0)) . ':' . ($_SERVER['REMOTE_ADDR'] ?? 'cli');
+$commentMutatingActs = array('add', 'report', 'delete');
+if (in_array($act, $commentMutatingActs, true) && strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+    err($language['default_1'], 'Действие доступно только POST-запросом.', 1);
+}
 
 // Проверяем объект
 $object_exists = $db->super_query("SELECT id FROM `{$type}` WHERE id = {$object_id} LIMIT 1");

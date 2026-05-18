@@ -33,7 +33,8 @@ if($act == 'view') {
 	//Выводим статусы
 	comment_status();
 
-	begin_frame(htmlspecialchars((string) ($arr['subject'] ?? ''), ENT_QUOTES, 'UTF-8').($PRIV['faq_moderate'] ? '<div style="float:right"><a href="faq.php?act=topic&type=edit&id='.$id.'">[Редактировать]</a> <a href="faq.php?act=topic&type=delete&id='.$id.'">[Удалить]</a></div>' : ''));
+	$faqDeleteForm = '<form method="post" action="faq.php?act=del&id='.$id.'" style="display:inline;margin:0;">'.lt_csrf_input('faq_delete_'.$id).'<button type="submit" style="border:0;background:none;padding:0;color:inherit;text-decoration:underline;cursor:pointer;">[Удалить]</button></form>';
+	begin_frame(htmlspecialchars((string) ($arr['subject'] ?? ''), ENT_QUOTES, 'UTF-8').($PRIV['faq_moderate'] ? '<div style="float:right"><a href="faq.php?act=topic&type=edit&id='.$id.'">[Редактировать]</a> '.$faqDeleteForm.'</div>' : ''));
 	echo format_comment($arr['text']);
 
 
@@ -46,7 +47,7 @@ if($act == 'view') {
 	}
 
 	echo '<hr><small>Добавил <a href="'.profile_href($user['id']).'">'.get_user_color($user['class'] , $user['name']).'</a> , '.convent_date($arr['added']).' </small> '.($arr['last_edit'] != '0000-00-00 00:00:00' ? '<br> <small> И редактировал <a href="'.profile_href($user1['id']).'">'.get_user_color($user1['class'] , $user1['name']).'</a> , '.convent_date($arr['last_edit']).'</small>' : '')
-	.($PRIV['faq_moderate'] ? '<div style="float:right"><small><a href="faq.php?act=topic&type=edit&id='.$id.'">[Редактировать]</a> <a href="faq.php?act=del&id='.$id.'">[Удалить]</a></small></div>' : '');
+	.($PRIV['faq_moderate'] ? '<div style="float:right"><small><a href="faq.php?act=topic&type=edit&id='.$id.'">[Редактировать]</a> '.$faqDeleteForm.'</small></div>' : '');
 	end_frame();
 
 
@@ -64,6 +65,13 @@ if($act == 'view') {
 //Удаление тем
 ////////////////////////////////////////////////////////
 if($act == 'del') {
+	if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+		err('Ошибка', 'Удаление доступно только POST-запросом.', 1);
+	}
+	if (!lt_csrf_validate('faq_delete_'.$id)) {
+		err('Ошибка', 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
+
 	//Проверяем права
 	if(!$PRIV['faq_moderate']) {
 		err('Ошибка' , 'Вам запрещено пользоваться данной функцией' , 1);
@@ -109,6 +117,10 @@ if($act == 'topic') {
 
 	//Обработка данных
 	if($_POST) {
+		if (!lt_csrf_validate('faq_topic_'.$type.'_'.$id)) {
+			err('Ошибка', 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+		}
+
 		$array = array();
 		//Название темы
 		$subject = trim($_POST['subject']);
@@ -153,6 +165,7 @@ if($act == 'topic') {
 	?>
 
 		<form action="faq.php?act=topic&type=<?=$type;?>&id=<?=$id;?>" method="post">
+		<?=lt_csrf_input('faq_topic_'.$type.'_'.$id);?>
 		<table>
 			<tr><td width="10%"><b>Название:</b></td><td><input type="text" name="subject" size="80%" value="<?=htmlspecialchars((string) ($arr['subject'] ?? ''), ENT_QUOTES, 'UTF-8');?>"></td></tr>
 			<tr><td colspan="2"><?=textbb('text' , $arr['text']);?></td></tr>

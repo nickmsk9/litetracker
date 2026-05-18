@@ -20,33 +20,45 @@ if(!$PRIV['search_query']) {
 	err('Ошибка' , 'Доступ закрыт' , 1);
 }
 
-//Оповещение пользователя
-if(!empty($_GET['send']) && !empty($_GET['id'])) {
-	$id = (int)$_GET['id'];
-	$db->query("SELECT * FROM search_query WHERE id=".$id);
-	if(!$db->num_rows() ) {
-		err('Ошибка' , 'Данная заявка не найдена' , 1);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+	$action = trim((string) ($_POST['action'] ?? ''));
+	if (!lt_csrf_validate('search_query_action')) {
+		err('Ошибка', 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
 	}
-	$arr = $db->get_row();
 
-	$name = 'Вы искали '.$arr['text'].'';
-	$text = convent_date($arr['last_date']).' вы искали : [b]'.$arr['text'].'[/b]
+	if ($action === 'send') {
+		$id = (int) ($_POST['id'] ?? 0);
+		$db->query("SELECT * FROM search_query WHERE id=".$id);
+		if(!$db->num_rows() ) {
+			err('Ошибка' , 'Данная заявка не найдена' , 1);
+		}
+		$arr = $db->get_row();
 
-			Ваша ссылка: [url=browse.php?search='.urlencode($arr['text']).']'.$_SERVER['HTTP_HOST'].'/browse.php?search='.urlencode($arr['text']).'[/url]';
-	send_msg($name , $text , $arr['id_user'] , 0);
+		$name = 'Вы искали '.$arr['text'].'';
+		$text = convent_date($arr['last_date']).' вы искали : [b]'.$arr['text'].'[/b]
 
-	//Оповещенная заявка
-	$db->query("UPDATE search_query SET sended='1' WHERE id=".$id);
+				Ваша ссылка: [url=browse.php?search='.urlencode($arr['text']).']'.$_SERVER['HTTP_HOST'].'/browse.php?search='.urlencode($arr['text']).'[/url]';
+		send_msg($name , $text , $arr['id_user'] , 0);
 
-	header("Location:search_query.php?status=1");
-	die();
-}
+		//Оповещенная заявка
+		$db->query("UPDATE search_query SET sended='1' WHERE id=".$id);
 
+		header("Location:search_query.php?status=1");
+		die();
+	}
 
-//Принудительная очистка
-if(!empty($_GET['clean']) && $PRIV['EDIT_PRIV']) {
-	//Удаляем все записи
-	$db->query("DELETE FROM search_query");
+	if ($action === 'clean') {
+		if (!$PRIV['EDIT_PRIV']) {
+			err('Ошибка', 'Доступ закрыт', 1);
+		}
+
+		//Удаляем все записи
+		$db->query("DELETE FROM search_query");
+		header("Location:search_query.php?status=clean");
+		die();
+	}
+
+	err('Ошибка', 'Неизвестное действие.', 1);
 }
 
 //Задаем выборку и параметры для GET запроса
@@ -73,12 +85,16 @@ if(empty($_GET['status']) ) {
 	msg('Внимание' , 'После загрузки того или иного релиза, нажмите кнопку "Оповестить"');
 }elseif($_GET['status'] == '1') {
 	msg('Успешно' , 'Вы успешно оповестили пользователя');
+}elseif($_GET['status'] == 'clean') {
+	msg('Успешно' , 'История поиска очищена');
 }
 begin_frame('Мониторинг поиска');
 
 
 echo '<input type="button" value="Без торрентов" onClick="window.location.href=\'search_query.php?dead=1\'">&nbsp';
-echo ($PRIV['EDIT_PRIV'] ? '<input type="button" value="Очистить" onClick="window.location.href=\'search_query.php?clean=1\'">' : '');
+if ($PRIV['EDIT_PRIV']) {
+	echo '<form method="post" action="search_query.php" style="display:inline;margin:0;">'.lt_csrf_input('search_query_action').'<input type="hidden" name="action" value="clean"><button type="submit">Очистить</button></form>';
+}
 
 
 
@@ -119,7 +135,7 @@ if($db->num_rows($sql)) {
 		echo '<td>'.$arr['num_views'].'</td>';
 		echo '<td>'.($arr['num_torrents'] > 0 ? '<font color="green"><b>'.$arr['num_torrents'].'</b></font>' : '<font color="red"><b>'.$arr['num_torrents'].'</b></font>').'</td>';
 		echo '<td>'.($arr['sended'] == 1 ? 'Да': 'Нет').'</td>';
-		echo '<td><input type="button" value="Оповестить" onCLick="window.location.href=\'search_query.php?send=1&id='.$arr['id'].'\'"></td>';
+		echo '<td><form method="post" action="search_query.php" style="display:inline;margin:0;">'.lt_csrf_input('search_query_action').'<input type="hidden" name="action" value="send"><input type="hidden" name="id" value="'.(int) $arr['id'].'"><button type="submit">Оповестить</button></form></td>';
 
 		echo '</tr>';
 	}

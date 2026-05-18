@@ -15,6 +15,9 @@ require 'system/init.php';
 $act = (string) ($_GET['act'] ?? '');
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $status = (string) ($_GET['status'] ?? '');
+$newsAddScope = 'news_add';
+$newsEditScope = 'news_edit_'.$id;
+$newsDeleteScope = 'news_delete_'.$id;
 $GLOBALS['LITETRACKER_HIDE_STANDARD_SIDEBAR'] = true;
 
 function lt_news_format_publication_date($date)
@@ -55,6 +58,10 @@ if($act == 'edit' && $id) {
 
 	//Обработка новости
 	if(count($_POST) ) {
+		if (!lt_csrf_validate($newsEditScope)) {
+			err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+		}
+
 		$update = array();
 		$updateParams = array();
 		$updateTypes = '';
@@ -79,7 +86,7 @@ if($act == 'edit' && $id) {
 		}
 
 		//Поднятие новости
-		$up = (int)$_POST['up'];
+		$up = (int) ($_POST['up'] ?? 0);
 		if($up) {
 			$update[] = "date=NOW()";
 		}
@@ -99,6 +106,7 @@ if($act == 'edit' && $id) {
 	begin_frame($language['news_4']);
 	?>
 	<form enctype="multipart/form-data" action="news.php?act=edit&id=<?=$id;?>" method="post" name="news" class="news-editor-form">
+		<?=lt_csrf_input($newsEditScope);?>
 		<div class="news-editor-grid">
 			<label class="news-editor-field">
 				<span class="news-editor-label"><?=$language['news_5'];?>:</span>
@@ -139,6 +147,10 @@ if($act == 'add') {
 
 	//Обработка новости
 	if(count($_POST) ) {
+		if (!lt_csrf_validate($newsAddScope)) {
+			err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+		}
+
 		//Название
 		$name = lt_fix_utf8_mojibake(trim((string) ($_POST['name'] ?? '')));
 		if(empty($name) ) {
@@ -166,6 +178,7 @@ if($act == 'add') {
 	begin_frame($language['news_9']);
 	?>
 	<form enctype="multipart/form-data" action="news.php?act=add" method="post" name="news" class="news-editor-form">
+		<?=lt_csrf_input($newsAddScope);?>
 		<div class="news-editor-grid">
 			<label class="news-editor-field">
 				<span class="news-editor-label"><?=$language['news_5'];?>:</span>
@@ -197,6 +210,14 @@ if($act == 'delete' && $id) {
 
 	//Только Администраторам , Модераторам
 	lt_news_require_manage_permission();
+
+	if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+		err($language['default_1'], 'Удаление новости доступно только POST-запросом.', 1);
+	}
+
+	if (!lt_csrf_validate($newsDeleteScope)) {
+		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
 
 	//Проверяем , существует ли новость
 	$db->query("SELECT * FROM news WHERE id=".$id."");

@@ -29,7 +29,15 @@ $commentTextHtml = ($commentDeleted
             <a class="comment-side-button comment-side-button-edit" href="comments.take.php?type=<?=urlencode($type);?>&amp;object_id=<?=(int)$object_id;?>&amp;id_comment=<?=(int)$id;?>&amp;act=edit&amp;file=<?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?>"><?=$language['comments_4'];?></a>
             <?php } ?>
             <?php if ($commentCanDelete) { ?>
-            <a class="comment-side-button comment-side-button-delete" href="comments.take.php?type=<?=urlencode($type);?>&amp;object_id=<?=(int)$object_id;?>&amp;id_comment=<?=(int)$id;?>&amp;act=delete&amp;file=<?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?>"><?=$language['comments_5'];?></a>
+            <form method="post" action="comments.take.php" style="display:inline;margin:0;">
+                <?=lt_csrf_input('comments_'.$type.'_'.$object_id);?>
+                <input type="hidden" name="type" value="<?=htmlspecialchars($type, ENT_QUOTES, 'UTF-8');?>">
+                <input type="hidden" name="object_id" value="<?=(int)$object_id;?>">
+                <input type="hidden" name="id_comment" value="<?=(int)$id;?>">
+                <input type="hidden" name="act" value="delete">
+                <input type="hidden" name="file" value="<?=htmlspecialchars($file, ENT_QUOTES, 'UTF-8');?>">
+                <button type="submit" class="comment-side-button comment-side-button-delete" style="border:0;background:transparent;padding:0;cursor:pointer;"><?=$language['comments_5'];?></button>
+            </form>
             <?php } ?>
         </div>
         <?php } ?>
