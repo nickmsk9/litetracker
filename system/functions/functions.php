@@ -720,7 +720,11 @@ function lt_debug_enabled()
 
 function lt_debug_panel_allowed()
 {
-	return (lt_debug_enabled() && function_exists('admin_dashboard_is_superadmin') && admin_dashboard_is_superadmin(($GLOBALS['USER'] ?? null), ($GLOBALS['PRIV'] ?? null)));
+	$user = ($GLOBALS['USER'] ?? null);
+	$priv = ($GLOBALS['PRIV'] ?? null);
+	$isCreatorAdmin = (is_array($user) && (int) ($user['id'] ?? 0) === 1 && function_exists('admin_dashboard_is_superadmin') && admin_dashboard_is_superadmin($user, $priv));
+
+	return (($isCreatorAdmin || lt_debug_enabled()) && function_exists('admin_dashboard_is_superadmin') && admin_dashboard_is_superadmin($user, $priv));
 }
 
 function lt_debug_format_bytes($bytes)

@@ -45,18 +45,26 @@ if ($PRIV['sessions_clear']) {
 
 
 
-//Постраничная навигация
-$count  = $db->super_query("SELECT COUNT(*) AS c FROM sessions");
-$count = $count['c'];
-list($pagertop, $pagerbottom, $limit) = pager('40' , $count, "sessions.php?");
+$perPage = 40;
+$currentPage = isset($_GET['page']) ? max(0, (int) $_GET['page']) : 0;
+$limit = 'LIMIT '.($currentPage * $perPage).' , '.$perPage;
+$count = 0;
 
 //Выводим все записи
-$sql  = $db->query("SELECT  s.* , u.name , u.class
+$sql  = $db->query("SELECT s.session_id, s.user_id, s.last_access, s.ip, s.user_agent, s.php_self,
+				COUNT(*) OVER() AS total_count,
+				u.name, u.class
 				FROM sessions AS s
 				LEFT JOIN users AS u ON u.id = s.user_id
 				ORDER BY s.last_access DESC
 				".$limit."");
 if($db->num_rows($sql)) {
+	$sessionRows = array();
+	while($arr = $db->get_row($sql) ) {
+		$count = max($count, (int) ($arr['total_count'] ?? 0));
+		$sessionRows[] = $arr;
+	}
+	list($pagertop, $pagerbottom) = pager((string) $perPage, $count, "sessions.php?");
 	echo $pagertop;
 	?>
 	<link href="public/css/torrenttable.css" rel="StyleSheet" type="text/css">
@@ -65,7 +73,7 @@ if($db->num_rows($sql)) {
 	<td><b>Пользователь</b></td><td><b>Посл. посещение</b></td><td><b>IP</b></td>  <td><b>Агент</b></td><td><b>Просматривает</b></td>
 	</tr>
 	<?php
-	while($arr = $db->get_row($sql) ) {
+	foreach($sessionRows as $arr) {
 		echo '<tr>';
 
 		echo '<td>';

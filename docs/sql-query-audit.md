@@ -17,8 +17,8 @@
 | `details.php?id=1` | ~10 | 7-12 | 3-5 | Kept | D2-D4 уже убрали основной N+1. Chrome counters объединены; comments warm/cold cache меняет фактический count. | `details.php`, `functions.details.php`, `functions.comments.php`, `head.php` |
 | `profile.php?id=1` | ~10 | 5-8 | 2-3 payload | Improved | Для своего профиля убран повторный `SELECT * FROM users`; online state берётся из текущей сессии. Chrome counters объединены. | `profile.php`, `head.php` |
 | `my.book.php` | ~5 | 4 | 2 payload | Improved | Убран отдельный count query; закладки + total через `COUNT(*) OVER()`. Также убран per-row subquery для local seeders. | `my.book.php` |
-| `search_query.php` | ~5 | 5 | 3-4 | Deferred | Админская страница: count + list + chrome. Нужна отдельная волна для pagination/query history actions. | `search_query.php` |
-| `sessions.php` | ~5 | 5 | 3-4 | Deferred | Count + list + chrome. Можно перевести на window count позже. | `sessions.php` |
+| `search_query.php` | ~5 | 4 | 1 payload | Improved | Count + list объединены через `COUNT(*) OVER()`. Mutation flow пока legacy GET, отмечено как security TODO. | `search_query.php` |
+| `sessions.php` | ~5 | 4 | 1 payload | Improved | Count + list объединены через `COUNT(*) OVER()`, users join остался в основном query. | `sessions.php` |
 | `rating.php` | ~3 | 3 | 2-3 | OK | Уже близко к бюджету. | `rating.php` |
 | `faq.php` | ~4 | 4 | 2-3 | Deferred | CRUD/admin branch и list query. Низкий пользовательский риск, но не главный hot path. | `faq.php` |
 | `shop.php` | ~4 | 4 | 3-4 | OK | Основной list query + chrome. Runtime `SHOW TABLE STATUS` остаётся только в admin add branch. | `shop.php` |
@@ -36,6 +36,18 @@
 - `templates/default/head.php`: `mail` + `notifications` counters теперь собираются единым lightweight chrome bundle query.
 - `templates/default/head.php`: report counter больше не читается в header, потому что текущий HTML не отображает число открытых жалоб.
 - `lt_torrent_preload_author_users()`: текущий пользователь берётся из `$USER`, если он уже загружен, без повторного `SELECT users`.
+- `sessions.php`: отдельный `COUNT(*)` заменён на `COUNT(*) OVER()` в list query.
+- `search_query.php`: отдельный `COUNT(*)` заменён на `COUNT(*) OVER()` в list query.
+
+## Utility + Comments Pass
+
+| Page / Area | Before | After | Target | Notes |
+|---|---:|---:|---:|---|
+| `sessions.php` | 2 payload | 1 payload | 1 payload | `SELECT s..., COUNT(*) OVER() AS total_count ... LEFT JOIN users ... LIMIT ...` |
+| `search_query.php` | 2 payload | 1 payload | 1 payload | `SELECT s.*, COUNT(*) OVER() AS total_count ... LEFT JOIN users ... LIMIT ...` |
+| comments reaction summary | 1 batched | 1 batched | 1 batched | Уже было оптимизировано: `GROUP BY comment_id, reaction`, без N+1. |
+| comments current user state | 0 guest / 1 user | 0 guest / 1 user | 0 guest / 1 user | `comments_current_user_reactions()` делает один `IN (...) AND user_id = ?` и request-level memoization. |
+| creator admin debug | depends on ENV | always visible | always visible | Для пользователя `id=1` с superadmin правами debug panel показывается даже без `DEBUG/DEBUG_SQL`. |
 
 ## Global / Chrome SQL Budget
 
@@ -71,7 +83,7 @@
 - показывает список повторяющихся SQL-запросов;
 - сохраняет маскирование чувствительных значений.
 
-Debug доступен только при включённом debug и только admin/superadmin, как раньше.
+Debug доступен при включённом debug для admin/superadmin. Для создателя-админа `id=1` с superadmin правами panel показывается всегда.
 
 ## Индексы
 
@@ -82,7 +94,8 @@ Debug доступен только при включённом debug и тол�
 - Глобальный bootstrap/chrome: `SET time_zone` и session touch остаются infrastructure. Для цели 2-4 SQL total нужно решить, считаем ли их частью page budget или отдельной платформенной стоимостью.
 - `browse.php` facet counts: полезная функциональность фильтров, но cold-cache даёт дополнительный query. Для строгого no-cache бюджета нужен materialized/faceted summary или более узкий query по активным фильтрам.
 - Comments current-user reactions остаются отдельным user-specific query. Склеивать с shared payload рискованно из-за прав/CSRF/user state.
-- Admin pages `sessions.php`, `search_query.php`, `faq.php` можно отдельно перевести на `COUNT(*) OVER()` и pagination helpers.
+- `faq.php` можно отдельно перевести на `COUNT(*) OVER()` или оставить как low-traffic utility page.
+- `search_query.php` всё ещё содержит legacy GET actions для `send`/`clean`; это не менялось в SQL pass и должно идти отдельной security волной.
 
 ## Риски
 
@@ -93,7 +106,6 @@ Debug доступен только при включённом debug и тол�
 ## Следующая волна
 
 1. Вынести общий torrent-list query helper для `index.php`, `browse.php`, `my.book.php`.
-2. Перевести `sessions.php` и `search_query.php` на window count.
-3. Для страниц `sessions.php` / `search_query.php` перевести count на window count.
-4. Отдельно пройти comments current-user state и AJAX actions, не смешивая с shared cached payload.
-5. Рассмотреть DB/server-level timezone вместо per-connection `SET time_zone`, если production окружение это гарантирует.
+2. Перевести `faq.php` на более компактный list/count flow, если страница станет hot path.
+3. Отдельно пройти AJAX comments reaction mutation и legacy GET actions в `search_query.php` как security/UX cleanup.
+4. Рассмотреть DB/server-level timezone вместо per-connection `SET time_zone`, если production окружение это гарантирует.

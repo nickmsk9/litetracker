@@ -21,7 +21,7 @@ if(!$PRIV['search_query']) {
 }
 
 //Оповещение пользователя
-if($_GET['send'] && $_GET['id']) {
+if(!empty($_GET['send']) && !empty($_GET['id'])) {
 	$id = (int)$_GET['id'];
 	$db->query("SELECT * FROM search_query WHERE id=".$id);
 	if(!$db->num_rows() ) {
@@ -44,7 +44,7 @@ if($_GET['send'] && $_GET['id']) {
 
 
 //Принудительная очистка
-if($_GET['clean'] && $PRIV['EDIT_PRIV']) {
+if(!empty($_GET['clean']) && $PRIV['EDIT_PRIV']) {
 	//Удаляем все записи
 	$db->query("DELETE FROM search_query");
 }
@@ -52,14 +52,16 @@ if($_GET['clean'] && $PRIV['EDIT_PRIV']) {
 //Задаем выборку и параметры для GET запроса
 $to_where = array();
 $to_param = array();
-if($_GET['dead']) {
+if(!empty($_GET['dead'])) {
 	$to_where[] = 's.num_torrents = 0';
 	$to_param[] = 'dead=1';
 }
 
+$where = '';
 if(count($to_where) ) {
 	$where = 'WHERE '.implode(' AND ' , $to_where);
 }
+$param = '';
 if(count($to_param)) {
 	$param = implode('&' , $to_param).'&';
 }
@@ -80,20 +82,26 @@ echo ($PRIV['EDIT_PRIV'] ? '<input type="button" value="Очистить" onClic
 
 
 
-//Постраничная навигация
-$count = $db->super_query("SELECT COUNT(*) AS c FROM search_query AS s ".$where);
-$count = $count['c'];
-list($pagertop, $pagerbottom, $limit) = pager('10' , $count, "search_query.php?".$param);
+$perPage = 10;
+$currentPage = isset($_GET['page']) ? max(0, (int) $_GET['page']) : 0;
+$limit = 'LIMIT '.($currentPage * $perPage).' , '.$perPage;
+$count = 0;
 
 //Выводим все записи
-$db->query("SELECT s.* , u.name , u.class
+$sql = $db->query("SELECT s.*, COUNT(*) OVER() AS total_count, u.name, u.class
 				FROM search_query AS s
 				LEFT JOIN users AS u ON u.id = s.id_user
 				".$where."
 				ORDER BY last_date DESC
 				".$limit."
 				");
-if($db->num_rows()) {
+if($db->num_rows($sql)) {
+	$searchRows = array();
+	while($arr = $db->get_row($sql) ) {
+		$count = max($count, (int) ($arr['total_count'] ?? 0));
+		$searchRows[] = $arr;
+	}
+	list($pagertop, $pagerbottom) = pager((string) $perPage, $count, "search_query.php?".$param);
 	echo $pagertop;
 	?>
 	<link href="public/css/torrenttable.css" rel="StyleSheet" type="text/css">
@@ -102,7 +110,7 @@ if($db->num_rows()) {
 	<td><b>Пользователь</b></td><td widtd="20%"><b>Фраза</b></td><td><b>Время поиска</b></td><td><b>Кол-во раз</b></td><td><b>Кол-во торрентов</b></td> <td><b>Оповещен</b></td>  <td><b>Действия</b></td>
 	</tr>
 	<?php
-	while($arr = $db->get_row() ) {
+	foreach($searchRows as $arr) {
 		echo '<tr>';
 
 		echo '<td><a href="'.profile_href($arr['id_user']).'">'.get_user_color($arr['class'] , $arr['name']).'</a></td>';
