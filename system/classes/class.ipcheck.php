@@ -55,18 +55,14 @@ class IPAddressSubnetSniffer {
 	 ?>
 
 	 *****************************************************************/
-	var $allowed_subnets;
-	var $binary_subnet_ips;
-	var $binary_subnet_masks;
+	public $allowed_subnets;
+	public $binary_subnet_ips;
+	public $binary_subnet_masks;
 
-	function IPAddressSubnetSniffer ($allowed_subnets) {
+	function __construct($allowed_subnets) {
 		// "allowed_subnets" defaults to ALL allowed subnets
 		$this->allowed_subnets = $allowed_subnets;
 		$this->setup_binary_subnet_list();
-	}
-
-	function __construct($allowed_subnets) {
-		$this->IPAddressSubnetSniffer($allowed_subnets);
 	}
 
 	function setup_binary_subnet_list(){

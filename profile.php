@@ -205,12 +205,17 @@ if (!$id) {
 	err($language['default_1'], $language['profile_1'], 1);
 }
 
-$db->query("SELECT * FROM users WHERE id = ".$id);
-if (!$db->num_rows()) {
-	err($language['default_1'], $language['profile_1'], 1);
-}
+$arr = array();
+if ($USER && (int) ($USER['id'] ?? 0) === (int) $id) {
+	$arr = $USER;
+} else {
+	$db->query("SELECT * FROM users WHERE id = ".$id);
+	if (!$db->num_rows()) {
+		err($language['default_1'], $language['profile_1'], 1);
+	}
 
-$arr = $db->get_row();
+	$arr = $db->get_row();
+}
 $id = (int) $arr['id'];
 $isOwnProfile = ($USER && (int) $USER['id'] === $id);
 $canManageThisProfile = false;
@@ -243,7 +248,7 @@ if (!empty($arr['avatar']) && is_file('public/avatars/'.$arr['avatar'])) {
 	$avatarLarge = 'public/avatars/'.$arr['avatar'];
 }
 
-$isOnline = user_is_online($id, 15);
+$isOnline = ($isOwnProfile ? true : user_is_online($id, 15));
 $profileStatusLabel = ($isOnline ? 'Онлайн' : 'Был на сайте '.$profileLastAccess);
 $profileStatusClass = ($isOnline ? 'profile-status-online' : 'profile-status-offline');
 $profileFlashMessage = null;

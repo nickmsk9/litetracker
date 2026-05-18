@@ -10,8 +10,8 @@ by Nick
 */
 
 class rewrite {
-	var $url = null; //URL
-	var $url_old = null; //Входной URL
+	public $url = null; //URL
+	public $url_old = null; //Входной URL
 
 
 	//Преобразуем в ЧПУ

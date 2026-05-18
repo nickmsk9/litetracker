@@ -2,8 +2,8 @@
 
 class MemcachedCache
 {
-	var $client = null;
-	var $connected = false;
+	public $client = null;
+	public $connected = false;
 
 	function __construct() {
 		$this->client = new Memcached();

@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -88,7 +88,7 @@ if($act == 'bans_ip') {
 	<tr class="header">
 	<td width="20%"><b>Первичный IP</b></td><td><b>Вторичный IP</b></td><td><b>Забанен</b></td><td><b>Пользователем</b></td><td><b>Комментарий</b></td> <td><b>Действия</b></td>
 	</tr>
-	<?
+	<?php
 	while($arr = $db->get_row($sql) ) {
 		echo '<tr>';
 
@@ -104,7 +104,7 @@ if($act == 'bans_ip') {
 	}
 	?>
 	</table>
-	<?
+	<?php
 
 	echo $pagertop;
 	end_frame();
@@ -229,7 +229,7 @@ if($act == 'banned_ip') {
 	  </form>
 
 
-	<?
+	<?php
 	end_frame();
 	foot();
 
@@ -278,7 +278,7 @@ if($act == 'bans_account') {
 	<td><b>IP</b></td>
 	<td><b>Действия</b></td>
 	</tr>
-	<?
+	<?php
 	while($arr = $db->get_row($sql) ) {
 		echo '<tr>';
 
@@ -294,7 +294,7 @@ if($act == 'bans_account') {
 	}
 	?>
 	</table>
-	<?
+	<?php
 
 	echo $pagertop;
 
@@ -360,7 +360,7 @@ begin_frame('Дополнительные функции');
 <input type="button" value="Заблокировать IP" onCLick="window.location.href='ip.util.php?act=banned_ip'">
 <input type="button" value="Заблокированные IP" onCLick="window.location.href='ip.util.php?act=bans_ip'">
 <input type="button" value="Заблокированные аккаунты" onCLick="window.location.href='ip.util.php?act=bans_account'">
-<?
+<?php
 end_frame();
 
 begin_frame('Поиск');
@@ -384,7 +384,7 @@ begin_frame('Поиск');
 
 </table>
 </form>
-<?
+<?php
 end_frame();
 
 if($_GET['ip']) {
@@ -446,7 +446,7 @@ if($_GET['ip']) {
 		<td><b>IP</b></td>
 		<td><b>Действия</b></td>
 		</tr>
-		<?
+		<?php
 		while($arr = $db->get_row() ) {
 			echo '<tr>';
 
@@ -462,7 +462,7 @@ if($_GET['ip']) {
 		}
 		?>
 		</table>
-		<?
+		<?php
 
 		echo $pagertop;
 

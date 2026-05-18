@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -101,7 +101,7 @@ if($db->num_rows()) {
 	<tr class="header">
 	<td><b>Пользователь</b></td><td widtd="20%"><b>Фраза</b></td><td><b>Время поиска</b></td><td><b>Кол-во раз</b></td><td><b>Кол-во торрентов</b></td> <td><b>Оповещен</b></td>  <td><b>Действия</b></td>
 	</tr>
-	<?
+	<?php
 	while($arr = $db->get_row() ) {
 		echo '<tr>';
 
@@ -117,7 +117,7 @@ if($db->num_rows()) {
 	}
 	?>
 	</table>
-	<?
+	<?php
 
 	echo $pagertop;
 } else

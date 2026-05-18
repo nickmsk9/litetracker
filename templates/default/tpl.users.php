@@ -1,4 +1,4 @@
-<?
+<?php
 if (!defined('LITETRACKER'))
 	die('Direct access denied.');
 
@@ -23,21 +23,21 @@ begin_frame();
 
 		 <tbody>
 
-	
-		 
+
+
 		 <tr>
 		 <td class="label" width="15%"><b><?=$language['users_16'];?></b></td>
 		 <td class="data">
 		  <div class="dataWrap" style="float:left">
 			<a href="<?=profile_href($id);?>"><?=$name;?></a> <?=$online;?>
 		  </div>
-		  
-		 
+
+
 		 </td>
-		
+
 		</tr>
-		
-		
+
+
 		<tr>
 		 <td class="label"><b><?=$language['users_17'];?></b></td>
 		 <td class="data">
@@ -46,7 +46,7 @@ begin_frame();
 		  </div>
 		 </td>
 		</tr>
-		
+
 		<tr>
 		 <td class="label"><b><?=$language['users_18'];?></b></td>
 		 <td class="data">
@@ -55,27 +55,27 @@ begin_frame();
 		  </div>
 		 </td>
 		</tr>
-		
-		
-		
+
+
+
 		<tr>
-		 
+
 		 <td class="data" colspan="2">
-				<?
+				<?php
 				echo ($USER['id'] == $arr['id'] || !empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV']) ? '<Input type="button" value="'.$language['profile_16'].'" onCLick="window.location.href=\'my.setting.php?id='.$id.'\'">&nbsp' : '');
 				echo ($USER['id'] != $arr['id'] ? '<Input type="button" value="'.$language['profile_17'].'" onCLick="window.location.href=\'my.mail.php?act=conversation&id_user='.$arr['id'].'\'">&nbsp' : '');
 
 
 				?>
-			
-		 
+
+
 		 </td>
 		</tr>
-		
+
 
 		 </tbody></table>
 </td>
 
 </tr>
 </table>
-<? end_frame(); ?>
+<?php end_frame(); ?>

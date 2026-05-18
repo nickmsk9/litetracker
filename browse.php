@@ -553,33 +553,15 @@ $orderBy = ($search !== ''
 	? 'search_score DESC, seeders DESC, t.completed DESC, IF(t.news = \'1\', 1, 0) DESC, t.added DESC'
 	: $sortOptions[$sort]['order']);
 
-$countRow = $db->super_query("SELECT COUNT(*) AS cnt FROM (
-	SELECT t.id, COALESCE(SUM(tr.seeders), 0) AS seeders
-	FROM torrents AS t
-	".$joinSql."
-	LEFT JOIN trackers AS tr ON tr.torrent = t.id
-	".$whereSql."
-	GROUP BY t.id
-	".$havingSql."
-) AS browse_count");
-$countTorrent = (int) ($countRow['cnt'] ?? 0);
-
 $pagerHref = 'browse.php'.($pagerParams ? '?'.http_build_query($pagerParams).'&' : '?');
-list($pagertop, $pagerbottom, $limit) = pager('10', $countTorrent, $pagerHref);
-
-if ($search !== '' && substr_count((string) ($_SERVER['QUERY_STRING'] ?? ''), 'page') == 0 && strlen($search) >= 5 && $USER) {
-	$checkQuery = $db->super_query("SELECT COUNT(*) AS count FROM search_query WHERE id_user=".($USER ? $USER['id'] : '-1')." AND text LIKE '%".sqlwildcardesc($search)."%'");
-
-	if (!empty($checkQuery['count'])) {
-		$db->query("UPDATE search_query SET last_date = NOW(), num_views = (num_views + 1), num_torrents = ".$countTorrent." WHERE id_user=".($USER ? $USER['id'] : '-1')." AND text LIKE '%".sqlwildcardesc($search)."%'");
-	} else {
-		$db->query("INSERT INTO search_query (text, id_user, last_date, num_torrents) VALUES ('".sqlwildcardesc($search)."', ".($USER ? $USER['id'] : '-1').", NOW(), ".$countTorrent.')');
-	}
-}
+$perPage = 10;
+$currentPage = isset($_GET['page']) ? max(0, (int) $_GET['page']) : 0;
+$limit = 'LIMIT '.($currentPage * $perPage).' , '.$perPage;
 
 $rows = array();
+$countTorrent = 0;
 $releasesNewsDays = (int) ($config['releases_news'] ?? 0);
-$sql = $db->query("SELECT t.*, ".$searchScoreExpr." AS search_score,
+$sql = $db->query("SELECT t.*, COUNT(*) OVER() AS total_count, ".$searchScoreExpr." AS search_score,
 	COALESCE(SUM(tr.seeders), 0) AS seeders, COALESCE(SUM(tr.leechers), 0) AS leechers,
 	COALESCE(SUM(CASE WHEN tr.tracker <> 'localhost' THEN 1 ELSE 0 END), 0) AS external_tracker_count,
 	IF(COALESCE(SUM(CASE WHEN tr.tracker = 'localhost' THEN tr.seeders ELSE 0 END), 0) > 0, true, false) AS local_seeders,
@@ -594,7 +576,22 @@ $sql = $db->query("SELECT t.*, ".$searchScoreExpr." AS search_score,
 	".$limit);
 
 while ($row = $db->get_row($sql)) {
+	$countTorrent = max($countTorrent, (int) ($row['total_count'] ?? 0));
 	$rows[] = $row;
+}
+
+list($pagertop, $pagerbottom) = pager((string) $perPage, $countTorrent, $pagerHref);
+
+if ($search !== '' && substr_count((string) ($_SERVER['QUERY_STRING'] ?? ''), 'page') == 0 && strlen($search) >= 5 && $USER) {
+	$searchUserId = (int) ($USER['id'] ?? -1);
+	$safeSearch = sqlwildcardesc($search);
+	$checkQuery = $db->super_query("SELECT COUNT(*) AS count FROM search_query WHERE id_user=".$searchUserId." AND text LIKE '%".$safeSearch."%'");
+
+	if (!empty($checkQuery['count'])) {
+		$db->query("UPDATE search_query SET last_date = NOW(), num_views = (num_views + 1), num_torrents = ".$countTorrent." WHERE id_user=".$searchUserId." AND text LIKE '%".$safeSearch."%'");
+	} else {
+		$db->query("INSERT INTO search_query (text, id_user, last_date, num_torrents) VALUES ('".$safeSearch."', ".$searchUserId.", NOW(), ".$countTorrent.')');
+	}
 }
 
 $torrentAuthorsById = lt_torrent_preload_author_users($rows);

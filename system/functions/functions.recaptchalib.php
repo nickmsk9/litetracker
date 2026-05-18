@@ -7,8 +7,8 @@ define('LT_CAPTCHA_LENGTH', 5);
 define('LT_CAPTCHA_DEFAULT_PROMPT', 'Введите символы проверки');
 
 class ReCaptchaResponse {
-	var $is_valid;
-	var $error;
+	public $is_valid;
+	public $error;
 }
 
 if (!function_exists('lt_captcha_random_string')) {

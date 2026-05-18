@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -89,7 +89,7 @@ if($db->num_rows($sql) > 0) {
 				<?=($PRIV['edit_release'] ? '<td class="tt" width="30" align="center"><font size=$size color=white><input type="submit" value="'.$language['releases_18'].'"></td>' : '');?>
 
 
-		<?
+		<?php
 	while($arr = $db->get_row($sql) ) {
 
 		require 'modules/releases.arr.php';

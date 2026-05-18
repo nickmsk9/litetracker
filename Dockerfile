@@ -15,7 +15,6 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-enable memcached \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install mysqli gd \
-    && echo "short_open_tag=On" > /usr/local/etc/php/conf.d/legacy.ini \
     && a2enmod rewrite ssl headers \
     && sed -ri '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf \
     && a2dissite 000-default \

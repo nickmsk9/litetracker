@@ -20,31 +20,31 @@ class phpmailer
 	/////////////////////////////////////////////////
 
 	// General Variables
-	var $Priority    = 3;
-	var $CharSet     = "iso-8859-1";
-	var $ContentType = "text/plain";
-	var $Encoding    = "8bit";
-	var $From        = "root@localhost";
-	var $FromName    = "root";
-	var $to          = array();
-	var $cc          = array();
-	var $bcc         = array();
-	var $ReplyTo     = array();
-	var $Subject     = "";
-	var $Body        = "";
-	var $WordWrap    = false;
-	var $mailer      = "mail";
-	var $sendmail    = "/usr/sbin/sendmail";
-	var $attachment  = array();
-	var $boundary    = false;
-	var $MailerDebug = true;
+	public $Priority    = 3;
+	public $CharSet     = "iso-8859-1";
+	public $ContentType = "text/plain";
+	public $Encoding    = "8bit";
+	public $From        = "root@localhost";
+	public $FromName    = "root";
+	public $to          = array();
+	public $cc          = array();
+	public $bcc         = array();
+	public $ReplyTo     = array();
+	public $Subject     = "";
+	public $Body        = "";
+	public $WordWrap    = false;
+	public $mailer      = "mail";
+	public $sendmail    = "/usr/sbin/sendmail";
+	public $attachment  = array();
+	public $boundary    = false;
+	public $MailerDebug = true;
 
 	// SMTP-specific variables
-	var $Host        = "localhost";
-	var $Port        = 25;
-	var $Helo        = "localhost.localdomain";
-	var $Timeout     = 10; // Socket timeout in sec.
-	var $SMTPDebug   = true;
+	public $Host        = "localhost";
+	public $Port        = 25;
+	public $Helo        = "localhost.localdomain";
+	public $Timeout     = 10; // Socket timeout in sec.
+	public $SMTPDebug   = true;
 
 	//mod by Nick
 	//Изменяем параметры FromName и From

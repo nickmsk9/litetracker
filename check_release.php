@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -175,7 +175,7 @@ function check_value() {
 <option value="banned">Забанить/Разбанить отмеченные релизы</option>
 </select>
 <!--Категории-->
-<?
+<?php
 $categories_array =  categories_array();
 foreach($categories_array AS $thisCat)
 	$cats .= '<option value="'.$thisCat['id'].'" '.($_GET['id_category'] == $thisCat['id'] ? "selected" : "").'>'.$thisCat['name'].'</option>';
@@ -187,7 +187,7 @@ foreach($categories_array AS $thisCat)
 
 <input type="submit" value="Выполнить действие">
 </form>
-<?
+<?php
 end_frame();
 foot();
 ?>

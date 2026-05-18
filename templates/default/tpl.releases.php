@@ -1,4 +1,4 @@
-<?
+<?php
 if (!defined('LITETRACKER'))
 	die('Direct access denied.');
 
@@ -44,7 +44,7 @@ if (!defined('LITETRACKER'))
 
 	</tr>
 </tr>
-<?
+<?php
 
 
 ?>

@@ -119,6 +119,14 @@ function get_priv_info($class) {
 	global $db;
 
 	$class = (int)$class;
+	$requestCacheKey = 'priv:'.$class;
+	if (function_exists('lt_request_cache_get')) {
+		$requestCached = lt_request_cache_get($requestCacheKey, null);
+		if ($requestCached !== null) {
+			return $requestCached;
+		}
+	}
+
 	$row = false;
 	$cacheNs = lt_cache_key_priv_ns();
 
@@ -130,7 +138,7 @@ function get_priv_info($class) {
 	}
 
 	if ($row) {
-		return $row;
+		return (function_exists('lt_request_cache_set') ? lt_request_cache_set($requestCacheKey, $row) : $row);
 	}
 
 	$row = lt_cache_get(lt_cache_key_priv_guest(), $cacheNs);
@@ -150,5 +158,5 @@ function get_priv_info($class) {
 		lt_cache_set(lt_cache_key_priv_guest(), $row, 1000, $cacheNs);
 	}
 
-	return $row;
+	return (function_exists('lt_request_cache_set') ? lt_request_cache_set($requestCacheKey, $row) : $row);
 }

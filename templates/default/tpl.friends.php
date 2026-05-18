@@ -1,4 +1,4 @@
-<?
+<?php
 if (!defined('LITETRACKER'))
 	die('Direct access denied.');
 
@@ -18,7 +18,7 @@ if (!defined('LITETRACKER'))
 	</tr>
 </table>
 -->
-<?
+<?php
 begin_frame();
 ?>
 <table width="70%" cellpadding="3" style="border:1px">
@@ -73,7 +73,7 @@ begin_frame();
 		 
 		 <td class="data" colspan="2">
 				<?=$action;?>
-				<?
+				<?php
 				echo ($USER['id'] != $userid ? '<Input type="button" value="'.$language['profile_17'].'" onCLick="window.location.href=\'my.mail.php?act=conversation&id_user='.$userid.'\'">&nbsp' : '');
 
 
@@ -89,4 +89,4 @@ begin_frame();
 
 </tr>
 </table>
-<? end_frame();?>
+<?php end_frame();?>

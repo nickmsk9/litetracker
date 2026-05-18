@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -220,7 +220,7 @@ if($_GET['act'] == 'edit') {
 		</td>
 		<td style="padding: 0px;">
 			<select name="file">
-			<?
+			<?php
 			$dir = "modules/shop/";
 
 			// Открыть заведомо существующий каталог и начать считывать его содержимое
@@ -239,7 +239,7 @@ if($_GET['act'] == 'edit') {
 		</td><td>
 	   </td></tr>
 
-	   	<tr>
+			<tr>
 		<td class="ta_r">
 		 <span class="grey"></span>
 		</td>
@@ -258,7 +258,7 @@ if($_GET['act'] == 'edit') {
 	</form>
 
 
-	<?
+	<?php
 	end_frame();
 	foot();
 	die();

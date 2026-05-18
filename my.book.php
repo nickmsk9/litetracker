@@ -150,21 +150,22 @@ foreach ($categories as $category) {
 }
 
 $bookmarkStatusSql = lt_torrent_status_filter_sql($USER, 't');
-$countRow = $db->super_query("SELECT COUNT(*) AS c FROM books AS b INNER JOIN torrents AS t ON b.id_torrent = t.id WHERE b.id_user=".(int) $USER['id']." AND ".$bookmarkStatusSql);
-$count = (int) ($countRow['c'] ?? 0);
 $pagerParams = array(
 	'sort' => $sort,
 	'view' => $view,
 );
 $pagerHref = 'my.book.php?'.http_build_query($pagerParams).'&';
-list($pagertop, $pagerbottom, $limit) = pager('10', $count, $pagerHref);
+$perPage = 10;
+$currentPage = isset($_GET['page']) ? max(0, (int) $_GET['page']) : 0;
+$limit = 'LIMIT '.($currentPage * $perPage).' , '.$perPage;
 
 $rows = array();
-$sql = $db->query("SELECT t.*,
+$count = 0;
+$sql = $db->query("SELECT t.*, COUNT(*) OVER() AS total_count,
 	COALESCE(SUM(tr.seeders), 0) AS seeders,
 	COALESCE(SUM(tr.leechers), 0) AS leechers,
 	COALESCE(SUM(CASE WHEN tr.tracker <> 'localhost' THEN 1 ELSE 0 END), 0) AS external_tracker_count,
-	IF((SELECT SUM(seeders) FROM trackers WHERE torrent = t.id AND tracker = 'localhost' GROUP BY tracker) > 0, true, false) AS local_seeders,
+	IF(COALESCE(SUM(CASE WHEN tr.tracker = 'localhost' THEN tr.seeders ELSE 0 END), 0) > 0, true, false) AS local_seeders,
 	IF(ADDDATE(t.added, INTERVAL ".$config['releases_news']." DAY) > NOW() AND t.news = '1', 1, 0) AS new_release
 	FROM books AS b
 	INNER JOIN torrents AS t ON b.id_torrent = t.id
@@ -175,8 +176,10 @@ $sql = $db->query("SELECT t.*,
 	".$limit);
 
 while ($row = $db->get_row($sql)) {
+	$count = max($count, (int) ($row['total_count'] ?? 0));
 	$rows[] = $row;
 }
+list($pagertop, $pagerbottom) = pager((string) $perPage, $count, $pagerHref);
 ?>
 <div class="browse-page">
 	<section class="browse-hero">

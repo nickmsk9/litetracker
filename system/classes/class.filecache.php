@@ -11,10 +11,10 @@ by Nick
 
 class Filecache {
 
-	var $dir = null;
-	var $type = null;
-	var $timeout = null;
-	var $memory = array();
+	public $dir = null;
+	public $type = null;
+	public $timeout = null;
+	public $memory = array();
 
 
 	//construct

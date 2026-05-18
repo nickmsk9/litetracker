@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 ===================================================================
 LiteTracker Source
@@ -644,7 +644,7 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 	</tbody>
 	</table>
 	</form>
-	<?
+	<?php
 	end_frame();
 	foot();
 	die();

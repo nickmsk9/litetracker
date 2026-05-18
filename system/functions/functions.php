@@ -11,6 +11,39 @@ by jenaDI
 
 require_once __DIR__ . '/functions.common.php';
 
+function lt_request_cache_get($key, $default = null)
+{
+	if (!isset($GLOBALS['lt_request_cache']) || !is_array($GLOBALS['lt_request_cache'])) {
+		$GLOBALS['lt_request_cache'] = array();
+	}
+
+	return (array_key_exists($key, $GLOBALS['lt_request_cache']) ? $GLOBALS['lt_request_cache'][$key] : $default);
+}
+
+function lt_request_cache_set($key, $value)
+{
+	if (!isset($GLOBALS['lt_request_cache']) || !is_array($GLOBALS['lt_request_cache'])) {
+		$GLOBALS['lt_request_cache'] = array();
+	}
+
+	$GLOBALS['lt_request_cache'][$key] = $value;
+
+	return $value;
+}
+
+function lt_request_cache_remember($key, $callback)
+{
+	if (!isset($GLOBALS['lt_request_cache']) || !is_array($GLOBALS['lt_request_cache'])) {
+		$GLOBALS['lt_request_cache'] = array();
+	}
+
+	if (array_key_exists($key, $GLOBALS['lt_request_cache'])) {
+		return $GLOBALS['lt_request_cache'][$key];
+	}
+
+	return lt_request_cache_set($key, $callback());
+}
+
 //Информация о пользователе
 function get_user_info($id) {
 	global $db;
@@ -18,6 +51,12 @@ function get_user_info($id) {
 	//Если нету id
 	if(!$id) {
 		return false;
+	}
+
+	$requestCacheKey = 'user:'.(int) $id;
+	$requestCached = lt_request_cache_get($requestCacheKey, null);
+	if ($requestCached !== null) {
+		return $requestCached;
 	}
 
 	$cacheKey = lt_cache_key_user($id);
@@ -33,7 +72,7 @@ function get_user_info($id) {
 		lt_cache_set($cacheKey, $row, rand(1500, 3000), $cacheNs);
 	}
 
-	return $row;
+	return lt_request_cache_set($requestCacheKey, $row);
 }
 
 function lt_unread_messages_count($userId)
@@ -671,6 +710,38 @@ function lt_debug_cache_driver_label($driver)
 	return 'отключён';
 }
 
+function lt_debug_sql_fingerprint($query)
+{
+	$query = strtolower((string) $query);
+	$query = preg_replace('/\'(?:\\\\\'|[^\'])*\'/', '?', $query);
+	$query = preg_replace('/"(?:\\\\"|[^"])*"/', '?', $query);
+	$query = preg_replace('/\b\d+\b/', '?', $query);
+	$query = preg_replace('/\s+/', ' ', $query);
+
+	return trim((string) $query);
+}
+
+function lt_debug_route_sql_budget($route)
+{
+	$route = basename(parse_url((string) $route, PHP_URL_PATH) ?: 'index.php');
+	$budgets = array(
+		'index.php' => 3,
+		'browse.php' => 4,
+		'details.php' => 7,
+		'profile.php' => 4,
+		'my.book.php' => 3,
+		'search_query.php' => 4,
+		'sessions.php' => 4,
+		'rating.php' => 3,
+		'faq.php' => 3,
+		'shop.php' => 4,
+		'announce.php' => 8,
+		'scrape.php' => 2,
+	);
+
+	return ($budgets[$route] ?? 0);
+}
+
 function lt_debug_render_panel()
 {
 	if (!lt_debug_panel_allowed()) {
@@ -718,6 +789,31 @@ function lt_debug_render_panel()
 	$fullUrl = (!empty($_SERVER['HTTP_HOST']) ? (($isHttps ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$pageUrl) : $pageUrl);
 	$fullUrl = lt_debug_mask_text($fullUrl);
 	$queryList = (array) ($db->query_list ?? array());
+	$queryFingerprints = array();
+	foreach ($queryList as $queryInfo) {
+		$fingerprint = lt_debug_sql_fingerprint((string) ($queryInfo['query'] ?? ''));
+		if ($fingerprint === '') {
+			continue;
+		}
+		if (!isset($queryFingerprints[$fingerprint])) {
+			$queryFingerprints[$fingerprint] = array(
+				'count' => 0,
+				'time' => 0.0,
+				'query' => (string) ($queryInfo['query'] ?? ''),
+			);
+		}
+		$queryFingerprints[$fingerprint]['count']++;
+		$queryFingerprints[$fingerprint]['time'] += (float) ($queryInfo['time'] ?? 0);
+	}
+	$duplicateQueries = array_filter($queryFingerprints, function ($item) {
+		return (int) ($item['count'] ?? 0) > 1;
+	});
+	$duplicateSqlCount = 0;
+	foreach ($duplicateQueries as $duplicateInfo) {
+		$duplicateSqlCount += max(0, (int) $duplicateInfo['count'] - 1);
+	}
+	$routeBudget = lt_debug_route_sql_budget($pageUrl);
+	$routeOverBudget = ($routeBudget > 0 && (int) ($db->query_num ?? count($queryList)) > $routeBudget);
 	$slowQueries = array();
 	foreach ($queryList as $queryInfo) {
 		if (!empty($queryInfo['slow']) || (float) ($queryInfo['time'] ?? 0) > 0.05) {
@@ -732,6 +828,8 @@ function lt_debug_render_panel()
 	echo '<div style="font-weight:bold;margin-bottom:6px;">Производительность</div>';
 	echo '<div>URL страницы: <code>'.htmlspecialchars($pageUrl, ENT_QUOTES, 'UTF-8').'</code></div>';
 	echo '<div>Количество SQL-запросов: <b>'.(int) ($db->query_num ?? count($queryList)).'</b></div>';
+	echo '<div>Бюджет SQL для маршрута: <b>'.($routeBudget > 0 ? (int) $routeBudget : 'не задан').'</b>'.($routeOverBudget ? ' <span style="color:#991b1b;font-weight:bold;">превышен</span>' : '').'</div>';
+	echo '<div>Повторные SQL-запросы: <b>'.(int) $duplicateSqlCount.'</b></div>';
 	echo '<div>Общее время SQL: <b>'.number_format($sqlTime, 6, '.', '').' сек</b></div>';
 	echo '<div>Доля SQL во времени запроса: <b>'.number_format($sqlPercent, 1, '.', '').'%</b></div>';
 	echo '<div>Общее время запроса: <b>'.number_format($requestTime, 6, '.', '').' сек</b></div>';
@@ -779,6 +877,26 @@ function lt_debug_render_panel()
 
 	if ($slowQueries) {
 		echo '<div style="margin-top:8px;color:#991b1b;font-weight:bold;">Медленные SQL-запросы &gt; 0.05 сек: '.count($slowQueries).'</div>';
+	}
+
+	if ($duplicateQueries) {
+		uasort($duplicateQueries, function ($a, $b) {
+			return ((int) $b['count'] <=> (int) $a['count']);
+		});
+		echo '<details style="margin-top:10px;"><summary style="cursor:pointer;font-weight:bold;">Повторяющиеся SQL-запросы</summary>';
+		echo '<ol style="margin:8px 0 0 22px;padding:0;">';
+		$shownDuplicates = 0;
+		foreach ($duplicateQueries as $duplicateInfo) {
+			$shownDuplicates++;
+			if ($shownDuplicates > 10) {
+				break;
+			}
+			echo '<li style="padding:4px 6px;margin-bottom:6px;">';
+			echo '<b>'.(int) $duplicateInfo['count'].' раз</b>, суммарно '.number_format((float) $duplicateInfo['time'], 6, '.', '').' сек';
+			echo '<pre style="white-space:pre-wrap;word-break:break-word;margin:4px 0 0;font:12px/1.35 Consolas, monospace;">'.htmlspecialchars((string) $duplicateInfo['query'], ENT_QUOTES, 'UTF-8').'</pre>';
+			echo '</li>';
+		}
+		echo '</ol></details>';
 	}
 
 	if ($queryList) {
@@ -1905,6 +2023,7 @@ function categories_array($id = 0) {
 //Извлечение папок
 function get_list_dir($dir , $nameSelect = "" , $elemSelected = "" ) {
 		$open = opendir($dir);
+		$list = '';
 		$list .=  '<select name="'.($nameSelect == "" ? $dir : $nameSelect).'">';
 		while(false !== ($filename = readdir($open))){
 			if(filetype($dir."/".$filename) == 'dir') {
@@ -1938,7 +2057,7 @@ function get_languages() {
 function get_select_language() {
 	global $USER , $config;
 
-	if($_COOKIE['language']) {
+	if(!empty($_COOKIE['language'])) {
 		$select_language = $_COOKIE['language'];
 	} else {
 		$select_language = $config['lang'];
@@ -1946,6 +2065,7 @@ function get_select_language() {
 
 	$languages = get_languages();
 
+	$select = '';
 	$select .= '<form action="language.php" method="post">';
 	$select .= '<select name="language">';
 	foreach ($languages as $language) {

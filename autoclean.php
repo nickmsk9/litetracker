@@ -1,4 +1,4 @@
-<?
+<?php
 #!/usr/bin/env php
 /*
 ===================================================================
@@ -75,7 +75,9 @@ while ($row = $db->get_row($res)) {
 
 $peerssql = $db->query("SELECT torrent FROM trackers WHERE tracker='localhost'");
 while (list($id) = $db->get_array($peerssql) ) {
-	$db->query("UPDATE trackers SET seeders = ".(int)$torrents[$id]['seeders'].", leechers = ".(int)$torrents[$id]['leechers'].", lastchecked = ".time()." WHERE torrent = ".$id." AND tracker='localhost'");
+	$seeders = (int) ($torrents[$id]['seeders'] ?? 0);
+	$leechers = (int) ($torrents[$id]['leechers'] ?? 0);
+	$db->query("UPDATE trackers SET seeders = ".$seeders.", leechers = ".$leechers.", lastchecked = ".time()." WHERE torrent = ".(int) $id." AND tracker='localhost'");
 }
 
 ///////////////////////////////////////////////////////////////////
