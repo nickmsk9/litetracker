@@ -64,6 +64,9 @@ require_once __DIR__ . '/../app/Services/CommentService.php';
 
 
 
+//Функционал тем оформления
+require __DIR__ . '/functions/functions.themes.php';
+
 //Функции для тегов
 require __DIR__ . '/functions/functions.tags.php';
 //Функции для редактора WYSIWYG
@@ -117,8 +120,10 @@ gzip();
 
 //Запускаем подключение  к mysql
 $db = new db;
-$db->connect($mysql['user'] , $mysql['password'] , $mysql['db'] ,  $mysql['host']);
-if (!empty($config['mysql_timezone_offset'])) {
+$db->connect($mysql['user'] , $mysql['password'] , $mysql['db'] ,  $mysql['host'], 1, ($mysql['port'] ?? 3306), ($mysql['connect_timeout'] ?? 5));
+if (!empty($mysql['timezone'])) {
+	$db->pquery("SET time_zone = ?", 's', [$mysql['timezone']], 0);
+} elseif (!empty($config['mysql_timezone_offset'])) {
 	$db->pquery("SET time_zone = ?", 's', [$config['mysql_timezone_offset']], 0);
 }
 
@@ -184,9 +189,8 @@ if(!$PRIV['ip_util']) {
 
 //Определяем passkey для пользователя
 if($USER && strlen($USER['passkey']) != 32) {
-	$USER['passkey'] = md5($USER['name'].get_date_time().$USER['password']);
-	$sql = $db->query('UPDATE users SET passkey="'.$USER['passkey'].'" WHERE id="'.$USER['id'].'"');
-	$db->free($sql);
+	$USER['passkey'] = bin2hex(random_bytes(16));
+	$db->pquery('UPDATE users SET passkey = ? WHERE id = ?', 'si', [$USER['passkey'], (int) $USER['id']]);
 	lt_cache_invalidate_user($USER['id']);
 }
 

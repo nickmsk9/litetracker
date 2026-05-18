@@ -249,6 +249,12 @@ $profileStatusClass = ($isOnline ? 'profile-status-online' : 'profile-status-off
 $profileFlashMessage = null;
 
 if ($profileView === 'bonus' && $canViewBonus && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['act'] ?? '') === 'exchange_bonus') {
+	if (!lt_csrf_validate('profile_bonus_'.$id)) {
+		$profileFlashMessage = array(
+			'type' => 'error',
+			'text' => 'Защитный токен устарел. Обновите страницу и попробуйте снова.',
+		);
+	} else {
 	$bonusOptions = profile_get_bonus_options();
 	$selectedOptionId = trim((string) ($_POST['bonus_option'] ?? 'all'));
 	$selectedOption = null;
@@ -288,6 +294,7 @@ if ($profileView === 'bonus' && $canViewBonus && $_SERVER['REQUEST_METHOD'] === 
 			die();
 		}
 	}
+	} // end CSRF-passed else block
 }
 
 if (($_GET['status'] ?? '') === 'bonus_exchanged') {

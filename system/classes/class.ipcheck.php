@@ -56,6 +56,9 @@ class IPAddressSubnetSniffer {
 
 	 *****************************************************************/
 	var $allowed_subnets;
+	var $binary_subnet_ips;
+	var $binary_subnet_masks;
+
 	function IPAddressSubnetSniffer ($allowed_subnets) {
 		// "allowed_subnets" defaults to ALL allowed subnets
 		$this->allowed_subnets = $allowed_subnets;

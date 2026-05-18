@@ -191,6 +191,7 @@ docker compose exec -T db mysql -uroot < database/litetracker.sql
 | `LITETRACKER_DB_HOST`          | Host MySQL                                | `db`                                 |
 | `LITETRACKER_DB_USER`          | Пользователь MySQL                        | `root`                               |
 | `LITETRACKER_DB_PASSWORD`      | Пароль MySQL                              | пусто                                |
+| `LITETRACKER_DB_ALLOW_EMPTY_PASSWORD` | Разрешить пустой root-пароль MySQL локально | `yes`                         |
 | `LITETRACKER_DB_NAME`          | Имя базы данных                           | `lite`                               |
 | `LITETRACKER_CACHE_DRIVER`     | Драйвер кэша: `memcached` или `filecache` | `memcached`                          |
 | `LITETRACKER_CACHE_HOST`       | Host Memcached                            | `memcached`                          |
@@ -457,6 +458,7 @@ The main environment variables are configured in `docker-compose.yml` or passed 
 | `LITETRACKER_DB_HOST`          | MySQL host                               | `db`                                 |
 | `LITETRACKER_DB_USER`          | MySQL user                               | `root`                               |
 | `LITETRACKER_DB_PASSWORD`      | MySQL password                           | empty                                |
+| `LITETRACKER_DB_ALLOW_EMPTY_PASSWORD` | Allow an empty MySQL root password locally | `yes`                         |
 | `LITETRACKER_DB_NAME`          | Database name                            | `lite`                               |
 | `LITETRACKER_CACHE_DRIVER`     | Cache driver: `memcached` or `filecache` | `memcached`                          |
 | `LITETRACKER_CACHE_HOST`       | Memcached host                           | `memcached`                          |

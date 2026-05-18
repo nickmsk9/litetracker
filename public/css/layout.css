@@ -1,0 +1,100 @@
+/* layout.css: shell/header/footer/sidebar будут перенесены позже. */
+
+.site-shell {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.site-shell-band {
+  max-width: 1360px;
+}
+
+.site-shell-content {
+  padding-top: 22px;
+}
+
+.site-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 20px;
+  align-items: start;
+}
+
+.site-layout > .site-main:only-child {
+  grid-column: 1 / -1;
+}
+
+.site-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 12px;
+}
+
+.site-sidebar-right {
+  grid-column: 2;
+}
+
+.site-main {
+  min-width: 0;
+  display: flow-root;
+}
+
+.site-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-bottom: 20px;
+}
+
+.footer {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  margin-top: auto;
+  min-height: 162px;
+  height: auto;
+  clear: both;
+}
+
+@media (max-width: 1180px) {
+  .site-shell-band {
+    max-width: 100%;
+  }
+
+  .site-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .site-sidebar {
+    position: static;
+  }
+
+  .site-sidebar-right {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .site-shell {
+    padding: 0 12px;
+  }
+
+  .site-shell-content {
+    padding-top: 14px;
+  }
+}
+
+@media (max-width: 900px) {
+  .footer {
+    min-height: 0;
+    height: auto;
+  }
+}

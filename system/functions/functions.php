@@ -45,9 +45,17 @@ function lt_unread_messages_count($userId)
 		return 0;
 	}
 
-	$row = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = ".$userId." AND delete_in = 0 AND reading = 0");
+	$cacheKey = lt_cache_key_user_unread_mail_count($userId);
+	$cached = lt_cache_get($cacheKey, lt_cache_key_user_ns());
+	if ($cached !== false && is_numeric($cached)) {
+		return (int) $cached;
+	}
 
-	return (int) ($row['c'] ?? 0);
+	$row = $db->super_query("SELECT COUNT(*) AS c FROM mail WHERE id_user_in = ".$userId." AND delete_in = 0 AND reading = 0");
+	$count = (int) ($row['c'] ?? 0);
+	lt_cache_set($cacheKey, $count, 20, lt_cache_key_user_ns());
+
+	return $count;
 }
 
 function lt_sync_user_unread_messages($userId)
@@ -65,6 +73,7 @@ function lt_sync_user_unread_messages($userId)
 	if (!$isCurrentUser || $currentStoredCount !== $count) {
 		$db->query("UPDATE users SET num_messages = ".$count." WHERE id = ".$userId);
 		lt_cache_invalidate_user($userId);
+		lt_cache_invalidate_user_unread_mail_count($userId);
 	}
 	if ($isCurrentUser) {
 		$USER['num_messages'] = $count;
@@ -75,7 +84,6 @@ function lt_sync_user_unread_messages($userId)
 
 function lt_table_exists($tableName, $refresh = false)
 {
-	global $db;
 	static $cache = array();
 
 	$tableName = lt_schema_identifier($tableName);
@@ -89,30 +97,13 @@ function lt_table_exists($tableName, $refresh = false)
 		return $cache[$tableName];
 	}
 
-	$cacheKey = lt_schema_table_cache_key($tableName);
-	$cached = (!$refresh ? lt_schema_cache_get($cacheKey) : false);
-	if (!$refresh && is_array($cached) && array_key_exists('exists', $cached)) {
-		$cache[$tableName] = (bool) $cached['exists'];
-		return $cache[$tableName];
-	}
-
-	$sql = $db->query("SHOW TABLES LIKE '".$db->safesql($tableName)."'", 0);
-	if ($sql === false) {
-		$cache[$tableName] = false;
-		return false;
-	}
-
-	$row = $db->get_row($sql);
-	$db->free($sql);
-	$cache[$tableName] = !empty($row);
-	lt_schema_cache_set($cacheKey, array('exists' => $cache[$tableName]));
+	$cache[$tableName] = lt_schema_has_table($tableName, $refresh);
 
 	return $cache[$tableName];
 }
 
 function lt_column_exists($tableName, $columnName, $refresh = false)
 {
-	global $db;
 	static $cache = array();
 
 	$tableName = lt_schema_identifier($tableName);
@@ -129,30 +120,134 @@ function lt_column_exists($tableName, $columnName, $refresh = false)
 		return $cache[$key];
 	}
 
-	if (!lt_table_exists($tableName, $refresh)) {
-		$cache[$key] = false;
-		return false;
-	}
-
-	$cacheKey = lt_schema_column_cache_key($tableName, $columnName);
-	$cached = (!$refresh ? lt_schema_cache_get($cacheKey) : false);
-	if (!$refresh && is_array($cached) && array_key_exists('exists', $cached)) {
-		$cache[$key] = (bool) $cached['exists'];
-		return $cache[$key];
-	}
-
-	$sql = $db->query("SHOW COLUMNS FROM `".$tableName."` LIKE '".$db->safesql($columnName)."'", 0);
-	if ($sql === false) {
-		$cache[$key] = false;
-		return false;
-	}
-
-	$row = $db->get_row($sql);
-	$db->free($sql);
-	$cache[$key] = !empty($row['Field']);
-	lt_schema_cache_set($cacheKey, array('exists' => $cache[$key]));
+	$cache[$key] = lt_schema_has_column($tableName, $columnName, $refresh);
 
 	return $cache[$key];
+}
+
+function lt_schema_capabilities($refresh = false)
+{
+	global $db;
+	static $capabilities = null;
+
+	$refresh = (bool) $refresh;
+	if (!$refresh && is_array($capabilities)) {
+		return $capabilities;
+	}
+
+	$cacheKey = lt_schema_capabilities_cache_key();
+	$cached = (!$refresh ? lt_schema_cache_get($cacheKey) : false);
+	if (!$refresh && is_array($cached) && isset($cached['tables'], $cached['columns'], $cached['indexes'])) {
+		$capabilities = $cached;
+		return $capabilities;
+	}
+
+	$capabilities = array(
+		'version' => 1,
+		'loaded_at' => time(),
+		'tables' => array(),
+		'columns' => array(),
+		'indexes' => array(),
+	);
+
+	$tables = $db->query(
+		"SELECT TABLE_NAME
+		 FROM INFORMATION_SCHEMA.TABLES
+		 WHERE TABLE_SCHEMA = DATABASE()",
+		0
+	);
+	if ($tables === false) {
+		return $capabilities;
+	}
+	while ($row = $db->get_row($tables)) {
+		$tableName = (string) ($row['TABLE_NAME'] ?? '');
+		if ($tableName !== '') {
+			$capabilities['tables'][$tableName] = true;
+		}
+	}
+	$db->free($tables);
+
+	$columns = $db->query(
+		"SELECT TABLE_NAME, COLUMN_NAME
+		 FROM INFORMATION_SCHEMA.COLUMNS
+		 WHERE TABLE_SCHEMA = DATABASE()",
+		0
+	);
+	if ($columns !== false) {
+		while ($row = $db->get_row($columns)) {
+			$tableName = (string) ($row['TABLE_NAME'] ?? '');
+			$columnName = (string) ($row['COLUMN_NAME'] ?? '');
+			if ($tableName !== '' && $columnName !== '') {
+				if (!isset($capabilities['columns'][$tableName])) {
+					$capabilities['columns'][$tableName] = array();
+				}
+				$capabilities['columns'][$tableName][$columnName] = true;
+			}
+		}
+		$db->free($columns);
+	}
+
+	$indexes = $db->query(
+		"SELECT TABLE_NAME, INDEX_NAME
+		 FROM INFORMATION_SCHEMA.STATISTICS
+		 WHERE TABLE_SCHEMA = DATABASE()",
+		0
+	);
+	if ($indexes !== false) {
+		while ($row = $db->get_row($indexes)) {
+			$tableName = (string) ($row['TABLE_NAME'] ?? '');
+			$indexName = (string) ($row['INDEX_NAME'] ?? '');
+			if ($tableName !== '' && $indexName !== '') {
+				if (!isset($capabilities['indexes'][$tableName])) {
+					$capabilities['indexes'][$tableName] = array();
+				}
+				$capabilities['indexes'][$tableName][$indexName] = true;
+			}
+		}
+		$db->free($indexes);
+	}
+
+	lt_schema_cache_set($cacheKey, $capabilities);
+
+	return $capabilities;
+}
+
+function lt_schema_has_table($tableName, $refresh = false)
+{
+	$tableName = lt_schema_identifier($tableName);
+	if ($tableName === '') {
+		return false;
+	}
+
+	$capabilities = lt_schema_capabilities($refresh);
+
+	return !empty($capabilities['tables'][$tableName]);
+}
+
+function lt_schema_has_column($tableName, $columnName, $refresh = false)
+{
+	$tableName = lt_schema_identifier($tableName);
+	$columnName = lt_schema_identifier($columnName);
+	if ($tableName === '' || $columnName === '') {
+		return false;
+	}
+
+	$capabilities = lt_schema_capabilities($refresh);
+
+	return !empty($capabilities['columns'][$tableName][$columnName]);
+}
+
+function lt_schema_has_index($tableName, $indexName, $refresh = false)
+{
+	$tableName = lt_schema_identifier($tableName);
+	$indexName = lt_schema_identifier($indexName);
+	if ($tableName === '' || $indexName === '') {
+		return false;
+	}
+
+	$capabilities = lt_schema_capabilities($refresh);
+
+	return !empty($capabilities['indexes'][$tableName][$indexName]);
 }
 
 function lt_schema_identifier($value)
@@ -165,6 +260,11 @@ function lt_schema_identifier($value)
 function lt_schema_cache_ttl()
 {
 	return 6 * 60 * 60;
+}
+
+function lt_schema_capabilities_cache_key()
+{
+	return 'schema:capabilities:v1';
 }
 
 function lt_schema_table_cache_key($tableName)
@@ -193,6 +293,7 @@ function lt_schema_cache_delete($key)
 {
 	if (function_exists('lt_cache_delete')) {
 		lt_cache_delete($key, 'schema');
+		lt_cache_delete(lt_schema_capabilities_cache_key(), 'schema');
 	}
 }
 
@@ -430,6 +531,9 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 	//Тема трекера
 	$tpl = $config['template'];
 
+	// Resolve the active CSS theme for the current user (may differ from $tpl for PHP files)
+	$GLOBALS['LITETRACKER_THEME_SLUG'] = (function_exists('lt_resolve_theme') ? lt_resolve_theme($USER) : $tpl);
+
 	//Название сайа | Название страницы
 	$sitename = $config['sitename'];
 	$title = (empty($title) ? '' : $title);
@@ -541,6 +645,32 @@ function lt_debug_mask_text($value)
 	return $value;
 }
 
+function lt_debug_runtime_label($runtime)
+{
+	$runtime = strtolower(trim((string) $runtime));
+	$labels = array(
+		'docker' => 'Docker',
+		'local' => 'Локальный',
+		'production' => 'Production',
+		'unknown' => 'Неизвестно',
+	);
+
+	return $labels[$runtime] ?? 'Неизвестно';
+}
+
+function lt_debug_cache_driver_label($driver)
+{
+	$driver = strtolower(trim((string) $driver));
+	if ($driver === 'memcached') {
+		return 'Memcached';
+	}
+	if ($driver === 'filecache') {
+		return 'файловый кеш';
+	}
+
+	return 'отключён';
+}
+
 function lt_debug_render_panel()
 {
 	if (!lt_debug_panel_allowed()) {
@@ -559,10 +689,34 @@ function lt_debug_render_panel()
 		'sets' => 0,
 		'deletes' => 0,
 		'errors' => 0,
+		'driver' => 'unknown',
+		'fallback_reason' => '',
+		'memcached_online' => null,
+	);
+
+	$timer = (array) ($GLOBALS['timer'] ?? array());
+	$requestTime = (!empty($timer['a']) ? max(0, microtime(true) - (float) $timer['a']) : 0.0);
+	$sqlTime = (float) ($db->MySQL_time_taken ?? 0);
+	$sqlPercent = ($requestTime > 0 ? min(100, ($sqlTime / $requestTime) * 100) : 0);
+	$cacheTotalReads = (int) $cacheStats['hits'] + (int) $cacheStats['misses'];
+	$hitRatio = ($cacheTotalReads > 0 ? ((int) $cacheStats['hits'] / $cacheTotalReads) * 100 : 0);
+	$mysql = (array) ($GLOBALS['mysql'] ?? array());
+	$cacheInfo = function_exists('lt_cache_runtime_info') ? lt_cache_runtime_info() : array();
+	$cacheInfo += array(
+		'configured_driver' => '',
+		'active_driver' => (string) ($cacheStats['driver'] ?? 'unknown'),
+		'fallback_reason' => '',
+		'memcached_host' => '',
+		'memcached_port' => 0,
+		'memcached_online' => ($cacheStats['memcached_online'] ?? null),
+		'namespace' => '',
 	);
 
 	$pageUrl = (string) ($_SERVER['REQUEST_URI'] ?? 'CLI');
 	$pageUrl = lt_debug_mask_text($pageUrl);
+	$isHttps = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off') || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+	$fullUrl = (!empty($_SERVER['HTTP_HOST']) ? (($isHttps ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$pageUrl) : $pageUrl);
+	$fullUrl = lt_debug_mask_text($fullUrl);
 	$queryList = (array) ($db->query_list ?? array());
 	$slowQueries = array();
 	foreach ($queryList as $queryInfo) {
@@ -571,24 +725,64 @@ function lt_debug_render_panel()
 		}
 	}
 
-	echo '<div style="margin:24px auto 12px;max-width:1180px;padding:12px;border:1px solid #c8d3df;background:#f7fafc;color:#1f2933;font:12px/1.45 Arial, sans-serif;text-align:left;">';
-	echo '<div style="font-weight:bold;margin-bottom:8px;">LiteTracker Debug Panel</div>';
-	echo '<div>Page URL: <code>'.htmlspecialchars($pageUrl, ENT_QUOTES, 'UTF-8').'</code></div>';
-	echo '<div>SQL queries count: <b>'.(int) ($db->query_num ?? count($queryList)).'</b></div>';
-	echo '<div>Total SQL time: <b>'.number_format((float) ($db->MySQL_time_taken ?? 0), 6, '.', '').' sec</b></div>';
-	echo '<div>Memory usage: <b>'.lt_debug_format_bytes(memory_get_usage(true)).'</b>; peak: <b>'.lt_debug_format_bytes(memory_get_peak_usage(true)).'</b></div>';
-	echo '<div>Cache hits/misses/sets/deletes/errors: <b>'.(int) $cacheStats['hits'].'</b> / <b>'.(int) $cacheStats['misses'].'</b> / <b>'.(int) $cacheStats['sets'].'</b> / <b>'.(int) $cacheStats['deletes'].'</b> / <b>'.(int) $cacheStats['errors'].'</b></div>';
+	echo '<div style="margin:24px auto 12px;max-width:1180px;padding:14px;border:1px solid #c8d3df;border-radius:8px;background:#f7fafc;color:#1f2933;font:12px/1.45 Arial, sans-serif;text-align:left;box-shadow:0 1px 4px rgba(15,23,42,.08);">';
+	echo '<div style="font-weight:bold;margin-bottom:10px;font-size:14px;">LiteTracker Отладка</div>';
+	echo '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">';
+	echo '<section style="padding:10px;border:1px solid #d8e2ec;border-radius:6px;background:#fff;">';
+	echo '<div style="font-weight:bold;margin-bottom:6px;">Производительность</div>';
+	echo '<div>URL страницы: <code>'.htmlspecialchars($pageUrl, ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>Количество SQL-запросов: <b>'.(int) ($db->query_num ?? count($queryList)).'</b></div>';
+	echo '<div>Общее время SQL: <b>'.number_format($sqlTime, 6, '.', '').' сек</b></div>';
+	echo '<div>Доля SQL во времени запроса: <b>'.number_format($sqlPercent, 1, '.', '').'%</b></div>';
+	echo '<div>Общее время запроса: <b>'.number_format($requestTime, 6, '.', '').' сек</b></div>';
+	echo '<div>Использование памяти: <b>'.lt_debug_format_bytes(memory_get_usage(true)).'</b></div>';
+	echo '<div>Пиковая память: <b>'.lt_debug_format_bytes(memory_get_peak_usage(true)).'</b></div>';
+	echo '</section>';
+
+	echo '<section style="padding:10px;border:1px solid #d8e2ec;border-radius:6px;background:#fff;">';
+	echo '<div style="font-weight:bold;margin-bottom:6px;">Кеширование</div>';
+	echo '<div>Активный кеш: <b>'.htmlspecialchars(lt_debug_cache_driver_label($cacheInfo['active_driver']), ENT_QUOTES, 'UTF-8').'</b></div>';
+	echo '<div>Попадания кеша: <b>'.(int) $cacheStats['hits'].'</b></div>';
+	echo '<div>Промахи кеша: <b>'.(int) $cacheStats['misses'].'</b></div>';
+	echo '<div>Процент попаданий: <b>'.number_format($hitRatio, 1, '.', '').'%</b></div>';
+	echo '<div>Записи в кеш: <b>'.(int) $cacheStats['sets'].'</b></div>';
+	echo '<div>Удаления из кеша: <b>'.(int) $cacheStats['deletes'].'</b></div>';
+	echo '<div>Ошибки кеша: <b>'.(int) $cacheStats['errors'].'</b></div>';
+	if ((string) $cacheInfo['fallback_reason'] !== '') {
+		echo '<div>Причина fallback: <code>'.htmlspecialchars((string) $cacheInfo['fallback_reason'], ENT_QUOTES, 'UTF-8').'</code></div>';
+	}
+	echo '</section>';
+
+	echo '<section style="padding:10px;border:1px solid #d8e2ec;border-radius:6px;background:#fff;">';
+	echo '<div style="font-weight:bold;margin-bottom:6px;">Окружение</div>';
+	echo '<div>Режим запуска: <b>'.htmlspecialchars(lt_debug_runtime_label(function_exists('lt_runtime_environment') ? lt_runtime_environment() : 'unknown'), ENT_QUOTES, 'UTF-8').'</b></div>';
+	echo '<div>MySQL host: <code>'.htmlspecialchars((string) ($mysql['host'] ?? ''), ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>MySQL порт: <b>'.(int) ($mysql['port'] ?? 3306).'</b></div>';
+	echo '<div>MySQL база данных: <code>'.htmlspecialchars((string) ($mysql['db'] ?? ''), ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>MySQL кодировка: <code>'.htmlspecialchars((string) ($mysql['charset'] ?? ''), ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>Memcached host: <code>'.htmlspecialchars((string) $cacheInfo['memcached_host'], ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>Memcached порт: <b>'.(int) $cacheInfo['memcached_port'].'</b></div>';
+	$memcachedOnline = $cacheInfo['memcached_online'];
+	echo '<div>Memcached: <b>'.($memcachedOnline === true ? 'доступен' : ($memcachedOnline === false ? 'недоступен' : 'не проверялся')).'</b></div>';
+	echo '<div>Namespace кеша: <code>'.htmlspecialchars((string) $cacheInfo['namespace'], ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '<div>Версия PHP: <b>'.htmlspecialchars(PHP_VERSION, ENT_QUOTES, 'UTF-8').'</b></div>';
+	echo '<div>OS / PHP SAPI: <b>'.htmlspecialchars(PHP_OS.' / '.PHP_SAPI, ENT_QUOTES, 'UTF-8').'</b></div>';
+	echo '<div>Лимит памяти: <b>'.htmlspecialchars((string) ini_get('memory_limit'), ENT_QUOTES, 'UTF-8').'</b></div>';
+	echo '<div>Метод запроса: <b>'.htmlspecialchars((string) ($_SERVER['REQUEST_METHOD'] ?? 'CLI'), ENT_QUOTES, 'UTF-8').'</b></div>';
+	echo '<div>URL страницы: <code>'.htmlspecialchars($fullUrl, ENT_QUOTES, 'UTF-8').'</code></div>';
+	echo '</section>';
+	echo '</div>';
 
 	if (!empty($db->sql_errors)) {
-		echo '<div style="margin-top:8px;color:#991b1b;font-weight:bold;">SQL errors: '.count((array) $db->sql_errors).'</div>';
+		echo '<div style="margin-top:8px;color:#991b1b;font-weight:bold;">Ошибки SQL: '.count((array) $db->sql_errors).'</div>';
 	}
 
 	if ($slowQueries) {
-		echo '<div style="margin-top:8px;color:#991b1b;font-weight:bold;">Slow queries &gt; 0.05 sec: '.count($slowQueries).'</div>';
+		echo '<div style="margin-top:8px;color:#991b1b;font-weight:bold;">Медленные SQL-запросы &gt; 0.05 сек: '.count($slowQueries).'</div>';
 	}
 
 	if ($queryList) {
-		echo '<details open style="margin-top:10px;"><summary style="cursor:pointer;font-weight:bold;">SQL queries</summary>';
+		echo '<details open style="margin-top:10px;"><summary style="cursor:pointer;font-weight:bold;">SQL-запросы</summary>';
 		echo '<ol style="margin:8px 0 0 22px;padding:0;">';
 		foreach ($queryList as $queryInfo) {
 			$time = (float) ($queryInfo['time'] ?? 0);
@@ -600,12 +794,12 @@ function lt_debug_render_panel()
 			}
 
 			echo '<li style="'.$itemStyle.'">';
-			echo '<span style="font-weight:bold;">'.number_format($time, 6, '.', '').' sec</span>';
+			echo '<span style="font-weight:bold;">'.number_format($time, 6, '.', '').' сек</span>';
 			if ($isSlow) {
-				echo ' <span style="color:#991b1b;font-weight:bold;">slow</span>';
+				echo ' <span style="color:#991b1b;font-weight:bold;">медленный</span>';
 			}
 			if ($error !== '') {
-				echo ' <span style="color:#991b1b;font-weight:bold;">SQL error '.(int) ($queryInfo['error_num'] ?? 0).'</span>';
+				echo ' <span style="color:#991b1b;font-weight:bold;">Ошибка SQL '.(int) ($queryInfo['error_num'] ?? 0).'</span>';
 			}
 			echo '<pre style="white-space:pre-wrap;word-break:break-word;margin:4px 0 0;font:12px/1.35 Consolas, monospace;">'.htmlspecialchars((string) ($queryInfo['query'] ?? ''), ENT_QUOTES, 'UTF-8').'</pre>';
 			if ($error !== '') {
@@ -695,6 +889,14 @@ function user_check() {
 		// $memcached->delete('user_'.$uid);
         $sql = $db->query("UPDATE LOW_PRIORITY users SET ".implode(", ", $updateset)." WHERE id=" . $row["id"]);
 		// $db->free($sql);
+		foreach ($updateset as $updateSql) {
+			if (strpos($updateSql, 'last_access = ') === 0) {
+				$row['last_access'] = get_date_time();
+			} elseif (strpos($updateSql, 'ip = ') === 0) {
+				$row['ip'] = $ip;
+			}
+		}
+		lt_cache_invalidate_user((int) $row['id']);
 	}
 
 	//Определяем IP-адрем пользователя
@@ -1157,62 +1359,6 @@ function taggenrelist($cat) {
 }
 
 
-/**
- * @deprecated No callers found outside this file. Use tags_echo() from
- *             system/functions/functions.tags.php instead — it provides equivalent
- *             tag-link rendering and is the canonical implementation.
- */
-function addtags($addtags) {
-	global $language;
-	$tags = '';
-	foreach (explode(",", (string) $addtags) as $tag) {
-		$tag = trim($tag);
-		if ($tag !== '') {
-			$tags .= '<a style="font-weight:normal;" href="browse.php?text=' . htmlspecialchars(rawurlencode($tag), ENT_QUOTES, 'UTF-8') . '&amp;type=tags">' . htmlspecialchars($tag, ENT_QUOTES, 'UTF-8') . '</a>, ';
-		}
-	}
-	if ($tags) {
-		$tags = substr($tags, 0, -2);
-	}
-	if (empty($addtags)) {
-		$tags = $language['tags_1'];
-	}
-	return $tags;
-}
-
-
-//Анти - XSS
-/**
- * @deprecated Ineffective string-replacement XSS filter with no callers. Do not use; escape output with htmlspecialchars() instead.
- */
-function antixss() {
-	//Запрещенные элементы
-	$array = array('./' , '../' , '\'' , '<script>' , 'document.cookie' , '</script>' );
-
-	//GET
-	$query = $_GET;
-	if( sizeof($query) ) {
-		foreach($query AS $arr => $value) {
-			$clear_xss = str_replace($array , '[xss]' , $value);
-			$_GET[$arr]  = $clear_xss;
-		}
-
-	}
-
-	//GET
-	$query = $_POST;
-	if( sizeof($query) ) {
-		foreach($query AS $arr => $value) {
-			$clear_xss = str_replace($array , '[xss]' , $value);
-			$_POST[$arr]  = $clear_xss;
-		}
-
-	}
-
-
-	return true;
-}
-
 //sqlwildcardesc
 function sqlwildcardesc($x) {
 	global $db;
@@ -1314,33 +1460,6 @@ function pager($rpp, $count, $href, $opts = array()) {
 
 	return array($pagertop, $pagerbottom, "LIMIT $start , $rpp");
 }
-//Цвет ратио
-/**
- * @deprecated No callers found. Use a direct color computation if needed.
- */
-  function get_ratio_color($ratio) {
-    if ($ratio < 0.1) return "#ff0000";
-    if ($ratio < 0.2) return "#ee0000";
-    if ($ratio < 0.3) return "#dd0000";
-    if ($ratio < 0.4) return "#cc0000";
-    if ($ratio < 0.5) return "#bb0000";
-    if ($ratio < 0.6) return "#aa0000";
-    if ($ratio < 0.7) return "#990000";
-    if ($ratio < 0.8) return "#880000";
-    if ($ratio < 0.9) return "#770000";
-    if ($ratio < 1) return "#660000";
-    return "#000000";
-}
-
-
-/**
- * @deprecated No callers found outside this file. Use strtotime() directly.
- */
-function sql_timestamp_to_unix_timestamp($s)
-{
-  return mktime(substr($s, 11, 2), substr($s, 14, 2), substr($s, 17, 2), substr($s, 5, 2), substr($s, 8, 2), substr($s, 0, 4));
-}
-
 //Преобразование даты / времени
 //гггг-мм-дд чч:мм:сс
 function convent_date($date = '' ) {
@@ -1402,34 +1521,6 @@ function convent_date($date = '' ) {
 }
 
 
-//Вывод рейтинга пользователю или гостю
-/**
- * @deprecated No callers found outside this file. Use get_ratio() and render HTML directly.
- */
-function get_user_rating($uploaded = '' , $downloaded = '') {
-	global $USER , $language;
-
-	$up   = 0;
-	$down = 0;
-	if(!empty($uploaded)  && !empty($downloaded) ) {
-		$down =	$downloaded;
-		$up =	$uploaded;
-	}
-
-
-
-	$ratio = get_ratio($up , $down);
-	if($ratio <= 0){
-		echo '<div id="rateTopZero"><img src="public/images/rate/zero1.gif"></div><div id="rateBottomZero"><font color="#8ba1bc">'.$language['rating_1'].': '.$ratio.'%</font></div>';
-	}elseif($ratio > 0 AND $ratio <= 10){
-		echo '<div id="rateTopGreen"><img src="public/images/rate/green1.gif"></div><div id="rateBottomGreen"><font color="#1e7300">'.$language['rating_1'].': '.$ratio.'%</font></a></div>';
-	}elseif($ratio > 10 AND $ratio <= 100){
-		echo '<div id="rateTopGold"><img src="public/images/rate/gold1.gif"></div><div id="rateBottomGold"><font color="#948239">'.$language['rating_1'].': '.$ratio.'%</font></a></div>';
-	}elseif($ratio > 100){
-		echo '<div id="rateTopDarkgold"><img src="public/images/rate/darkgold1.gif"></div><div id="rateBottomDarkgold"><font color="#fff2c8">'.$language['rating_1'].': '.$ratio.'%</font></a></div>';
-	}
-
-}
 //Преобразуем дату
 function rusdate($num,$type = 0){
     $rus = array (
@@ -1446,67 +1537,6 @@ function rusdate($num,$type = 0){
     if ( 10 < $num && $num < 20) return $rus[$type][0];
     return $rus[$type][$num % 10];
 }
-
-/**
- * @deprecated No callers found outside this file. get_elapsed_time() is not used by the active codebase.
- */
-function get_elapsed_time($date,$showseconds=true,$unix=true){
-    if($date == "0000-00-00 00:00:00") return "---";
-    if(!$unix){$U = date('U',strtotime($date));}else{$U=$date;};
-    $N = time();
-    $diff = $N-$U;
-
-
-    if($diff>=31536000){
-        $Iyear = floor($diff/31536000);
-        $diff = $diff-($Iyear*31536000);
-    }
-    if($diff>=2629800){    //2592000 seconds in month with 30 days
-        $Imonth = floor($diff/2629800);
-        $diff = $diff-($Imonth*2629800);
-    }
-    if($diff>=604800){
-        $Iweek = floor($diff/604800);
-        $diff = $diff-($Iweek*604800);
-    }
-    if($diff>=86400){
-        $Iday = floor($diff/86400);
-        $diff = $diff-($Iday*86400);
-    }
-    if($diff>=3600){
-        $Ihour = floor($diff/3600);
-        $diff = $diff-($Ihour*3600);
-    }
-    if($diff>=60){
-        $Iminute = floor($diff/60);
-        $diff = $diff-($Iminute*60);
-    }
-    if($diff>0){
-        $Isecond = floor($diff);
-    }
-
-    $j = " ";
-
-    $ret = "";
-
-    if(isset($Iyear)) $ret .= $Iyear." ".rusdate($Iyear,'year').$j;
-    if(isset($Imonth)) $ret .= $Imonth ." ".rusdate($Imonth ,'month').$j;
-    if(isset($Iweek)) $ret .= $Iweek ." ".rusdate($Iweek ,'week').$j;
-    if(isset($Iday)) $ret .= $Iday ." ".rusdate($Iday ,'day').$j;
-    if(isset($Ihour)) $ret .= $Ihour ." ".rusdate($Ihour ,'hour').$j;
-    if(isset($Iminute)) $ret .= $Iminute ." ".rusdate($Iminute ,'minute').$j;
-
-//    if($showseconds==false && $Iminute<1)$Iminute=0;
-    if($showseconds==false && $Iminute<1 && $Ihour<1 && $Iday<1 && $Iweek<1 && $Imonth<1 && $Iyear<1)return rusdate(0 ,'minute');
-
-    if(($Isecond>0 OR $ret=="") AND $showseconds==true){
-        if($ret=="" AND !isset($Isecond))$Isecond=0;
-        $ret .= $Isecond ." ".rusdate($Isecond ,'second').$j;
-    }
-    return $ret;
-}
-
-
 
 //Нагрузка на сервер
 function get_server_load() {
@@ -1535,29 +1565,6 @@ function get_server_load() {
 }
 
 
-/**
- * Узнаем сколько времени прошло с определенной даты
- * @param datetime $time
- * @return array (years , months , days)
- */
-/**
- * @deprecated No callers found outside this file.
- */
-function get_certain_time($time) {
-	$date1 = $time;
-	$date2 = get_date_time();
-
-	$diff = abs(strtotime($date2) - strtotime($date1));
-
-	$years = floor($diff / (365*60*60*24));
-	$months = floor(($diff - $years * 365*60*60*24) / (30*60*60*24));
-	$days = floor(($diff - $years * 365*60*60*24 - $months*30*60*60*24)/ (60*60*24));
-
-
-	$array = array('years' => $years , 'months' => $months , 'days' => $days);
-	return $array;
-}
-
 //Отправка локального сообщения
 function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {
 	global $memcached , $db;
@@ -1578,6 +1585,7 @@ function send_msg($name = ''  , $text = '' , $user_in = 0 ,  $user_out = 0 ) {
 	$db->pquery("INSERT INTO mail(name, text, id_user_in, id_user_out, date, delete_in, delete_out) VALUES (?, ?, ".$user_in.", ".$user_out.", NOW(), 0, 0)", 'ss', [$name, $text]);
 	$db->query("UPDATE users SET num_messages=(num_messages+1) WHERE id=".$user_in);
 	lt_cache_invalidate_user($user_in);
+	lt_cache_invalidate_user_unread_mail_count($user_in);
 	return 1;
 }
 

@@ -39,10 +39,8 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: lite
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       MYSQL_ROOT_PASSWORD: "${LITETRACKER_DB_PASSWORD:-}"
-    ports:
-      - "3309:3306"
+      MYSQL_ALLOW_EMPTY_PASSWORD: "${LITETRACKER_DB_ALLOW_EMPTY_PASSWORD:-yes}"
     volumes:
       - ./docker-data/mysql:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
@@ -70,8 +68,6 @@ services:
     image: memcached:latest
     container_name: litetracker-memcached
     restart: unless-stopped
-    ports:
-      - "11213:11211"
     networks:
       - litetracker-net
 

@@ -9,6 +9,9 @@ function lt_cache_debug_stats()
 			'sets' => 0,
 			'deletes' => 0,
 			'errors' => 0,
+			'driver' => 'unknown',
+			'fallback_reason' => '',
+			'memcached_online' => null,
 		);
 	}
 
@@ -33,6 +36,7 @@ function lt_create_cache_driver()
 {
 	global $config;
 
+	lt_cache_debug_stats();
 	$cacheConfig = (!empty($config['cache']) && is_array($config['cache']) ? $config['cache'] : array());
 	$driver = strtolower(trim((string) ($cacheConfig['driver'] ?? 'filecache')));
 
@@ -46,14 +50,24 @@ function lt_create_cache_driver()
 
 		$memcached = new MemcachedCache();
 		if ($memcached->connect($host, $port, $memcachedConfig)) {
+			$GLOBALS['lt_cache_debug_stats']['driver'] = 'memcached';
+			$GLOBALS['lt_cache_debug_stats']['memcached_online'] = true;
+			$GLOBALS['lt_cache_debug_stats']['fallback_reason'] = '';
 			return $memcached;
 		}
 
+		$GLOBALS['lt_cache_debug_stats']['memcached_online'] = false;
+		$GLOBALS['lt_cache_debug_stats']['fallback_reason'] = 'memcached_unavailable';
 		lt_cache_debug_count('errors');
 	} elseif ($driver === 'memcached') {
+		$GLOBALS['lt_cache_debug_stats']['memcached_online'] = false;
+		$GLOBALS['lt_cache_debug_stats']['fallback_reason'] = 'memcached_extension_missing';
 		lt_cache_debug_count('errors');
+	} else {
+		$GLOBALS['lt_cache_debug_stats']['fallback_reason'] = 'configured_filecache';
 	}
 
+	$GLOBALS['lt_cache_debug_stats']['driver'] = 'filecache';
 	return new Filecache();
 }
 
@@ -88,9 +102,33 @@ function lt_cache_prefix()
 	}
 
 	$seed = (defined('COOKIE_SALT') ? (string) COOKIE_SALT : '').'|'.(string) ($config['sitename'] ?? 'litetracker');
-	$prefix = 'lt:'.substr(md5($seed), 0, 12);
+	$namespace = trim((string) ($config['cache']['namespace'] ?? 'litetracker'));
+	$namespace = preg_replace('~[^a-z0-9:_-]+~i', '-', $namespace);
+	if ($namespace === '') {
+		$namespace = 'litetracker';
+	}
+	$prefix = $namespace.':'.substr(md5($seed), 0, 12);
 
 	return $prefix;
+}
+
+function lt_cache_runtime_info()
+{
+	global $config;
+
+	$stats = lt_cache_debug_stats();
+	$cacheConfig = (!empty($config['cache']) && is_array($config['cache']) ? $config['cache'] : array());
+	$memcachedConfig = (!empty($cacheConfig['memcached']) && is_array($cacheConfig['memcached']) ? $cacheConfig['memcached'] : array());
+
+	return array(
+		'configured_driver' => (string) ($cacheConfig['driver'] ?? 'filecache'),
+		'active_driver' => (string) ($stats['driver'] ?? 'unknown'),
+		'fallback_reason' => (string) ($stats['fallback_reason'] ?? ''),
+		'memcached_host' => (string) ($memcachedConfig['host'] ?? ''),
+		'memcached_port' => (int) ($memcachedConfig['port'] ?? 0),
+		'memcached_online' => ($stats['memcached_online'] ?? null),
+		'namespace' => (string) ($cacheConfig['namespace'] ?? 'litetracker'),
+	);
 }
 
 function lt_cache_namespace_normalize($namespace)

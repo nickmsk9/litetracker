@@ -553,14 +553,16 @@ $orderBy = ($search !== ''
 	? 'search_score DESC, seeders DESC, t.completed DESC, IF(t.news = \'1\', 1, 0) DESC, t.added DESC'
 	: $sortOptions[$sort]['order']);
 
-$db->query("SELECT t.id, COALESCE(SUM(tr.seeders), 0) AS seeders
+$countRow = $db->super_query("SELECT COUNT(*) AS cnt FROM (
+	SELECT t.id, COALESCE(SUM(tr.seeders), 0) AS seeders
 	FROM torrents AS t
 	".$joinSql."
 	LEFT JOIN trackers AS tr ON tr.torrent = t.id
 	".$whereSql."
 	GROUP BY t.id
-	".$havingSql, 1);
-$countTorrent = $db->num_rows();
+	".$havingSql."
+) AS browse_count");
+$countTorrent = (int) ($countRow['cnt'] ?? 0);
 
 $pagerHref = 'browse.php'.($pagerParams ? '?'.http_build_query($pagerParams).'&' : '?');
 list($pagertop, $pagerbottom, $limit) = pager('10', $countTorrent, $pagerHref);
@@ -580,7 +582,7 @@ $releasesNewsDays = (int) ($config['releases_news'] ?? 0);
 $sql = $db->query("SELECT t.*, ".$searchScoreExpr." AS search_score,
 	COALESCE(SUM(tr.seeders), 0) AS seeders, COALESCE(SUM(tr.leechers), 0) AS leechers,
 	COALESCE(SUM(CASE WHEN tr.tracker <> 'localhost' THEN 1 ELSE 0 END), 0) AS external_tracker_count,
-	IF((SELECT SUM(seeders) FROM trackers WHERE torrent = t.id AND tracker = 'localhost' GROUP BY tracker) > 0, true, false) AS local_seeders,
+	IF(COALESCE(SUM(CASE WHEN tr.tracker = 'localhost' THEN tr.seeders ELSE 0 END), 0) > 0, true, false) AS local_seeders,
 	IF(ADDDATE(t.added, INTERVAL ".$releasesNewsDays." DAY) > NOW() AND t.news = '1', 1, 0) AS new_release
 	FROM torrents AS t
 	".$joinSql."

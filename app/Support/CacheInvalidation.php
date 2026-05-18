@@ -40,6 +40,27 @@ if (!function_exists('lt_cache_invalidate_user')) {
     }
 }
 
+if (!function_exists('lt_cache_invalidate_user_unread_mail_count')) {
+    function lt_cache_invalidate_user_unread_mail_count($userId)
+    {
+        $userId = (int) $userId;
+        if ($userId <= 0 || !function_exists('lt_cache_key_user_unread_mail_count')) {
+            return;
+        }
+
+        lt_cache_delete(lt_cache_key_user_unread_mail_count($userId), lt_cache_key_user_ns());
+    }
+}
+
+if (!function_exists('lt_cache_invalidate_admin_open_comment_reports_count')) {
+    function lt_cache_invalidate_admin_open_comment_reports_count()
+    {
+        if (function_exists('lt_cache_key_admin_open_comment_reports_count')) {
+            lt_cache_delete(lt_cache_key_admin_open_comment_reports_count(), lt_cache_key_user_ns());
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // NEWS invalidation
 // ---------------------------------------------------------------------------
@@ -110,6 +131,33 @@ if (!function_exists('lt_cache_invalidate_torrent')) {
             return;
         }
         lt_cache_delete(lt_cache_key_torrent($torrentId), lt_cache_key_torrents_ns());
+        if (function_exists('lt_cache_key_details_static')) {
+            lt_cache_delete(lt_cache_key_details_static($torrentId), lt_cache_key_torrents_ns());
+            lt_cache_delete(lt_cache_key_details_files($torrentId), lt_cache_key_torrents_ns());
+            lt_cache_delete(lt_cache_key_details_trackers($torrentId), lt_cache_key_torrents_ns());
+            lt_cache_delete(lt_cache_key_details_rating_summary($torrentId), lt_cache_key_torrents_ns());
+            lt_cache_delete(lt_cache_key_details_view_count($torrentId), lt_cache_key_torrents_ns());
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// COMMENTS invalidation
+// ---------------------------------------------------------------------------
+
+if (!function_exists('lt_cache_invalidate_comments')) {
+    function lt_cache_invalidate_comments($contextType, $contextId)
+    {
+        $contextType = preg_replace('~[^a-z0-9_]~i', '', (string) $contextType);
+        $contextId = (int) $contextId;
+        if ($contextType === '' || $contextId <= 0 || !function_exists('lt_cache_key_comments_ns')) {
+            return;
+        }
+
+        $namespace = lt_cache_key_comments_ns();
+        lt_cache_delete(lt_cache_key_comments_payload($contextType, $contextId), $namespace);
+        lt_cache_delete(lt_cache_key_comments_reactions_summary($contextType, $contextId), $namespace);
+        lt_cache_delete(lt_cache_key_comments_pin($contextType, $contextId), $namespace);
     }
 }
 

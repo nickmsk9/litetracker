@@ -20,6 +20,22 @@ if(!$PRIV['ip_util']) {
 	err('Ошибка' , 'Доступ закрыт' , 1);
 }
 
+$ipUtilActionScope = 'ip_util_action';
+
+function ip_util_require_action_token($scope)
+{
+	if (lt_csrf_validate($scope)) {
+		return;
+	}
+
+	err('Ошибка', 'Защитный токен устарел. Обновите страницу и повторите действие.', 1);
+}
+
+function ip_util_action_query($scope)
+{
+	return lt_csrf_query($scope);
+}
+
 
 
 
@@ -73,7 +89,7 @@ if($_GET['act'] == 'bans_ip') {
 		echo '<td>'.convent_date($arr['date']).'</td>';
 		echo '<td><A href="'.profile_href($arr['id_user']).'">'.get_user_color($arr['class_user'] , $arr['user_name']).'</a></td>';
 		echo '<td>'.(empty($arr['text']) ? '<i>Без комментария...</i>' : htmlspecialchars((string) ($arr['text'] ?? ''), ENT_QUOTES, 'UTF-8') ).'</td>';
-		echo '<td><input type="button" value="Разблокировать IP" onClick="window.location.href=\'ip.util.php?id='.$arr['id'].'&act=unlock_ip\'">
+		echo '<td><input type="button" value="Разблокировать IP" onClick="window.location.href=\'ip.util.php?id='.$arr['id'].'&act=unlock_ip&'.ip_util_action_query($ipUtilActionScope).'\'">
 		</td>';
 
 		echo '</tr>';
@@ -94,13 +110,14 @@ if($_GET['act'] == 'bans_ip') {
 //Разблокировать IP
 /////////////////////////////////////////////////////////////////////////////////////////////////
 if($_GET['act'] == 'unlock_ip' && $_GET['id']) {
+	ip_util_require_action_token($ipUtilActionScope);
 	$id = (int)$_GET['id'];
 	$db->query("SELECT * FROM bans WHERE id=".$id."");
 	if(!$db->num_rows() ) {
 		err('Ошибка' , 'Данной записи не существует' ,1);
 	}
 	//Удаляем запись
-	$db->query("DELETE FROM bans WHERE id=".$id."");
+	$db->pquery("DELETE FROM bans WHERE id = ?", 'i', [$id]);
 	header('Location:ip.util.php?act=bans_ip&status=2');
 	die();
 
@@ -112,6 +129,7 @@ if($_GET['act'] == 'banned_ip') {
 
 	//Обработка данных
 	if($_POST) {
+		ip_util_require_action_token($ipUtilActionScope);
 		//Первичный IP
 		$ip_1 = trim($_POST['ip_1']);
 		if (!validip($ip_1)) {
@@ -129,7 +147,11 @@ if($_GET['act'] == 'banned_ip') {
 		//Комментарий
 		$text = trim($_POST['text']);
 
-		$db->query("INSERT INTO bans (first , last , date , id_user , text) VALUES (".ip2long_db($ip_1)." , ".ip2long_db($ip_2)." , NOW() , ".$USER['id']." , '".$text."')");
+		$db->pquery(
+			"INSERT INTO bans (first, last, date, id_user, text) VALUES (?, ?, NOW(), ?, ?)",
+			'iiis',
+			[(int) ip2long_db($ip_1), (int) ip2long_db($ip_2), (int) $USER['id'], $text]
+		);
 		header('Location:ip.util.php?act=bans_ip&status=1');
 		die();
 	}
@@ -139,6 +161,7 @@ if($_GET['act'] == 'banned_ip') {
 
 	?>
 	<form  action="ip.util.php?act=banned_ip"  id="loginPage" method="post">
+	<?=lt_csrf_input($ipUtilActionScope);?>
 	<table width="80%" cellspacing="7" cellpadding="0" border="0" align="center">
 	   <tbody><tr>
 		<td class="ta_r">
@@ -250,7 +273,7 @@ if($_GET['act'] == 'bans_account') {
 		echo '<td>'.htmlspecialchars((string) ($arr['email'] ?? ''), ENT_QUOTES, 'UTF-8').'</td>';
 		echo '<td>'.convent_date($arr['last_access']).'</td>';
 		echo '<td>'.long2ip($arr['ip']).'</td>';
-		echo '<td><input type="button" value="Разбанить аккаунт" onClick="window.location.href=\'ip.util.php?id='.$arr['id'].'&act=banned_account\'">
+		echo '<td><input type="button" value="Разбанить аккаунт" onClick="window.location.href=\'ip.util.php?id='.$arr['id'].'&act=banned_account&'.ip_util_action_query($ipUtilActionScope).'\'">
 		<br><br>
 		</td>';
 
@@ -275,6 +298,7 @@ if($_GET['act'] == 'bans_account') {
 //Бан аккаунта
 /////////////////////////////////////////////////////////////////////////////////////////////////
 if($_GET['act'] == 'banned_account' && $_GET['id']) {
+	ip_util_require_action_token($ipUtilActionScope);
 	$id = (int)$_GET['id'];
 	$db->query("SELECT u.*
 				FROM users  AS u
@@ -289,12 +313,12 @@ if($_GET['act'] == 'banned_account' && $_GET['id']) {
 
 	//Баним аккаунт
 	if($arr['banned'] == 0) {
-		$db->query("UPDATE users SET banned='1' WHERE id=".$id);
+		$db->pquery("UPDATE users SET banned = 1 WHERE id = ?", 'i', [$id]);
 			$memcached->delete('user_'.$id);
 			err('Успешно' , 'Аккаунт забанен' , 1 , 'success');
 	} else {
 	//Убираем бан
-		$db->query("UPDATE users SET banned='0' WHERE id=".$id);
+		$db->pquery("UPDATE users SET banned = 0 WHERE id = ?", 'i', [$id]);
 		$memcached->delete('user_'.$id);
 		err('Успешно' , 'Аккаунт разбанен' , 1 , 'success');
 	}

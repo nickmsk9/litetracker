@@ -42,6 +42,11 @@ require __DIR__ . '/config/config.mysql.php';
 require __DIR__ . '/functions/functions.php';
 require __DIR__ . '/functions/functions.http.php';
 
+// Канонические helpers/support, необходимые cron bootstrap и cache keys
+require_once __DIR__ . '/../app/helpers/UserHelper.php';
+require_once __DIR__ . '/../app/Support/CacheKeys.php';
+require_once __DIR__ . '/../app/Support/CacheInvalidation.php';
+
 //Подключаем класс db
 require __DIR__ . '/classes/class.db.php';
 
@@ -66,7 +71,10 @@ gzip();
 
 //Запускаем подключение  к mysql
 $db = new db;
-$db->connect($mysql['user'] , $mysql['password'] , $mysql['db'] ,  $mysql['host']);
+$db->connect($mysql['user'] , $mysql['password'] , $mysql['db'] ,  $mysql['host'], 1, ($mysql['port'] ?? 3306), ($mysql['connect_timeout'] ?? 5));
+if (!empty($mysql['timezone'])) {
+	$db->pquery("SET time_zone = ?", 's', [$mysql['timezone']], 0);
+}
 
 
 

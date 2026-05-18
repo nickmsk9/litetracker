@@ -15,10 +15,11 @@ $GLOBALS['LITETRACKER_HIDE_STANDARD_SIDEBAR'] = true;
 
 //Номер торрента
 $id = lt_get_int('id');
-$arr = lt_details_load_torrent($id);
+$detailsModel = lt_details_view_model($id, (int) ($USER['id'] ?? 0));
+$arr = $detailsModel['torrent'];
 lt_details_check_access($arr);
 
-$detailsRating = lt_details_prepare_rating((int) $arr['id']);
+$detailsRating = $detailsModel['rating'];
 lt_details_handle_rating_request((int) $arr['id'], $detailsRating);
 
 if (isset($_GET['files'])) {
@@ -35,6 +36,7 @@ if (isset($_GET['trackers']) && !empty($arr['multi'])) {
 
 $detailsViewModel = lt_details_prepare_view_model($arr, $detailsRating);
 extract($detailsViewModel, EXTR_SKIP);
+$GLOBALS['LITETRACKER_ENABLE_PHOTOSWIPE'] = !empty($screens);
 
 //Заголовок
 head($torrent_name_plain);

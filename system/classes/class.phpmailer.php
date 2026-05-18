@@ -262,7 +262,6 @@ class phpmailer
 	function create_header() {
 		$header = array();
 		$header[] = sprintf("From: %s <%s>\n", $this->FromName, trim($this->From));
-		$header[] = $from;
 		$header[] = $this->addr_append("To", $this->to);
 		if(count($this->cc) > 0)
 			$header[] = $this->addr_append("cc", $this->cc);

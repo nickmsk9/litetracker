@@ -252,7 +252,7 @@ if ($action === 'moderate_profile') {
 	}
 
 	if (!empty($_POST['reset_passkey'])) {
-		$updates[] = "passkey='".$db->safesql(md5(uniqid('passkey', true)))."'";
+		$updates[] = "passkey='".$db->safesql(bin2hex(random_bytes(16)))."'";
 	}
 
 	$note = trim((string) ($_POST['note'] ?? ''));

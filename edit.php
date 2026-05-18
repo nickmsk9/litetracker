@@ -36,22 +36,6 @@ function lt_edit_collect_screens($torrent)
 }
 
 /**
- * @deprecated Use lt_torrent_category_name_from_list()
- */
-function lt_edit_category_name($categories, $categoryId)
-{
-	return lt_torrent_category_name_from_list($categories, $categoryId);
-}
-
-/**
- * @deprecated Use lt_torrent_metadata_service_values()
- */
-function lt_edit_metadata_values($torrent, $schema)
-{
-	return lt_torrent_metadata_service_values($torrent, $schema);
-}
-
-/**
  * @deprecated Use lt_torrent_description_service_parse()
  */
 function lt_edit_parse_description($text)
@@ -70,80 +54,6 @@ function lt_edit_parse_description($text)
 	}
 
 	return $result;
-}
-
-/**
- * @deprecated Use lt_torrent_description_template_textarea_labels()
- */
-function lt_edit_template_textarea_labels()
-{
-	return lt_torrent_description_template_textarea_labels();
-}
-
-/**
- * @deprecated Use lt_torrent_description_template_field_type()
- */
-function lt_edit_template_field_type($label)
-{
-	return lt_torrent_description_template_field_type($label);
-}
-
-/**
- * @deprecated Use lt_torrent_description_service_manual_fields()
- */
-function lt_edit_template_manual_fields($categoryNameOrKey, $values = array())
-{
-	return lt_torrent_description_service_manual_fields($categoryNameOrKey, $values);
-}
-
-/**
- * @deprecated Use lt_torrent_description_service_primary_label()
- */
-function lt_edit_primary_description_label($categoryNameOrKey)
-{
-	return lt_torrent_description_service_primary_label($categoryNameOrKey);
-}
-
-/**
- * @deprecated Use lt_torrent_description_service_build()
- */
-function lt_edit_build_description($categoryNameOrKey, $templateValues, $autoValues = array())
-{
-	return lt_torrent_description_service_build($categoryNameOrKey, $templateValues, $autoValues);
-}
-
-/**
- * @deprecated Use lt_upload_asset_ensure_directory()
- */
-function lt_edit_ensure_directory($path)
-{
-	return lt_upload_asset_ensure_directory($path);
-}
-
-/**
- * @deprecated Use lt_upload_asset_image_extension()
- */
-function lt_edit_image_extension($filename)
-{
-	return lt_upload_asset_image_extension($filename, true);
-}
-
-/**
- * @deprecated Use lt_upload_asset_validate_image()
- */
-function lt_edit_validate_image($file, $label)
-{
-	global $config;
-
-	return lt_upload_asset_validate_image($file, $label, (int) $config['max_size_image'], true);
-}
-
-/**
- * @deprecated Use lt_upload_asset_move_uploaded_image()
- */
-function lt_edit_move_uploaded_image($file, $directory, $targetName, $label)
-{
-	return lt_upload_asset_move_uploaded_image($file, $directory, $targetName, $label);
 }
 
 is_login();
@@ -179,7 +89,7 @@ if ($act == 'delete_image') {
 
 	if (!empty($arr['image'])) {
 		$db->query('UPDATE torrents SET image="" WHERE id='.(int) $id);
-		$_p = 'public/downloads/images/'.$arr['image'];
+		$_p = 'public/downloads/images/'.basename((string) $arr['image']);
 		if (is_file($_p)) { unlink($_p); }
 	}
 
@@ -197,7 +107,7 @@ if ($act == 'delete_screen') {
 
 	if (!empty($arr['screen_'.$screen])) {
 		$db->query('UPDATE torrents SET screen_'.$screen.'="" WHERE id='.(int) $id);
-		$_p = 'public/downloads/screens/'.$arr['screen_'.$screen];
+		$_p = 'public/downloads/screens/'.basename((string) $arr['screen_'.$screen]);
 		if (is_file($_p)) { unlink($_p); }
 	}
 
@@ -222,7 +132,7 @@ if ($act == 'take') {
 
 	$categories = categories_array();
 	$category = (int) ($_POST['category'] ?? 0);
-	$categoryName = lt_edit_category_name($categories, $category);
+	$categoryName = lt_torrent_category_name_from_list($categories, $category);
 	if ($category <= 0 || $categoryName === '') {
 		err($language['default_1'], $language['upload_3'], 1);
 	}
@@ -374,12 +284,12 @@ if ($act == 'take') {
 		'subtitles' => lt_torrent_metadata_format('subtitles', $metadataCsv['subtitles'] ?? ''),
 		'country' => lt_torrent_metadata_format('country', $metadataCsv['country'] ?? ''),
 	);
-	$primaryDescriptionLabel = lt_edit_primary_description_label($categoryName);
+	$primaryDescriptionLabel = lt_torrent_description_service_primary_label($categoryName);
 	if ($primaryDescriptionLabel !== '' && trim((string) ($templateValues[$primaryDescriptionLabel] ?? '')) === '') {
 		err($language['default_1'], $language['upload_26'], 1);
 	}
 
-	$descr = lt_edit_build_description($categoryName, $templateValues, $autoDescriptionValues);
+	$descr = lt_torrent_description_service_build($categoryName, $templateValues, $autoDescriptionValues);
 	if ($descr === '') {
 		err($language['default_1'], $language['upload_26'], 1);
 	}
@@ -388,12 +298,12 @@ if ($act == 'take') {
 	}
 
 	if (!empty($_FILES['image']['name'])) {
-		$coverExtension = lt_edit_validate_image((array) $_FILES['image'], 'Обложка');
+		$coverExtension = lt_upload_asset_validate_image((array) $_FILES['image'], 'Обложка', (int) $config['max_size_image'], true);
 		$coverName = $id.'.'.$coverExtension;
-		lt_edit_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $coverName, 'обложку');
+		lt_upload_asset_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $coverName, 'обложку');
 
 		if (!empty($arr['image']) && $arr['image'] !== $coverName) {
-			$_p = 'public/downloads/images/'.$arr['image'];
+			$_p = 'public/downloads/images/'.basename((string) $arr['image']);
 			if (is_file($_p)) { unlink($_p); }
 		}
 
@@ -415,12 +325,12 @@ if ($act == 'take') {
 			'size' => (int) ($screenFiles['size'][$index] ?? 0),
 		);
 
-		$screenExtension = lt_edit_validate_image($screenFile, 'Скриншот '.$slot);
+		$screenExtension = lt_upload_asset_validate_image($screenFile, 'Скриншот '.$slot, (int) $config['max_size_image'], true);
 		$screenStoredName = $id.'_'.$index.'.'.$screenExtension;
-		lt_edit_move_uploaded_image($screenFile, 'public/downloads/screens/', $screenStoredName, 'скриншот '.$slot);
+		lt_upload_asset_move_uploaded_image($screenFile, 'public/downloads/screens/', $screenStoredName, 'скриншот '.$slot);
 
 		if (!empty($arr['screen_'.$slot]) && $arr['screen_'.$slot] !== $screenStoredName) {
-			$_p = 'public/downloads/screens/'.$arr['screen_'.$slot];
+			$_p = 'public/downloads/screens/'.basename((string) $arr['screen_'.$slot]);
 			if (is_file($_p)) { unlink($_p); }
 		}
 
@@ -520,21 +430,15 @@ if ($act == 'delete') {
 }
 
 $categories = categories_array();
-$categoryTemplateMap = array();
-foreach ($categories as $categoryItem) {
-	$categoryTemplateMap[(int) $categoryItem['id']] = lt_torrent_description_template_key((string) ($categoryItem['name'] ?? ''));
-}
+$categoryTemplateMap = lt_torrent_category_template_map($categories);
 
 $selectedCategoryId = (int) ($arr['id_category'] ?? 0);
-$selectedCategoryName = lt_edit_category_name($categories, $selectedCategoryId);
+$selectedCategoryName = lt_torrent_category_name_from_list($categories, $selectedCategoryId);
 $metadataSchema = lt_torrent_metadata_schema();
-$metadataValues = lt_edit_metadata_values($arr, $metadataSchema);
+$metadataValues = lt_torrent_metadata_service_values($arr, $metadataSchema);
 $typeOptionsMap = lt_torrent_type_options_map();
 $descriptionTemplates = lt_torrent_description_templates();
-$templateFieldExamples = array();
-foreach ($descriptionTemplates as $templateKey => $templateInfo) {
-	$templateFieldExamples[$templateKey] = lt_torrent_template_example_map($templateKey);
-}
+$templateFieldExamples = lt_torrent_template_examples_map($descriptionTemplates);
 $currentTypeOptions = lt_torrent_metadata_type_options_for_category($selectedCategoryName);
 $currentContentType = trim((string) ($arr['content_type'] ?? ''));
 if ($currentContentType === '' || empty($currentTypeOptions[$currentContentType])) {
@@ -545,7 +449,7 @@ if ($currentContentType === '') {
 }
 $metadataValues['type'] = $currentContentType;
 $parsedDescriptionValues = lt_edit_parse_description((string) ($arr['descr'] ?? ''));
-$currentTemplateFields = lt_edit_template_manual_fields($selectedCategoryName, $parsedDescriptionValues);
+$currentTemplateFields = lt_torrent_description_service_manual_fields($selectedCategoryName, $parsedDescriptionValues);
 $tagSuggestions = taggenrelist($selectedCategoryId);
 $currentScreens = lt_edit_collect_screens($arr);
 $currentCover = trim((string) ($arr['image'] ?? ''));
@@ -741,237 +645,25 @@ head($language['edit_3'], true);
 	</section>
 </div>
 
+<script type="text/javascript" src="/public/js/torrent-description-form.js"></script>
 <script type="text/javascript">
 $(document).ready(function () {
 	$('#from').tagTo('#edit_tags');
 });
 
-(function () {
-	var form = document.querySelector('.edit-upload-form');
-	var categorySelect = document.getElementById('edit_category');
-	var templateFieldsContainer = document.getElementById('edit_template_fields');
-	var descriptionField = document.getElementById('edit_descr');
-	var typeOptionsContainer = document.getElementById('edit_type_options');
-	var templates = <?=json_encode($descriptionTemplates, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
-	var templateExamples = <?=json_encode($templateFieldExamples, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
-	var typeOptions = <?=json_encode($typeOptionsMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
-	var defaultTemplateKey = 'movies';
-
-	if (!form || !categorySelect || !templateFieldsContainer || !descriptionField || !typeOptionsContainer) {
-		return;
-	}
-
-	function selectedCategoryTemplateKey() {
-		var option = categorySelect.options[categorySelect.selectedIndex];
-		return option && option.getAttribute('data-template-key') ? option.getAttribute('data-template-key') : defaultTemplateKey;
-	}
-
-	function escapeHtml(value) {
-		return String(value || '')
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;');
-	}
-
-	function escapeAttribute(value) {
-		return escapeHtml(value).replace(/"/g, '&quot;');
-	}
-
-	function selectedTexts(selector) {
-		var nodes = form.querySelectorAll(selector);
-		var result = [];
-
-		Array.prototype.forEach.call(nodes, function (node) {
-			var label = node.parentNode ? node.parentNode.querySelector('span') : null;
-			var text = label ? String(label.textContent || '').trim() : '';
-			if (text !== '') {
-				result.push(text);
-			}
-		});
-
-		return result;
-	}
-
-	function selectedRadioText(name) {
-		var input = form.querySelector('input[name="' + name + '"]:checked');
-		if (!input || !input.parentNode) {
-			return '';
-		}
-
-		var label = input.parentNode.querySelector('span');
-		return label ? String(label.textContent || '').trim() : '';
-	}
-
-	function currentTypeOptions() {
-		return typeOptions[selectedCategoryTemplateKey()] || {};
-	}
-
-	function currentTemplateExamples() {
-		return templateExamples[selectedCategoryTemplateKey()] || templateExamples[defaultTemplateKey] || {};
-	}
-
-	function templateItems() {
-		var templateKey = selectedCategoryTemplateKey();
-		var template = templates[templateKey] || templates[defaultTemplateKey] || { items: [] };
-		return Array.isArray(template.items) ? template.items : [];
-	}
-
-	function fieldTypeForLabel(label) {
-		return ['Описание', 'В ролях', 'Треклист', 'Системные требования'].indexOf(String(label || '').trim()) !== -1 ? 'textarea' : 'text';
-	}
-
-	function collectTemplateValues() {
-		var values = {};
-		var nodes = templateFieldsContainer.querySelectorAll('[data-template-label]');
-
-		Array.prototype.forEach.call(nodes, function (node) {
-			var label = String(node.getAttribute('data-template-label') || '').trim();
-			var input = node.querySelector('input, textarea');
-			if (!label || !input) {
-				return;
-			}
-
-			values[label] = String(input.value || '');
-		});
-
-		return values;
-	}
-
-	function renderTypeOptions() {
-		var options = currentTypeOptions();
-		var currentInput = form.querySelector('input[name="content_type"]:checked');
-		var currentValue = currentInput ? String(currentInput.value || '') : '';
-		var html = '';
-
-		Object.keys(options).forEach(function (value, index) {
-			var label = String(options[value] || '').trim();
-			var checked = '';
-
-			if ((currentValue !== '' && currentValue === value) || (currentValue === '' && index === 0)) {
-				checked = ' checked';
-			}
-
-			html += '<label class="upload-option">'
-				+ '<input type="radio" name="content_type" value="' + value.replace(/"/g, '&quot;') + '"' + checked + '>'
-				+ '<span>' + label.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>'
-				+ '</label>';
-		});
-
-		typeOptionsContainer.innerHTML = html;
-	}
-
-	function renderTemplateFields() {
-		var values = collectTemplateValues();
-		var examples = currentTemplateExamples();
-		var html = '';
-
-		templateItems().forEach(function (item) {
-			var itemType = String(item.type || 'field');
-			var label = String(item.label || '').trim();
-			var auto = String(item.auto || '').trim();
-			var fieldType = fieldTypeForLabel(label);
-			var value = String(values[label] || '');
-			var example = String(examples[label] || '');
-			var fieldId = 'edit_template_' + label.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '_');
-
-			if (!label || itemType === 'section' || auto !== '') {
-				return;
-			}
-
-			html += '<div class="edit-template-field' + (fieldType === 'textarea' ? ' edit-template-field-full' : '') + '" data-template-label="' + escapeAttribute(label) + '" data-template-type="' + fieldType + '">';
-			html += '<label class="upload-label" for="' + fieldId + '">' + escapeHtml(label) + '</label>';
-			if (fieldType === 'textarea') {
-				html += '<textarea id="' + fieldId + '" class="upload-textarea edit-template-textarea" name="template_values[' + escapeAttribute(label) + ']" placeholder="' + escapeAttribute(example) + '">' + escapeHtml(value) + '</textarea>';
-			} else {
-				html += '<input id="' + fieldId + '" class="upload-input" type="text" name="template_values[' + escapeAttribute(label) + ']" value="' + escapeAttribute(value) + '" placeholder="' + escapeAttribute(example) + '">';
-			}
-			if (example !== '') {
-				html += '<div class="upload-example-hint">Например: ' + escapeHtml(example).replace(/\n/g, '<br>') + '</div>';
-			}
-			html += '</div>';
-		});
-
-		templateFieldsContainer.innerHTML = html;
-	}
-
-	function buildDescription() {
-		var currentValues = collectTemplateValues();
-		var autoValues = {
-			type: selectedRadioText('content_type'),
-			genre: selectedTexts('input[name="genre[]"]:checked').join(', '),
-			language: selectedTexts('input[name="language[]"]:checked').join(', '),
-			subtitles: selectedTexts('input[name="subtitles[]"]:checked').join(', '),
-			country: selectedTexts('input[name="country[]"]:checked').join(', ')
-		};
-		var lines = [];
-
-		templateItems().forEach(function (item) {
-			var itemType = String(item.type || 'field');
-			var label = String(item.label || '').trim();
-			var value = '';
-
-			if (!label) {
-				return;
-			}
-
-			if (itemType === 'section') {
-				if (lines.length > 0 && lines[lines.length - 1] !== '') {
-					lines.push('');
-				}
-				lines.push('[u]' + label + '[/u]');
-				return;
-			}
-
-			if (item.auto && typeof autoValues[item.auto] !== 'undefined' && autoValues[item.auto] !== '') {
-				value = autoValues[item.auto];
-			} else {
-				value = String(currentValues[label] || '').trim();
-			}
-
-			if (value.indexOf('\n') !== -1) {
-				lines.push('[b]' + label + ':[/b]' + (value !== '' ? '\n' + value : ''));
-				return;
-			}
-
-			lines.push('[b]' + label + ':[/b]' + (value !== '' ? ' ' + value : ''));
-		});
-
-		return lines.join('\n');
-	}
-
-	function syncDescription() {
-		descriptionField.value = buildDescription();
-	}
-
-	categorySelect.addEventListener('change', function () {
-		renderTypeOptions();
-		renderTemplateFields();
-		syncDescription();
-	});
-
-	templateFieldsContainer.addEventListener('input', function () {
-		syncDescription();
-	});
-
-	form.addEventListener('change', function (event) {
-		var target = event.target;
-		if (!target || !target.name) {
-			return;
-		}
-
-		if (target.name === 'content_type' || target.name === 'genre[]' || target.name === 'language[]' || target.name === 'subtitles[]' || target.name === 'country[]') {
-			syncDescription();
-		}
-	});
-
-	form.addEventListener('submit', function () {
-		syncDescription();
-	});
-
-	renderTypeOptions();
-	renderTemplateFields();
-	syncDescription();
-})();
+window.initTorrentDescriptionForm({
+	formSelector: '.edit-upload-form',
+	categorySelector: '#edit_category',
+	typeSelector: '#edit_type_options',
+	descriptionSelector: '#edit_descr',
+	templateFieldsContainerSelector: '#edit_template_fields',
+	fieldIdPrefix: 'edit_template_',
+	typeOptions: <?=json_encode($typeOptionsMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>,
+	templates: <?=json_encode($descriptionTemplates, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>,
+	examples: <?=json_encode($templateFieldExamples, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>,
+	defaultTemplateKey: 'movies',
+	initialRenderFields: true
+});
 </script>
 <?php
 foot(true);

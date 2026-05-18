@@ -30,8 +30,13 @@ class MemcachedCache
 			'retry_timeout' => 1,
 			'server_failure_limit' => 1,
 			'remove_failed_servers' => 1,
+			'binary_protocol' => 1,
+			'tcp_nodelay' => 1,
+			'no_block' => 1,
 		);
 
+		$this->setOption('OPT_BINARY_PROTOCOL', !empty($options['binary_protocol']));
+		$this->setOption('OPT_TCP_NODELAY', !empty($options['tcp_nodelay']));
 		$this->setOption('OPT_CONNECT_TIMEOUT', (int) $options['connect_timeout_ms']);
 		$this->setOption('OPT_POLL_TIMEOUT', (int) $options['poll_timeout_ms']);
 		$this->setOption('OPT_SEND_TIMEOUT', (int) $options['send_timeout_ms']);
@@ -39,6 +44,7 @@ class MemcachedCache
 		$this->setOption('OPT_RETRY_TIMEOUT', (int) $options['retry_timeout']);
 		$this->setOption('OPT_SERVER_FAILURE_LIMIT', (int) $options['server_failure_limit']);
 		$this->setOption('OPT_REMOVE_FAILED_SERVERS', !empty($options['remove_failed_servers']));
+		$this->setOption('OPT_NO_BLOCK', !empty($options['no_block']));
 
 		if (method_exists($this->client, 'resetServerList')) {
 			$this->client->resetServerList();

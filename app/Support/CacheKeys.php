@@ -53,6 +53,21 @@ if (!function_exists('lt_cache_key_user_ns')) {
     }
 }
 
+if (!function_exists('lt_cache_key_user_unread_mail_count')) {
+    /** @param int $id user ID */
+    function lt_cache_key_user_unread_mail_count($id)
+    {
+        return 'user:unread_mail_count:'.(int) $id.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_admin_open_comment_reports_count')) {
+    function lt_cache_key_admin_open_comment_reports_count()
+    {
+        return 'admin:open_comment_reports_count:v1';
+    }
+}
+
 // ---------------------------------------------------------------------------
 // SYSTEM (CRON, IP bans)
 // namespace: 'sys'
@@ -191,6 +206,87 @@ if (!function_exists('lt_cache_key_torrents_ns')) {
     }
 }
 
+if (!function_exists('lt_cache_key_details_static')) {
+    /** @param int $id torrent ID */
+    function lt_cache_key_details_static($id)
+    {
+        return 'details:static:'.(int) $id.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_details_files')) {
+    /** @param int $id torrent ID */
+    function lt_cache_key_details_files($id)
+    {
+        return 'details:files:'.(int) $id.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_details_trackers')) {
+    /** @param int $id torrent ID */
+    function lt_cache_key_details_trackers($id)
+    {
+        return 'details:trackers:'.(int) $id.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_details_rating_summary')) {
+    /** @param int $id torrent ID */
+    function lt_cache_key_details_rating_summary($id)
+    {
+        return 'details:rating-summary:'.(int) $id.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_details_view_count')) {
+    /** @param int $id torrent ID */
+    function lt_cache_key_details_view_count($id)
+    {
+        return 'details:view-count:'.(int) $id.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_details_view_seen')) {
+    /** @param string $visitorHash sha1 user/guest visitor hash */
+    function lt_cache_key_details_view_seen($id, $visitorHash)
+    {
+        return 'details:view-seen:'.(int) $id.':'.preg_replace('~[^a-f0-9]~i', '', (string) $visitorHash).':v1';
+    }
+}
+
+// ---------------------------------------------------------------------------
+// COMMENTS
+// namespace: 'comments'
+// ---------------------------------------------------------------------------
+
+if (!function_exists('lt_cache_key_comments_ns')) {
+    function lt_cache_key_comments_ns()
+    {
+        return 'comments';
+    }
+}
+
+if (!function_exists('lt_cache_key_comments_payload')) {
+    function lt_cache_key_comments_payload($contextType, $contextId)
+    {
+        return 'comments:payload:'.preg_replace('~[^a-z0-9_]~i', '', (string) $contextType).':'.(int) $contextId.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_comments_reactions_summary')) {
+    function lt_cache_key_comments_reactions_summary($contextType, $contextId)
+    {
+        return 'comments:reactions-summary:'.preg_replace('~[^a-z0-9_]~i', '', (string) $contextType).':'.(int) $contextId.':v1';
+    }
+}
+
+if (!function_exists('lt_cache_key_comments_pin')) {
+    function lt_cache_key_comments_pin($contextType, $contextId)
+    {
+        return 'comments:pin:'.preg_replace('~[^a-z0-9_]~i', '', (string) $contextType).':'.(int) $contextId.':v1';
+    }
+}
+
 // ---------------------------------------------------------------------------
 // EXTERNAL METADATA (movie/series lookups)
 // namespace: 'meta'
@@ -200,6 +296,25 @@ if (!function_exists('lt_cache_key_meta_ns')) {
     function lt_cache_key_meta_ns()
     {
         return 'meta';
+    }
+}
+
+// ---------------------------------------------------------------------------
+// THEMES
+// namespace: 'themes'
+// ---------------------------------------------------------------------------
+
+if (!function_exists('lt_cache_key_themes_list')) {
+    function lt_cache_key_themes_list()
+    {
+        return 'themes_list';
+    }
+}
+
+if (!function_exists('lt_cache_key_themes_ns')) {
+    function lt_cache_key_themes_ns()
+    {
+        return 'themes';
     }
 }
 

@@ -108,6 +108,8 @@ if ($act === 'add') {
         lt_comment_notify_wall_owner((int) $object_id, $USER);
     }
 
+    comments_invalidate_payload($type, $object_id);
+
 header('Location:' . lt_comment_return_url($file, $object_id));
     die();
 }
@@ -155,6 +157,7 @@ if ($act === 'report' && !empty($_REQUEST['id_comment'])) {
              VALUES (?, {$id_comment}, {$object_id}, ".(int) $arr['id_user'].", ".(int) $USER['id'].", ?, 'open', NOW())",
             'ss', [$type, (string) ($arr['text'] ?? '')]
         );
+        lt_cache_invalidate_admin_open_comment_reports_count();
     }
 
     header('Location:' . lt_comment_return_url($file, $object_id, '#wall-comment-' . $id_comment));
@@ -196,6 +199,7 @@ if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
     $deletedText = lt_comment_deleted_placeholder($deletedByAdmin);
     $db->pquery("UPDATE `{$table_name}` SET text = ?, id_user_edit = ".(int) $USER['id'].", date_edit = NOW() WHERE id = {$id_comment} AND `{$object_name}` = {$object_id}", 's', [$deletedText], 0);
     lt_notifications_handle_comment_deleted($type, $object_id, $id_comment, (int) $arr['id_user'], (int) $USER['id'], $deletedByAdmin);
+    comments_invalidate_payload($type, $object_id);
 
     header('Location:' . lt_comment_return_url($file, $object_id, 'status=3'));
     die();
@@ -263,6 +267,8 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
             if (!$updated) {
                 err($language['default_1'], $language['comments_16'], 1);
             }
+
+            comments_invalidate_payload($type, $object_id);
         }
 
         header('Location:' . lt_comment_return_url($file, $object_id, 'status=2'));

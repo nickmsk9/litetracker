@@ -109,11 +109,10 @@ function comments_reports_ensure_table()
 
 function comments_index_exists($tableName, $indexName)
 {
-    global $db;
     static $cache = array();
 
     $tableName = preg_replace('~[^a-z0-9_]~i', '', (string) $tableName);
-    $indexName = trim((string) $indexName);
+    $indexName = preg_replace('~[^a-z0-9_]~i', '', (string) $indexName);
     if ($tableName === '' || $indexName === '') {
         return false;
     }
@@ -123,23 +122,7 @@ function comments_index_exists($tableName, $indexName)
         return $cache[$key];
     }
 
-    $cacheKey = 'schema:index:'.$tableName.':'.$indexName.':exists';
-    $cached = lt_schema_cache_get($cacheKey);
-    if (is_array($cached) && array_key_exists('exists', $cached)) {
-        $cache[$key] = (bool) $cached['exists'];
-        return $cache[$key];
-    }
-
-    $sql = $db->query("SHOW INDEX FROM `".$tableName."` WHERE Key_name = '".$db->safesql($indexName)."'", 0);
-    if ($sql === false) {
-        $cache[$key] = false;
-        return false;
-    }
-
-    $row = $db->get_row($sql);
-    $db->free($sql);
-    $cache[$key] = !empty($row);
-    lt_schema_cache_set($cacheKey, array('exists' => $cache[$key]));
+    $cache[$key] = lt_schema_has_index($tableName, $indexName);
 
     return $cache[$key];
 }
@@ -681,13 +664,26 @@ function comments_pinned_row($type, $objectId)
         return array();
     }
 
-    return $db->super_query(
+    $cacheKey = lt_cache_key_comments_pin($type, $objectId);
+    $cached = lt_cache_get($cacheKey, lt_cache_key_comments_ns());
+    if ($cached !== false && is_array($cached)) {
+        return $cached;
+    }
+
+    $row = $db->super_query(
         "SELECT *
          FROM comment_pins
          WHERE context_type = '".$db->safesql($type)."'
            AND context_id = {$objectId}
          LIMIT 1"
     );
+    if (!is_array($row)) {
+        $row = array();
+    }
+
+    lt_cache_set($cacheKey, $row, 300, lt_cache_key_comments_ns());
+
+    return $row;
 }
 
 function comments_set_pin($type, $objectId, $commentId, $moderatorId)
@@ -716,6 +712,8 @@ function comments_set_pin($type, $objectId, $commentId, $moderatorId)
         0
     );
 
+    comments_invalidate_payload($type, $objectId);
+
     return true;
 }
 
@@ -731,14 +729,13 @@ function comments_unpin($type, $objectId)
     }
 
     $db->query("DELETE FROM comment_pins WHERE context_type = '".$db->safesql($type)."' AND context_id = {$objectId}", 0);
+    comments_invalidate_payload($type, $objectId);
+
     return true;
 }
 
 function comments_reaction_counts($type, $commentIds, $userId = 0)
 {
-    global $db;
-
-    comments_ensure_modern_tables();
     $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
     $ids = array();
     foreach ((array) $commentIds as $id) {
@@ -752,9 +749,43 @@ function comments_reaction_counts($type, $commentIds, $userId = 0)
         return array();
     }
 
+    $result = comments_reaction_summary_for_ids($type, $ids);
+    foreach (comments_current_user_reactions($type, $ids, (int) $userId) as $commentId => $reaction) {
+        if (isset($result[$commentId])) {
+            $result[$commentId]['user'] = $reaction;
+        }
+    }
+
+    return $result;
+}
+
+function comments_reaction_summary_for_ids($type, array $ids, $objectId = 0)
+{
+    global $db;
+
+    comments_ensure_modern_tables();
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $objectId = (int) $objectId;
     $result = array();
     foreach ($ids as $id) {
         $result[$id] = array('like' => 0, 'dislike' => 0, 'user' => '');
+    }
+    if ($type === '' || !$ids) {
+        return $result;
+    }
+
+    if ($objectId > 0) {
+        $cached = lt_cache_get(lt_cache_key_comments_reactions_summary($type, $objectId), lt_cache_key_comments_ns());
+        if ($cached !== false && is_array($cached)) {
+            foreach ($cached as $commentId => $counts) {
+                $commentId = (int) $commentId;
+                if (isset($result[$commentId])) {
+                    $result[$commentId]['like'] = (int) ($counts['like'] ?? 0);
+                    $result[$commentId]['dislike'] = (int) ($counts['dislike'] ?? 0);
+                }
+            }
+            return $result;
+        }
     }
 
     $sql = $db->query(
@@ -777,28 +808,192 @@ function comments_reaction_counts($type, $commentIds, $userId = 0)
         $db->free($sql);
     }
 
-    $userId = (int) $userId;
-    if ($userId > 0) {
-        $sql = $db->query(
-            "SELECT comment_id, reaction
-             FROM comment_reactions
-             WHERE context_type = '".$db->safesql($type)."'
-               AND comment_id IN (".implode(',', $ids).")
-               AND user_id = {$userId}",
-            0
-        );
-        if ($sql) {
-            while ($row = $db->get_row($sql)) {
-                $commentId = (int) ($row['comment_id'] ?? 0);
-                if (isset($result[$commentId])) {
-                    $result[$commentId]['user'] = (string) ($row['reaction'] ?? '');
-                }
-            }
-            $db->free($sql);
-        }
+    if ($objectId > 0) {
+        lt_cache_set(lt_cache_key_comments_reactions_summary($type, $objectId), $result, 60, lt_cache_key_comments_ns());
     }
 
     return $result;
+}
+
+function comments_current_user_reactions($type, array $ids, $userId)
+{
+    global $db;
+
+    static $requestCache = array();
+
+    comments_ensure_modern_tables();
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $userId = (int) $userId;
+    if ($type === '' || !$ids || $userId <= 0) {
+        return array();
+    }
+
+    $safeIds = array();
+    foreach ($ids as $id) {
+        $id = (int) $id;
+        if ($id > 0) {
+            $safeIds[$id] = $id;
+        }
+    }
+    if (!$safeIds) {
+        return array();
+    }
+
+    $cacheKey = $type.':'.$userId.':'.md5(implode(',', $safeIds));
+    if (isset($requestCache[$cacheKey])) {
+        return $requestCache[$cacheKey];
+    }
+
+    $result = array();
+    $sql = $db->query(
+        "SELECT comment_id, reaction
+         FROM comment_reactions
+         WHERE context_type = '".$db->safesql($type)."'
+           AND comment_id IN (".implode(',', $safeIds).")
+           AND user_id = {$userId}",
+        0
+    );
+    if ($sql) {
+        while ($row = $db->get_row($sql)) {
+            $commentId = (int) ($row['comment_id'] ?? 0);
+            if (isset($safeIds[$commentId])) {
+                $result[$commentId] = (string) ($row['reaction'] ?? '');
+            }
+        }
+        $db->free($sql);
+    }
+
+    $requestCache[$cacheKey] = $result;
+
+    return $result;
+}
+
+function comments_invalidate_payload($type, $objectId)
+{
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
+    $objectId = (int) $objectId;
+    if ($type === '' || $objectId <= 0) {
+        return;
+    }
+
+    if (function_exists('lt_cache_invalidate_comments')) {
+        lt_cache_invalidate_comments($type, $objectId);
+    }
+}
+
+function comments_payload_defaults()
+{
+    return array(
+        'rows' => array(),
+        'ids' => array(),
+        'user_ids' => array(),
+        'pin' => array(),
+    );
+}
+
+function comments_payload_apply_reaction_summary(array $rows, array $reactionCounts)
+{
+    foreach ($rows as $idx => $row) {
+        $commentId = (int) ($row['id'] ?? 0);
+        if (!empty($reactionCounts[$commentId])) {
+            $rows[$idx]['like_count'] = (int) ($reactionCounts[$commentId]['like'] ?? 0);
+            $rows[$idx]['dislike_count'] = (int) ($reactionCounts[$commentId]['dislike'] ?? 0);
+        } else {
+            $rows[$idx]['like_count'] = 0;
+            $rows[$idx]['dislike_count'] = 0;
+        }
+        $rows[$idx]['user_reaction'] = '';
+        $rows[$idx]['comment_score'] = (int) $rows[$idx]['like_count'] - (int) $rows[$idx]['dislike_count'];
+    }
+
+    return $rows;
+}
+
+function comments_apply_user_reactions(array $rows, $type, array $ids, $userId)
+{
+    $userReactions = comments_current_user_reactions($type, $ids, (int) $userId);
+    if (!$userReactions) {
+        return $rows;
+    }
+
+    foreach ($rows as $idx => $row) {
+        $commentId = (int) ($row['id'] ?? 0);
+        if (isset($userReactions[$commentId])) {
+            $rows[$idx]['user_reaction'] = (string) $userReactions[$commentId];
+        }
+    }
+
+    return $rows;
+}
+
+function lt_comments_payload($contextType, $contextId, $currentUserId = 0)
+{
+    global $db;
+
+    static $requestCache = array();
+
+    $type = preg_replace('~[^a-z0-9_]~i', '', (string) $contextType);
+    $objectId = (int) $contextId;
+    if ($type === '' || $objectId <= 0) {
+        return comments_payload_defaults();
+    }
+
+    $requestKey = $type.':'.$objectId;
+    if (isset($requestCache[$requestKey])) {
+        return $requestCache[$requestKey];
+    }
+
+    comments_ensure_thread_support($type);
+    comments_ensure_modern_schema($type);
+
+    $cacheKey = lt_cache_key_comments_payload($type, $objectId);
+    $cached = lt_cache_get($cacheKey, lt_cache_key_comments_ns());
+    if ($cached !== false && is_array($cached)) {
+        $payload = array_merge(comments_payload_defaults(), $cached);
+        $requestCache[$requestKey] = $payload;
+        return $payload;
+    }
+
+    $tableName = comments_table_name($type);
+    $objectColumn = comments_object_column($type);
+    $parentSelect = (comments_supports_threads($type) ? 'parent_id' : '0 AS parent_id');
+
+    $sql = $db->query(
+        "SELECT id, `{$objectColumn}` AS object_id, id_user, date, text, id_user_edit, date_edit, {$parentSelect},
+                is_deleted, deleted_by, deleted_at, delete_reason
+         FROM `{$tableName}`
+         WHERE `{$objectColumn}` = {$objectId}
+         ORDER BY date ASC, id ASC"
+    );
+
+    $rows = array();
+    $ids = array();
+    $userIds = array();
+    while ($row = $db->get_row($sql)) {
+        $commentId = (int) ($row['id'] ?? 0);
+        $userId = (int) ($row['id_user'] ?? 0);
+        if ($commentId > 0) {
+            $ids[$commentId] = $commentId;
+        }
+        if ($userId > 0) {
+            $userIds[$userId] = $userId;
+        }
+        $rows[] = $row;
+    }
+    $db->free($sql);
+
+    $rows = comments_payload_apply_reaction_summary($rows, comments_reaction_summary_for_ids($type, $ids, $objectId));
+    $payload = array(
+        'rows' => $rows,
+        'ids' => array_values($ids),
+        'user_ids' => array_values($userIds),
+        'pin' => comments_pinned_row($type, $objectId),
+    );
+
+    lt_cache_set($cacheKey, $payload, 120, lt_cache_key_comments_ns());
+    $requestCache[$requestKey] = $payload;
+
+    return $payload;
 }
 
 function comments_fetch_rows($type, $objectId, $limit = '', $desc = 0, $sort = '')
@@ -813,6 +1008,16 @@ function comments_fetch_rows($type, $objectId, $limit = '', $desc = 0, $sort = '
 
     if ($type === '' || $objectId <= 0) {
         return array();
+    }
+
+    if ($limit === '') {
+        $payload = lt_comments_payload($type, $objectId, (int) ($GLOBALS['USER']['id'] ?? 0));
+        return comments_apply_user_reactions(
+            (array) ($payload['rows'] ?? array()),
+            $type,
+            (array) ($payload['ids'] ?? array()),
+            (int) ($GLOBALS['USER']['id'] ?? 0)
+        );
     }
 
     comments_ensure_thread_support($type);
@@ -1444,6 +1649,28 @@ function user_wall_reports_href($status = 'open')
     }
 
     return 'wall_reports.php'.($params ? '?'.http_build_query($params) : '');
+}
+
+function user_wall_reports_open_count()
+{
+    global $db;
+
+    if (!user_wall_reports_can_moderate()) {
+        return 0;
+    }
+
+    $cacheKey = lt_cache_key_admin_open_comment_reports_count();
+    $cached = lt_cache_get($cacheKey, lt_cache_key_user_ns());
+    if ($cached !== false && is_numeric($cached)) {
+        return (int) $cached;
+    }
+
+    user_wall_reports_ensure_table();
+    $row = $db->super_query("SELECT COUNT(*) AS c FROM `" . user_wall_reports_table_name() . "` WHERE status = 'open'");
+    $count = (int) ($row['c'] ?? 0);
+    lt_cache_set($cacheKey, $count, 20, lt_cache_key_user_ns());
+
+    return $count;
 }
 
 function user_wall_fetch_rows($objectId)

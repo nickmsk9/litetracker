@@ -1,5 +1,9 @@
 RewriteEngine On
 
+RewriteRule ^(?:database|docker-data|docker|scripts|tests|system|vendor)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:\.env(?:\..*)?|composer\.(?:json|lock)|package(?:-lock)?\.json|phpunit\.xml|README\.md)$ - [F,L,NC]
+RewriteRule \.(?:sql|log|ini|ya?ml|dist)$ - [F,L,NC]
+
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
