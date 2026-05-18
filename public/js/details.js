@@ -18,7 +18,7 @@
       var href = button.getAttribute('href') || '';
       var endpoint = button.getAttribute('data-bookmark-endpoint') || 'api/bookmarks.php';
       var torrentId = button.getAttribute('data-bookmark-torrent-id') || '';
-      var csrfToken = button.getAttribute('data-bookmark-csrf') || '';
+      var csrfToken = button.getAttribute('data-bookmark-csrf') || (window.LiteTracker && window.LiteTracker.csrfToken) || '';
       var body;
 
       if (!href || button.classList.contains('is-loading')) {

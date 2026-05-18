@@ -335,4 +335,8 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 		</div>
 	</div>
 </div>
+<script>
+window.LiteTracker = window.LiteTracker || {};
+window.LiteTracker.csrfToken = <?=json_encode((string) ($details_bookmark_csrf ?? ''), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);?>;
+</script>
 <script type="text/javascript" src="/public/js/details.js"></script>
