@@ -29,43 +29,6 @@ function tag_module() {
     xhr.send();
 }
 
-//Добавление голоса
-function set_rating(id, type, rate_up, rate_down) {
-    var ratingStatus = document.getElementById("rating_status");
-    var ratingNum = document.getElementById("rating_num");
-    var ratingPlus = document.getElementById("rating_plus");
-    var ratingMinus = document.getElementById("rating_minus");
-
-    var xhr = new XMLHttpRequest();
-    xhr.open(
-        "GET",
-        "ajax/rating.php?act=set&id_torrent=" +
-            encodeURIComponent(id) +
-            "&to=" +
-            encodeURIComponent(type),
-        true,
-    );
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState !== 4) {
-            return;
-        }
-        if (ratingStatus) {
-            ratingStatus.innerHTML = xhr.responseText || "";
-        }
-        if (ratingPlus) {
-            ratingPlus.innerHTML = '<img src="public/images/edit_add.png">';
-        }
-        if (ratingMinus) {
-            ratingMinus.innerHTML = '<img src="public/images/messagebox_critical.png">';
-        }
-        if (ratingNum) {
-            var num = type === "up" ? rate_up - rate_down + 1 : rate_up - rate_down - 1;
-            ratingNum.innerHTML = num;
-        }
-    };
-    xhr.send();
-}
-
 // BBCode toolbar
 (function () {
     function wrapSelection(textarea, open, close) {
