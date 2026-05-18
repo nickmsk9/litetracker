@@ -21,6 +21,7 @@ logs/*
 !logs/.htaccess
 cache/*
 !cache/.gitkeep
+!cache/.htaccess
 system/cache/*.cache
 system/cache/locks/*
 !system/cache/locks/.gitkeep
