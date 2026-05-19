@@ -83,6 +83,27 @@ Path constants и helpers:
 - Используйте `LT_*` константы (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`).
 - Для runtime-путей используйте `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`.
 
+## Root directory policy
+
+- Новые папки в корне запрещены.
+- Новые модули раскладываются только по `app/`, `public/`, `database/`, `storage/`, `docs/`.
+- Legacy-папки остаются временно до Stage 4.
+- Runtime-файлы должны идти только в `storage/*`.
+- `cache/` и `logs/` в корне — только fallback на переходный период.
+
+Разрешённые корневые директории:
+
+- `app`, `public`, `database`, `storage`, `docs`
+- `cache`, `logs`
+- `system`, `templates`, `admin`, `modules`, `languages`, `ajax`, `api`
+- `docker`, `tests`
+
+Проверка структуры:
+
+```bash
+php app/tools/check-project-structure.php
+```
+
 ### Быстрый старт через Docker
 
 Требования:
@@ -124,7 +145,7 @@ HTTP-порт `8094` также опубликован, но Apache перена
 Дополнительно можно пересоздать демонстрационную активность:
 
 ```bash
-docker compose exec php php scripts/seed_demo_activity.php
+docker compose exec php php app/tools/seed_demo_activity.php
 ```
 
 Скрипт создает демо-пользователей и демо-релизы. Пароль для пользователей, созданных этим скриптом:
@@ -142,7 +163,7 @@ npm ci
 npm run build
 ```
 
-Примечание: приложение работает и без предварительной сборки. Если `public/dist/manifest.json` отсутствует, LiteTracker автоматически подключает исходный entrypoint `src/app.js`.
+Примечание: приложение работает и без предварительной сборки. Если `public/dist/manifest.json` отсутствует, LiteTracker автоматически подключает исходный entrypoint `app/frontend/app.js`.
 
 Запуск проекта:
 
@@ -178,7 +199,7 @@ docker compose up -d php
 Экспорт текущей базы в `database/litetracker.sql`:
 
 ```bash
-./scripts/dump-db.sh
+./app/tools/dump-db.sh
 ```
 
 Полная очистка локальной MySQL-базы Docker:
@@ -364,6 +385,27 @@ Path constants and helpers:
 - Use `LT_*` path constants (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`).
 - For runtime paths use `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`.
 
+## Root directory policy
+
+- New root directories are prohibited.
+- New modules must be placed under `app/`, `public/`, `database/`, `storage/`, and `docs/`.
+- Legacy folders remain temporarily until Stage 4.
+- Runtime files should only use `storage/*`.
+- Root-level `cache/` and `logs/` are transition fallback paths only.
+
+Allowed root directories:
+
+- `app`, `public`, `database`, `storage`, `docs`
+- `cache`, `logs`
+- `system`, `templates`, `admin`, `modules`, `languages`, `ajax`, `api`
+- `docker`, `tests`
+
+Structure check:
+
+```bash
+php app/tools/check-project-structure.php
+```
+
 ### Quick Start with Docker
 
 Requirements:
@@ -405,7 +447,7 @@ HTTP port `8094` is also exposed, but Apache redirects HTTP requests to HTTPS. Y
 You can also regenerate demo activity:
 
 ```bash
-docker compose exec php php scripts/seed_demo_activity.php
+docker compose exec php php app/tools/seed_demo_activity.php
 ```
 
 The password for users created by this script is:
@@ -423,7 +465,7 @@ npm ci
 npm run build
 ```
 
-Note: the app also works without a prebuilt bundle. If `public/dist/manifest.json` is missing, LiteTracker automatically falls back to the source entrypoint `src/app.js`.
+Note: the app also works without a prebuilt bundle. If `public/dist/manifest.json` is missing, LiteTracker automatically falls back to the source entrypoint `app/frontend/app.js`.
 
 Start the project:
 
@@ -459,7 +501,7 @@ docker compose up -d php
 Export the current database to `database/litetracker.sql`:
 
 ```bash
-./scripts/dump-db.sh
+./app/tools/dump-db.sh
 ```
 
 Reset the local Docker MySQL data:

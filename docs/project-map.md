@@ -8,6 +8,27 @@
 - `storage/` — runtime-файлы (`logs`, `cache`, `tmp`, `backups`, `uploads`).
 - `docs/` — документация и архивы (`docs/archive`).
 
+## Root directory policy
+
+- Новые директории в корне запрещены.
+- Новые модули размещаются только в `app/`, `public/`, `database/`, `storage/`, `docs/`.
+- Legacy-каталоги в корне оставлены временно до Stage 4.
+- Runtime-файлы размещаются только в `storage/*`.
+- `cache/` и `logs/` в корне — fallback-совместимость на переходный период.
+
+Разрешённые директории в корне:
+
+- `app`, `public`, `database`, `storage`, `docs`
+- `cache`, `logs`
+- `system`, `templates`, `admin`, `modules`, `languages`, `ajax`, `api`
+- `docker`, `tests`
+
+Проверка структуры:
+
+```bash
+php app/tools/check-project-structure.php
+```
+
 ## Path constants и helpers
 
 - Используйте централизованные константы путей:
@@ -24,13 +45,13 @@
 - Классы: `system/classes/*`.
 - Шаблоны: `templates/default/*`.
 - Стили: `templates/default/css/*`, `public/css/*`.
-- Скрипты JS: `public/js/*`, source bundle в `src/app.js`.
+- Скрипты JS: `public/js/*`, source bundle в `app/frontend/app.js`.
 - Изображения: `public/images/*`, `templates/default/images/*`, `public/downloads/images/*`.
 - Миграции/SQL: `database/*`.
 - Кэш: целевой `storage/cache/`, legacy fallback `cache/` (временная совместимость).
 - Логи: целевой `storage/logs/`, legacy fallback `logs/` (временная совместимость).
 - Загрузки: `public/downloads/*`, целевой runtime-контур `storage/uploads/`.
-- Служебные инструменты: `scripts/*` (целевой переезд: `app/tools/` на втором этапе).
+- Служебные инструменты: `app/tools/*`.
 
 ## Куда добавлять новые модули
 

@@ -25,8 +25,8 @@
 | `/templates` | dir | Theme templates/CSS/views | `system/functions/functions.php`, root pages | needs manual review | high | Глубокая связка с legacy путями `templates/...`. |
 | `/modules` | dir | Shop/releases modules | `shop.php`, `my.releases.php` | needs manual review | high | Путь захардкожен в runtime. |
 | `/languages` | dir | Localization packs | `system/init.php`, `system/init.announce.php` | needs manual review | high | Путь строится через `$_SERVER['DOCUMENT_ROOT']/languages/...`. |
-| `/scripts` | dir | CLI maintenance/seeding scripts | README, operators, cron/manual runs | move to app | medium | Безопасно только во 2 этапе с обновлением README/ops скриптов и shim. |
-| `/src` | dir | Vite source entry (`src/app.js`) | `vite.config.js`, npm build | needs manual review | medium | Можно переехать в `app/frontend` только вместе с Vite config. |
+| `/app/tools` | dir | CLI maintenance/seeding scripts | README, operators, pre-commit hook, cron/manual runs | keep | low | Stage 3: перенесено из legacy `/scripts`. |
+| `/app/frontend` | dir | Vite source entry (`app/frontend/app.js`) | `vite.config.js`, npm build, PHP fallback asset URL | keep | low | Stage 3: перенесено из legacy `/src`. |
 | `/docker` | dir | Apache vhosts/start scripts/logrotate config | Dockerfile `COPY docker/...` | keep | high | Перенос сломает Docker build без одновременной правки Dockerfile. |
 | `/tests` | dir | PHPUnit tests | `phpunit.xml`, composer autoload-dev | keep | low | Используется тестовой инфраструктурой. |
 | `/cache` | dir | Legacy runtime filecache | `system/config/config.php`, admin diagnostics | needs manual review | high | Подготовить controlled switch на `storage/cache` + fallback. |
@@ -75,9 +75,40 @@
 | `templates/` | `app/templates/` | template resolver compatibility layer | high | Много жестких путей `templates/...`. |
 | `modules/` | `app/modules/` | module include resolver | high | Используется shop/releases runtime include. |
 | `languages/` | `app/languages/` | language-path adapter in init | high | Сейчас путь строится через DOCUMENT_ROOT. |
-| `scripts/` | `app/tools/` | CLI wrapper scripts and README updates | medium | Важно не сломать операционные команды. |
-| `src/` | `app/frontend/` | Vite config path update | medium | Требуется синхронный апдейт build-конфига. |
+| `scripts/` | `app/tools/` | CLI wrapper scripts and README updates | low | Stage 3: выполнено. |
+| `src/` | `app/frontend/` | Vite config path update | low | Stage 3: выполнено. |
 | `docker/` | `docs/docker/` или `infra/docker/` | Dockerfile COPY path migration | high | Сейчас Dockerfile ожидает `docker/...` в корне. |
 | `tests/` | `app/tests/` или `docs/archive/tests/` (если не используется) | phpunit config update | medium | Не удалять/не переносить без подтверждения use-case. |
 | `cache/` | `storage/cache/` | runtime fallback helper to legacy cache | medium | Stage 2: уже включён storage-first fallback. |
 | `logs/` | `storage/logs/` | runtime fallback helper to legacy logs | medium | Stage 2: уже включён storage-first fallback. |
+
+## Root directory policy
+
+- Новые папки в корне запрещены.
+- Новые модули и компоненты должны размещаться в `app/`, `public/`, `database/`, `storage/`, `docs/`.
+- Legacy-папки в корне остаются только как временная совместимость до Stage 4.
+- Runtime-файлы должны использовать `storage/*`; `cache/` и `logs/` в корне — fallback.
+- Проверка выполняется командой:
+
+```bash
+php app/tools/check-project-structure.php
+```
+
+Разрешённые корневые директории:
+
+- `app`, `public`, `database`, `storage`, `docs`
+- `cache`, `logs`
+- `system`, `templates`, `admin`, `modules`, `languages`, `ajax`, `api`
+- `docker`, `tests`
+
+## Stage 4 candidates (high-risk, wrappers required first)
+
+- `system/` -> `app/system/`
+- `templates/` -> `app/templates/`
+- `admin/` -> `app/admin/`
+- `modules/` -> `app/modules/`
+- `languages/` -> `app/languages/`
+- `ajax/` -> `app/api/ajax/`
+- `api/` -> `app/api/`
+- `docker/` -> `docs/docker/` или `infra/docker/` (только вместе с обновлением Dockerfile)
+- `tests/` -> `app/tests/` (только после подтверждения CI/tooling-сценариев)

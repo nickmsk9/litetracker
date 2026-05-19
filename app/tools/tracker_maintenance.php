@@ -1,8 +1,8 @@
 <?php
 #!/usr/bin/env php
 
-define('DIRNAME', str_replace('\\', '/', dirname(__FILE__)));
-require DIRNAME.'/../system/init.autoclean.php';
+$rootDir = str_replace('\\', '/', dirname(__DIR__, 2));
+require $rootDir.'/system/init.autoclean.php';
 
 if (PHP_SAPI !== 'cli') {
 	header('HTTP/1.1 403 Forbidden');
@@ -230,7 +230,7 @@ function tm_recount_stats($limit, $torrentId, $dryRun)
 
 $mode = trim((string) ($argv[1] ?? ''));
 if (!in_array($mode, array('cleanup-peers', 'recount-stats', 'all'), true)) {
-	tm_stdout('Usage: php scripts/tracker_maintenance.php <cleanup-peers|recount-stats|all> [--limit=500] [--older-than=1800] [--torrent=ID] [--dry-run]');
+	tm_stdout('Usage: php app/tools/tracker_maintenance.php <cleanup-peers|recount-stats|all> [--limit=500] [--older-than=1800] [--torrent=ID] [--dry-run]');
 	exit(2);
 }
 

@@ -5,10 +5,10 @@ if (PHP_SAPI !== 'cli') {
 	exit(1);
 }
 
-$rootDir = dirname(__DIR__);
+$rootDir = dirname(__DIR__, 2);
 $_SERVER['DOCUMENT_ROOT'] = $rootDir;
 $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-$_SERVER['REQUEST_URI'] = $_SERVER['REQUEST_URI'] ?? '/scripts/seed_demo_activity.php';
+$_SERVER['REQUEST_URI'] = $_SERVER['REQUEST_URI'] ?? '/app/tools/seed_demo_activity.php';
 
 require $rootDir.'/system/init.php';
 
