@@ -1074,9 +1074,11 @@ function emu_getallheaders() {
 	return $headers;
 }
 
+if (!function_exists('err')) {
 function err($msg){
 	announce_failure_response($msg);
 	die();
+}
 }
 
 

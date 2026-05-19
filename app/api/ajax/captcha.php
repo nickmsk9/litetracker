@@ -1,4 +1,5 @@
 <?php
+require_once LT_SYSTEM_PATH . '/functions/functions.recaptchalib.php';
 header('Content-Type: application/json; charset=' . $language['charset']);
 
 if (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') !== 'XMLHttpRequest') {

@@ -48,7 +48,6 @@ require __DIR__ . '/config/config.mysql.php';
 //Подключаем главный функционал
 require __DIR__ . '/functions/functions.php';
 require __DIR__ . '/functions/functions.http.php';
-require __DIR__ . '/functions/functions.upload.php';
 require __DIR__ . '/functions/functions.metadata.php';
 
 // Канонические helpers/services
@@ -74,23 +73,16 @@ require __DIR__ . '/functions/functions.htmLawed.php';
 //Подключаем класс ipcheck
 require __DIR__ . '/classes/class.ipcheck.php';
 
-//Функционал комментирования
-require __DIR__ . '/functions/functions.comments.php';
-
-//Функционал уведомлений
-require __DIR__ . '/functions/functions.notifications.php';
-
 //Журнал действий модераторов
-require __DIR__ . '/functions/functions.moderation_log.php';
+// Загружается лениво из функций модерации.
 
 //Admin helper functions (audit log, settings, permissions)
-require __DIR__ . '/functions/functions.admin.php';
+// Загружается лениво только для admin modules.
 
 //Статусы и модерация раздач
 require __DIR__ . '/functions/functions.torrent_status.php';
 
-//CAPTCHA
-require __DIR__ . '/functions/functions.recaptchalib.php';
+//CAPTCHA загружается лениво только на login/signup/download/ajax captcha.
 
 //Подключаем класс db
 require __DIR__ . '/classes/class.db.php';

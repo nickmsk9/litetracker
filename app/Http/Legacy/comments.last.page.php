@@ -10,6 +10,7 @@ by Nick
 */
 
 require dirname(__DIR__, 3) . '/app/system/init.php';
+require_once dirname(__DIR__, 2) . '/system/functions/functions.comments.php';
 is_login();
 
 $res = $db->query("SELECT COUNT(*) AS cnt FROM comments_torrents");

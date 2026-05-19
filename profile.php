@@ -10,6 +10,7 @@ by Nick
 */
 
 require __DIR__ . '/app/system/init.php';
+require_once __DIR__ . '/app/system/functions/functions.comments.php';
 
 if (!empty($USER) && !$PRIV['profile_view']) {
 	err($language['default_1'], $language['profile_20'], 1);

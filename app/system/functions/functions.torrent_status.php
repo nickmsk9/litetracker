@@ -301,6 +301,10 @@ function lt_torrent_set_status($torrentId, $status, $moderatorId, $reason = '')
 	$db->query("UPDATE torrents SET ".implode(', ', $fields)." WHERE id = ".$torrentId, 0);
 	lt_torrent_sync_legacy_checked($torrentId, $status);
 
+	if ($moderatorId > 0 && !function_exists('lt_moderation_log')) {
+		require_once __DIR__.'/functions.moderation_log.php';
+	}
+
 	if ($moderatorId > 0 && function_exists('lt_moderation_log')) {
 		$logAction = 'torrent_'.$status;
 		if ($status === 'approved') {

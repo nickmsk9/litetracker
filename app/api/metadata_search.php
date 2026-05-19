@@ -7,6 +7,8 @@ LiteTracker Source
 ===================================================================
 */
 
+require_once LT_SYSTEM_PATH . '/functions/functions.upload.php';
+
 api_require_post();
 api_require_login();
 api_require_csrf('metadata_search');

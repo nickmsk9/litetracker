@@ -11,6 +11,7 @@ by Nick
 
 require __DIR__ . '/app/system/init.php';
 require __DIR__ . '/app/system/functions/functions.benc.php';
+require_once __DIR__ . '/app/system/functions/functions.upload.php';
 require_once __DIR__ . '/app/helpers/UploadAssetHelper.php';
 
 function lt_edit_redirect_to_details($id)

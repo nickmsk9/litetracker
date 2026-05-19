@@ -11,6 +11,7 @@ by Nick
 
 //Подключаем главный системный файл
 require __DIR__ . '/app/system/init.php';
+require_once __DIR__ . '/app/system/functions/functions.comments.php';
 
 $act = (string) ($_GET['act'] ?? '');
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;

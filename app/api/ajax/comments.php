@@ -1,4 +1,7 @@
 <?php
+require_once LT_SYSTEM_PATH . '/functions/functions.comments.php';
+require_once LT_SYSTEM_PATH . '/functions/functions.notifications.php';
+require_once LT_APP_PATH . '/core/comments.php';
 /*
 ===================================================================
 LiteTracker Source
@@ -19,7 +22,7 @@ function ajax_cm_response($ok, $message = '', $extra = array())
 }
 
 $action   = preg_replace('~[^a-z_]~', '', trim((string)($_REQUEST['action'] ?? $_REQUEST['act'] ?? '')));
-$type     = preg_replace('~[^a-z0-9_]~i', '', trim((string)($_REQUEST['type'] ?? '')));
+$type     = comments_allowed_type($_REQUEST['type'] ?? '');
 $objectId = (int)($_REQUEST['object_id'] ?? 0);
 $file     = trim((string)($_REQUEST['file'] ?? ''));
 

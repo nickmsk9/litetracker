@@ -10,6 +10,7 @@ by Nick
 */
 
 require __DIR__ . '/app/system/init.php';
+require_once __DIR__ . '/app/system/functions/functions.upload.php';
 require_once __DIR__ . '/app/core/http.php';
 require_once __DIR__ . '/app/core/browse.php';
 

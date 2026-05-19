@@ -46,14 +46,6 @@ if (!function_exists('err')) {
     }
 }
 
-// Stub for functions that need mksize() (image size formatting)
-if (!function_exists('mksize')) {
-    function mksize(int $bytes): string
-    {
-        return $bytes . 'B';
-    }
-}
-
 // ---------------------------------------------------------------------------
 // Load pure function files — no DB access on load
 // ---------------------------------------------------------------------------
@@ -137,6 +129,6 @@ if (!function_exists('validusername')) {
 if (!function_exists('validemail')) {
     function validemail(string $email): bool
     {
-        return (bool) preg_match('/^[\w.-]+@([\w.-]+\.)+[a-z]{2,6}$/is', $email);
+        return (bool) preg_match('/^[\w.+-]+@([\w.-]+\.)+[a-z]{2,6}$/is', $email);
     }
 }

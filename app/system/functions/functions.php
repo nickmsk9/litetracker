@@ -599,7 +599,7 @@ function admin_dashboard_can_access($user = null, $priv = null)
 		}
 	}
 
-	return user_wall_reports_can_moderate();
+	return (function_exists('user_wall_reports_can_moderate') && user_wall_reports_can_moderate());
 }
 // Resolves a Vite entry-point to a hashed output URL.
 // Falls back to the source path if the manifest doesn't exist yet.
@@ -1236,7 +1236,7 @@ function validusername($username)
 
 //Функция проверки email
 function validemail($email) {
-    return preg_match('/^[\w.-]+@([\w.-]+\.)+[a-z]{2,6}$/is', $email);
+    return preg_match('/^[\w.+-]+@([\w.-]+\.)+[a-z]{2,6}$/is', $email);
 }
 
 //Функция проверки файла

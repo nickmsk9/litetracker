@@ -11,6 +11,7 @@ by Nick
 
 //Подключаем главный системный файл
 require __DIR__ . '/app/system/init.php';
+require_once __DIR__ . '/app/system/functions/functions.recaptchalib.php';
 require __DIR__ . '/app/system/functions/functions.benc.php';
 
 function download_content_disposition_filename($filename, $fallbackId)

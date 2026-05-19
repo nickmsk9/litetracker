@@ -4,6 +4,7 @@
 */
 
 require __DIR__ . '/app/system/init.php';
+require_once __DIR__ . '/app/system/functions/functions.upload.php';
 is_login();
 
 $GLOBALS['LITETRACKER_HIDE_TOP_BLOCKS'] = true;

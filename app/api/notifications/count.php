@@ -1,4 +1,5 @@
 <?php
+require_once LT_SYSTEM_PATH . '/functions/functions.notifications.php';
 /*
 ===================================================================
 LiteTracker Source

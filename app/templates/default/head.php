@@ -34,9 +34,9 @@ if ($USER) {
         array('href' => 'exit.php', 'label' => 'Выход', 'icon' => 'logout'),
     );
 
-    if (user_wall_reports_can_moderate()) {
+    if (!empty($PRIV['comments_edit']) || !empty($PRIV['comments_delete']) || !empty($PRIV['setting_user'])) {
         array_splice($userMenu, 4, 0, array(
-            array('href' => user_wall_reports_href(), 'label' => 'Жалобы', 'icon' => 'reports'),
+            array('href' => 'wall_reports.php', 'label' => 'Жалобы', 'icon' => 'reports'),
         ));
     }
 }

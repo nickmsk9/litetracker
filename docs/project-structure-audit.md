@@ -462,3 +462,61 @@ Upload/edit manual checklist:
 2. Reduce `functions.comments.php` by moving only truly shared, non-rendering mutation helpers into existing `app/core/comments.php`.
 3. Consider lazy-loading `functions.notifications.php` only after confirming header/chrome dependencies can be isolated safely.
 4. Audit `functions.upload.php` because it still mixes metadata schema, card rendering, description templates, and upload-specific helpers.
+
+## Stage 11 Hot Path Lazy Load Pass
+
+Goal: unload the most frequent requests without adding folders or deleting behavior. This pass keeps old URLs and moves heavy helper files out of the common bootstrap only where the dependency is explicit and easy to verify.
+
+### Metrics
+
+| Metric | Before pass | After pass | Delta |
+|--------|-------------|------------|-------|
+| PHP files | 166 | 166 | 0 |
+| PHP lines | 39819 | 39845 | +26 |
+| `app/system/init.php` include count | 29 | 23 | -6 |
+| Full PHPUnit | blocked by `err()` redeclare | OK, 62 tests / 89 assertions | fixed |
+| Browse smoke | OK | OK, 6 tests / 16 assertions | preserved |
+
+Line count increased slightly because lazy dependencies are now declared in the concrete entrypoints that use them. Common bootstrap cost dropped without creating new files.
+
+### `init.php` include categories
+
+| Category | Includes / dependencies | Current status |
+|----------|-------------------------|----------------|
+| Always needed | config, version, mysql config, `functions.php`, `functions.http.php`, `functions.metadata.php`, formatting/user helpers, cache keys/invalidation, DB, mailer, rewrite, cache bootstrap | still in `init.php` |
+| Web UI | themes, tags, TextBB, htmLawed, IP check, template chrome | still in `init.php`; candidate for a later web/API split |
+| Upload/edit/browse/details | `functions.upload.php`, `functions.benc.php`, `UploadAssetHelper.php` | lazy-loaded by `browse.php`, `index.php`, `details.php`, `my.book.php`, `upload.php`, `edit.php`, metadata tooling |
+| Comments | `functions.comments.php`, `app/core/comments.php`, `app/core/http.php` for redirects | lazy-loaded by comment pages/actions and comment ajax |
+| Notifications | `functions.notifications.php` | lazy-loaded by notification pages/API, profile ajax, mail page, and comment mutations |
+| Admin | `functions.admin.php`, `functions.moderation_log.php` | lazy-loaded by `admin.php`; moderation log is also required on demand from torrent status changes |
+| CAPTCHA | `functions.recaptchalib.php` | lazy-loaded by login/signup/download/ajax captcha |
+| Announce | `init.announce.php`, `functions.announce.php`, bencode/announce-only response helpers | already separate from web init |
+
+### Hot paths made lighter
+
+- Ordinary web bootstrap no longer loads upload metadata/template/card helpers.
+- Ordinary web bootstrap no longer loads comments, notifications, admin helpers, moderation log, or CAPTCHA.
+- `browse.php` explicitly loads upload helpers because browse cards and facets need torrent metadata helpers, but it no longer inherits comments/admin/CAPTCHA.
+- `details.php` loads only the release dependencies it actually renders: upload metadata, comments, details helpers.
+- Ajax endpoints now load only their narrow dependencies: comments ajax loads comments + notifications; captcha ajax loads CAPTCHA; profile ajax loads notifications.
+- Announce remains isolated through its existing announce bootstrap, and the PHPUnit `err()` conflict is fixed with a guarded `err()` definition in `functions.announce.php`.
+
+### Comments cleanup
+
+- `comments.take.php` and `app/api/ajax/comments.php` share the existing `app/core/comments.php` allowlist/route helpers.
+- Ajax comment type parsing now uses `comments_allowed_type()` instead of local regex-only filtering.
+- No new comment controller/service/action files were added.
+
+### Remaining risks
+
+- `functions.upload.php` is still a mixed file: metadata schema, description templates, card preparation, and upload validation live together. Splitting it would need to replace enough old code to justify a new compact file.
+- Web UI and API still share much of `init.php`; a later split can remove theme/TextBB/template work from API routes.
+- Comment mutation smoke is still mostly lint/test-bootstrap coverage unless a DB-backed authenticated fixture is added.
+- `functions.comments.php` remains large and includes rendering plus mutation helpers.
+
+### Stage 12 recommendation
+
+1. Split API bootstrap only if it removes theme/TextBB/template includes from multiple API requests without adding wrapper churn.
+2. Continue reducing `functions.upload.php` by deleting duplicates first, not by creating a service tree.
+3. Add DB-backed comments smoke fixtures for add/edit/delete/report before deeper comment refactors.
+4. Profile browse/details under sample load to confirm the lazy-load savings before changing more bootstrap paths.
