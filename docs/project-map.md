@@ -13,10 +13,11 @@
 - Новые директории в корне запрещены.
 - Новые модули размещаются только в `app/`, `public/`, `database/`, `storage/`, `docs/`.
 - Низкорисковые dev/tooling переносы Stage 4 завершены: `scripts/` -> `app/tools/`, `src/` -> `app/frontend/`.
-- High-risk legacy-каталоги в корне остаются до отдельного этапа с compatibility wrappers/shims.
+- High-risk legacy-каталоги в корне: `system/`, `templates/`.
 - Runtime-файлы размещаются только в `storage/*`.
 - `cache/` и `logs/` в корне — fallback-совместимость на переходный период.
 - `api/` и `ajax/` в корне — только thin compatibility wrappers.
+- `modules/` и `languages/` в корне — только thin compatibility wrappers (основной код перенесён в `app/`).
 
 Разрешённые директории в корне:
 
@@ -33,9 +34,9 @@ php app/tools/check-project-structure.php
 ## Path constants и helpers
 
 - Используйте централизованные константы путей:
-  - `LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`.
+  - `LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`, `LT_MODULES_PATH`, `LT_LANGUAGES_PATH`.
 - Для runtime-путей используйте helper-функции:
-  - `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`.
+  - `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`, `lt_modules_path()`, `lt_languages_path()`.
 
 ## Где искать
 
@@ -43,6 +44,8 @@ php app/tools/check-project-structure.php
 - Публичные страницы: корневые `*.php` entrypoints (`index.php`, `browse.php`, `details.php`, ...).
 - API логика: `app/api/*`, legacy URL-обёртки: `api/*`.
 - AJAX логика: `app/api/ajax/*`, legacy URL-обёртки: `ajax/*`.
+- Языки: `app/languages/*` (root `languages/*` — только wrappers).
+- Legacy modules: `app/modules/*` (root `modules/*` — только wrappers).
 - Функции: `system/functions/*`.
 - Классы: `system/classes/*`.
 - Шаблоны: `templates/default/*`.
@@ -70,5 +73,13 @@ php app/tools/check-project-structure.php
 - `database/migrations/shop.sql` — миграция.
 
 Важно: не создавать новую папку `shop/` в корне проекта без крайней необходимости.
+Важно: новые модули нельзя добавлять в root `modules/`; размещайте их в `app/modules/` или соответствующих `app/*` слоях.
 
 Дополнительно: новые runtime-файлы должны использовать `storage/*` через `LT_*` константы и path helpers, а не прямые хрупкие относительные пути.
+
+## Stage 6A languages/modules migration
+
+| Current path | Target path | Action | Compatibility | Risk | Result |
+|-------------|-------------|--------|---------------|------|--------|
+| `languages/` | `app/languages/` | moved language packs and switched runtime access to `LT_LANGUAGES_PATH`/`lt_languages_path()` | root `languages/` kept as thin wrapper for legacy direct includes | medium | done |
+| `modules/` | `app/modules/` | moved shop/releases modules and switched runtime includes to `LT_MODULES_PATH`/`lt_modules_path()` | root `modules/` kept as thin wrappers for legacy includes | medium | done |

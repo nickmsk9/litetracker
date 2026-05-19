@@ -2148,7 +2148,11 @@ function get_list_dir($dir , $nameSelect = "" , $elemSelected = "" ) {
 
 //Получение массива языков
 function get_languages() {
-	$open = opendir($_SERVER['DOCUMENT_ROOT'].'/languages');
+	$languagesPath = lt_languages_path();
+	$open = @opendir($languagesPath);
+	if (!$open) {
+		return array();
+	}
 	$array = array();
 	while ($file = readdir($open)) {
 		if (is_language($file) && $file != "." && $file != "..") {
@@ -2186,7 +2190,8 @@ function get_select_language() {
 
 //Проверка языка
 function is_language($language = "") {
-	return file_exists($_SERVER['DOCUMENT_ROOT']."/languages/$language/site.php");
+	$languageFile = lt_languages_path($language.'/site.php');
+	return ($languageFile !== '' && file_exists($languageFile));
 }
 //Получение списка классов
 function get_classes_list() {

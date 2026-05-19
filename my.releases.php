@@ -92,7 +92,11 @@ if($db->num_rows($sql) > 0) {
 		<?php
 	while($arr = $db->get_row($sql) ) {
 
-		require 'modules/releases.arr.php';
+		$releaseModuleFile = lt_modules_path('releases.arr.php');
+		if ($releaseModuleFile === '' || !file_exists($releaseModuleFile)) {
+			err($language['default_1'], 'Модуль списка релизов не найден', 1);
+		}
+		require $releaseModuleFile;
 	}
 
 	echo '</table>';

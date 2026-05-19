@@ -116,8 +116,9 @@
 
 - Новые папки в корне запрещены.
 - Новые модули и компоненты должны размещаться в `app/`, `public/`, `database/`, `storage/`, `docs/`.
-- Legacy-папки в корне остаются как временная совместимость до отдельного high-risk этапа с wrappers/shims.
+- Legacy-папки в корне остаются как временная совместимость; high-risk для следующего этапа: `system/`, `templates/`.
 - Runtime-файлы должны использовать `storage/*`; `cache/` и `logs/` в корне — fallback.
+- `modules/` и `languages/` в корне оставлены только как thin wrappers/fallback.
 - Проверка выполняется командой:
 
 ```bash
@@ -134,8 +135,6 @@ php app/tools/check-project-structure.php
 
 - `system/` -> `app/system/`
 - `templates/` -> `app/templates/`
-- `modules/` -> `app/modules/`
-- `languages/` -> `app/languages/`
 
 ## Stage 5 medium-risk root cleanup
 
@@ -152,3 +151,16 @@ php app/tools/check-project-structure.php
 | `templates/` | `app/templates/` | not moved in this stage | none | high | deferred to Stage 6 |
 | `modules/` | `app/modules/` | not moved in this stage | none | high | deferred to Stage 6 |
 | `languages/` | `app/languages/` | not moved in this stage | none | high | deferred to Stage 6 |
+
+## Stage 6A languages/modules migration
+
+| Current path | Target path | Action | Compatibility | Risk | Result |
+|-------------|-------------|--------|---------------|------|--------|
+| `languages/` | `app/languages/` | moved language packs; switched `system/init.php`, `system/init.announce.php`, `system/functions/functions.php` to `LT_LANGUAGES_PATH`/`lt_languages_path()` | root `languages/` kept as thin wrapper (`languages/Russian/site.php` -> `app/languages/Russian/site.php`) | medium | done |
+| `modules/` | `app/modules/` | moved releases/shop modules; switched `shop.php` and `my.releases.php` to `LT_MODULES_PATH`/`lt_modules_path()` | root `modules/` kept as thin wrappers (`modules/*` -> `app/modules/*`) | medium | done |
+
+Wrapper rationale:
+
+- Root `languages/` и `modules/` оставлены временно из-за legacy direct include patterns и для безопасной обратной совместимости.
+- Бизнес-логика и реальные файлы теперь находятся в `app/languages/` и `app/modules/`.
+- Структурный guard помечает `languages` и `modules` как `Legacy wrappers (временная совместимость)`.

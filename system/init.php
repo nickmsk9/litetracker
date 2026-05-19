@@ -161,7 +161,11 @@ if(!is_language($language) ) {
 	die('Language system error. Please clear cookie');
 }
 
-require $_SERVER['DOCUMENT_ROOT'].'/languages/'.$language.'/site.php';
+$languageFile = lt_languages_path($language.'/site.php');
+if ($languageFile === '' || !file_exists($languageFile)) {
+	die('Language system error. Missing language file');
+}
+require $languageFile;
 
 //Отправка заголовков
 header("Content-Type: text/html; charset=".$language['charset']."");

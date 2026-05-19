@@ -25,6 +25,10 @@ defined('LT_SYSTEM_PATH') || define('LT_SYSTEM_PATH', LT_ROOT_PATH.'/system');
 defined('LT_TEMPLATES_PATH') || define('LT_TEMPLATES_PATH', LT_ROOT_PATH.'/templates');
 defined('LT_ADMIN_PATH') || define('LT_ADMIN_PATH', LT_APP_PATH.'/admin');
 defined('LT_API_PATH') || define('LT_API_PATH', LT_APP_PATH.'/api');
+defined('LT_MODULES_PATH') || define('LT_MODULES_PATH', LT_APP_PATH.'/modules');
+defined('LT_LANGUAGES_PATH') || define('LT_LANGUAGES_PATH', LT_APP_PATH.'/languages');
+defined('LT_LEGACY_MODULES_PATH') || define('LT_LEGACY_MODULES_PATH', LT_ROOT_PATH.'/modules');
+defined('LT_LEGACY_LANGUAGES_PATH') || define('LT_LEGACY_LANGUAGES_PATH', LT_ROOT_PATH.'/languages');
 
 if (!function_exists('lt_path_normalize')) {
 	function lt_path_normalize($path)
@@ -140,6 +144,12 @@ if (!function_exists('lt_path')) {
 			case 'api':
 				$base = LT_API_PATH;
 				break;
+			case 'modules':
+				$base = LT_MODULES_PATH;
+				break;
+			case 'languages':
+				$base = LT_LANGUAGES_PATH;
+				break;
 			case 'cache':
 				$base = lt_runtime_pick_path(LT_STORAGE_PATH.'/cache', LT_ROOT_PATH.'/cache');
 				break;
@@ -161,6 +171,60 @@ if (!function_exists('lt_path')) {
 		}
 
 		return $base.'/'.$safeRelative;
+	}
+}
+
+if (!function_exists('lt_modules_path')) {
+	function lt_modules_path($relative = '')
+	{
+		$safeRelative = lt_path_safe_relative($relative);
+		if ((string) $relative !== '' && $safeRelative === '') {
+			return '';
+		}
+
+		$preferred = lt_path_normalize(LT_MODULES_PATH);
+		$legacy = lt_path_normalize(LT_LEGACY_MODULES_PATH);
+		$suffix = ($safeRelative !== '' ? '/'.$safeRelative : '');
+		$preferredPath = $preferred.$suffix;
+		if ($safeRelative === '') {
+			if (is_dir($preferredPath)) {
+				return $preferredPath;
+			}
+			return $legacy;
+		}
+
+		if (file_exists($preferredPath)) {
+			return $preferredPath;
+		}
+
+		return $legacy.$suffix;
+	}
+}
+
+if (!function_exists('lt_languages_path')) {
+	function lt_languages_path($relative = '')
+	{
+		$safeRelative = lt_path_safe_relative($relative);
+		if ((string) $relative !== '' && $safeRelative === '') {
+			return '';
+		}
+
+		$preferred = lt_path_normalize(LT_LANGUAGES_PATH);
+		$legacy = lt_path_normalize(LT_LEGACY_LANGUAGES_PATH);
+		$suffix = ($safeRelative !== '' ? '/'.$safeRelative : '');
+		$preferredPath = $preferred.$suffix;
+		if ($safeRelative === '') {
+			if (is_dir($preferredPath)) {
+				return $preferredPath;
+			}
+			return $legacy;
+		}
+
+		if (file_exists($preferredPath)) {
+			return $preferredPath;
+		}
+
+		return $legacy.$suffix;
 	}
 }
 
