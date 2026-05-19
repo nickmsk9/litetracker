@@ -361,3 +361,104 @@ Goal: reduce Stage 9 file/folder fan-out without removing behavior or breaking l
 2. Move only the reusable pure parts of `upload.php` and `edit.php` into compact files such as `app/core/upload.php` and `app/core/edit.php`.
 3. Consolidate legacy comments mutation code into `app/core/comments.php` only if it reduces `comments.take.php` without creating per-action files.
 4. Fix the shared PHPUnit bootstrap conflict before expanding test coverage for comments actions.
+
+## Stage 11 Code Diet & Runtime Hot Path Reduction
+
+Goal: remove wrappers and duplicate helper paths, reduce common bootstrap includes, and keep compact-core direction without adding new files.
+
+### Metrics
+
+| Metric | Before Stage 11 | After Stage 11 | Delta |
+|--------|-----------------|----------------|-------|
+| PHP files | 169 | 166 | -3 |
+| PHP lines | 39943 | 39819 | -124 |
+| Common `init.php` compact-core includes | `core/http.php`, `core/comments.php`, `core/browse.php` | none | -3 common includes |
+| Common `init.php` service-wrapper includes | `CommentService.php`, `TorrentDescriptionService.php`, `TorrentMetadataService.php` | none | -3 common includes |
+| Common `init.php` upload asset helper include | `UploadAssetHelper.php` | lazy in `upload.php`/`edit.php` | -1 common include |
+| `comments.take.php` lines | 296 | 269 | -27 |
+
+### Top 20 PHP files after Stage 11
+
+| Rank | File | Lines |
+|------|------|-------|
+| 1 | `app/system/functions/functions.php` | 2220 |
+| 2 | `app/system/functions/functions.comments.php` | 1714 |
+| 3 | `admin.php` | 1406 |
+| 4 | `app/system/functions/functions.details.php` | 1231 |
+| 5 | `my.mail.php` | 1175 |
+| 6 | `app/system/functions/functions.announce.php` | 1123 |
+| 7 | `app/system/functions/functions.upload.php` | 1084 |
+| 8 | `app/core/browse.php` | 870 |
+| 9 | `app/system/functions/functions.benc.php` | 787 |
+| 10 | `app/tests/announce/announce_smoke.php` | 786 |
+| 11 | `app/admin/modules/users_manage.php` | 754 |
+| 12 | `edit_priv.php` | 741 |
+| 13 | `app/system/functions/functions.htmLawed.php` | 711 |
+| 14 | `edit.php` | 671 |
+| 15 | `app/system/functions/functions.notifications.php` | 668 |
+| 16 | `upload.php` | 629 |
+| 17 | `app/tools/seed_demo_activity.php` | 618 |
+| 18 | `index.php` | 545 |
+| 19 | `app/api/ajax/comments.php` | 543 |
+| 20 | `app/system/functions/functions.metadata.php` | 521 |
+
+### Duplicate/deprecated cleanup
+
+| Removed/replaced | Previous role | Replacement | Result |
+|------------------|---------------|-------------|--------|
+| `app/Services/CommentService.php` | thin wrappers over comment helpers | direct calls to existing comment helpers | deleted |
+| `app/Services/TorrentDescriptionService.php` | thin wrappers over `TorrentDescriptionHelper.php` | direct helper calls | deleted |
+| `app/Services/TorrentMetadataService.php` | thin wrapper over metadata helper | direct helper call | deleted |
+| `lt_details_label_key()` | deprecated details wrapper | `lt_format_label_key()` | removed |
+| `lt_details_format_date_label()` | deprecated details wrapper | `lt_format_date_label()` | removed |
+| `lt_details_render_text_html()` | deprecated details wrapper | `lt_format_comment_html()` | removed |
+| `lt_details_parse_description()` | deprecated details wrapper | `lt_torrent_description_parse_sections()` | removed |
+| `lt_torrent_format_date_label()` | deprecated torrent-card wrapper | `lt_format_date_label()` | removed |
+| `lt_torrent_render_text_html()` | deprecated torrent-card wrapper | `lt_format_comment_html()` | removed |
+| commented-out duplicate `msg()` block | dead code in `functions.php` | active `msg()` only | removed |
+
+Function duplicate scan across `functions.php`, `functions.common.php`, `functions.comments.php`, `app/core/comments.php`, `upload.php`, `edit.php`, `details.php` found no duplicate active function names after cleanup.
+
+### Hot paths made lighter
+
+- Generic web bootstrap no longer loads browse core. Only `browse.php` requires `app/core/http.php` and `app/core/browse.php`.
+- Generic web bootstrap no longer loads comment compact routing. Only `comments.take.php` requires `app/core/http.php` and `app/core/comments.php`.
+- Generic web bootstrap no longer loads `UploadAssetHelper.php`; `upload.php` and `edit.php` require it directly because they are the only runtime users.
+- Thin service-wrapper files were deleted and their common-bootstrap includes removed.
+
+### Wrapper review
+
+| Wrapper area | Current state | Stage 11 decision | Risk |
+|--------------|---------------|-------------------|------|
+| `public/api/*.php` | small compatibility wrappers to `app/api/*.php` | keep; old public URLs depend on one file per endpoint | low |
+| `public/api/notifications/*.php` | repeated wrapper pattern | keep for URL compatibility; candidate for web-server rewrite later | low |
+| `public/ajax/*.php` | repeated wrapper pattern | keep for URL compatibility | low |
+| root `system/` wrappers | legacy direct include compatibility | keep; structure guard expects wrappers | medium |
+| root `modules/`/`languages/` wrappers | legacy compatibility, currently absent as real dirs in working tree but allowed by guard | keep policy, no new files | low |
+
+No generic wrapper file was added in Stage 11 because it would add an extra include per request and would not reduce old URL entrypoint count without web-server rewrite rules.
+
+### Upload/Edit note
+
+No `app/core/torrent_form.php` was created. The shared upload/edit image helpers already live in `UploadAssetHelper.php`, and Stage 11 made that helper lazy-loaded instead of adding another file. Remaining shared form/description helpers are already in `TorrentDescriptionHelper.php` and `functions.upload.php`.
+
+### Verification
+
+- `php -l` over all non-vendor, non-docker-data PHP files: OK.
+- Browse smoke: `vendor/bin/phpunit --no-configuration app/tests/BrowseServiceTest.php` OK, 6 tests / 16 assertions.
+- Structure guard: `php app/tools/check-project-structure.php` OK.
+- Full `vendor/bin/phpunit` still fails on the pre-existing `err()` redeclare between `app/tests/bootstrap.php` and `functions.announce.php`.
+
+Comments smoke status: add/edit/delete/report code paths were linted and compacted around shared CSRF/rate-limit/redirect helpers. Runtime mutation smoke still requires an authenticated DB-backed browser/session fixture.
+
+Upload/edit manual checklist:
+- `upload.php` still requires `functions.benc.php` and now explicitly lazy-loads `UploadAssetHelper.php`.
+- `edit.php` still requires `functions.benc.php` and now explicitly lazy-loads `UploadAssetHelper.php`.
+- Existing form helper calls now use direct helper names instead of deleted service wrappers.
+
+### Stage 12 candidates
+
+1. Fix test bootstrap `err()` conflict so comments mutation smoke can run in PHPUnit.
+2. Reduce `functions.comments.php` by moving only truly shared, non-rendering mutation helpers into existing `app/core/comments.php`.
+3. Consider lazy-loading `functions.notifications.php` only after confirming header/chrome dependencies can be isolated safely.
+4. Audit `functions.upload.php` because it still mixes metadata schema, card rendering, description templates, and upload-specific helpers.

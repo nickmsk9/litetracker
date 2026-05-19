@@ -160,7 +160,7 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 					<?php foreach ((array) ($details_moderation['items'] ?? array()) as $item) { ?>
 					<div class="details-info-row">
 						<dt><?=htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');?>:</dt>
-						<dd><?=lt_details_render_text_html((string) ($item['value'] ?? ''));?></dd>
+						<dd><?=lt_format_comment_html((string) ($item['value'] ?? ''));?></dd>
 					</div>
 					<?php } ?>
 				</dl>
@@ -175,7 +175,7 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 						<?php foreach ($details_main_items as $item) { ?>
 						<div class="details-info-row">
 							<dt><?=htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');?>:</dt>
-							<dd><?=lt_details_render_text_html((string) ($item['value'] ?? ''));?></dd>
+							<dd><?=lt_format_comment_html((string) ($item['value'] ?? ''));?></dd>
 						</div>
 						<?php } ?>
 					</dl>
@@ -202,7 +202,7 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 							<?php foreach ((array) ($section['items'] ?? array()) as $item) { ?>
 							<div class="details-info-row">
 								<dt><?=htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');?>:</dt>
-								<dd><?=lt_details_render_text_html((string) ($item['value'] ?? ''));?></dd>
+								<dd><?=lt_format_comment_html((string) ($item['value'] ?? ''));?></dd>
 							</div>
 							<?php } ?>
 						</dl>
@@ -215,7 +215,7 @@ $detailsDescriptionHtml = (string) $detailsDescriptionHtml;
 					<h2 class="details-section-title">Торрент был обновлен</h2>
 					<div class="details-update-copy">
 						<?php if ($details_update_reason !== '') { ?>
-						<div><strong>Причина:</strong> <?=lt_details_render_text_html($details_update_reason);?></div>
+						<div><strong>Причина:</strong> <?=lt_format_comment_html($details_update_reason);?></div>
 						<?php } else { ?>
 						<div><strong>Последнее обновление:</strong> <?=$details_updated_label;?></div>
 						<?php } ?>

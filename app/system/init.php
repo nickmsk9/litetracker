@@ -54,16 +54,9 @@ require __DIR__ . '/functions/functions.metadata.php';
 // Канонические helpers/services
 require_once LT_APP_PATH . '/helpers/FormattingHelper.php';
 require_once LT_APP_PATH . '/helpers/TorrentDescriptionHelper.php';
-require_once LT_APP_PATH . '/helpers/UploadAssetHelper.php';
 require_once LT_APP_PATH . '/helpers/UserHelper.php';
 require_once LT_APP_PATH . '/Support/CacheKeys.php';
 require_once LT_APP_PATH . '/Support/CacheInvalidation.php';
-require_once LT_APP_PATH . '/core/http.php';
-require_once LT_APP_PATH . '/core/comments.php';
-require_once LT_APP_PATH . '/core/browse.php';
-require_once LT_APP_PATH . '/Services/TorrentMetadataService.php';
-require_once LT_APP_PATH . '/Services/TorrentDescriptionService.php';
-require_once LT_APP_PATH . '/Services/CommentService.php';
 
 
 

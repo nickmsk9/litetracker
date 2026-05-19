@@ -1212,18 +1212,6 @@ function msg($subject = '' , $text = '' , $type = 'success') {
 	echo '</p></td></tr></table>';
 }
 
-/*
-function msg($heading = '', $text = '', $div = 'success') {
-    if ($htmlstrip) {
-        $heading = htmlspecialchars(trim($heading));
-        $text = htmlspecialchars(trim($text));
-    }
-    print("<table class=\"main\" width=\"95%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" align=\"center\"><tr><td class=\"embedded\">\n");
-    print("<div class=\"$div\">".($heading ? "<b>$heading</b><br />" : "")." ".$text."</div></td></tr></table>\n");
-
-}
-*/
-
 //Для ajax
 function msg_ajax($text , $type = 'ajaxsuccess') {
 	echo '<div id="'.$type.'">'.$text.'</div>';

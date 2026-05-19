@@ -10,6 +10,8 @@ by nikita
 */
 
 require __DIR__ . '/app/system/init.php';
+require_once __DIR__ . '/app/core/http.php';
+require_once __DIR__ . '/app/core/comments.php';
 
 // Проверяем пользователя
 is_login();
@@ -47,14 +49,8 @@ if (empty($object_exists['id'])) {
 // Добавление комментария
 //////////////////////////////////////////////////////////////
 if ($act === 'add') {
-    if (!lt_csrf_validate($commentCsrfScope)) {
-        err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
-    }
-
-    $commentRateLimit = lt_rate_limit_hit('comments_add', $commentRateLimitId, 8, 5 * 60);
-    if (!empty($commentRateLimit['blocked'])) {
-        err($language['default_1'], 'Слишком много комментариев за короткое время. Повторите попытку позже.', 1);
-    }
+    comments_take_require_csrf($commentCsrfScope);
+    comments_take_rate_limit('comments_add', $commentRateLimitId, 8, 5 * 60, 'Слишком много комментариев за короткое время. Повторите попытку позже.');
 
     $text = '';
 
@@ -111,17 +107,14 @@ if ($act === 'add') {
 
     comments_invalidate_payload($type, $object_id);
 
-    (new LiteTracker\Http\RedirectResponse($returnUrl))->send();
-    exit;
+    comments_take_redirect($type, $object_id);
 }
 
 //////////////////////////////////////////////////////////////
 // Жалоба на комментарий
 //////////////////////////////////////////////////////////////
 if ($act === 'report' && !empty($input['id_comment'])) {
-    if (!lt_csrf_validate($commentCsrfScope)) {
-        err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
-    }
+    comments_take_require_csrf($commentCsrfScope);
 
     $id_comment = (int) $input['id_comment'];
 
@@ -131,8 +124,7 @@ if ($act === 'report' && !empty($input['id_comment'])) {
     }
 
     if ((int) $arr['id_user'] === (int) $USER['id']) {
-        (new LiteTracker\Http\RedirectResponse($returnUrl))->send();
-        exit;
+        comments_take_redirect($type, $object_id);
     }
 
     comments_reports_ensure_table();
@@ -148,10 +140,7 @@ if ($act === 'report' && !empty($input['id_comment'])) {
     );
 
     if (empty($existingReport['id'])) {
-        $commentRateLimit = lt_rate_limit_hit('comments_report', $commentRateLimitId, 20, 15 * 60);
-        if (!empty($commentRateLimit['blocked'])) {
-            err($language['default_1'], 'Слишком много жалоб за короткое время. Повторите попытку позже.', 1);
-        }
+        comments_take_rate_limit('comments_report', $commentRateLimitId, 20, 15 * 60, 'Слишком много жалоб за короткое время. Повторите попытку позже.');
 
         $db->pquery(
             "INSERT INTO `".$reportsTable."` (`comment_type`, `comment_id`, `object_id`, `comment_user_id`, `reporter_user_id`, `comment_text_snapshot`, `status`, `created_at`)
@@ -161,22 +150,15 @@ if ($act === 'report' && !empty($input['id_comment'])) {
         lt_cache_invalidate_admin_open_comment_reports_count();
     }
 
-    (new LiteTracker\Http\RedirectResponse(comments_return_route_url($type, $object_id, '#wall-comment-' . $id_comment)))->send();
-    exit;
+    comments_take_redirect($type, $object_id, '#wall-comment-' . $id_comment);
 }
 
 //////////////////////////////////////////////////////////////
 // Удаление комментария
 //////////////////////////////////////////////////////////////
 if ($act === 'delete' && !empty($input['id_comment'])) {
-    if (!lt_csrf_validate($commentCsrfScope)) {
-        err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
-    }
-
-    $commentRateLimit = lt_rate_limit_hit('comments_delete', $commentRateLimitId, 20, 5 * 60);
-    if (!empty($commentRateLimit['blocked'])) {
-        err($language['default_1'], 'Слишком много операций с комментариями. Повторите попытку позже.', 1);
-    }
+    comments_take_require_csrf($commentCsrfScope);
+    comments_take_rate_limit('comments_delete', $commentRateLimitId, 20, 5 * 60, 'Слишком много операций с комментариями. Повторите попытку позже.');
 
     $id_comment = (int) $input['id_comment'];
 
@@ -192,8 +174,7 @@ if ($act === 'delete' && !empty($input['id_comment'])) {
 
     $deletedMeta = lt_comment_deleted_meta((string) ($arr['text'] ?? ''));
     if (!empty($deletedMeta['is_deleted'])) {
-        (new LiteTracker\Http\RedirectResponse(comments_return_route_url($type, $object_id, 'status=3')))->send();
-        exit;
+        comments_take_redirect($type, $object_id, 'status=3');
     }
 
     $deletedByAdmin = (!empty($PRIV['comments_delete']) && ((int) $USER['id'] !== (int) $arr['id_user'] || $type === 'users'));
@@ -202,8 +183,7 @@ if ($act === 'delete' && !empty($input['id_comment'])) {
     lt_notifications_handle_comment_deleted($type, $object_id, $id_comment, (int) $arr['id_user'], (int) $USER['id'], $deletedByAdmin);
     comments_invalidate_payload($type, $object_id);
 
-    (new LiteTracker\Http\RedirectResponse(comments_return_route_url($type, $object_id, 'status=3')))->send();
-    exit;
+    comments_take_redirect($type, $object_id, 'status=3');
 }
 
 //////////////////////////////////////////////////////////////
@@ -227,14 +207,8 @@ if ($act === 'edit' && !empty($input['id_comment'])) {
     }
 
     if ($request->method() === 'POST') {
-        if (!lt_csrf_validate($commentCsrfScope)) {
-            err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
-        }
-
-        $commentRateLimit = lt_rate_limit_hit('comments_edit', $commentRateLimitId, 15, 5 * 60);
-        if (!empty($commentRateLimit['blocked'])) {
-            err($language['default_1'], 'Слишком много операций с комментариями. Повторите попытку позже.', 1);
-        }
+        comments_take_require_csrf($commentCsrfScope);
+        comments_take_rate_limit('comments_edit', $commentRateLimitId, 15, 5 * 60, 'Слишком много операций с комментариями. Повторите попытку позже.');
 
         $update = array();
 
@@ -272,8 +246,7 @@ if ($act === 'edit' && !empty($input['id_comment'])) {
             comments_invalidate_payload($type, $object_id);
         }
 
-        (new LiteTracker\Http\RedirectResponse(comments_return_route_url($type, $object_id, 'status=2')))->send();
-        exit;
+        comments_take_redirect($type, $object_id, 'status=2');
     }
 
     head($language['comments_12']);

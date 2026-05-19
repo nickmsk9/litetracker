@@ -49,3 +49,28 @@ function comments_return_route_url($type, $objectId, $suffix = '')
 
     return $url.($needsGlue ? '&' : '').ltrim($suffix, '&');
 }
+
+function comments_take_require_csrf($scope)
+{
+    global $language;
+
+    if (!lt_csrf_validate($scope)) {
+        err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+    }
+}
+
+function comments_take_rate_limit($scope, $identifier, $limit, $windowSeconds, $message)
+{
+    global $language;
+
+    $rateLimit = lt_rate_limit_hit($scope, $identifier, $limit, $windowSeconds);
+    if (!empty($rateLimit['blocked'])) {
+        err($language['default_1'], $message, 1);
+    }
+}
+
+function comments_take_redirect($type, $objectId, $suffix = '')
+{
+    (new LiteTracker\Http\RedirectResponse(comments_return_route_url($type, $objectId, $suffix)))->send();
+    exit;
+}

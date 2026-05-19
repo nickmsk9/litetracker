@@ -605,22 +605,6 @@ function lt_torrent_info_heading($categoryName)
 	return (!empty($map[$name]) ? $map[$name] : 'Информация о релизе');
 }
 
-/**
- * @deprecated Use lt_format_date_label()
- */
-function lt_torrent_format_date_label($date)
-{
-	return lt_format_date_label($date);
-}
-
-/**
- * @deprecated Use lt_format_comment_html()
- */
-function lt_torrent_render_text_html($text)
-{
-	return lt_format_comment_html($text);
-}
-
 function lt_torrent_truncate_plain_text($text, $length = 520)
 {
 	$text = trim(preg_replace('/\s+/u', ' ', strip_tags((string) $text)));
@@ -981,7 +965,7 @@ function lt_torrent_prepare_browse_card($torrent, $category = array(), $user = a
 			'size' => mksize((float) ($torrent['size'] ?? 0)),
 			'user_href' => profile_href($user ?: $userId),
 			'user_html' => lt_torrent_user_color_html($userClass, htmlspecialchars($userName, ENT_QUOTES, 'UTF-8'), $privilegesByClass),
-			'updated_label' => lt_torrent_format_date_label($updatedAt),
+			'updated_label' => lt_format_date_label($updatedAt),
 			'is_banned' => !empty($torrent['banned']),
 		),
 		lt_torrent_prepare_browse_sections($torrent, $categoryName)

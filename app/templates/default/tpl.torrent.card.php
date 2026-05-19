@@ -66,7 +66,7 @@ if (!empty($extraSections[0]['label'])) {
 				<div class="browse-torrent-card-copy-body">
 					<u class="browse-torrent-card-info-title"><?=htmlspecialchars((string) ($torrentCard['info_title'] ?? 'Информация о релизе'), ENT_QUOTES, 'UTF-8');?></u><br>
 					<?php foreach ((array) ($torrentCard['main_items'] ?? array()) as $item) { ?>
-					<strong><?=htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');?>: </strong><?=lt_torrent_render_text_html((string) ($item['value'] ?? ''));?><br>
+					<strong><?=htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');?>: </strong><?=lt_format_comment_html((string) ($item['value'] ?? ''));?><br>
 					<?php } ?>
 					<?php if (!empty($torrentCard['description_excerpt'])) { ?>
 					<strong>Описание: </strong><?=htmlspecialchars((string) ($torrentCard['description_excerpt'] ?? ''), ENT_QUOTES, 'UTF-8');?><br>
@@ -86,7 +86,7 @@ if (!empty($extraSections[0]['label'])) {
 					<u class="browse-torrent-card-extra-title"><?=htmlspecialchars($sectionLabel, ENT_QUOTES, 'UTF-8');?></u><br>
 					<?php } ?>
 					<?php foreach ((array) ($section['items'] ?? array()) as $item) { ?>
-					<strong><?=htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');?>: </strong><?=lt_torrent_render_text_html((string) ($item['value'] ?? ''));?><br>
+					<strong><?=htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');?>: </strong><?=lt_format_comment_html((string) ($item['value'] ?? ''));?><br>
 					<?php } ?>
 					<?php if ($sectionIndex < count($extraSections) - 1) { ?>
 					<br>

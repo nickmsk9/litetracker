@@ -11,6 +11,7 @@ by Nick
 
 require __DIR__ . '/app/system/init.php';
 require __DIR__ . '/app/system/functions/functions.benc.php';
+require_once __DIR__ . '/app/helpers/UploadAssetHelper.php';
 
 function lt_edit_redirect_to_details($id)
 {
@@ -36,11 +37,11 @@ function lt_edit_collect_screens($torrent)
 }
 
 /**
- * @deprecated Use lt_torrent_description_service_parse()
+ * @deprecated Use lt_torrent_description_parse_sections()
  */
 function lt_edit_parse_description($text)
 {
-	$parsed = lt_torrent_description_service_parse($text);
+	$parsed = lt_torrent_description_parse_sections($text);
 	$result = array();
 
 	foreach ((array) ($parsed['sections'] ?? array()) as $section) {
@@ -284,12 +285,12 @@ if ($act == 'take') {
 		'subtitles' => lt_torrent_metadata_format('subtitles', $metadataCsv['subtitles'] ?? ''),
 		'country' => lt_torrent_metadata_format('country', $metadataCsv['country'] ?? ''),
 	);
-	$primaryDescriptionLabel = lt_torrent_description_service_primary_label($categoryName);
+	$primaryDescriptionLabel = lt_torrent_description_primary_label($categoryName);
 	if ($primaryDescriptionLabel !== '' && trim((string) ($templateValues[$primaryDescriptionLabel] ?? '')) === '') {
 		err($language['default_1'], $language['upload_26'], 1);
 	}
 
-	$descr = lt_torrent_description_service_build($categoryName, $templateValues, $autoDescriptionValues);
+	$descr = lt_torrent_description_build_with_auto($categoryName, $templateValues, $autoDescriptionValues);
 	if ($descr === '') {
 		err($language['default_1'], $language['upload_26'], 1);
 	}
@@ -435,7 +436,7 @@ $categoryTemplateMap = lt_torrent_category_template_map($categories);
 $selectedCategoryId = (int) ($arr['id_category'] ?? 0);
 $selectedCategoryName = lt_torrent_category_name_from_list($categories, $selectedCategoryId);
 $metadataSchema = lt_torrent_metadata_schema();
-$metadataValues = lt_torrent_metadata_service_values($arr, $metadataSchema);
+$metadataValues = lt_torrent_metadata_values_from_row($arr, $metadataSchema);
 $typeOptionsMap = lt_torrent_type_options_map();
 $descriptionTemplates = lt_torrent_description_templates();
 $templateFieldExamples = lt_torrent_template_examples_map($descriptionTemplates);
@@ -449,7 +450,7 @@ if ($currentContentType === '') {
 }
 $metadataValues['type'] = $currentContentType;
 $parsedDescriptionValues = lt_edit_parse_description((string) ($arr['descr'] ?? ''));
-$currentTemplateFields = lt_torrent_description_service_manual_fields($selectedCategoryName, $parsedDescriptionValues);
+$currentTemplateFields = lt_torrent_description_manual_fields($selectedCategoryName, $parsedDescriptionValues);
 $tagSuggestions = taggenrelist($selectedCategoryId);
 $currentScreens = lt_edit_collect_screens($arr);
 $currentCover = trim((string) ($arr['image'] ?? ''));

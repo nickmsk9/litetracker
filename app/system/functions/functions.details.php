@@ -27,14 +27,6 @@ function lt_details_lower($value)
 	return (function_exists('mb_strtolower') ? mb_strtolower($value, 'UTF-8') : strtolower($value));
 }
 
-/**
- * @deprecated Use lt_format_label_key()
- */
-function lt_details_label_key($label)
-{
-	return lt_format_label_key($label);
-}
-
 function lt_details_info_heading($categoryName)
 {
 	$name = lt_details_lower($categoryName);
@@ -52,22 +44,6 @@ function lt_details_info_heading($categoryName)
 	);
 
 	return (!empty($map[$name]) ? $map[$name] : 'Информация о релизе');
-}
-
-/**
- * @deprecated Use lt_format_date_label()
- */
-function lt_details_format_date_label($date)
-{
-	return lt_format_date_label($date);
-}
-
-/**
- * @deprecated Use lt_format_comment_html()
- */
-function lt_details_render_text_html($text)
-{
-	return lt_format_comment_html($text);
 }
 
 function lt_details_local_summary($text, $maxLength = 320)
@@ -132,21 +108,13 @@ function lt_details_collect_screens($torrent)
 	return $result;
 }
 
-/**
- * @deprecated Use lt_torrent_description_service_parse()
- */
-function lt_details_parse_description($text)
-{
-	return lt_torrent_description_service_parse($text);
-}
-
 function lt_details_has_item($sections, $labelKeys)
 {
 	$labelKeys = (array) $labelKeys;
 
 	foreach ((array) $sections as $section) {
 		foreach ((array) ($section['items'] ?? array()) as $item) {
-			if (in_array(lt_details_label_key($item['label'] ?? ''), $labelKeys, true)) {
+			if (in_array(lt_format_label_key($item['label'] ?? ''), $labelKeys, true)) {
 				return true;
 			}
 		}
@@ -161,7 +129,7 @@ function lt_details_extract_item(&$sections, $labelKeys)
 
 	foreach ($sections as $sectionIndex => $section) {
 		foreach ((array) ($section['items'] ?? array()) as $itemIndex => $item) {
-			if (!in_array(lt_details_label_key($item['label'] ?? ''), $labelKeys, true)) {
+			if (!in_array(lt_format_label_key($item['label'] ?? ''), $labelKeys, true)) {
 				continue;
 			}
 
@@ -1016,7 +984,7 @@ function lt_details_user_state($torrentId, $userId, $commentIds = array())
 
 function lt_details_prepare_description_view($torrent, $categoryName)
 {
-	$parsed = lt_details_parse_description((string) ($torrent['descr'] ?? ''));
+	$parsed = lt_torrent_description_parse_sections((string) ($torrent['descr'] ?? ''));
 	$sections = array_values((array) ($parsed['sections'] ?? array()));
 	$descriptionText = lt_details_extract_item($sections, array('описание', 'описание релиза', 'содержание', 'сюжет'));
 	$updateReason = lt_details_extract_item($sections, array('причина'));
@@ -1079,7 +1047,7 @@ function lt_details_prepare_description_view($torrent, $categoryName)
 	return array(
 		'info_title' => lt_details_info_heading($categoryName),
 		'description_text' => $descriptionText,
-		'description_html' => ($descriptionText !== '' ? lt_details_render_text_html($descriptionText) : ''),
+		'description_html' => ($descriptionText !== '' ? lt_format_comment_html($descriptionText) : ''),
 		'update_reason' => $updateReason,
 		'main_items' => $mainItems,
 		'extra_sections' => $extraSections,
@@ -1219,8 +1187,8 @@ function lt_details_prepare_view_model($torrent, array $rating)
 		'book' => $bookmark['legacy_html'],
 		'screens' => lt_details_collect_screens($torrent),
 		'category_badge' => lt_details_lower($catNamePlain),
-		'details_created_label' => lt_details_format_date_label($torrent['added'] ?? ''),
-		'details_updated_label' => lt_details_format_date_label($torrent['last_action'] ?? ''),
+		'details_created_label' => lt_format_date_label($torrent['added'] ?? ''),
+		'details_updated_label' => lt_format_date_label($torrent['last_action'] ?? ''),
 		'details_file_rows' => lt_details_prepare_file_rows($torrent),
 		'details_views_count' => lt_details_register_view($id),
 		'details_rating_votes' => $rating['votes'],

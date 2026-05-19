@@ -11,6 +11,7 @@ by Nick
 
 require __DIR__ . '/app/system/init.php';
 require __DIR__ . '/app/system/functions/functions.benc.php';
+require_once __DIR__ . '/app/helpers/UploadAssetHelper.php';
 
 $GLOBALS['LITETRACKER_HIDE_TOP_BLOCKS'] = true;
 $GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS'] = true;
@@ -346,12 +347,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		'subtitles' => lt_torrent_metadata_format('subtitles', $metadataValues['subtitles'] ?? ''),
 		'country' => lt_torrent_metadata_format('country', $metadataValues['country'] ?? ''),
 	);
-	$primaryDescriptionLabel = lt_torrent_description_service_primary_label((string) ($categoryInfo['name'] ?? ''));
+	$primaryDescriptionLabel = lt_torrent_description_primary_label((string) ($categoryInfo['name'] ?? ''));
 	if ($primaryDescriptionLabel !== '' && trim((string) ($form['template_values'][$primaryDescriptionLabel] ?? '')) === '') {
 		err($language['default_1'], $language['upload_26'], 1);
 	}
 
-	$form['descr'] = lt_torrent_description_service_build((string) ($categoryInfo['name'] ?? ''), $form['template_values'], $autoDescriptionValues);
+	$form['descr'] = lt_torrent_description_build_with_auto((string) ($categoryInfo['name'] ?? ''), $form['template_values'], $autoDescriptionValues);
 	if ($form['descr'] === '') {
 		err($language['default_1'], $language['upload_26'], 1);
 	}
@@ -475,7 +476,7 @@ $templateFieldExamples = lt_torrent_template_examples_map($descriptionTemplates)
 
 $currentCategoryName = lt_torrent_category_name_from_list($categories, (int) ($form['catid'] ?? $defaultCategoryId));
 $currentTemplateKey = (string) ($categoryTemplateMap[(int) ($form['catid'] ?? $defaultCategoryId)] ?? 'movies');
-$currentTemplateFields = lt_torrent_description_service_manual_fields($currentCategoryName, (array) ($form['template_values'] ?? array()));
+$currentTemplateFields = lt_torrent_description_manual_fields($currentCategoryName, (array) ($form['template_values'] ?? array()));
 $currentTypeOptions = lt_torrent_metadata_type_options_for_category($currentCategoryName);
 if ($currentTypeOptions) {
 	$metadataSchema['type']['options'] = $currentTypeOptions;
