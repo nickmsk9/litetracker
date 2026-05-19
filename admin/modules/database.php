@@ -70,8 +70,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($adminAction === 'db_sql' && $isSuperadmin) {
         $rawSql = trim((string) ($_POST['raw_sql'] ?? ''));
 
-        $blockedPattern = '/\b(DROP|DELETE|UPDATE|INSERT|ALTER|TRUNCATE|CREATE|REPLACE|CALL|GRANT|REVOKE|LOCK|UNLOCK|LOAD)\b|INTO\s+(OUTFILE|DUMPFILE)/i';
-        if ($rawSql === '' || preg_match($blockedPattern, $rawSql)) {
+        $blockedPattern = '/\b(DROP|DELETE|UPDATE|INSERT|ALTER|TRUNCATE|CREATE|REPLACE|CALL|GRANT|REVOKE|LOCK|UNLOCK|LOAD)\b|INTO\s+(OUTFILE|DUMPFILE)\b/i';
+        $hasSqlComments = (bool) preg_match('/(--|#|\/\*)/', $rawSql);
+        $hasStatementSeparator = (strpos($rawSql, ';') !== false);
+        $isSelectLike = (bool) preg_match('/^\s*(SELECT|WITH)\b/i', $rawSql);
+
+        if ($rawSql === '' || !$isSelectLike || $hasSqlComments || $hasStatementSeparator || preg_match($blockedPattern, $rawSql)) {
             header('Location: admin.php?tab=database&notice=sql_blocked');
             die();
         }
@@ -269,7 +273,7 @@ function admin_db_is_sensitive($fieldName) {
             <tbody>
                 <?php foreach ($tableColumns as $col) {
                     $colName = (string) ($col['Field'] ?? '');
-                    $isSens  = admin_db_is_sensitive($colName) && !$isSuperadmin;
+                    $isSens  = admin_db_is_sensitive($colName);
                     ?>
                 <tr>
                     <td><?=htmlspecialchars($colName, ENT_QUOTES, 'UTF-8');?></td>
@@ -307,7 +311,7 @@ function admin_db_is_sensitive($fieldName) {
                     <?php foreach ($browseColumns as $colName) {
                         $val = (string) ($row[$colName] ?? '');
                         $sens = admin_db_is_sensitive($colName);
-                        if ($sens && !$isSuperadmin) { $val = '***'; }
+                        if ($sens) { $val = '***'; }
                         ?>
                     <td><?=htmlspecialchars(mb_strimwidth($val, 0, 120, '…'), ENT_QUOTES, 'UTF-8');?></td>
                     <?php } ?>
@@ -358,7 +362,7 @@ function admin_db_is_sensitive($fieldName) {
                     <?php foreach ($sqlResultCols as $col) {
                         $val = (string) ($row[$col] ?? '');
                         $sens = admin_db_is_sensitive($col);
-                        if ($sens && !$isSuperadmin) { $val = '***'; }
+                        if ($sens) { $val = '***'; }
                         ?>
                     <td><?=htmlspecialchars(mb_strimwidth($val, 0, 200, '…'), ENT_QUOTES, 'UTF-8');?></td>
                     <?php } ?>
