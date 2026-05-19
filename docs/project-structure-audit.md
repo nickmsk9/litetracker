@@ -45,6 +45,36 @@
 - Low-risk мусор по шаблонам `.DS_Store`, `Thumbs.db`, `*.tmp`, `*.bak`, `*.old` не обнаружен в рабочем дереве.
 - Пустые директории вне `.git/*` не обнаружены.
 
+## Stage 4 execution results (low-risk physical moves)
+
+### 1) Проверка `scripts/`
+
+- В корне `scripts/` отсутствует: перенос уже выполнен ранее в `app/tools/`.
+- Проверены Docker и compose-конфиги: ссылок на `scripts/` нет.
+- README использует только `app/tools/*`.
+- Scheduler в `docker-compose.yml` вызывает root entrypoints (`/autoclean.php`, `/update.peers.php`), а не `scripts/`.
+- Вывод: дополнительный перенос не требуется, риска для URL/runtime нет.
+
+### 2) Проверка `src/`
+
+- В корне `src/` отсутствует: перенос уже выполнен ранее в `app/frontend/`.
+- `vite.config.js` использует `app/frontend/app.js` как вход.
+- `package.json` scripts (`build/dev/preview`) совместимы с текущей структурой.
+- Build output остаётся `public/dist`.
+- Вывод: дополнительный перенос не требуется.
+
+### 3) Проверка временных/архивных папок в корне
+
+- Проверены кандидаты: `tmp/`, `old/`, `backup/`, `backups/`, `docs_old/`, `archive/`, `temporary/`, `test-old/`.
+- В корне репозитория такие папки не обнаружены.
+- Действия по переносу/удалению не требуются.
+
+### 4) High-risk папки, которые остаются в корне
+
+- `system/`, `templates/`, `admin/`, `modules/`, `languages/`, `ajax/`, `api/`, `cache/`, `logs/`, `docker/`, `tests/` остаются в корне.
+- Причины и зависимости описаны в таблице ниже (прямые URL, include/require, Docker COPY, phpunit/autoload-dev, runtime fallback).
+- Для будущего переноса потребуются wrappers/shims: bootstrap shim, template/module resolver, language-path adapter, URL proxy для `ajax/api`, Docker path migration, test config migration.
+
 ## Safe actions done in this stage
 
 1. Добавлен целевой runtime-каркас `storage/` с подпапками:
@@ -86,7 +116,7 @@
 
 - Новые папки в корне запрещены.
 - Новые модули и компоненты должны размещаться в `app/`, `public/`, `database/`, `storage/`, `docs/`.
-- Legacy-папки в корне остаются только как временная совместимость до Stage 4.
+- Legacy-папки в корне остаются как временная совместимость до отдельного high-risk этапа с wrappers/shims.
 - Runtime-файлы должны использовать `storage/*`; `cache/` и `logs/` в корне — fallback.
 - Проверка выполняется командой:
 
@@ -101,7 +131,7 @@ php app/tools/check-project-structure.php
 - `system`, `templates`, `admin`, `modules`, `languages`, `ajax`, `api`
 - `docker`, `tests`
 
-## Stage 4 candidates (high-risk, wrappers required first)
+## Next-stage candidates (high-risk, wrappers required first)
 
 - `system/` -> `app/system/`
 - `templates/` -> `app/templates/`
