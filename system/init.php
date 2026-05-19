@@ -87,6 +87,9 @@ require __DIR__ . '/functions/functions.notifications.php';
 //Журнал действий модераторов
 require __DIR__ . '/functions/functions.moderation_log.php';
 
+//Admin helper functions (audit log, settings, permissions)
+require __DIR__ . '/functions/functions.admin.php';
+
 //Статусы и модерация раздач
 require __DIR__ . '/functions/functions.torrent_status.php';
 
