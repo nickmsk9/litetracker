@@ -8,6 +8,13 @@
 - `storage/` — runtime-файлы (`logs`, `cache`, `tmp`, `backups`, `uploads`).
 - `docs/` — документация и архивы (`docs/archive`).
 
+## Path constants и helpers
+
+- Используйте централизованные константы путей:
+  - `LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`.
+- Для runtime-путей используйте helper-функции:
+  - `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`.
+
 ## Где искать
 
 - Админка: `admin.php` + `admin/modules/*` (переезд в `app/admin` — второй этап).
@@ -20,8 +27,8 @@
 - Скрипты JS: `public/js/*`, source bundle в `src/app.js`.
 - Изображения: `public/images/*`, `templates/default/images/*`, `public/downloads/images/*`.
 - Миграции/SQL: `database/*`.
-- Кэш: legacy `cache/` + целевой `storage/cache/`.
-- Логи: legacy `logs/` + целевой `storage/logs/`.
+- Кэш: целевой `storage/cache/`, legacy fallback `cache/` (временная совместимость).
+- Логи: целевой `storage/logs/`, legacy fallback `logs/` (временная совместимость).
 - Загрузки: `public/downloads/*`, целевой runtime-контур `storage/uploads/`.
 - Служебные инструменты: `scripts/*` (целевой переезд: `app/tools/` на втором этапе).
 
@@ -38,3 +45,5 @@
 - `database/migrations/shop.sql` — миграция.
 
 Важно: не создавать новую папку `shop/` в корне проекта без крайней необходимости.
+
+Дополнительно: новые runtime-файлы должны использовать `storage/*` через `LT_*` константы и path helpers, а не прямые хрупкие относительные пути.

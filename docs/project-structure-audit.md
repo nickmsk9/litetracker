@@ -63,3 +63,21 @@
 2. Перевести runtime пути `cache/logs` на `storage/cache` и `storage/logs` с fallback-совместимостью.
 3. Переносить `admin/ajax/api/templates/system/modules/languages` только пакетами с compatibility wrappers и проверкой legacy URL.
 4. После compatibility layer постепенно убирать лишние корневые директории.
+
+## Stage 3 physical moves plan
+
+| Current path | Target path | Required compatibility wrapper | Risk | Notes |
+|-------------|-------------|--------------------------------|------|-------|
+| `admin/` | `app/admin/` | root-level loader/proxy for `admin.php` module paths | high | Много include/require и модульных зависимостей. |
+| `ajax/` | `app/api/ajax/` | URL proxies `/ajax/*.php` -> new handlers | high | Прямые AJAX URL в шаблонах и JS. |
+| `api/` | `app/api/` | URL proxies `/api/*.php` | medium | Требуется сохранить текущие endpoint URLs. |
+| `system/` | `app/system/` | bootstrap shim + constants migration | high | Критическая инициализация всего проекта. |
+| `templates/` | `app/templates/` | template resolver compatibility layer | high | Много жестких путей `templates/...`. |
+| `modules/` | `app/modules/` | module include resolver | high | Используется shop/releases runtime include. |
+| `languages/` | `app/languages/` | language-path adapter in init | high | Сейчас путь строится через DOCUMENT_ROOT. |
+| `scripts/` | `app/tools/` | CLI wrapper scripts and README updates | medium | Важно не сломать операционные команды. |
+| `src/` | `app/frontend/` | Vite config path update | medium | Требуется синхронный апдейт build-конфига. |
+| `docker/` | `docs/docker/` или `infra/docker/` | Dockerfile COPY path migration | high | Сейчас Dockerfile ожидает `docker/...` в корне. |
+| `tests/` | `app/tests/` или `docs/archive/tests/` (если не используется) | phpunit config update | medium | Не удалять/не переносить без подтверждения use-case. |
+| `cache/` | `storage/cache/` | runtime fallback helper to legacy cache | medium | Stage 2: уже включён storage-first fallback. |
+| `logs/` | `storage/logs/` | runtime fallback helper to legacy logs | medium | Stage 2: уже включён storage-first fallback. |

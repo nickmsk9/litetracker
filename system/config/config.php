@@ -222,7 +222,7 @@ $config  = array(
 
     'filecache' => array(
         'use' => 1,
-        'dir' => $ltRootDir . '/system/cache/',
+        'dir' => (function_exists('lt_cache_path') ? lt_cache_path('filecache').'/' : $ltRootDir . '/system/cache/'),
         'type' => '.cache',
         'timeout' => 60,
     ),
@@ -238,7 +238,7 @@ $config  = array(
 
 
 
-    'sql_log_file' => $ltRootDir . '/logs/mysql_log_' . date("M_d_Y") . '.log', //Файл с логами ошибок mySQL
+    'sql_log_file' => (function_exists('lt_logs_path') ? lt_logs_path('mysql_log_' . date("M_d_Y") . '.log') : $ltRootDir . '/logs/mysql_log_' . date("M_d_Y") . '.log'), //Файл с логами ошибок mySQL
 
 );
 

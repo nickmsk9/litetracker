@@ -62,6 +62,11 @@ LiteTracker Engine - это PHP-движок BitTorrent-трекера с лок
 - `storage/` — runtime-данные (`logs`, `cache`, `tmp`, `backups`, `uploads`).
 - `docs/` — документация и архив устаревших материалов.
 
+Runtime policy:
+
+- новые runtime-файлы должны использовать `storage/*`;
+- `cache/` и `logs/` в корне считаются legacy fallback путями на переходный период.
+
 Служебные корневые файлы:
 
 - `Dockerfile`
@@ -72,6 +77,11 @@ LiteTracker Engine - это PHP-движок BitTorrent-трекера с лок
 Правило: новые модули не должны создавать новые папки в корне. Размещайте код и ресурсы в `app/`, `public/`, `database/`, `storage/` и `docs/`.
 
 Примечание по legacy routing: публичные PHP entrypoints в корне (`index.php`, `browse.php`, `details.php`, `upload.php`, `admin.php` и др.) пока остаются на месте для совместимости URL.
+
+Path constants и helpers:
+
+- Используйте `LT_*` константы (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`).
+- Для runtime-путей используйте `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`.
 
 ### Быстрый старт через Docker
 
@@ -325,20 +335,34 @@ The repository includes an SQL dump with demo data, so the application can be st
 
 ### Project Structure
 
-```text
-.
-├── ajax/                    # AJAX handlers for profiles, tags, and service actions
-├── blocks/                  # Sidebar and homepage blocks
-├── database/                # Main SQL dump
-├── docker/apache/           # Apache virtual hosts and TLS startup script
-├── modules/                 # Release, shop, video, and screenshot modules
-├── public/                  # CSS, JavaScript, images, and uploaded files
-├── scripts/                 # Utility CLI scripts
-├── system/                  # Bootstrap, config, classes, and functions
-├── templates/default/       # Default UI template
-├── Dockerfile
-└── docker-compose.yml
-```
+Primary directories:
+
+- `app/` — core application logic, system helpers, admin/API components.
+- `public/` — public assets (`css`, `js`, `images`, `static`, `dist`).
+- `database/` — schema, dumps, migrations, and seed data.
+- `storage/` — runtime data (`logs`, `cache`, `tmp`, `backups`, `uploads`).
+- `docs/` — project documentation and archives.
+
+Runtime policy:
+
+- new runtime files should use `storage/*`;
+- root-level `cache/` and `logs/` are legacy fallback paths during migration.
+
+Root-level operational files:
+
+- `Dockerfile`
+- `docker-compose.yml`
+- `.env.example`
+- `.gitignore`
+
+Rule: new modules must not create new root folders. Place code/resources under `app/`, `public/`, `database/`, `storage/`, and `docs/`.
+
+Legacy routing note: root PHP public entrypoints (`index.php`, `browse.php`, `details.php`, `upload.php`, `admin.php`, etc.) remain in place for URL compatibility.
+
+Path constants and helpers:
+
+- Use `LT_*` path constants (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`).
+- For runtime paths use `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`.
 
 ### Quick Start with Docker
 
