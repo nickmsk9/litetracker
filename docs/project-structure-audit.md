@@ -128,17 +128,27 @@ php app/tools/check-project-structure.php
 
 - `app`, `public`, `database`, `storage`, `docs`
 - `cache`, `logs`
-- `system`, `templates`, `admin`, `modules`, `languages`, `ajax`, `api`
-- `docker`, `tests`
+- `system`, `templates`, `modules`, `languages`, `ajax`, `api`
 
 ## Next-stage candidates (high-risk, wrappers required first)
 
 - `system/` -> `app/system/`
 - `templates/` -> `app/templates/`
-- `admin/` -> `app/admin/`
 - `modules/` -> `app/modules/`
 - `languages/` -> `app/languages/`
-- `ajax/` -> `app/api/ajax/`
-- `api/` -> `app/api/`
-- `docker/` -> `docs/docker/` или `infra/docker/` (только вместе с обновлением Dockerfile)
-- `tests/` -> `app/tests/` (только после подтверждения CI/tooling-сценариев)
+
+## Stage 5 medium-risk root cleanup
+
+| Current path | Target path | Action | Compatibility | Risk | Result |
+|-------------|-------------|--------|---------------|------|--------|
+| `admin/modules` | `app/admin/modules` | moved business modules | `admin.php` now loads from `LT_APP_PATH.'/admin/modules'` | medium | done |
+| `api/*` | `app/api/*` | moved business handlers | root `api/*` kept as thin wrappers (`init` + `require app/api`) | medium | done |
+| `ajax/*` | `app/api/ajax/*` | moved business handlers | root `ajax/*` kept as thin wrappers (`init` + `require app/api/ajax`) | medium | done |
+| `cache/` | `storage/cache/` | runtime stays storage-first | root `cache/` kept as legacy fallback | medium | partial (fallback kept) |
+| `logs/` | `storage/logs/` | runtime stays storage-first | root `logs/` kept as legacy fallback | medium | partial (fallback kept) |
+| `docker/` | `app/infra/docker/` | moved Docker support files | `Dockerfile COPY` paths updated | medium | done |
+| `tests/` | `app/tests/` | moved test tree | `phpunit.xml`, `composer.json`, smoke path updated | medium | done |
+| `system/` | `app/system/` | not moved in this stage | none | high | deferred to Stage 6 |
+| `templates/` | `app/templates/` | not moved in this stage | none | high | deferred to Stage 6 |
+| `modules/` | `app/modules/` | not moved in this stage | none | high | deferred to Stage 6 |
+| `languages/` | `app/languages/` | not moved in this stage | none | high | deferred to Stage 6 |

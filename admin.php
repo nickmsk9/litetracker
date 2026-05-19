@@ -1205,7 +1205,7 @@ head('Админка');
 	<?php } ?>
 	<?php } elseif (in_array($activeTab, array('cache', 'maintenance', 'system', 'ads', 'reports', 'database', 'comments', 'users_manage'), true)) { ?>
 	<?php
-	$adminModuleFile = __DIR__.'/admin/modules/'.$activeTab.'.php';
+	$adminModuleFile = LT_APP_PATH.'/admin/modules/'.$activeTab.'.php';
 	if (file_exists($adminModuleFile)) {
 		include $adminModuleFile;
 	}

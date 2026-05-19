@@ -11,7 +11,7 @@ if (PHP_SAPI !== 'cli') {
 	exit(2);
 }
 
-$root = dirname(__DIR__, 2);
+$root = dirname(__DIR__, 3);
 chdir($root);
 
 require_once $root.'/system/config/config.mysql.php';
@@ -23,7 +23,7 @@ if (
 	&& (string) ($mysql['host'] ?? '') === 'db'
 	&& gethostbyname('db') === 'db'
 ) {
-	$cmd = 'docker compose exec -T -e P15_NO_DOCKER_FALLBACK=1 php php tests/announce/announce_smoke.php';
+	$cmd = 'docker compose exec -T -e P15_NO_DOCKER_FALLBACK=1 php php app/tests/announce/announce_smoke.php';
 	passthru($cmd, $exitCode);
 	exit((int) $exitCode);
 }

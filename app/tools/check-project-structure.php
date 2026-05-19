@@ -15,15 +15,26 @@ $allowlist = array(
 	'docs',
 	'cache',
 	'logs',
-	'system',
-	'templates',
-	'admin',
-	'modules',
-	'languages',
 	'ajax',
 	'api',
-	'docker',
-	'tests',
+	'system',
+	'templates',
+	'modules',
+	'languages',
+);
+$legacyWrappers = array(
+	'api',
+	'ajax',
+);
+$legacyFallback = array(
+	'cache',
+	'logs',
+);
+$highRiskLegacy = array(
+	'system',
+	'templates',
+	'modules',
+	'languages',
 );
 $transientIgnore = array(
 	'node_modules',
@@ -62,6 +73,15 @@ $unknown = array_values(array_diff($dirs, $allowlist));
 
 if (!$unknown) {
 	echo "OK: структура корневых директорий соответствует политике проекта.\n";
+	if ($legacyWrappers) {
+		echo "Legacy wrappers (временная совместимость): ".implode(', ', $legacyWrappers)."\n";
+	}
+	if ($legacyFallback) {
+		echo "Legacy runtime fallback: ".implode(', ', $legacyFallback)."\n";
+	}
+	if ($highRiskLegacy) {
+		echo "High-risk legacy (Stage 6): ".implode(', ', $highRiskLegacy)."\n";
+	}
 	exit(0);
 }
 

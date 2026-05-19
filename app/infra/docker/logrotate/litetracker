@@ -1,4 +1,4 @@
-/var/www/html/logs/*.log {
+/var/www/html/storage/logs/*.log {
     daily
     rotate 30
     compress

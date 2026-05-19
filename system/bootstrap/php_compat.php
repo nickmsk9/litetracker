@@ -23,8 +23,8 @@ defined('LT_DATABASE_PATH') || define('LT_DATABASE_PATH', LT_ROOT_PATH.'/databas
 defined('LT_DOCS_PATH') || define('LT_DOCS_PATH', LT_ROOT_PATH.'/docs');
 defined('LT_SYSTEM_PATH') || define('LT_SYSTEM_PATH', LT_ROOT_PATH.'/system');
 defined('LT_TEMPLATES_PATH') || define('LT_TEMPLATES_PATH', LT_ROOT_PATH.'/templates');
-defined('LT_ADMIN_PATH') || define('LT_ADMIN_PATH', LT_ROOT_PATH.'/admin');
-defined('LT_API_PATH') || define('LT_API_PATH', LT_ROOT_PATH.'/api');
+defined('LT_ADMIN_PATH') || define('LT_ADMIN_PATH', LT_APP_PATH.'/admin');
+defined('LT_API_PATH') || define('LT_API_PATH', LT_APP_PATH.'/api');
 
 if (!function_exists('lt_path_normalize')) {
 	function lt_path_normalize($path)

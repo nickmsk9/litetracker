@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="tests/bootstrap.php"
+         bootstrap="app/tests/bootstrap.php"
          colors="true"
          displayDetailsOnTestsThatTriggerDeprecations="true"
          displayDetailsOnTestsThatTriggerErrors="true"
@@ -9,7 +9,7 @@
          displayDetailsOnTestsThatTriggerWarnings="true">
     <testsuites>
         <testsuite name="LiteTracker">
-            <directory>tests</directory>
+            <directory>app/tests</directory>
         </testsuite>
     </testsuites>
     <source>

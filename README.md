@@ -57,6 +57,11 @@ LiteTracker Engine - это PHP-движок BitTorrent-трекера с лок
 Основные директории проекта:
 
 - `app/` — ядро приложения, системная логика, админские и API-компоненты.
+  - `app/admin/modules/` — модули админки.
+  - `app/api/` — бизнес-логика API.
+  - `app/api/ajax/` — бизнес-логика AJAX.
+  - `app/infra/docker/` — Docker-конфигурация для сборки образа.
+  - `app/tests/` — PHPUnit и smoke-тесты.
 - `public/` — публичные assets (`css`, `js`, `images`, `static`, `dist`).
 - `database/` — схема/дампы/миграции/seed-данные.
 - `storage/` — runtime-данные (`logs`, `cache`, `tmp`, `backups`, `uploads`).
@@ -91,13 +96,13 @@ Path constants и helpers:
 - High-risk legacy-папки остаются в корне до отдельного этапа с compatibility wrappers/shims.
 - Runtime-файлы должны идти только в `storage/*`.
 - `cache/` и `logs/` в корне — только fallback на переходный период.
+- `api/` и `ajax/` в корне — только thin compatibility wrappers для legacy URL.
 
 Разрешённые корневые директории:
 
 - `app`, `public`, `database`, `storage`, `docs`
 - `cache`, `logs`
-- `system`, `templates`, `admin`, `modules`, `languages`, `ajax`, `api`
-- `docker`, `tests`
+- `system`, `templates`, `modules`, `languages`, `ajax`, `api`
 
 Проверка структуры:
 
@@ -360,6 +365,11 @@ The repository includes an SQL dump with demo data, so the application can be st
 Primary directories:
 
 - `app/` — core application logic, system helpers, admin/API components.
+  - `app/admin/modules/` — admin panel modules.
+  - `app/api/` — API business logic.
+  - `app/api/ajax/` — AJAX business logic.
+  - `app/infra/docker/` — Docker image config files.
+  - `app/tests/` — PHPUnit and smoke tests.
 - `public/` — public assets (`css`, `js`, `images`, `static`, `dist`).
 - `database/` — schema, dumps, migrations, and seed data.
 - `storage/` — runtime data (`logs`, `cache`, `tmp`, `backups`, `uploads`).
@@ -394,13 +404,13 @@ Path constants and helpers:
 - High-risk legacy folders remain at root until a dedicated migration stage with compatibility wrappers/shims.
 - Runtime files should only use `storage/*`.
 - Root-level `cache/` and `logs/` are transition fallback paths only.
+- Root-level `api/` and `ajax/` are thin compatibility wrappers for legacy URLs.
 
 Allowed root directories:
 
 - `app`, `public`, `database`, `storage`, `docs`
 - `cache`, `logs`
-- `system`, `templates`, `admin`, `modules`, `languages`, `ajax`, `api`
-- `docker`, `tests`
+- `system`, `templates`, `modules`, `languages`, `ajax`, `api`
 
 Structure check:
 
