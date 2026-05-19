@@ -61,6 +61,10 @@ require_once LT_APP_PATH . '/Support/CacheInvalidation.php';
 require_once LT_APP_PATH . '/Services/TorrentMetadataService.php';
 require_once LT_APP_PATH . '/Services/TorrentDescriptionService.php';
 require_once LT_APP_PATH . '/Services/CommentService.php';
+require_once LT_APP_PATH . '/Services/Browse/Filters.php';
+require_once LT_APP_PATH . '/Services/Browse/QueryBuilder.php';
+require_once LT_APP_PATH . '/Services/Browse/SuggestService.php';
+require_once LT_APP_PATH . '/Services/Browse/BrowseService.php';
 
 
 

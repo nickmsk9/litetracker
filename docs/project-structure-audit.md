@@ -224,3 +224,26 @@ Stage 8 blockers for physical root-folder removal:
 3. Removing root placeholders now would reduce recovery compatibility for misconfigured hosts (storage permission/path issues), increasing outage risk.
 
 Stage 8 decision: keep root `cache/` and `logs/` as controlled fallback, do not move business logic there, keep storage-first writes only.
+
+## Stage 9 browse hardening and query-layer cleanup
+
+| Area | Action | Compatibility | Risk | Result |
+|------|--------|---------------|------|--------|
+| `browse.php` | reduced to legacy entrypoint: init, service call, JSON/render dispatch | URL and HTML template kept in place | medium | done |
+| `app/Services/Browse/Filters.php` | moved filter parsing, quick filters, selected facet handling, URL helper | keeps old `browse_*` helper names | low | done |
+| `app/Services/Browse/QueryBuilder.php` | moved search tokenization, search SQL clause, facet count loading | SQL behavior preserved; ready for later query-layer replacement | medium | done |
+| `app/Services/Browse/SuggestService.php` | moved ajax suggest payload builder | response shape preserved | low | done |
+| `app/Services/Browse/BrowseService.php` | added request parsing, rate-limit branch, page model assembly, search-query recording | rendering variables match previous `browse.php` names | medium | done |
+
+Bug fix:
+- Search rate limiting now checks `lt_rate_limit_hit(... )['blocked']`, matching the cache bootstrap contract. The old `['limited']` check never fired.
+
+Smoke coverage added in `app/tests/BrowseServiceTest.php`:
+- browse without parameters
+- search
+- ajax suggest
+- category filter
+- invalid sort fallback
+- rate-limit branch
+
+Scope note: `announce.php` and `upload.php` were intentionally not changed in Stage 9.
