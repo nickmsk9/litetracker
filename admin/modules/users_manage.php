@@ -57,6 +57,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($adminAction === 'ban_user' && $targetUserId > 0) {
         admin_require('users');
+        if ($targetUserId === $adminId) {
+            header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+            die();
+        }
         $db->pquery("UPDATE users SET enabled=0 WHERE id=?", 'i', [$targetUserId], false);
         lt_admin_audit_log('ban_user', 'users_manage', 'user', $targetUserId, '1', '0');
         lt_cache_invalidate_namespace('user');
@@ -75,6 +79,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($adminAction === 'temp_ban' && $targetUserId > 0) {
         admin_require('users');
+        if ($targetUserId === $adminId) {
+            header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+            die();
+        }
         $days = max(1, (int) ($_POST['ban_days'] ?? 1));
         $until = date('Y-m-d H:i:s', time() + $days * 86400);
         $db->pquery("UPDATE users SET enabled=0, banned=? WHERE id=?", 'si', [$until, $targetUserId], false);

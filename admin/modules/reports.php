@@ -40,9 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($reportId > 0) {
             $db->pquery(
-                "UPDATE reports SET status=?, assigned_to=?, moderator_comment=?, updated_at=NOW(), updated_by=? WHERE id=?",
-                'sisii',
-                [$newStatus, ($assignTo > 0 ? $assignTo : null), $comment, $adminId, $reportId],
+                "UPDATE reports SET status=?, assigned_to=?, moderator_comment=?, updated_at=NOW() WHERE id=?",
+                'sisi',
+                [$newStatus, ($assignTo > 0 ? $assignTo : 0), $comment, $reportId],
                 false
             );
             lt_admin_audit_log('report_update', 'reports', 'report', $reportId, null,

@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($adminAction === 'db_sql' && $isSuperadmin) {
         $rawSql = trim((string) ($_POST['raw_sql'] ?? ''));
 
-        $blockedPattern = '/\b(DROP|DELETE|UPDATE|INSERT|ALTER|TRUNCATE|CREATE|REPLACE)\b/i';
+        $blockedPattern = '/\b(DROP|DELETE|UPDATE|INSERT|ALTER|TRUNCATE|CREATE|REPLACE|CALL|GRANT|REVOKE|LOCK|UNLOCK|LOAD)\b|INTO\s+(OUTFILE|DUMPFILE)/i';
         if ($rawSql === '' || preg_match($blockedPattern, $rawSql)) {
             header('Location: admin.php?tab=database&notice=sql_blocked');
             die();
