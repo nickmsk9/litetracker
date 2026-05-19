@@ -35,6 +35,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             die();
         }
 
+        // Validate table name against actual DB tables (prevents operating on unexpected/sensitive tables)
+        $realTableNames = array();
+        try {
+            $tblSql = $db->query("SHOW TABLES", 0);
+            if ($tblSql) {
+                while ($tblRow = $db->get_row($tblSql)) {
+                    $vals = array_values($tblRow);
+                    if (!empty($vals[0])) { $realTableNames[] = (string)$vals[0]; }
+                }
+                $db->free($tblSql);
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+
+        if (!in_array($tableName, $realTableNames, true)) {
+            header('Location: admin.php?tab=database&notice=action_failed');
+            die();
+        }
+
         $op        = strtoupper($op);
         $tableName = str_replace('`', '``', $tableName);
 
@@ -102,8 +120,14 @@ try {
     }
 } catch (\Throwable $e) { /* ignore */ }
 
-// Load columns for view_table
+// Load columns for view_table — only if table actually exists in DB
 $tableColumns = array();
+if ($viewTable !== '') {
+    $realNames = array_column($tablesList, 'Name');
+    if (!in_array($viewTable, $realNames, true)) {
+        $viewTable = '';
+    }
+}
 if ($viewTable !== '') {
     $safeTable = str_replace('`', '``', $viewTable);
     try {
