@@ -11,17 +11,17 @@
 | Компонент | Путь | Назначение |
 |---|---|---|
 | Точка входа | `admin.php` | Роутинг по вкладкам, подключение модулей |
-| Модули | `admin/modules/*.php` | 8 функциональных модулей |
+| Модули | `app/admin/modules/*.php` | 8 функциональных модулей |
 | Вспомогательные функции | `system/functions/functions.admin.php` | Общие хелперы для всех модулей |
 
-**Принцип работы:** `admin.php` определяет активную вкладку через параметр `?tab=...` и подключает соответствующий файл модуля из `admin/modules/`.
+**Принцип работы:** `admin.php` определяет активную вкладку через параметр `?tab=...` и подключает соответствующий файл модуля из `app/admin/modules/`.
 
 ---
 
 ## Вкладки и модули
 
 ### 1. Аккаунты (`tab=users_manage`)
-**Файл:** `admin/modules/users_manage.php`
+**Файл:** `app/admin/modules/users_manage.php`
 
 Управление пользователями трекера.
 
@@ -42,7 +42,7 @@
 ---
 
 ### 2. Комментарии (`tab=comments`)
-**Файл:** `admin/modules/comments.php`
+**Файл:** `app/admin/modules/comments.php`
 
 Модерация комментариев по разделам.
 
@@ -58,7 +58,7 @@
 ---
 
 ### 3. Жалобы (`tab=reports`)
-**Файл:** `admin/modules/reports.php`
+**Файл:** `app/admin/modules/reports.php`
 
 Обработка жалоб пользователей из таблицы `reports`.
 
@@ -73,7 +73,7 @@
 ---
 
 ### 4. Реклама (`tab=ads`)
-**Файл:** `admin/modules/ads.php`
+**Файл:** `app/admin/modules/ads.php`
 
 Управление рекламными слотами и объявлениями.
 
@@ -91,7 +91,7 @@
 ---
 
 ### 5. База данных (`tab=database`)
-**Файл:** `admin/modules/database.php`
+**Файл:** `app/admin/modules/database.php`
 
 Инструменты для работы с базой данных.
 
@@ -110,7 +110,7 @@
 ---
 
 ### 6. Обслуживание (`tab=maintenance`)
-**Файл:** `admin/modules/maintenance.php`
+**Файл:** `app/admin/modules/maintenance.php`
 
 Управление режимом технического обслуживания сайта.
 
@@ -127,7 +127,7 @@
 ---
 
 ### 7. Кэш (`tab=cache`)
-**Файл:** `admin/modules/cache.php`
+**Файл:** `app/admin/modules/cache.php`
 
 Управление кэшем приложения.
 
@@ -144,7 +144,7 @@
 ---
 
 ### 8. Система (`tab=system`)
-**Файл:** `admin/modules/system.php`
+**Файл:** `app/admin/modules/system.php`
 
 Информационная панель состояния системы. **Только для суперадмина. Режим «только чтение».**
 

@@ -16,13 +16,13 @@
 - High-risk legacy-каталоги в корне остаются до отдельного этапа с compatibility wrappers/shims.
 - Runtime-файлы размещаются только в `storage/*`.
 - `cache/` и `logs/` в корне — fallback-совместимость на переходный период.
+- `api/` и `ajax/` в корне — только thin compatibility wrappers.
 
 Разрешённые директории в корне:
 
 - `app`, `public`, `database`, `storage`, `docs`
 - `cache`, `logs`
-- `system`, `templates`, `admin`, `modules`, `languages`, `ajax`, `api`
-- `docker`, `tests`
+- `system`, `templates`, `modules`, `languages`, `ajax`, `api`
 
 Проверка структуры:
 
@@ -39,9 +39,10 @@ php app/tools/check-project-structure.php
 
 ## Где искать
 
-- Админка: `admin.php` + `admin/modules/*` (переезд в `app/admin` — второй этап).
+- Админка: `admin.php` + `app/admin/modules/*`.
 - Публичные страницы: корневые `*.php` entrypoints (`index.php`, `browse.php`, `details.php`, ...).
-- API/AJAX: `api/*`, `ajax/*`.
+- API логика: `app/api/*`, legacy URL-обёртки: `api/*`.
+- AJAX логика: `app/api/ajax/*`, legacy URL-обёртки: `ajax/*`.
 - Функции: `system/functions/*`.
 - Классы: `system/classes/*`.
 - Шаблоны: `templates/default/*`.
@@ -53,6 +54,8 @@ php app/tools/check-project-structure.php
 - Логи: целевой `storage/logs/`, legacy fallback `logs/` (временная совместимость).
 - Загрузки: `public/downloads/*`, целевой runtime-контур `storage/uploads/`.
 - Служебные инструменты: `app/tools/*`.
+- Docker infrastructure files: `app/infra/docker/*`.
+- Тесты: `app/tests/*`.
 
 ## Куда добавлять новые модули
 

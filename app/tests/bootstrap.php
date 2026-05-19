@@ -57,9 +57,9 @@ if (!function_exists('mksize')) {
 // ---------------------------------------------------------------------------
 // Load pure function files — no DB access on load
 // ---------------------------------------------------------------------------
-require_once __DIR__ . '/../system/functions/functions.upload.php';
-require_once __DIR__ . '/../system/functions/functions.announce.php';
-require_once __DIR__ . '/../system/functions/functions.tags.php';
+require_once dirname(__DIR__, 2) . '/system/functions/functions.upload.php';
+require_once dirname(__DIR__, 2) . '/system/functions/functions.announce.php';
+require_once dirname(__DIR__, 2) . '/system/functions/functions.tags.php';
 
 // ---------------------------------------------------------------------------
 // Auth helpers (copied verbatim from system/functions/functions.php so we

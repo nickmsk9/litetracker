@@ -8,7 +8,7 @@ Thumbs.db
 node_modules/
 vendor/
 docker-data/
-docker/.data/
+app/infra/docker/.data/
 coverage/
 tmp/
 *.tmp
