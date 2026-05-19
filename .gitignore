@@ -47,6 +47,7 @@ public/dist/*
 /storage/uploads/*
 !/storage/logs/.gitkeep
 !/storage/cache/.gitkeep
+!/storage/tmp/
 !/storage/tmp/.gitkeep
 !/storage/backups/.gitkeep
 !/storage/uploads/.gitkeep
