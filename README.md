@@ -87,7 +87,8 @@ Path constants и helpers:
 
 - Новые папки в корне запрещены.
 - Новые модули раскладываются только по `app/`, `public/`, `database/`, `storage/`, `docs/`.
-- Legacy-папки остаются временно до Stage 4.
+- Низкорисковые dev/tooling переносы Stage 4 уже выполнены (`scripts/` -> `app/tools/`, `src/` -> `app/frontend/`).
+- High-risk legacy-папки остаются в корне до отдельного этапа с compatibility wrappers/shims.
 - Runtime-файлы должны идти только в `storage/*`.
 - `cache/` и `logs/` в корне — только fallback на переходный период.
 
@@ -389,7 +390,8 @@ Path constants and helpers:
 
 - New root directories are prohibited.
 - New modules must be placed under `app/`, `public/`, `database/`, `storage/`, and `docs/`.
-- Legacy folders remain temporarily until Stage 4.
+- Low-risk dev/tooling Stage 4 moves are already done (`scripts/` -> `app/tools/`, `src/` -> `app/frontend/`).
+- High-risk legacy folders remain at root until a dedicated migration stage with compatibility wrappers/shims.
 - Runtime files should only use `storage/*`.
 - Root-level `cache/` and `logs/` are transition fallback paths only.
 

@@ -61,18 +61,19 @@ sort($dirs);
 $unknown = array_values(array_diff($dirs, $allowlist));
 
 if (!$unknown) {
-	echo "OK: root directory structure matches policy.\n";
+	echo "OK: структура корневых директорий соответствует политике проекта.\n";
 	exit(0);
 }
 
-echo "WARNING: unknown root directories found:\n";
+echo "ОШИБКА: обнаружены неразрешённые директории в корне проекта:\n";
 foreach ($unknown as $name) {
 	echo " - ".$name."\n";
 }
 
-echo "Allowed root directories:\n";
+echo "Разрешённые корневые директории:\n";
 foreach ($allowlist as $name) {
 	echo " - ".$name."\n";
 }
+echo "Подсказка: новые модули нужно размещать внутри app/public/database/storage/docs.\n";
 
 exit(1);

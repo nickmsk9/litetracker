@@ -12,7 +12,8 @@
 
 - Новые директории в корне запрещены.
 - Новые модули размещаются только в `app/`, `public/`, `database/`, `storage/`, `docs/`.
-- Legacy-каталоги в корне оставлены временно до Stage 4.
+- Низкорисковые dev/tooling переносы Stage 4 завершены: `scripts/` -> `app/tools/`, `src/` -> `app/frontend/`.
+- High-risk legacy-каталоги в корне остаются до отдельного этапа с compatibility wrappers/shims.
 - Runtime-файлы размещаются только в `storage/*`.
 - `cache/` и `logs/` в корне — fallback-совместимость на переходный период.
 
