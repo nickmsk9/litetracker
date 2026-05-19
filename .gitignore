@@ -13,6 +13,7 @@ coverage/
 tmp/
 *.tmp
 *.bak
+*.old
 *.orig
 *.sql
 !database/*.sql
@@ -38,3 +39,14 @@ public/downloads/*
 
 public/dist/*
 !public/dist/.gitkeep
+
+/storage/logs/*
+/storage/cache/*
+/storage/tmp/*
+/storage/backups/*
+/storage/uploads/*
+!/storage/logs/.gitkeep
+!/storage/cache/.gitkeep
+!/storage/tmp/.gitkeep
+!/storage/backups/.gitkeep
+!/storage/uploads/.gitkeep

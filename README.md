@@ -54,20 +54,24 @@ LiteTracker Engine - это PHP-движок BitTorrent-трекера с лок
 
 ### Структура проекта
 
-```text
-.
-├── ajax/                    # AJAX-обработчики профилей, тегов и служебных действий
-├── blocks/                  # Блоки боковой панели и главной страницы
-├── database/                # Основной SQL-дамп
-├── docker/apache/           # Apache virtual hosts и стартовый скрипт TLS
-├── modules/                 # Модули релизов, магазина, видео, скриншотов
-├── public/                  # CSS, JavaScript, изображения и загруженные файлы
-├── scripts/                 # Служебные CLI-скрипты
-├── system/                  # Инициализация, конфиги, классы и функции
-├── templates/default/       # Шаблон интерфейса
-├── Dockerfile
-└── docker-compose.yml
-```
+Основные директории проекта:
+
+- `app/` — ядро приложения, системная логика, админские и API-компоненты.
+- `public/` — публичные assets (`css`, `js`, `images`, `static`, `dist`).
+- `database/` — схема/дампы/миграции/seed-данные.
+- `storage/` — runtime-данные (`logs`, `cache`, `tmp`, `backups`, `uploads`).
+- `docs/` — документация и архив устаревших материалов.
+
+Служебные корневые файлы:
+
+- `Dockerfile`
+- `docker-compose.yml`
+- `.env.example`
+- `.gitignore`
+
+Правило: новые модули не должны создавать новые папки в корне. Размещайте код и ресурсы в `app/`, `public/`, `database/`, `storage/` и `docs/`.
+
+Примечание по legacy routing: публичные PHP entrypoints в корне (`index.php`, `browse.php`, `details.php`, `upload.php`, `admin.php` и др.) пока остаются на месте для совместимости URL.
 
 ### Быстрый старт через Docker
 
