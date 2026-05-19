@@ -9,7 +9,7 @@ by nikita
 ===================================================================
 */
 
-require 'system/init.php';
+require __DIR__ . '/app/system/init.php';
 
 // Проверяем пользователя
 is_login();

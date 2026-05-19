@@ -9,7 +9,7 @@ by Nick
 ===================================================================
 */
 
-require 'system/init.php';
+require __DIR__ . '/app/system/init.php';
 
 $userAddBonusColumn = lt_user_bonus_column();
 

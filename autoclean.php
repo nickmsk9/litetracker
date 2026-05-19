@@ -13,9 +13,9 @@ by Nick
 // header("Content-Type: image/gif");
 
 //Подключаем главный системный файл
-require 'system/init.autoclean.php';
+require __DIR__ . '/app/system/init.autoclean.php';
 //Функции для обновления
-require 'system/functions/functions.benc.php';
+require __DIR__ . '/app/system/functions/functions.benc.php';
 
 lt_require_cron_access();
 

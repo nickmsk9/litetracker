@@ -9,8 +9,8 @@ by Nick
 ===================================================================
 */
 
-require 'system/init.php';
-require 'system/functions/functions.benc.php';
+require __DIR__ . '/app/system/init.php';
+require __DIR__ . '/app/system/functions/functions.benc.php';
 
 function lt_edit_redirect_to_details($id)
 {

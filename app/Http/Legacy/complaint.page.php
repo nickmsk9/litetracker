@@ -1,5 +1,5 @@
 <?php
-require 'system/init.php';
+require dirname(__DIR__, 3) . '/app/system/init.php';
 require_once __DIR__.'/static_pages.php';
 
 lt_static_page_render('Правообладателям', array(

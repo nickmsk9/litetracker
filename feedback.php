@@ -7,7 +7,7 @@ LiteTracker Source
 ===================================================================
 */
 
-require 'system/init.php';
+require __DIR__ . '/app/system/init.php';
 
 $feedbackTopics = array(
 	'auth' => 'Проблемы с авторизацией и регистрацией',

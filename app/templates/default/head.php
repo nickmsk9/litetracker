@@ -137,7 +137,7 @@ $shouldIncludeMiscPageCss = in_array($currentScript, $miscPageScripts, true) || 
     <?php if ($shouldIncludeMiscPageCss) { ?>
         <link href="public/css/pages/misc.css" rel="stylesheet" type="text/css">
     <?php } ?>
-    <link href="templates/<?= $tpl; ?>/css/my.css" rel="stylesheet" type="text/css">
+    <link href="public/templates/<?= $tpl; ?>/css/my.css" rel="stylesheet" type="text/css">
     <?php if (!empty($GLOBALS['LITETRACKER_ENABLE_PHOTOSWIPE'])) { ?>
         <link href="/public/libs/photoswipe/photoswipe.css" rel="stylesheet" type="text/css">
         <script src="/public/libs/photoswipe/photoswipe.umd.min.js" defer></script>
@@ -153,7 +153,7 @@ $shouldIncludeMiscPageCss = in_array($currentScript, $miscPageScripts, true) || 
                     <header class="site-header">
                         <div class="site-topbar">
                             <a class="site-brand" href="index.php">
-                                <img class="site-brand-image" src="templates/<?= $tpl; ?>/images/forgithub.png" alt="LiteTracker" width="1223" height="220">
+                                <img class="site-brand-image" src="public/templates/<?= $tpl; ?>/images/forgithub.png" alt="LiteTracker" width="1223" height="220">
                             </a>
 
                             <nav class="site-nav" aria-label="Основная навигация">

@@ -10,7 +10,7 @@ by Nick
 */
 
 //Подключаем главный системный файл
-require 'system/init.php';
+require __DIR__ . '/app/system/init.php';
 
 $act = (string) ($_GET['act'] ?? '');
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;

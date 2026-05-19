@@ -9,7 +9,7 @@ by Nick
 ===================================================================
 */
 
-require 'system/init.php';
+require dirname(__DIR__, 3) . '/app/system/init.php';
 
 is_login();
 
