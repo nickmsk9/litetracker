@@ -207,6 +207,9 @@ function admin_dashboard_role_map($user, $priv)
 	$moderation = ($superadmin || !empty($priv['edit_release']) || !empty($priv['comments_edit']) || !empty($priv['comments_delete']) || !empty($priv['ip_util']) || !empty($priv['multitracker_accounts']) || user_wall_reports_can_moderate());
 	$monitoring = ($superadmin || !empty($priv['sessions_view']) || !empty($priv['search_query']));
 
+	$reports = ($superadmin || !empty($priv['edit_release']) || !empty($priv['comments_edit']));
+	$comments = ($superadmin || !empty($priv['comments_edit']) || !empty($priv['comments_delete']));
+
 	return array(
 		'overview' => true,
 		'content' => $content,
@@ -216,6 +219,15 @@ function admin_dashboard_role_map($user, $priv)
 		'site-settings' => $superadmin,
 		'tracker-settings' => $superadmin,
 		'feature-settings' => $superadmin,
+		'cache' => $superadmin,
+		'maintenance' => $superadmin,
+		'system' => $superadmin,
+		'ads' => $superadmin,
+		'reports' => $reports,
+		'database' => $superadmin,
+		'comments' => $comments,
+		'users_manage' => $users,
+		'vip_plus' => $superadmin,
 		'superadmin' => $superadmin,
 	);
 }
@@ -695,6 +707,15 @@ $tabs = array(
 	'site-settings' => array('label' => 'Сайт', 'allowed' => $roles['site-settings']),
 	'tracker-settings' => array('label' => 'Трекер', 'allowed' => $roles['tracker-settings']),
 	'feature-settings' => array('label' => 'Функции', 'allowed' => $roles['feature-settings']),
+	'users_manage' => array('label' => 'Аккаунты', 'allowed' => $roles['users_manage']),
+	'comments' => array('label' => 'Комментарии', 'allowed' => $roles['comments']),
+	'reports' => array('label' => 'Жалобы', 'allowed' => $roles['reports']),
+	'ads' => array('label' => 'Реклама', 'allowed' => $roles['ads']),
+	'database' => array('label' => 'База данных', 'allowed' => $roles['database']),
+	'maintenance' => array('label' => 'Обслуживание', 'allowed' => $roles['maintenance']),
+	'cache' => array('label' => 'Кэш', 'allowed' => $roles['cache']),
+	'system' => array('label' => 'Система', 'allowed' => $roles['system']),
+	'vip_plus' => array('label' => 'VIP / Plus', 'allowed' => $roles['vip_plus']),
 );
 
 $sections = array(
@@ -1182,6 +1203,19 @@ head('Админка');
 		<?php } ?>
 	</section>
 	<?php } ?>
+	<?php } elseif (in_array($activeTab, array('cache', 'maintenance', 'system', 'ads', 'reports', 'database', 'comments', 'users_manage'), true)) { ?>
+	<?php
+	$adminModuleFile = __DIR__.'/admin/modules/'.$activeTab.'.php';
+	if (file_exists($adminModuleFile)) {
+		include $adminModuleFile;
+	}
+	?>
+	<?php } elseif ($activeTab === 'vip_plus' && !empty($roles['vip_plus'])) { ?>
+	<section class='admin-card'>
+		<h2 class='admin-card-title'>VIP / Plus</h2>
+		<p class='admin-card-text'>Этот модуль будет реализован позже. Сейчас раздел зарезервирован и недоступен.</p>
+		<div class='admin-empty' style='margin-top:18px;'>VIP / Plus: будет реализовано позже.</div>
+	</section>
 	<?php } elseif (!empty($settingsSchema[$activeTab]) && !empty($roles[$activeTab])) { ?>
 	<?php $settingsTab = $settingsSchema[$activeTab]; ?>
 	<section class='admin-settings-form'>
