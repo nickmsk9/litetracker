@@ -14,19 +14,15 @@ require __DIR__ . '/app/system/init.php';
 // Проверяем пользователя
 is_login();
 
-$act = isset($_REQUEST['act']) ? trim((string) $_REQUEST['act']) : '';
-$type = isset($_REQUEST['type']) ? preg_replace('~[^a-z0-9_]~i', '', (string) $_REQUEST['type']) : '';
-$object_id = isset($_REQUEST['object_id']) ? (int) $_REQUEST['object_id'] : 0;
-$file = isset($_REQUEST['file']) ? trim((string) $_REQUEST['file']) : '';
+$request = LiteTracker\Http\Request::capture();
+$input = $request->request();
 
-$file_explode = explode('?', $file, 2);
-$file_name = isset($file_explode[0]) ? trim((string) $file_explode[0]) : '';
+$act = isset($input['act']) ? trim((string) $input['act']) : '';
+$type = comments_allowed_type($input['type'] ?? '');
+$object_id = isset($input['object_id']) ? (int) $input['object_id'] : 0;
+$returnUrl = comments_return_route_url($type, $object_id);
 
-if ($type === '' || $object_id <= 0 || $file_name === '') {
-    err($language['default_1'], $language['comments_14'], 1);
-}
-
-if (!is_file($file_name)) {
+if ($type === '' || $object_id <= 0 || $returnUrl === '') {
     err($language['default_1'], $language['comments_14'], 1);
 }
 
@@ -36,12 +32,13 @@ comments_ensure_thread_support($type);
 $commentCsrfScope = 'comments_' . $type . '_' . $object_id;
 $commentRateLimitId = ((int) ($USER['id'] ?? 0)) . ':' . ($_SERVER['REMOTE_ADDR'] ?? 'cli');
 $commentMutatingActs = array('add', 'report', 'delete');
-if (in_array($act, $commentMutatingActs, true) && strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+if (in_array($act, $commentMutatingActs, true) && $request->method() !== 'POST') {
     err($language['default_1'], 'Действие доступно только POST-запросом.', 1);
 }
 
 // Проверяем объект
-$object_exists = $db->super_query("SELECT id FROM `{$type}` WHERE id = {$object_id} LIMIT 1");
+$objectTable = comments_object_table($type);
+$object_exists = $db->super_query("SELECT id FROM `{$objectTable}` WHERE id = {$object_id} LIMIT 1");
 if (empty($object_exists['id'])) {
     err($language['default_1'], $language['comments_8'], 1);
 }
@@ -61,10 +58,10 @@ if ($act === 'add') {
 
     $text = '';
 
-    if (isset($_REQUEST['text'])) {
-        $text = trim((string) $_REQUEST['text']);
-    } elseif (isset($_REQUEST['descr'])) {
-        $text = trim((string) $_REQUEST['descr']);
+    if (isset($input['text'])) {
+        $text = trim((string) $input['text']);
+    } elseif (isset($input['descr'])) {
+        $text = trim((string) $input['descr']);
     }
 
     if ($text === '') {
@@ -73,7 +70,7 @@ if ($act === 'add') {
 
     $user_id = (int) $USER['id'];
     $supportsThreads = comments_supports_threads($type);
-    $parentId = ($supportsThreads ? (int) ($_REQUEST['parent_id'] ?? 0) : 0);
+    $parentId = ($supportsThreads ? (int) ($input['parent_id'] ?? 0) : 0);
 
     if ($supportsThreads && $parentId > 0) {
         $parentCheck = $db->super_query("SELECT id FROM `{$table_name}` WHERE id = {$parentId} AND `{$object_name}` = {$object_id} LIMIT 1");
@@ -114,19 +111,19 @@ if ($act === 'add') {
 
     comments_invalidate_payload($type, $object_id);
 
-header('Location:' . lt_comment_return_url($file, $object_id));
-    die();
+    (new LiteTracker\Http\RedirectResponse($returnUrl))->send();
+    exit;
 }
 
 //////////////////////////////////////////////////////////////
 // Жалоба на комментарий
 //////////////////////////////////////////////////////////////
-if ($act === 'report' && !empty($_REQUEST['id_comment'])) {
+if ($act === 'report' && !empty($input['id_comment'])) {
     if (!lt_csrf_validate($commentCsrfScope)) {
         err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
     }
 
-    $id_comment = (int) $_REQUEST['id_comment'];
+    $id_comment = (int) $input['id_comment'];
 
     $arr = $db->super_query("SELECT id, id_user, text FROM `{$table_name}` WHERE id = {$id_comment} AND `{$object_name}` = {$object_id} LIMIT 1");
     if (empty($arr['id'])) {
@@ -134,8 +131,8 @@ if ($act === 'report' && !empty($_REQUEST['id_comment'])) {
     }
 
     if ((int) $arr['id_user'] === (int) $USER['id']) {
-        header('Location:' . lt_comment_return_url($file, $object_id));
-        die();
+        (new LiteTracker\Http\RedirectResponse($returnUrl))->send();
+        exit;
     }
 
     comments_reports_ensure_table();
@@ -164,14 +161,14 @@ if ($act === 'report' && !empty($_REQUEST['id_comment'])) {
         lt_cache_invalidate_admin_open_comment_reports_count();
     }
 
-    header('Location:' . lt_comment_return_url($file, $object_id, '#wall-comment-' . $id_comment));
-    die();
+    (new LiteTracker\Http\RedirectResponse(comments_return_route_url($type, $object_id, '#wall-comment-' . $id_comment)))->send();
+    exit;
 }
 
 //////////////////////////////////////////////////////////////
 // Удаление комментария
 //////////////////////////////////////////////////////////////
-if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
+if ($act === 'delete' && !empty($input['id_comment'])) {
     if (!lt_csrf_validate($commentCsrfScope)) {
         err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
     }
@@ -181,7 +178,7 @@ if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
         err($language['default_1'], 'Слишком много операций с комментариями. Повторите попытку позже.', 1);
     }
 
-    $id_comment = (int) $_REQUEST['id_comment'];
+    $id_comment = (int) $input['id_comment'];
 
     $arr = $db->super_query("SELECT id, id_user FROM `{$table_name}` WHERE id = {$id_comment} LIMIT 1");
     if (empty($arr['id'])) {
@@ -195,8 +192,8 @@ if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
 
     $deletedMeta = lt_comment_deleted_meta((string) ($arr['text'] ?? ''));
     if (!empty($deletedMeta['is_deleted'])) {
-        header('Location:' . lt_comment_return_url($file, $object_id, 'status=3'));
-        die();
+        (new LiteTracker\Http\RedirectResponse(comments_return_route_url($type, $object_id, 'status=3')))->send();
+        exit;
     }
 
     $deletedByAdmin = (!empty($PRIV['comments_delete']) && ((int) $USER['id'] !== (int) $arr['id_user'] || $type === 'users'));
@@ -205,15 +202,15 @@ if ($act === 'delete' && !empty($_REQUEST['id_comment'])) {
     lt_notifications_handle_comment_deleted($type, $object_id, $id_comment, (int) $arr['id_user'], (int) $USER['id'], $deletedByAdmin);
     comments_invalidate_payload($type, $object_id);
 
-    header('Location:' . lt_comment_return_url($file, $object_id, 'status=3'));
-    die();
+    (new LiteTracker\Http\RedirectResponse(comments_return_route_url($type, $object_id, 'status=3')))->send();
+    exit;
 }
 
 //////////////////////////////////////////////////////////////
 // Редактирование комментария
 //////////////////////////////////////////////////////////////
-if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
-    $id_comment = (int) $_REQUEST['id_comment'];
+if ($act === 'edit' && !empty($input['id_comment'])) {
+    $id_comment = (int) $input['id_comment'];
 
     $arr = $db->super_query("SELECT * FROM `{$table_name}` WHERE id = {$id_comment} LIMIT 1");
     if (empty($arr['id'])) {
@@ -229,7 +226,7 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
         err($language['default_1'], $language['comments_11'], 1);
     }
 
-    if ($_POST) {
+    if ($request->method() === 'POST') {
         if (!lt_csrf_validate($commentCsrfScope)) {
             err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
         }
@@ -242,10 +239,10 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
         $update = array();
 
         $text = '';
-        if (isset($_REQUEST['text'])) {
-            $text = trim((string) $_REQUEST['text']);
-        } elseif (isset($_REQUEST['descr'])) {
-            $text = trim((string) $_REQUEST['descr']);
+        if (isset($input['text'])) {
+            $text = trim((string) $input['text']);
+        } elseif (isset($input['descr'])) {
+            $text = trim((string) $input['descr']);
         }
 
         if ((string) $arr['text'] !== $text) {
@@ -275,8 +272,8 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
             comments_invalidate_payload($type, $object_id);
         }
 
-        header('Location:' . lt_comment_return_url($file, $object_id, 'status=2'));
-        die();
+        (new LiteTracker\Http\RedirectResponse(comments_return_route_url($type, $object_id, 'status=2')))->send();
+        exit;
     }
 
     head($language['comments_12']);
@@ -289,7 +286,6 @@ if ($act === 'edit' && !empty($_REQUEST['id_comment'])) {
     echo '<input type="hidden" value="' . $object_id . '" name="object_id">';
     echo '<input type="hidden" value="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '" name="type">';
     echo '<input type="hidden" value="' . $id_comment . '" name="id_comment">';
-    echo '<input type="hidden" value="' . htmlspecialchars($file, ENT_QUOTES, 'UTF-8') . '" name="file">';
     echo '<input type="hidden" value="edit" name="act">';
     echo lt_csrf_input($commentCsrfScope);
     echo '</form>';

@@ -225,25 +225,82 @@ Stage 8 blockers for physical root-folder removal:
 
 Stage 8 decision: keep root `cache/` and `logs/` as controlled fallback, do not move business logic there, keep storage-first writes only.
 
-## Stage 9 browse hardening and query-layer cleanup
+## Stage 9 Slim Core & Load Reduction
 
-| Area | Action | Compatibility | Risk | Result |
-|------|--------|---------------|------|--------|
-| `browse.php` | reduced to legacy entrypoint: init, service call, JSON/render dispatch | URL and HTML template kept in place | medium | done |
-| `app/Services/Browse/Filters.php` | moved filter parsing, quick filters, selected facet handling, URL helper | keeps old `browse_*` helper names | low | done |
-| `app/Services/Browse/QueryBuilder.php` | moved search tokenization, search SQL clause, facet count loading | SQL behavior preserved; ready for later query-layer replacement | medium | done |
-| `app/Services/Browse/SuggestService.php` | moved ajax suggest payload builder | response shape preserved | low | done |
-| `app/Services/Browse/BrowseService.php` | added request parsing, rate-limit branch, page model assembly, search-query recording | rendering variables match previous `browse.php` names | medium | done |
+Goal: keep all legacy URLs and visible behavior while shrinking root entrypoints, centralizing request/response handling, and separating browse query/render code from the compatibility wrapper.
 
-Bug fix:
-- Search rate limiting now checks `lt_rate_limit_hit(... )['blocked']`, matching the cache bootstrap contract. The old `['limited']` check never fired.
+### Root entrypoint audit
 
-Smoke coverage added in `app/tests/BrowseServiceTest.php`:
+| Entrypoint | Lines after Stage 9 | Current weight | Thin-wrapper plan | Risk |
+|------------|---------------------|----------------|-------------------|------|
+| `browse.php` | 20 | thin wrapper | done: delegates to `BrowseController` and `app/Http/Views/browse.php` | low |
+| `upload.php` | 628 | form rendering, validation flow, asset moves, torrent insert orchestration | move helpers to `app/Services/Upload/`, add `UploadController`, keep root as wrapper requiring `functions.benc.php` only until bootstrap profiles land | high |
+| `comments.take.php` | 296 | legacy mutation controller for add/edit/delete/report | next: move action handlers to `CommentsController`; Stage 9 already hardened return routing and type allowlist | medium |
+| `edit.php` | 670 | release edit controller plus helper functions and form rendering | move screen/description helpers to `app/Services/Edit/`, controller handles load/authorize/update/render | high |
+| `details.php` | 61 | already moderately thin view-model entrypoint | next: wrap in `DetailsController`, keep existing `functions.details.php` service layer | medium |
+
+Largest root PHP files observed during audit: `admin.php` (1406), `my.mail.php` (1175), `edit_priv.php` (741), `edit.php` (670), `upload.php` (628), `index.php` (545), `login.php` (494), `signup.php` (480), `ip.util.php` (472), `profile.php` (435). The requested priority set remains `browse.php`, `upload.php`, `comments.take.php`, `edit.php`, `details.php`.
+
+### Implemented
+
+| Area | Action | Compatibility | Result |
+|------|--------|---------------|--------|
+| HTTP layer | added `app/Http/Request.php`, `Response.php`, `RedirectResponse.php`, `JsonResponse.php` | no framework dependency; loaded by legacy bootstrap | done |
+| Browse controller | added `app/Http/Controllers/BrowseController.php` | old `browse.php` URL preserved | done |
+| Browse view | moved existing browse HTML to `app/Http/Views/browse.php` | markup kept unchanged except file location | done |
+| Browse services | moved filter/query/facet/suggest/page-model logic to `app/Services/Browse/` | old `browse_*` helper names preserved for template compatibility | done |
+| Browse rate limit | now checks `lt_rate_limit_hit(... )['blocked']` | matches cache bootstrap contract | fixed |
+| Comments return route | `comments.take.php` now redirects via `comments_return_route_url($type, $objectId, $suffix)` | old submitted `file` field tolerated but no longer trusted | hardened |
+| Comment type allowlist | added `comments_allowed_type()` / `comments_type_routes()` for `torrents`, `users`, `news`, `faq` | blocks arbitrary `comments_$type` / object-table access | hardened |
+
+### Duplicates and monolith pressure reduced
+
+- Browse request parsing, sort fallback, rate limit branch, query building, facet counts, suggest payload, and search-query recording are no longer embedded in `browse.php`.
+- Browse JSON dispatch is centralized through `JsonResponse`; legacy HTML dispatch uses `Response`.
+- Comments redirect handling no longer duplicates the request-provided `file` path trust pattern; canonical return routes are derived from a small enum.
+- Comment table/object names now pass through an allowlist before SQL identifiers are assembled.
+
+### Bootstrap profile notes
+
+Proposed profiles for Stage 10+ without immediate full rollout:
+
+| Profile | Needed includes | Currently likely extra includes | Notes |
+|---------|-----------------|-------------------------------|-------|
+| `web` | config, DB, sessions, auth, themes, textbb, comments/notifications as needed | announce-only helpers, bencode for most pages, upload helpers for non-upload pages | default legacy profile stays for compatibility |
+| `api` | config, DB, auth/session optional, JSON helpers, specific API service | themes/templates, textbb, admin helpers, recaptcha for most endpoints | good first target for `public/api/*` and `app/api/*` |
+| `announce` | config, DB, cache/rate-limit, bencode, announce functions | themes, templates, comments, notifications, upload metadata, recaptcha, admin helpers | do not merge with web bootstrap under load |
+| `cli` | config, DB, cache/log helpers, selected maintenance service | sessions, themes, browser-only helpers, recaptcha | useful for autoclean and maintenance scripts |
+
+Immediate include reduction candidates: announce does not need theme/template/comment/UI helpers; ajax APIs generally do not need full theme rendering; upload/edit are among the few pages that need bencode and upload metadata helpers.
+
+### Smoke coverage
+
+Added `app/tests/BrowseServiceTest.php` for:
+
 - browse without parameters
 - search
 - ajax suggest
 - category filter
 - invalid sort fallback
-- rate-limit branch
+- rate-limit branch using `blocked`
 
-Scope note: `announce.php` and `upload.php` were intentionally not changed in Stage 9.
+Verification command used for the isolated browse smoke suite:
+
+```bash
+vendor/bin/phpunit --no-configuration app/tests/BrowseServiceTest.php
+```
+
+### Remaining risks
+
+- Full PHPUnit through `phpunit.xml` is still blocked by the pre-existing `err()` redeclare in the shared test bootstrap versus `functions.announce.php`. Stage 9 did not modify announce.
+- `comments.take.php` is safer but still a legacy action script; action methods should move into a controller/service next.
+- `upload.php` and `edit.php` still contain helper functions plus orchestration in root and remain the biggest priority files after browse.
+- `app/api/ajax/comments.php` still has its own legacy request parsing and should be moved to the same Request/Response layer in Stage 10.
+
+### Stage 10 recommendation
+
+1. Introduce explicit `init.web.php`, `init.api.php`, `init.cli.php` and keep `init.php` as compatibility web alias.
+2. Move `comments.take.php` actions into `app/Http/Controllers/CommentsController.php` and share validation with `app/api/ajax/comments.php`.
+3. Start `UploadController` extraction by moving pure helpers from `upload.php` to `app/Services/Upload/`.
+4. Move `edit.php` helper functions into `app/Services/Edit/` before changing rendering.
+5. Fix the PHPUnit bootstrap `err()` conflict in a dedicated test-infra cleanup so full suite can run normally.
