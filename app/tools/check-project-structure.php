@@ -23,6 +23,7 @@ $allowlist = array(
 	'languages',
 );
 $legacyWrappers = array(
+	'system',
 	'api',
 	'ajax',
 	'modules',
@@ -35,9 +36,7 @@ $legacyFallback = array(
 $legacyPublicAssets = array(
 	'templates',
 );
-$highRiskLegacy = array(
-	'system',
-);
+$highRiskLegacy = array();
 $transientIgnore = array(
 	'node_modules',
 	'vendor',

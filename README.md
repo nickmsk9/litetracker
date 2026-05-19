@@ -87,20 +87,21 @@ Runtime policy:
 
 Path constants и helpers:
 
-- Используйте `LT_*` константы (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`, `LT_MODULES_PATH`, `LT_LANGUAGES_PATH`).
-- Для runtime/compatibility путей используйте `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`, `lt_modules_path()`, `lt_languages_path()`.
+- Используйте `LT_*` константы (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_LEGACY_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`, `LT_MODULES_PATH`, `LT_LANGUAGES_PATH`).
+- Для runtime/compatibility путей используйте `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`, `lt_system_path()`, `lt_modules_path()`, `lt_languages_path()`.
 
 ## Root directory policy
 
 - Новые папки в корне запрещены.
 - Новые модули раскладываются только по `app/`, `public/`, `database/`, `storage/`, `docs/`.
 - Низкорисковые dev/tooling переносы Stage 4 уже выполнены (`scripts/` -> `app/tools/`, `src/` -> `app/frontend/`).
-- High-risk legacy-папка в корне: `system/` (Stage 6C candidate).
+- High-risk legacy-папки в корне после Stage 6C: отсутствуют.
 - `templates/` в корне — legacy public assets fallback (Stage 6B): PHP-шаблоны перенесены в `app/templates/`, root `templates/` оставлен для браузерных URL (`/templates/default/css/`, `/templates/default/images/`).
 - Runtime-файлы должны идти только в `storage/*`.
 - `cache/` и `logs/` в корне — только fallback на переходный период.
 - `api/` и `ajax/` в корне — только thin compatibility wrappers для legacy URL.
 - `modules/` и `languages/` в корне — только thin compatibility wrappers (бизнес-логика и языки перенесены в `app/`).
+- `system/` в корне — только thin compatibility wrappers; реальная системная логика находится в `app/system/`.
 
 Разрешённые корневые директории:
 
@@ -121,6 +122,14 @@ Path constants и helpers:
 |-------------|-------------|--------|---------------|------|--------|
 | `templates/` | `app/templates/` | copied PHP templates; `LT_TEMPLATES_PATH` → `app/templates/`; `lt_templates_path()` added | root `templates/` kept as legacy public assets fallback | medium | done |
 | PHP include/require | `lt_templates_path(...)` | all `require 'templates/...'` updated in functions.php, news.php, profile.php, details.php, my.setting.php, my.friends.php, index.php, my.book.php, browse.php, app/modules/releases.arr.php | fallback to root `templates/` if missing in `app/templates/` | medium | done |
+
+## Stage 6C system migration
+
+| Current path | Target path | Action | Compatibility | Risk | Result |
+|-------------|-------------|--------|---------------|------|--------|
+| `system/` | `app/system/` | moved system bootstrap/config/functions/classes into `app/system/`; updated bootstrap constants to app-first | root `system/` kept as thin wrappers for legacy `require 'system/...';` paths | high | done |
+| `system/init.php`, `system/init.announce.php`, `system/init.autoclean.php` | `app/system/*.php` | moved real bootstrap code to `app/system/`; root files converted to wrappers | legacy root entrypoints keep working without URL/path changes | high | done |
+| `system/config/*`, `system/functions/*`, `system/classes/*`, `system/bootstrap/*` | `app/system/...` | real files moved to `app/system/`; root mirror converted to thin wrappers | direct legacy includes remain backward compatible | high | done |
 
 Проверка структуры:
 
@@ -332,7 +341,7 @@ LITETRACKER_ANNOUNCE_URL=https://example.com/announce.php
 - Замените локальные пароли и токены: `LITETRACKER_DB_PASSWORD`, `LITETRACKER_CRON_TOKEN`, `LITETRACKER_COOKIE_SALT`.
 - Отключите SQL debug в production: `LITETRACKER_SQL_DEBUG=0`.
 - Настройте настоящий TLS-сертификат через reverse proxy или инфраструктуру хостинга.
-- Проверьте права на директории `public/downloads/`, `system/cache/`, `logs/`.
+- Проверьте права на директории `public/downloads/`, `storage/cache/`, `logs/`.
 - Включите локальную CAPTCHA, если регистрация открыта для интернета.
 - Ограничьте доступ к phpMyAdmin или не запускайте его в production.
 - Проверьте сторонние JavaScript/PHP-библиотеки и их лицензии.
@@ -413,19 +422,20 @@ Legacy routing note: root PHP public entrypoints (`index.php`, `browse.php`, `de
 
 Path constants and helpers:
 
-- Use `LT_*` path constants (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`, `LT_MODULES_PATH`, `LT_LANGUAGES_PATH`).
-- For runtime/compatibility paths use `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`, `lt_modules_path()`, `lt_languages_path()`.
+- Use `LT_*` path constants (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_LEGACY_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`, `LT_MODULES_PATH`, `LT_LANGUAGES_PATH`).
+- For runtime/compatibility paths use `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`, `lt_system_path()`, `lt_modules_path()`, `lt_languages_path()`.
 
 ## Root directory policy
 
 - New root directories are prohibited.
 - New modules must be placed under `app/`, `public/`, `database/`, `storage/`, and `docs/`.
 - Low-risk dev/tooling Stage 4 moves are already done (`scripts/` -> `app/tools/`, `src/` -> `app/frontend/`).
-- High-risk legacy root folders: `system/`, `templates/`.
+- High-risk legacy root folders after Stage 6C: none.
 - Runtime files should only use `storage/*`.
 - Root-level `cache/` and `logs/` are transition fallback paths only.
 - Root-level `api/` and `ajax/` are thin compatibility wrappers for legacy URLs.
 - Root-level `modules/` and `languages/` are thin compatibility wrappers only (business logic moved to `app/`).
+- Root-level `system/` is a thin compatibility wrapper only (real system logic moved to `app/system/`).
 
 Allowed root directories:
 
@@ -650,7 +660,7 @@ Before publishing this project on GitHub, and especially before running it in pr
 - Replace local passwords and tokens: `LITETRACKER_DB_PASSWORD`, `LITETRACKER_CRON_TOKEN`, `LITETRACKER_COOKIE_SALT`.
 - Disable SQL debug in production: `LITETRACKER_SQL_DEBUG=0`.
 - Configure a real TLS certificate through a reverse proxy or hosting infrastructure.
-- Check permissions for `public/downloads/`, `system/cache/`, and `logs/`.
+- Check permissions for `public/downloads/`, `storage/cache/`, and `logs/`.
 - Enable local CAPTCHA if public registration is open.
 - Restrict access to phpMyAdmin or do not run it in production.
 - Review third-party JavaScript/PHP libraries and their licenses.

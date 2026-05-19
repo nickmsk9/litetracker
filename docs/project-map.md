@@ -13,12 +13,13 @@
 - Новые директории в корне запрещены.
 - Новые модули размещаются только в `app/`, `public/`, `database/`, `storage/`, `docs/`.
 - Низкорисковые dev/tooling переносы Stage 4 завершены: `scripts/` -> `app/tools/`, `src/` -> `app/frontend/`.
-- High-risk legacy-каталог в корне: `system/` (Stage 6C candidate).
+- High-risk legacy-каталоги в корне после Stage 6C: отсутствуют.
 - `templates/` в корне — legacy public assets fallback (Stage 6B): PHP-шаблоны перенесены в `app/templates/`, root `templates/` остался только для совместимости браузерных URL (`/templates/default/css/`, `/templates/default/images/`).
 - Runtime-файлы размещаются только в `storage/*`.
 - `cache/` и `logs/` в корне — fallback-совместимость на переходный период.
 - `api/` и `ajax/` в корне — только thin compatibility wrappers.
 - `modules/` и `languages/` в корне — только thin compatibility wrappers (основной код перенесён в `app/`).
+- `system/` в корне — только thin compatibility wrappers; реальная системная логика находится в `app/system/`.
 
 Разрешённые директории в корне:
 
@@ -35,9 +36,9 @@ php app/tools/check-project-structure.php
 ## Path constants и helpers
 
 - Используйте централизованные константы путей:
-  - `LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH` (→ `app/templates/`), `LT_LEGACY_TEMPLATES_PATH` (→ root `templates/`), `LT_ADMIN_PATH`, `LT_API_PATH`, `LT_MODULES_PATH`, `LT_LANGUAGES_PATH`.
+  - `LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH` (→ `app/system/`), `LT_LEGACY_SYSTEM_PATH` (→ root `system/`), `LT_TEMPLATES_PATH` (→ `app/templates/`), `LT_LEGACY_TEMPLATES_PATH` (→ root `templates/`), `LT_ADMIN_PATH`, `LT_API_PATH`, `LT_MODULES_PATH`, `LT_LANGUAGES_PATH`.
 - Для runtime-путей используйте helper-функции:
-  - `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`, `lt_modules_path()`, `lt_languages_path()`, `lt_templates_path()`.
+  - `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`, `lt_system_path()`, `lt_modules_path()`, `lt_languages_path()`, `lt_templates_path()`.
 
 ## Где искать
 
@@ -47,8 +48,8 @@ php app/tools/check-project-structure.php
 - AJAX логика: `app/api/ajax/*`, legacy URL-обёртки: `ajax/*`.
 - Языки: `app/languages/*` (root `languages/*` — только wrappers).
 - Legacy modules: `app/modules/*` (root `modules/*` — только wrappers).
-- Функции: `system/functions/*`.
-- Классы: `system/classes/*`.
+- Функции: `app/system/functions/*` (root `system/functions/*` — только wrappers).
+- Классы: `app/system/classes/*` (root `system/classes/*` — только wrappers).
 - Шаблоны: `app/templates/default/*` (бизнес PHP-шаблоны; root `templates/` — только public assets fallback).
 - Стили: `app/templates/default/css/*` (PHP-путь), `templates/default/css/*` (публичный URL браузера), `public/css/*`.
 - Скрипты JS: `public/js/*`, source bundle в `app/frontend/app.js`.
@@ -95,3 +96,13 @@ php app/tools/check-project-structure.php
 | `templates/default/images/*` | `app/templates/default/images/*` | copied; HTML `<img src>` URLs still point to root `templates/` for browsers | root `templates/` serves as public asset fallback | low | done (root fallback) |
 
 Root `templates/` status after Stage 6B: **legacy public assets fallback only** — no business logic; PHP never includes from here directly; new templates must go in `app/templates/`.
+
+## Stage 6C system migration
+
+| Current path | Target path | Action | Compatibility | Risk | Result |
+|-------------|-------------|--------|---------------|------|--------|
+| `system/` | `app/system/` | moved system bootstrap/config/functions/classes as source of truth to `app/system/` | root `system/` kept as thin wrappers to preserve legacy `require/include` paths | high | done |
+| `system/init.php` | `app/system/init.php` | root file converted to wrapper | root entrypoints (`index.php`, `browse.php`, `details.php`, `admin.php`, etc.) continue to use legacy include path without breakage | high | done |
+| `system/init.announce.php` | `app/system/init.announce.php` | root file converted to wrapper | announce/scrape compatibility preserved | high | done |
+| `system/init.autoclean.php` | `app/system/init.autoclean.php` | root file converted to wrapper | autoclean cron bootstrap compatibility preserved | high | done |
+| `system/config/*`, `system/functions/*`, `system/classes/*`, `system/bootstrap/*` | `app/system/...` | root files converted to thin wrappers; real logic moved to `app/system/...` | direct legacy includes still resolve through wrappers | high | done |

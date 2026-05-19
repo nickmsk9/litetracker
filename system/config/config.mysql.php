@@ -1,4 +1,2 @@
 <?php
-// Backward-compatible include path.
-require __DIR__ . '/mysql.php';
-?>
+require_once dirname(__DIR__, 2) . '/app/system/config/config.mysql.php';

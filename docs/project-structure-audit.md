@@ -186,3 +186,24 @@ Updated constants and helpers (Stage 6B):
 Root `templates/` status after Stage 6B: **legacy public assets fallback** — PHP never includes from root `templates/` directly; new templates must go in `app/templates/`.
 
 High-risk legacy remaining after Stage 6B: **`system/`** only (Stage 6C candidate).
+
+## Stage 6C system migration
+
+| Current path | Target path | Action | Compatibility | Risk | Result |
+|-------------|-------------|--------|---------------|------|--------|
+| `system/` | `app/system/` | moved system bootstrap/config/functions/classes/cache helpers into `app/system/` as source of truth | root `system/` kept as thin wrappers for legacy `require/include` compatibility | high | done |
+| `system/init.php` | `app/system/init.php` | root file converted to wrapper | all legacy root entrypoints that require `system/init.php` keep working | high | done |
+| `system/init.announce.php` | `app/system/init.announce.php` | root file converted to wrapper | announce/scrape flow compatibility preserved | high | done |
+| `system/init.autoclean.php` | `app/system/init.autoclean.php` | root file converted to wrapper | cron autoclean bootstrap compatibility preserved | high | done |
+| `system/config/*` | `app/system/config/*` | moved real config files; root mirror now wrappers | direct legacy includes stay backward compatible | high | done |
+| `system/functions/*` | `app/system/functions/*` | moved real function files; root mirror now wrappers | direct includes like `system/functions/functions.benc.php` stay compatible | high | done |
+| `system/classes/*` | `app/system/classes/*` | moved real class files; root mirror now wrappers | direct includes stay compatible | high | done |
+| `system/bootstrap/*` | `app/system/bootstrap/*` | moved cache/bootstrap logic; root mirror now wrappers | bootstrap includes stay compatible | high | done |
+
+Updated constants/helpers (Stage 6C):
+- `LT_SYSTEM_PATH` now points to `LT_APP_PATH.'/system'`
+- `LT_LEGACY_SYSTEM_PATH` points to root `system/`
+- `lt_system_path($relative)` helper resolves app/system first and falls back to root system wrappers
+
+Root `system/` status after Stage 6C: **legacy compatibility wrappers only** (plus security `.htaccess`).
+High-risk legacy root list after Stage 6C: **empty**.
