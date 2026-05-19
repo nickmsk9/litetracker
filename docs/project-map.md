@@ -27,6 +27,11 @@
 - `cache`, `logs`
 - `system`, `templates`, `modules`, `languages`, `ajax`, `api`
 
+Dot-директории (исключены из проверки guard-скриптом):
+
+- `.github` — GitHub Actions workflows и конфигурация платформы.
+- `.githooks` — локальные git-хуки (установка: `git config core.hooksPath .githooks`).
+
 Проверка структуры:
 
 ```bash
