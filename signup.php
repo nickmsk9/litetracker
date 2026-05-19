@@ -9,7 +9,7 @@ by Nick
 ===================================================================
 */
 
-require 'system/init.php';
+require __DIR__ . '/app/system/init.php';
 
 $signupBonusColumn = lt_user_bonus_column();
 
@@ -294,7 +294,7 @@ if (!$isModalView) {
 	<head>
 	<meta charset="<?=$language['charset'];?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link href="templates/<?=$config['template'];?>/css/my.css" rel="stylesheet" type="text/css">
+	<link href="public/templates/<?=$config['template'];?>/css/my.css" rel="stylesheet" type="text/css">
 	</head>
 	<body class="auth-modal-frame">
 	<?php

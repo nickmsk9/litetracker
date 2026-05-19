@@ -11,7 +11,7 @@ by Nick
 
 
 //Подключаем главный системный файл
-require 'system/init.php';
+require __DIR__ . '/app/system/init.php';
 
 $language = $_POST['language'];
 if(!is_language($language)) {

@@ -22,15 +22,11 @@ defined('LT_STORAGE_PATH') || define('LT_STORAGE_PATH', LT_ROOT_PATH.'/storage')
 defined('LT_DATABASE_PATH') || define('LT_DATABASE_PATH', LT_ROOT_PATH.'/database');
 defined('LT_DOCS_PATH') || define('LT_DOCS_PATH', LT_ROOT_PATH.'/docs');
 defined('LT_SYSTEM_PATH') || define('LT_SYSTEM_PATH', LT_APP_PATH.'/system');
-defined('LT_LEGACY_SYSTEM_PATH') || define('LT_LEGACY_SYSTEM_PATH', LT_ROOT_PATH.'/system');
 defined('LT_TEMPLATES_PATH') || define('LT_TEMPLATES_PATH', LT_APP_PATH.'/templates');
-defined('LT_LEGACY_TEMPLATES_PATH') || define('LT_LEGACY_TEMPLATES_PATH', LT_ROOT_PATH.'/templates');
 defined('LT_ADMIN_PATH') || define('LT_ADMIN_PATH', LT_APP_PATH.'/admin');
 defined('LT_API_PATH') || define('LT_API_PATH', LT_APP_PATH.'/api');
 defined('LT_MODULES_PATH') || define('LT_MODULES_PATH', LT_APP_PATH.'/modules');
 defined('LT_LANGUAGES_PATH') || define('LT_LANGUAGES_PATH', LT_APP_PATH.'/languages');
-defined('LT_LEGACY_MODULES_PATH') || define('LT_LEGACY_MODULES_PATH', LT_ROOT_PATH.'/modules');
-defined('LT_LEGACY_LANGUAGES_PATH') || define('LT_LEGACY_LANGUAGES_PATH', LT_ROOT_PATH.'/languages');
 
 if (!function_exists('lt_path_normalize')) {
 	function lt_path_normalize($path)
@@ -91,23 +87,6 @@ if (!function_exists('lt_path_ensure_dir')) {
 	}
 }
 
-if (!function_exists('lt_runtime_pick_path')) {
-	function lt_runtime_pick_path($preferred, $legacy)
-	{
-		$preferred = lt_path_normalize($preferred);
-		$legacy = lt_path_normalize($legacy);
-
-		if (lt_path_ensure_dir($preferred)) {
-			return $preferred;
-		}
-		if (lt_path_ensure_dir($legacy)) {
-			return $legacy;
-		}
-
-		return ($preferred !== '' ? $preferred : $legacy);
-	}
-}
-
 if (!function_exists('lt_path')) {
 	function lt_path($type, $relative = '')
 	{
@@ -135,7 +114,7 @@ if (!function_exists('lt_path')) {
 				$base = LT_DOCS_PATH;
 				break;
 			case 'system':
-				$base = lt_system_path();
+				$base = LT_SYSTEM_PATH;
 				break;
 			case 'templates':
 				$base = LT_TEMPLATES_PATH;
@@ -153,16 +132,20 @@ if (!function_exists('lt_path')) {
 				$base = LT_LANGUAGES_PATH;
 				break;
 			case 'cache':
-				$base = lt_runtime_pick_path(LT_STORAGE_PATH.'/cache', LT_ROOT_PATH.'/cache');
+				$base = LT_STORAGE_PATH.'/cache';
+				lt_path_ensure_dir($base);
 				break;
 			case 'logs':
-				$base = lt_runtime_pick_path(LT_STORAGE_PATH.'/logs', LT_ROOT_PATH.'/logs');
+				$base = LT_STORAGE_PATH.'/logs';
+				lt_path_ensure_dir($base);
 				break;
 			case 'tmp':
-				$base = lt_runtime_pick_path(LT_STORAGE_PATH.'/tmp', LT_ROOT_PATH.'/tmp');
+				$base = LT_STORAGE_PATH.'/tmp';
+				lt_path_ensure_dir($base);
 				break;
 			case 'uploads':
-				$base = lt_runtime_pick_path(LT_STORAGE_PATH.'/uploads', LT_ROOT_PATH.'/uploads');
+				$base = LT_STORAGE_PATH.'/uploads';
+				lt_path_ensure_dir($base);
 				break;
 		}
 
@@ -183,23 +166,8 @@ if (!function_exists('lt_modules_path')) {
 		if ((string) $relative !== '' && $safeRelative === '') {
 			return '';
 		}
-
-		$preferred = lt_path_normalize(LT_MODULES_PATH);
-		$legacy = lt_path_normalize(LT_LEGACY_MODULES_PATH);
-		$suffix = ($safeRelative !== '' ? '/'.$safeRelative : '');
-		$preferredPath = $preferred.$suffix;
-		if ($safeRelative === '') {
-			if (is_dir($preferredPath)) {
-				return $preferredPath;
-			}
-			return $legacy;
-		}
-
-		if (file_exists($preferredPath)) {
-			return $preferredPath;
-		}
-
-		return $legacy.$suffix;
+		$base = lt_path_normalize(LT_MODULES_PATH);
+		return ($safeRelative === '' ? $base : $base.'/'.$safeRelative);
 	}
 }
 
@@ -210,23 +178,8 @@ if (!function_exists('lt_system_path')) {
 		if ((string) $relative !== '' && $safeRelative === '') {
 			return '';
 		}
-
-		$preferred = lt_path_normalize(LT_SYSTEM_PATH);
-		$legacy = lt_path_normalize(LT_LEGACY_SYSTEM_PATH);
-		$suffix = ($safeRelative !== '' ? '/'.$safeRelative : '');
-		$preferredPath = $preferred.$suffix;
-		if ($safeRelative === '') {
-			if (is_dir($preferredPath)) {
-				return $preferredPath;
-			}
-			return $legacy;
-		}
-
-		if (file_exists($preferredPath)) {
-			return $preferredPath;
-		}
-
-		return $legacy.$suffix;
+		$base = lt_path_normalize(LT_SYSTEM_PATH);
+		return ($safeRelative === '' ? $base : $base.'/'.$safeRelative);
 	}
 }
 
@@ -237,23 +190,8 @@ if (!function_exists('lt_languages_path')) {
 		if ((string) $relative !== '' && $safeRelative === '') {
 			return '';
 		}
-
-		$preferred = lt_path_normalize(LT_LANGUAGES_PATH);
-		$legacy = lt_path_normalize(LT_LEGACY_LANGUAGES_PATH);
-		$suffix = ($safeRelative !== '' ? '/'.$safeRelative : '');
-		$preferredPath = $preferred.$suffix;
-		if ($safeRelative === '') {
-			if (is_dir($preferredPath)) {
-				return $preferredPath;
-			}
-			return $legacy;
-		}
-
-		if (file_exists($preferredPath)) {
-			return $preferredPath;
-		}
-
-		return $legacy.$suffix;
+		$base = lt_path_normalize(LT_LANGUAGES_PATH);
+		return ($safeRelative === '' ? $base : $base.'/'.$safeRelative);
 	}
 }
 
@@ -294,8 +232,7 @@ if (!function_exists('lt_uploads_path')) {
 
 if (!function_exists('lt_templates_path')) {
 	/**
-	 * Returns absolute path to a template file/dir.
-	 * Checks app/templates/ first; falls back to root templates/ for compatibility.
+	 * Returns absolute path to a template file/dir inside app/templates.
 	 *
 	 * @param  string $relative  Relative path inside templates dir (e.g. 'default/head.php').
 	 * @return string
@@ -307,20 +244,8 @@ if (!function_exists('lt_templates_path')) {
 			return '';
 		}
 
-		$preferred = lt_path_normalize(LT_TEMPLATES_PATH);
-		$legacy    = lt_path_normalize(LT_LEGACY_TEMPLATES_PATH);
-		$suffix    = ($safeRelative !== '' ? '/'.$safeRelative : '');
-		$preferredPath = $preferred.$suffix;
-
-		if ($safeRelative === '') {
-			return (is_dir($preferredPath) ? $preferredPath : $legacy);
-		}
-
-		if (file_exists($preferredPath)) {
-			return $preferredPath;
-		}
-
-		return $legacy.$suffix;
+		$base = lt_path_normalize(LT_TEMPLATES_PATH);
+		return ($safeRelative === '' ? $base : $base.'/'.$safeRelative);
 	}
 }
 

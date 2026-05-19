@@ -9,7 +9,7 @@ by Nick
 ===================================================================
 */
 
-require 'system/init.php';
+require __DIR__ . '/app/system/init.php';
 
 $GLOBALS['LITETRACKER_HIDE_TOP_BLOCKS'] = true;
 $GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS'] = true;

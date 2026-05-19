@@ -10,8 +10,8 @@ by Nick
 */
 
 //Подключаем главный системный файл
-require 'system/init.php';
-require 'system/functions/functions.benc.php';
+require __DIR__ . '/app/system/init.php';
+require __DIR__ . '/app/system/functions/functions.benc.php';
 
 function download_content_disposition_filename($filename, $fallbackId)
 {

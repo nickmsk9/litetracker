@@ -10,7 +10,7 @@ by Nick
 */
 
 //Подключаем главный системный файл
-require 'system/init.php';
+require __DIR__ . '/app/system/init.php';
 
 //Проверка авторизации
 is_login();

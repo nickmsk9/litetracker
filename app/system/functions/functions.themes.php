@@ -12,7 +12,7 @@ function lt_themes_fallback_list()
 		'default' => array(
 			'slug'       => 'default',
 			'title'      => 'LiteTracker Default',
-			'css_path'   => 'app/templates/default/css/my.css',
+			'css_path'   => 'public/templates/default/css/my.css',
 			'is_default' => true,
 		),
 	);
@@ -126,13 +126,13 @@ function lt_themes_validate_slug($slug)
 		return '';
 	}
 
-	// CSS file must physically exist (check app/templates first, then legacy root templates/ fallback)
+	// CSS file must physically exist (check app/templates first, then public/templates assets)
 	$cssPath = $themes[$slug]['css_path'];
 	$appCssTheme  = LT_TEMPLATES_PATH.'/'.$slug.'/css/theme.css';
 	$appCssMy     = LT_TEMPLATES_PATH.'/'.$slug.'/css/my.css';
-	$legCssTheme  = LT_LEGACY_TEMPLATES_PATH.'/'.$slug.'/css/theme.css';
-	$legCssMy     = LT_LEGACY_TEMPLATES_PATH.'/'.$slug.'/css/my.css';
-	if (!is_file($cssPath) && !is_file($appCssTheme) && !is_file($appCssMy) && !is_file($legCssTheme) && !is_file($legCssMy)) {
+	$publicCssTheme  = LT_PUBLIC_PATH.'/templates/'.$slug.'/css/theme.css';
+	$publicCssMy     = LT_PUBLIC_PATH.'/templates/'.$slug.'/css/my.css';
+	if (!is_file($cssPath) && !is_file($appCssTheme) && !is_file($appCssMy) && !is_file($publicCssTheme) && !is_file($publicCssMy)) {
 		return '';
 	}
 
@@ -172,8 +172,8 @@ function lt_resolve_theme($user)
 	if ($configTemplate !== '' && preg_match('/^[a-zA-Z0-9_-]+$/', $configTemplate)) {
 		if (is_file(LT_TEMPLATES_PATH.'/'.$configTemplate.'/css/my.css')
 			|| is_file(LT_TEMPLATES_PATH.'/'.$configTemplate.'/css/theme.css')
-			|| is_file(LT_LEGACY_TEMPLATES_PATH.'/'.$configTemplate.'/css/my.css')
-			|| is_file(LT_LEGACY_TEMPLATES_PATH.'/'.$configTemplate.'/css/theme.css')) {
+			|| is_file(LT_PUBLIC_PATH.'/templates/'.$configTemplate.'/css/my.css')
+			|| is_file(LT_PUBLIC_PATH.'/templates/'.$configTemplate.'/css/theme.css')) {
 			return $configTemplate;
 		}
 	}
@@ -184,7 +184,7 @@ function lt_resolve_theme($user)
 
 /**
  * Returns the override CSS URL for the given theme slug, or '' if no override exists.
- * The "override" CSS is at templates/{slug}/css/theme.css (in addition to the base my.css).
+ * The "override" CSS is at public/templates/{slug}/css/theme.css (in addition to the base my.css).
  *
  * @param  string $slug
  * @param  string $baseTpl  The base template slug (e.g. 'default').
@@ -211,10 +211,10 @@ function lt_themes_override_css_url($slug, $baseTpl)
 
 	// Check for theme.css (additive override) first — app/templates takes priority
 	if (is_file(LT_TEMPLATES_PATH.'/'.$slug.'/css/theme.css')) {
-		return 'app/templates/'.$slug.'/css/theme.css';
+		return 'public/templates/'.$slug.'/css/theme.css';
 	}
-	if (is_file(LT_LEGACY_TEMPLATES_PATH.'/'.$slug.'/css/theme.css')) {
-		return 'templates/'.$slug.'/css/theme.css';
+	if (is_file(LT_PUBLIC_PATH.'/templates/'.$slug.'/css/theme.css')) {
+		return 'public/templates/'.$slug.'/css/theme.css';
 	}
 
 	// Fall back to my.css (full replacement) — no override needed; calling code handles this

@@ -10,7 +10,7 @@ by Nick
 */
 
 define('IN_ANNOUNCE', true);
-require_once 'system/init.announce.php';
+require_once __DIR__ . '/app/system/init.announce.php';
 
 $rawInfoHashes = array();
 $infoHashParam = ($_GET['info_hash'] ?? '');

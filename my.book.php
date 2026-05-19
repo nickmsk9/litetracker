@@ -3,7 +3,7 @@
 Назначение: Мои закладки
 */
 
-require 'system/init.php';
+require __DIR__ . '/app/system/init.php';
 is_login();
 
 $GLOBALS['LITETRACKER_HIDE_TOP_BLOCKS'] = true;

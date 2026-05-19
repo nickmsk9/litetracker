@@ -10,7 +10,7 @@ by Nick
 */
 
 //Подключаем главный системный файл
-require 'system/init.php';
+require dirname(__DIR__, 3) . '/app/system/init.php';
 
 
 

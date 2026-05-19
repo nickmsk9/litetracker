@@ -10,7 +10,7 @@ by Nick
 */
 
 //Подключаем главный системный файл
-require 'system/init.php';
+require __DIR__ . '/app/system/init.php';
 
 function login_normalize_referer($referer)
 {
@@ -65,7 +65,7 @@ function login_render_start($title)
 		return;
 	}
 
-	echo '<!doctype html><html lang="ru"><head><meta charset="'.htmlspecialchars($language['charset'], ENT_QUOTES, 'UTF-8').'"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="templates/'.htmlspecialchars($config['template'], ENT_QUOTES, 'UTF-8').'/css/my.css" rel="stylesheet" type="text/css"></head><body class="auth-modal-frame">';
+	echo '<!doctype html><html lang="ru"><head><meta charset="'.htmlspecialchars($language['charset'], ENT_QUOTES, 'UTF-8').'"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="public/templates/'.htmlspecialchars($config['template'], ENT_QUOTES, 'UTF-8').'/css/my.css" rel="stylesheet" type="text/css"></head><body class="auth-modal-frame">';
 }
 
 function login_render_end()
