@@ -95,7 +95,8 @@ Path constants и helpers:
 - Новые папки в корне запрещены.
 - Новые модули раскладываются только по `app/`, `public/`, `database/`, `storage/`, `docs/`.
 - Низкорисковые dev/tooling переносы Stage 4 уже выполнены (`scripts/` -> `app/tools/`, `src/` -> `app/frontend/`).
-- High-risk legacy-папки в корне: `system/`, `templates/`.
+- High-risk legacy-папка в корне: `system/` (Stage 6C candidate).
+- `templates/` в корне — legacy public assets fallback (Stage 6B): PHP-шаблоны перенесены в `app/templates/`, root `templates/` оставлен для браузерных URL (`/templates/default/css/`, `/templates/default/images/`).
 - Runtime-файлы должны идти только в `storage/*`.
 - `cache/` и `logs/` в корне — только fallback на переходный период.
 - `api/` и `ajax/` в корне — только thin compatibility wrappers для legacy URL.
@@ -113,6 +114,13 @@ Path constants и helpers:
 |-------------|-------------|--------|---------------|------|--------|
 | `languages/` | `app/languages/` | moved language packs and updated init/functions path usage to `LT_LANGUAGES_PATH` | root `languages/` kept as thin wrapper (`languages/Russian/site.php` -> `app/languages/Russian/site.php`) | medium | done |
 | `modules/` | `app/modules/` | moved shop/releases modules and switched includes to `LT_MODULES_PATH` via `lt_modules_path()` | root `modules/` kept as thin wrappers (`modules/*` -> `app/modules/*`) | medium | done |
+
+## Stage 6B templates migration
+
+| Current path | Target path | Action | Compatibility | Risk | Result |
+|-------------|-------------|--------|---------------|------|--------|
+| `templates/` | `app/templates/` | copied PHP templates; `LT_TEMPLATES_PATH` → `app/templates/`; `lt_templates_path()` added | root `templates/` kept as legacy public assets fallback | medium | done |
+| PHP include/require | `lt_templates_path(...)` | all `require 'templates/...'` updated in functions.php, news.php, profile.php, details.php, my.setting.php, my.friends.php, index.php, my.book.php, browse.php, app/modules/releases.arr.php | fallback to root `templates/` if missing in `app/templates/` | medium | done |
 
 Проверка структуры:
 

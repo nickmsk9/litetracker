@@ -12,7 +12,7 @@ function lt_themes_fallback_list()
 		'default' => array(
 			'slug'       => 'default',
 			'title'      => 'LiteTracker Default',
-			'css_path'   => 'templates/default/css/my.css',
+			'css_path'   => 'app/templates/default/css/my.css',
 			'is_default' => true,
 		),
 	);
@@ -126,10 +126,13 @@ function lt_themes_validate_slug($slug)
 		return '';
 	}
 
-	// CSS file must physically exist
+	// CSS file must physically exist (check app/templates first, then legacy root templates/ fallback)
 	$cssPath = $themes[$slug]['css_path'];
-	// css_path stored in DB is relative to site root; also accept theme.css convention
-	if (!is_file($cssPath) && !is_file('templates/'.$slug.'/css/theme.css') && !is_file('templates/'.$slug.'/css/my.css')) {
+	$appCssTheme  = LT_TEMPLATES_PATH.'/'.$slug.'/css/theme.css';
+	$appCssMy     = LT_TEMPLATES_PATH.'/'.$slug.'/css/my.css';
+	$legCssTheme  = LT_LEGACY_TEMPLATES_PATH.'/'.$slug.'/css/theme.css';
+	$legCssMy     = LT_LEGACY_TEMPLATES_PATH.'/'.$slug.'/css/my.css';
+	if (!is_file($cssPath) && !is_file($appCssTheme) && !is_file($appCssMy) && !is_file($legCssTheme) && !is_file($legCssMy)) {
 		return '';
 	}
 
@@ -167,7 +170,10 @@ function lt_resolve_theme($user)
 	// 3. Config template (for compatibility; must have a CSS file)
 	$configTemplate = trim((string) ($config['template'] ?? 'default'));
 	if ($configTemplate !== '' && preg_match('/^[a-zA-Z0-9_-]+$/', $configTemplate)) {
-		if (is_file('templates/'.$configTemplate.'/css/my.css') || is_file('templates/'.$configTemplate.'/css/theme.css')) {
+		if (is_file(LT_TEMPLATES_PATH.'/'.$configTemplate.'/css/my.css')
+			|| is_file(LT_TEMPLATES_PATH.'/'.$configTemplate.'/css/theme.css')
+			|| is_file(LT_LEGACY_TEMPLATES_PATH.'/'.$configTemplate.'/css/my.css')
+			|| is_file(LT_LEGACY_TEMPLATES_PATH.'/'.$configTemplate.'/css/theme.css')) {
 			return $configTemplate;
 		}
 	}
@@ -203,8 +209,11 @@ function lt_themes_override_css_url($slug, $baseTpl)
 		return '';
 	}
 
-	// Check for theme.css (additive override) first
-	if (is_file('templates/'.$slug.'/css/theme.css')) {
+	// Check for theme.css (additive override) first — app/templates takes priority
+	if (is_file(LT_TEMPLATES_PATH.'/'.$slug.'/css/theme.css')) {
+		return 'app/templates/'.$slug.'/css/theme.css';
+	}
+	if (is_file(LT_LEGACY_TEMPLATES_PATH.'/'.$slug.'/css/theme.css')) {
 		return 'templates/'.$slug.'/css/theme.css';
 	}
 

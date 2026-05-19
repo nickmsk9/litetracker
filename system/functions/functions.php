@@ -662,7 +662,7 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 
 
 	//Подключаем шаблон
-	require 'templates/'.$tpl.'/template.php';
+	require lt_templates_path($tpl.'/template.php');
 
 	//Если шаблон легкий
 	if($light == true && !defined('LIGHT')) {
@@ -670,7 +670,7 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 	}
 
 
-	require 'templates/'.$tpl.'/head.php';
+	require lt_templates_path($tpl.'/head.php');
 
 
 
@@ -697,7 +697,7 @@ function foot($light = false) {
 
 
 	//Подключаем шаблон
-	require 'templates/'.$tpl.'/foot.php';
+	require lt_templates_path($tpl.'/foot.php');
 
 	lt_debug_render_panel();
 

@@ -90,7 +90,7 @@ if($status == '2') {
 	msg($language['default_1'] , $language['setting_30'] , 'error');
 }
 
-require 'templates/'.$config['template'].'/tpl.setting.php';
+require lt_templates_path($config['template'].'/tpl.setting.php');
 
 foot();
 ?>

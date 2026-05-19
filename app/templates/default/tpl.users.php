@@ -1,0 +1,81 @@
+<?php
+if (!defined('LITETRACKER'))
+	die('Direct access denied.');
+
+
+////////////////////////////////////////////////////////
+//Шаблон для Пользователи
+////////////////////////////////////////////////////////
+//$id - id пользовтаеля
+
+begin_frame();
+?>
+<table width="70%" cellpadding="3" style="border:1px">
+<tr>
+<td valign="top" width="50">
+<a href="<?=profile_href($id);?>"><?=$avatar;?></a>
+</td>
+<td  valign="top" >
+
+
+
+	<table cellspacing="3" cellpadding="0" class="profileTable" width="100%">
+
+		 <tbody>
+
+
+
+		 <tr>
+		 <td class="label" width="15%"><b><?=$language['users_16'];?></b></td>
+		 <td class="data">
+		  <div class="dataWrap" style="float:left">
+			<a href="<?=profile_href($id);?>"><?=$name;?></a> <?=$online;?>
+		  </div>
+
+
+		 </td>
+
+		</tr>
+
+
+		<tr>
+		 <td class="label"><b><?=$language['users_17'];?></b></td>
+		 <td class="data">
+		  <div class="dataWrap">
+			<?=$date;?>
+		  </div>
+		 </td>
+		</tr>
+
+		<tr>
+		 <td class="label"><b><?=$language['users_18'];?></b></td>
+		 <td class="data">
+		  <div class="dataWrap">
+			<?=$class;?>
+		  </div>
+		 </td>
+		</tr>
+
+
+
+		<tr>
+
+		 <td class="data" colspan="2">
+				<?php
+				echo ($USER['id'] == $arr['id'] || !empty($PRIV['setting_user']) || !empty($PRIV['EDIT_PRIV']) ? '<Input type="button" value="'.$language['profile_16'].'" onCLick="window.location.href=\'my.setting.php?id='.$id.'\'">&nbsp' : '');
+				echo ($USER['id'] != $arr['id'] ? '<Input type="button" value="'.$language['profile_17'].'" onCLick="window.location.href=\'my.mail.php?act=conversation&id_user='.$arr['id'].'\'">&nbsp' : '');
+
+
+				?>
+
+
+		 </td>
+		</tr>
+
+
+		 </tbody></table>
+</td>
+
+</tr>
+</table>
+<?php end_frame(); ?>

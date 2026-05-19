@@ -54,7 +54,7 @@ if (!empty($_GET['moderation']) && $_GET['moderation'] === 'pending') {
 }
 
 //Подключаем шаблон
-require 'templates/'.$config['template'].'/tpl.details.php';
+require lt_templates_path($config['template'].'/tpl.details.php');
 
 //Подвал
 stdfoot();

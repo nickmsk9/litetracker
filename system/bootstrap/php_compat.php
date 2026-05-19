@@ -22,7 +22,8 @@ defined('LT_STORAGE_PATH') || define('LT_STORAGE_PATH', LT_ROOT_PATH.'/storage')
 defined('LT_DATABASE_PATH') || define('LT_DATABASE_PATH', LT_ROOT_PATH.'/database');
 defined('LT_DOCS_PATH') || define('LT_DOCS_PATH', LT_ROOT_PATH.'/docs');
 defined('LT_SYSTEM_PATH') || define('LT_SYSTEM_PATH', LT_ROOT_PATH.'/system');
-defined('LT_TEMPLATES_PATH') || define('LT_TEMPLATES_PATH', LT_ROOT_PATH.'/templates');
+defined('LT_TEMPLATES_PATH') || define('LT_TEMPLATES_PATH', LT_APP_PATH.'/templates');
+defined('LT_LEGACY_TEMPLATES_PATH') || define('LT_LEGACY_TEMPLATES_PATH', LT_ROOT_PATH.'/templates');
 defined('LT_ADMIN_PATH') || define('LT_ADMIN_PATH', LT_APP_PATH.'/admin');
 defined('LT_API_PATH') || define('LT_API_PATH', LT_APP_PATH.'/api');
 defined('LT_MODULES_PATH') || define('LT_MODULES_PATH', LT_APP_PATH.'/modules');
@@ -260,6 +261,38 @@ if (!function_exists('lt_uploads_path')) {
 	function lt_uploads_path($relative = '')
 	{
 		return lt_path('uploads', $relative);
+	}
+}
+
+if (!function_exists('lt_templates_path')) {
+	/**
+	 * Returns absolute path to a template file/dir.
+	 * Checks app/templates/ first; falls back to root templates/ for compatibility.
+	 *
+	 * @param  string $relative  Relative path inside templates dir (e.g. 'default/head.php').
+	 * @return string
+	 */
+	function lt_templates_path($relative = '')
+	{
+		$safeRelative = lt_path_safe_relative($relative);
+		if ((string) $relative !== '' && $safeRelative === '') {
+			return '';
+		}
+
+		$preferred = lt_path_normalize(LT_TEMPLATES_PATH);
+		$legacy    = lt_path_normalize(LT_LEGACY_TEMPLATES_PATH);
+		$suffix    = ($safeRelative !== '' ? '/'.$safeRelative : '');
+		$preferredPath = $preferred.$suffix;
+
+		if ($safeRelative === '') {
+			return (is_dir($preferredPath) ? $preferredPath : $legacy);
+		}
+
+		if (file_exists($preferredPath)) {
+			return $preferredPath;
+		}
+
+		return $legacy.$suffix;
 	}
 }
 

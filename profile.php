@@ -429,7 +429,7 @@ $selectedBonusOption = trim((string) ($_POST['bonus_option'] ?? 'all'));
 
 head($profileTitle);
 
-require 'templates/'.$config['template'].'/tpl.profile.php';
+require lt_templates_path($config['template'].'/tpl.profile.php');
 
 foot();
 ?>

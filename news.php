@@ -287,7 +287,7 @@ if($id && $act == '') {
 	comment_status();
 
 	//Подключаем шаблон
-	require 'templates/'.$config['template'].'/tpl.news.php';
+	require lt_templates_path($config['template'].'/tpl.news.php');
 
 	stdfoot();
 	die();

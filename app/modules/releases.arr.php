@@ -110,5 +110,5 @@ $news =  ($arr['new_release'] ? 1 : 0);
 
 $banned = ($arr['banned'] ? 1 : 0);
 //Подключаем шаблон
-require 'templates/'.$config['template'].'/tpl.releases.php';
+require lt_templates_path($config['template'].'/tpl.releases.php');
 ?>
