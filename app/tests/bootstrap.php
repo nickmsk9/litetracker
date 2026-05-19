@@ -60,10 +60,8 @@ if (!function_exists('mksize')) {
 require_once dirname(__DIR__, 2) . '/app/system/functions/functions.upload.php';
 require_once dirname(__DIR__, 2) . '/app/system/functions/functions.announce.php';
 require_once dirname(__DIR__, 2) . '/app/system/functions/functions.tags.php';
-require_once dirname(__DIR__, 2) . '/app/Services/Browse/Filters.php';
-require_once dirname(__DIR__, 2) . '/app/Services/Browse/QueryBuilder.php';
-require_once dirname(__DIR__, 2) . '/app/Services/Browse/SuggestService.php';
-require_once dirname(__DIR__, 2) . '/app/Services/Browse/BrowseService.php';
+require_once dirname(__DIR__, 2) . '/app/core/http.php';
+require_once dirname(__DIR__, 2) . '/app/core/browse.php';
 
 // ---------------------------------------------------------------------------
 // Auth helpers (copied verbatim from system/functions/functions.php so we

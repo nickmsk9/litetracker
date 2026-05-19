@@ -108,10 +108,8 @@ if (!function_exists('lt_rate_limit_hit')) {
 
 require_once dirname(__DIR__, 2) . '/app/system/functions/functions.upload.php';
 require_once dirname(__DIR__, 2) . '/app/system/functions/functions.tags.php';
-require_once dirname(__DIR__, 2) . '/app/Services/Browse/Filters.php';
-require_once dirname(__DIR__, 2) . '/app/Services/Browse/QueryBuilder.php';
-require_once dirname(__DIR__, 2) . '/app/Services/Browse/SuggestService.php';
-require_once dirname(__DIR__, 2) . '/app/Services/Browse/BrowseService.php';
+require_once dirname(__DIR__, 2) . '/app/core/http.php';
+require_once dirname(__DIR__, 2) . '/app/core/browse.php';
 }
 
 namespace LiteTracker\Tests {

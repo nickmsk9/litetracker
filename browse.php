@@ -16,5 +16,5 @@ $GLOBALS['LITETRACKER_HIDE_BOTTOM_BLOCKS'] = true;
 $GLOBALS['LITETRACKER_HIDE_STANDARD_SIDEBAR'] = true;
 
 $request = LiteTracker\Http\Request::capture();
-$response = (new LiteTracker\Http\Controllers\BrowseController())($request);
+$response = browse_handle_request($request);
 $response->send();

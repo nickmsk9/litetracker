@@ -304,3 +304,60 @@ vendor/bin/phpunit --no-configuration app/tests/BrowseServiceTest.php
 3. Start `UploadController` extraction by moving pure helpers from `upload.php` to `app/Services/Upload/`.
 4. Move `edit.php` helper functions into `app/Services/Edit/` before changing rendering.
 5. Fix the PHPUnit bootstrap `err()` conflict in a dedicated test-infra cleanup so full suite can run normally.
+
+## Stage 10 Compact Core Consolidation
+
+Goal: reduce Stage 9 file/folder fan-out without removing behavior or breaking legacy URLs. Stage 10 intentionally favors compact core files over many tiny controller/service/view files.
+
+### Stage 9 consolidation audit
+
+| Stage 9 file/group | Stage 10 decision | New home | Delete after merge | Risk |
+|--------------------|------------------|----------|--------------------|------|
+| `app/Http/Request.php` | merge | `app/core/http.php` | yes | low |
+| `app/Http/Response.php` | merge | `app/core/http.php` | yes | low |
+| `app/Http/RedirectResponse.php` | merge | `app/core/http.php` | yes | low |
+| `app/Http/JsonResponse.php` | merge | `app/core/http.php` | yes | low |
+| `app/Http/Controllers/BrowseController.php` | remove class wrapper | `browse_handle_request()` in `app/core/browse.php` | yes | low |
+| `app/Http/Views/browse.php` | inline with browse core render function | `browse_render_page()` in `app/core/browse.php` | yes | medium |
+| `app/Services/Browse/Filters.php` | merge | `app/core/browse.php` | yes | low |
+| `app/Services/Browse/QueryBuilder.php` | merge | `app/core/browse.php` | yes | low |
+| `app/Services/Browse/SuggestService.php` | merge | `app/core/browse.php` | yes | low |
+| `app/Services/Browse/BrowseService.php` | merge | `app/core/browse.php` | yes | medium |
+| comments route/type helpers in `functions.comments.php` | keep compact but separate from large legacy function file | `app/core/comments.php` | no legacy file deletion | low |
+
+### Resulting compact core
+
+| File | Purpose | Reason to keep |
+|------|---------|----------------|
+| `app/core/http.php` | minimal `Request`, `Response`, `RedirectResponse`, `JsonResponse` classes | one include replaces four tiny files |
+| `app/core/browse.php` | browse request parsing, query/facet/suggest, page model, render function | one compact browse core replaces controller + view + four service files |
+| `app/core/comments.php` | comment type allowlist and canonical return routes | keeps hardening logic centralized without per-action controllers |
+| `browse.php` | root compatibility wrapper | old URL stays; now only init + request + response send |
+| `comments.take.php` | legacy comments compatibility action | old URL stays; safer routing/type validation remains |
+
+### What became smaller
+
+- Browse root stayed thin: `browse.php` is 20 lines and no longer points at a controller class or separate view include.
+- HTTP include count dropped from five Stage 9 files (`Request`, `Response`, `RedirectResponse`, `JsonResponse`, `BrowseController`) to one `app/core/http.php` plus browse core.
+- Browse include count dropped from six Stage 9 files (`Controllers/BrowseController.php`, `Views/browse.php`, four `Services/Browse/*`) to one `app/core/browse.php`.
+- Comments hardening is one compact core file, not a controller/service/action tree.
+
+### Compatibility checks
+
+- Old URLs preserved: `browse.php`, `comments.take.php`, `details.php`, `upload.php`, `edit.php`.
+- Browse HTML was kept inline in browse core to avoid a separate view include.
+- `comments.take.php` still accepts legacy form payloads, but ignores request-driven `file` for redirect routing.
+- Comment actions still use existing add/edit/delete/report behavior and old `comments.take.php` endpoint.
+
+### Verification notes
+
+- Syntax check target set: `browse.php`, `comments.take.php`, `app/core/http.php`, `app/core/browse.php`, `app/core/comments.php`, `app/system/init.php`, `app/system/functions/functions.comments.php`.
+- Browse smoke suite remains `vendor/bin/phpunit --no-configuration app/tests/BrowseServiceTest.php`.
+- Full PHPUnit is still blocked by the pre-existing `err()` redeclare between `app/tests/bootstrap.php` and `functions.announce.php`.
+
+### Stage 11 recommendation
+
+1. Keep the compact-core rule: no new folder tree unless it removes more files than it adds.
+2. Move only the reusable pure parts of `upload.php` and `edit.php` into compact files such as `app/core/upload.php` and `app/core/edit.php`.
+3. Consolidate legacy comments mutation code into `app/core/comments.php` only if it reduces `comments.take.php` without creating per-action files.
+4. Fix the shared PHPUnit bootstrap conflict before expanding test coverage for comments actions.
