@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 "INSERT INTO ads (slot_id, title, html_code, image_url, target_url, is_active,
                  starts_at, ends_at, show_to_guests, show_to_users, created_by)
                  VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)",
-                'isssssssiii',
+                'isssssssii',
                 [$slotId, $title, $htmlCode, $imageUrl, $targetUrl, $startsAt, $endsAt, $showGuests, $showUsers, $adminId],
                 false
             );

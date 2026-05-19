@@ -41,9 +41,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $adminId      = (int) ($USER['id'] ?? 0);
 
     if ($adminAction === 'change_class' && $targetUserId > 0) {
-        admin_require('users');
+        // Requires at minimum setting_user privilege (not just users_view)
+        if (!$isSuperadmin && empty($PRIV['setting_user'])) {
+            header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+            die();
+        }
         $newClass = (int) ($_POST['new_class'] ?? 0);
         if ($newClass > 0) {
+            // Prevent non-superadmin from touching a superadmin's class or assigning a superadmin class
+            if (!$isSuperadmin) {
+                $targetPrivRow = $db->super_query(
+                    "SELECT p.EDIT_PRIV AS ep FROM users u LEFT JOIN priv p ON p.id = u.class WHERE u.id = ".(int)$targetUserId
+                );
+                $newPrivRow = $db->super_query("SELECT EDIT_PRIV AS ep FROM priv WHERE id = ".(int)$newClass);
+                if (!empty($targetPrivRow['ep']) || !empty($newPrivRow['ep'])) {
+                    header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+                    die();
+                }
+            }
             $oldRow = $db->super_query("SELECT class FROM users WHERE id = ".$targetUserId);
             $oldClass = (int) ($oldRow['class'] ?? 0);
             $db->pquery("UPDATE users SET class=? WHERE id=?", 'ii', [$newClass, $targetUserId], false);
@@ -56,7 +71,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($adminAction === 'ban_user' && $targetUserId > 0) {
-        admin_require('users');
+        if (!$isSuperadmin && empty($PRIV['setting_user'])) {
+            header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+            die();
+        }
+        if ($targetUserId === $adminId) {
+            header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+            die();
+        }
+        if (!$isSuperadmin) {
+            $targetPrivRow = $db->super_query(
+                "SELECT p.EDIT_PRIV AS ep FROM users u LEFT JOIN priv p ON p.id = u.class WHERE u.id = ".(int)$targetUserId
+            );
+            if (!empty($targetPrivRow['ep'])) {
+                header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+                die();
+            }
+        }
         $db->pquery("UPDATE users SET enabled=0 WHERE id=?", 'i', [$targetUserId], false);
         lt_admin_audit_log('ban_user', 'users_manage', 'user', $targetUserId, '1', '0');
         lt_cache_invalidate_namespace('user');
@@ -65,7 +96,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($adminAction === 'unban_user' && $targetUserId > 0) {
-        admin_require('users');
+        if (!$isSuperadmin && empty($PRIV['setting_user'])) {
+            header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+            die();
+        }
         $db->pquery("UPDATE users SET enabled=1 WHERE id=?", 'i', [$targetUserId], false);
         lt_admin_audit_log('unban_user', 'users_manage', 'user', $targetUserId, '0', '1');
         lt_cache_invalidate_namespace('user');
@@ -74,7 +108,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($adminAction === 'temp_ban' && $targetUserId > 0) {
-        admin_require('users');
+        if (!$isSuperadmin && empty($PRIV['setting_user'])) {
+            header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+            die();
+        }
+        if ($targetUserId === $adminId) {
+            header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+            die();
+        }
+        if (!$isSuperadmin) {
+            $targetPrivRow = $db->super_query(
+                "SELECT p.EDIT_PRIV AS ep FROM users u LEFT JOIN priv p ON p.id = u.class WHERE u.id = ".(int)$targetUserId
+            );
+            if (!empty($targetPrivRow['ep'])) {
+                header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+                die();
+            }
+        }
         $days = max(1, (int) ($_POST['ban_days'] ?? 1));
         $until = date('Y-m-d H:i:s', time() + $days * 86400);
         $db->pquery("UPDATE users SET enabled=0, banned=? WHERE id=?", 'si', [$until, $targetUserId], false);
@@ -85,7 +135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($adminAction === 'reset_passkey' && $targetUserId > 0) {
-        admin_require('users');
+        if (!$isSuperadmin) {
+            header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+            die();
+        }
         $newPasskey = function_exists('lt_generate_unique_passkey') ? lt_generate_unique_passkey() : mksecret(32);
         $db->pquery("UPDATE users SET passkey=? WHERE id=?", 'si', [$newPasskey, $targetUserId], false);
         lt_admin_audit_log('reset_passkey', 'users_manage', 'user', $targetUserId);
@@ -106,15 +159,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $oldRow = $db->super_query("SELECT email FROM users WHERE id = ".$targetUserId);
         $db->pquery("UPDATE users SET email=? WHERE id=?", 'si', [$newEmail, $targetUserId], false);
+        $oldEmail = (string)($oldRow['email']??'');
+        $maskEmail = function($e) {
+            $at = strpos($e, '@');
+            if ($at === false) { return '***'; }
+            return mb_substr($e, 0, min(2, $at)).str_repeat('*', max(0, $at - 2)).substr($e, $at);
+        };
         lt_admin_audit_log('change_email', 'users_manage', 'user', $targetUserId,
-            (string)($oldRow['email']??''), $newEmail);
+            $maskEmail($oldEmail), $maskEmail($newEmail));
         lt_cache_invalidate_namespace('user');
         header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=email_changed');
         die();
     }
 
     if ($adminAction === 'reset_avatar' && $targetUserId > 0) {
-        admin_require('users');
+        if (!$isSuperadmin && empty($PRIV['setting_user'])) {
+            header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+            die();
+        }
         $db->pquery("UPDATE users SET avatar='' WHERE id=?", 'i', [$targetUserId], false);
         lt_admin_audit_log('reset_avatar', 'users_manage', 'user', $targetUserId);
         lt_cache_invalidate_namespace('user');
@@ -123,7 +185,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($adminAction === 'add_note' && $targetUserId > 0) {
-        admin_require('users');
+        if (!$isSuperadmin && empty($PRIV['setting_user'])) {
+            header('Location: admin.php?tab=users_manage&user_id='.$targetUserId.'&notice=action_denied');
+            die();
+        }
         $noteText = mb_substr(trim((string) ($_POST['note_text'] ?? '')), 0, 5000);
         if ($noteText !== '') {
             // Graceful: create table if needed
