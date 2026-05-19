@@ -58,6 +58,8 @@ LiteTracker Engine - это PHP-движок BitTorrent-трекера с лок
 
 - `app/` — ядро приложения, системная логика, админские и API-компоненты.
   - `app/admin/modules/` — модули админки.
+  - `app/modules/` — legacy business modules (shop/releases).
+  - `app/languages/` — языковые пакеты.
   - `app/api/` — бизнес-логика API.
   - `app/api/ajax/` — бизнес-логика AJAX.
   - `app/infra/docker/` — Docker-конфигурация для сборки образа.
@@ -85,24 +87,32 @@ Runtime policy:
 
 Path constants и helpers:
 
-- Используйте `LT_*` константы (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`).
-- Для runtime-путей используйте `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`.
+- Используйте `LT_*` константы (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`, `LT_MODULES_PATH`, `LT_LANGUAGES_PATH`).
+- Для runtime/compatibility путей используйте `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`, `lt_modules_path()`, `lt_languages_path()`.
 
 ## Root directory policy
 
 - Новые папки в корне запрещены.
 - Новые модули раскладываются только по `app/`, `public/`, `database/`, `storage/`, `docs/`.
 - Низкорисковые dev/tooling переносы Stage 4 уже выполнены (`scripts/` -> `app/tools/`, `src/` -> `app/frontend/`).
-- High-risk legacy-папки остаются в корне до отдельного этапа с compatibility wrappers/shims.
+- High-risk legacy-папки в корне: `system/`, `templates/`.
 - Runtime-файлы должны идти только в `storage/*`.
 - `cache/` и `logs/` в корне — только fallback на переходный период.
 - `api/` и `ajax/` в корне — только thin compatibility wrappers для legacy URL.
+- `modules/` и `languages/` в корне — только thin compatibility wrappers (бизнес-логика и языки перенесены в `app/`).
 
 Разрешённые корневые директории:
 
 - `app`, `public`, `database`, `storage`, `docs`
 - `cache`, `logs`
 - `system`, `templates`, `modules`, `languages`, `ajax`, `api`
+
+## Stage 6A languages/modules migration
+
+| Current path | Target path | Action | Compatibility | Risk | Result |
+|-------------|-------------|--------|---------------|------|--------|
+| `languages/` | `app/languages/` | moved language packs and updated init/functions path usage to `LT_LANGUAGES_PATH` | root `languages/` kept as thin wrapper (`languages/Russian/site.php` -> `app/languages/Russian/site.php`) | medium | done |
+| `modules/` | `app/modules/` | moved shop/releases modules and switched includes to `LT_MODULES_PATH` via `lt_modules_path()` | root `modules/` kept as thin wrappers (`modules/*` -> `app/modules/*`) | medium | done |
 
 Проверка структуры:
 
@@ -366,6 +376,8 @@ Primary directories:
 
 - `app/` — core application logic, system helpers, admin/API components.
   - `app/admin/modules/` — admin panel modules.
+  - `app/modules/` — legacy business modules (shop/releases).
+  - `app/languages/` — localization packs.
   - `app/api/` — API business logic.
   - `app/api/ajax/` — AJAX business logic.
   - `app/infra/docker/` — Docker image config files.
@@ -393,24 +405,32 @@ Legacy routing note: root PHP public entrypoints (`index.php`, `browse.php`, `de
 
 Path constants and helpers:
 
-- Use `LT_*` path constants (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`).
-- For runtime paths use `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`.
+- Use `LT_*` path constants (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`, `LT_MODULES_PATH`, `LT_LANGUAGES_PATH`).
+- For runtime/compatibility paths use `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`, `lt_modules_path()`, `lt_languages_path()`.
 
 ## Root directory policy
 
 - New root directories are prohibited.
 - New modules must be placed under `app/`, `public/`, `database/`, `storage/`, and `docs/`.
 - Low-risk dev/tooling Stage 4 moves are already done (`scripts/` -> `app/tools/`, `src/` -> `app/frontend/`).
-- High-risk legacy folders remain at root until a dedicated migration stage with compatibility wrappers/shims.
+- High-risk legacy root folders: `system/`, `templates/`.
 - Runtime files should only use `storage/*`.
 - Root-level `cache/` and `logs/` are transition fallback paths only.
 - Root-level `api/` and `ajax/` are thin compatibility wrappers for legacy URLs.
+- Root-level `modules/` and `languages/` are thin compatibility wrappers only (business logic moved to `app/`).
 
 Allowed root directories:
 
 - `app`, `public`, `database`, `storage`, `docs`
 - `cache`, `logs`
 - `system`, `templates`, `modules`, `languages`, `ajax`, `api`
+
+## Stage 6A languages/modules migration
+
+| Current path | Target path | Action | Compatibility | Risk | Result |
+|-------------|-------------|--------|---------------|------|--------|
+| `languages/` | `app/languages/` | moved language packs and updated init/functions path usage to `LT_LANGUAGES_PATH` | root `languages/` kept as thin wrapper (`languages/Russian/site.php` -> `app/languages/Russian/site.php`) | medium | done |
+| `modules/` | `app/modules/` | moved shop/releases modules and switched includes to `LT_MODULES_PATH` via `lt_modules_path()` | root `modules/` kept as thin wrappers (`modules/*` -> `app/modules/*`) | medium | done |
 
 Structure check:
 
