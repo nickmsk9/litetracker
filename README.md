@@ -131,6 +131,17 @@ Path constants и helpers:
 | `system/init.php`, `system/init.announce.php`, `system/init.autoclean.php` | `app/system/*.php` | moved real bootstrap code to `app/system/`; root files converted to wrappers | legacy root entrypoints keep working without URL/path changes | high | done |
 | `system/config/*`, `system/functions/*`, `system/classes/*`, `system/bootstrap/*` | `app/system/...` | real files moved to `app/system/`; root mirror converted to thin wrappers | direct legacy includes remain backward compatible | high | done |
 
+## Stage 8 cache/logs runtime cleanup
+
+| Path | Current usage | Action | Risk | Result |
+|------|---------------|--------|------|--------|
+| `storage/cache/` | основной runtime cache target через `lt_cache_path()` | keep as primary runtime target | low | done |
+| `storage/logs/` | основной runtime logs target через `lt_logs_path()` | keep as primary runtime target | low | done |
+| `cache/` | legacy fallback при недоступности `storage/cache/` | keep fallback placeholders (`.gitkeep`, `.htaccess`) | medium | kept (compatibility fallback) |
+| `logs/` | legacy fallback при недоступности `storage/logs/` | keep fallback placeholder (`.htaccess`) | medium | kept (compatibility fallback) |
+
+Итог Stage 8: runtime остаётся storage-first (`storage/cache`, `storage/logs`), root `cache/` и `logs/` не удаляются из-за fallback-совместимости.
+
 Проверка структуры:
 
 ```bash
@@ -341,7 +352,7 @@ LITETRACKER_ANNOUNCE_URL=https://example.com/announce.php
 - Замените локальные пароли и токены: `LITETRACKER_DB_PASSWORD`, `LITETRACKER_CRON_TOKEN`, `LITETRACKER_COOKIE_SALT`.
 - Отключите SQL debug в production: `LITETRACKER_SQL_DEBUG=0`.
 - Настройте настоящий TLS-сертификат через reverse proxy или инфраструктуру хостинга.
-- Проверьте права на директории `public/downloads/`, `storage/cache/`, `logs/`.
+- Проверьте права на директории `public/downloads/`, `storage/cache/`, `storage/logs/`.
 - Включите локальную CAPTCHA, если регистрация открыта для интернета.
 - Ограничьте доступ к phpMyAdmin или не запускайте его в production.
 - Проверьте сторонние JavaScript/PHP-библиотеки и их лицензии.
@@ -449,6 +460,17 @@ Allowed root directories:
 |-------------|-------------|--------|---------------|------|--------|
 | `languages/` | `app/languages/` | moved language packs and updated init/functions path usage to `LT_LANGUAGES_PATH` | root `languages/` kept as thin wrapper (`languages/Russian/site.php` -> `app/languages/Russian/site.php`) | medium | done |
 | `modules/` | `app/modules/` | moved shop/releases modules and switched includes to `LT_MODULES_PATH` via `lt_modules_path()` | root `modules/` kept as thin wrappers (`modules/*` -> `app/modules/*`) | medium | done |
+
+## Stage 8 cache/logs runtime cleanup
+
+| Path | Current usage | Action | Risk | Result |
+|------|---------------|--------|------|--------|
+| `storage/cache/` | primary runtime cache target via `lt_cache_path()` | keep as primary runtime target | low | done |
+| `storage/logs/` | primary runtime logs target via `lt_logs_path()` | keep as primary runtime target | low | done |
+| `cache/` | legacy fallback when `storage/cache/` is unavailable | keep fallback placeholders (`.gitkeep`, `.htaccess`) | medium | kept (compatibility fallback) |
+| `logs/` | legacy fallback when `storage/logs/` is unavailable | keep fallback placeholder (`.htaccess`) | medium | kept (compatibility fallback) |
+
+Stage 8 result: runtime is storage-first (`storage/cache`, `storage/logs`), while root `cache/` and `logs/` stay as controlled compatibility fallback.
 
 Structure check:
 
@@ -660,7 +682,7 @@ Before publishing this project on GitHub, and especially before running it in pr
 - Replace local passwords and tokens: `LITETRACKER_DB_PASSWORD`, `LITETRACKER_CRON_TOKEN`, `LITETRACKER_COOKIE_SALT`.
 - Disable SQL debug in production: `LITETRACKER_SQL_DEBUG=0`.
 - Configure a real TLS certificate through a reverse proxy or hosting infrastructure.
-- Check permissions for `public/downloads/`, `storage/cache/`, and `logs/`.
+- Check permissions for `public/downloads/`, `storage/cache/`, and `storage/logs/`.
 - Enable local CAPTCHA if public registration is open.
 - Restrict access to phpMyAdmin or do not run it in production.
 - Review third-party JavaScript/PHP libraries and their licenses.
