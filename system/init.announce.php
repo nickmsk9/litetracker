@@ -71,5 +71,9 @@ $memcached = lt_cache_bind_globals();
 
 //Подключаем язык
 $language = $config['lang'];
-require $_SERVER['DOCUMENT_ROOT'].'/languages/'.$language.'/site.php';
+$languageFile = lt_languages_path($language.'/site.php');
+if ($languageFile === '' || !file_exists($languageFile)) {
+	die('Language system error. Missing language file');
+}
+require $languageFile;
 ?>

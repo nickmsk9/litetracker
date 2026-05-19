@@ -101,7 +101,8 @@ if($act == 'edit') {
 			err($language['default_1'] , 'Не выбран файл обработчика' , 1);
 		}
 
-		if(!file_exists('modules/shop/'.$file) ) {
+		$shopModuleFile = lt_modules_path('shop/'.$file);
+		if($shopModuleFile === '' || !file_exists($shopModuleFile) ) {
 			err($language['default_1'] ,  'Файла обработчика не существует' , 1);
 		}
 
@@ -227,7 +228,7 @@ if($act == 'edit') {
 		<td style="padding: 0px;">
 			<select name="file">
 			<?php
-			$dir = "modules/shop/";
+			$dir = lt_modules_path('shop');
 
 			// Открыть заведомо существующий каталог и начать считывать его содержимое
 			if (is_dir($dir)) {
@@ -298,12 +299,13 @@ if($act == 'voicing' && $id) {
 	}
 
 	//Проверяем , существует ли файл - обработчик
-	if(!file_exists('modules/shop/'.$arr['file']) ) {
+	$shopModuleFile = lt_modules_path('shop/'.$arr['file']);
+	if($shopModuleFile === '' || !file_exists($shopModuleFile) ) {
 		err($language['default_1'] ,  'Данный товар времмено закрыт' , 1);
 	}
 
 	//Выполняем действие
-	require 'modules/shop/'.$arr['file'];
+	require $shopModuleFile;
 
 
 	//Снимаем деньги

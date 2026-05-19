@@ -25,6 +25,8 @@ $allowlist = array(
 $legacyWrappers = array(
 	'api',
 	'ajax',
+	'modules',
+	'languages',
 );
 $legacyFallback = array(
 	'cache',
@@ -33,8 +35,6 @@ $legacyFallback = array(
 $highRiskLegacy = array(
 	'system',
 	'templates',
-	'modules',
-	'languages',
 );
 $transientIgnore = array(
 	'node_modules',
