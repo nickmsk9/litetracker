@@ -106,3 +106,14 @@ Root `templates/` status after Stage 6B: **legacy public assets fallback only** 
 | `system/init.announce.php` | `app/system/init.announce.php` | root file converted to wrapper | announce/scrape compatibility preserved | high | done |
 | `system/init.autoclean.php` | `app/system/init.autoclean.php` | root file converted to wrapper | autoclean cron bootstrap compatibility preserved | high | done |
 | `system/config/*`, `system/functions/*`, `system/classes/*`, `system/bootstrap/*` | `app/system/...` | root files converted to thin wrappers; real logic moved to `app/system/...` | direct legacy includes still resolve through wrappers | high | done |
+
+## Stage 8 cache/logs runtime cleanup
+
+| Path | Current usage | Action | Risk | Result |
+|------|---------------|--------|------|--------|
+| `storage/cache/` | основной runtime cache target через `lt_cache_path()` | keep as primary runtime target | low | done |
+| `storage/logs/` | основной runtime logs target через `lt_logs_path()` | keep as primary runtime target | low | done |
+| `cache/` | legacy fallback при недоступности `storage/cache/` | keep fallback placeholders (`.gitkeep`, `.htaccess`) | medium | kept (compatibility fallback) |
+| `logs/` | legacy fallback при недоступности `storage/logs/` | keep fallback placeholder (`.htaccess`) | medium | kept (compatibility fallback) |
+
+Итог Stage 8: runtime остаётся storage-first (`storage/cache`, `storage/logs`), root `cache/` и `logs/` оставлены как контролируемый fallback для безопасной совместимости.

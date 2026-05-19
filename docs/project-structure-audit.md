@@ -207,3 +207,20 @@ Updated constants/helpers (Stage 6C):
 
 Root `system/` status after Stage 6C: **legacy compatibility wrappers only** (plus security `.htaccess`).
 High-risk legacy root list after Stage 6C: **empty**.
+
+## Stage 8 cache/logs runtime cleanup
+
+| Path | Current usage | Action | Risk | Result |
+|------|---------------|--------|------|--------|
+| `storage/cache/` | основной runtime cache target через `lt_cache_path()` и `filecache.dir` | keep as primary runtime target | low | done |
+| `storage/logs/` | основной runtime logs target через `lt_logs_path()` и `sql_log_file` | keep as primary runtime target | low | done |
+| `cache/` | legacy fallback (helper `lt_runtime_pick_path`) + admin diagnostics checks | keep fallback placeholders (`.gitkeep`, `.htaccess`) | medium | kept |
+| `logs/` | legacy fallback (helper `lt_runtime_pick_path`) + admin diagnostics checks | keep fallback placeholder (`.htaccess`) | medium | kept |
+
+Stage 8 blockers for physical root-folder removal:
+
+1. Runtime fallback contract intentionally keeps `LT_ROOT_PATH.'/cache'` and `LT_ROOT_PATH.'/logs'` as secondary writable targets when `storage/*` is unavailable.
+2. Admin Control Center system diagnostics explicitly validates `legacy cache/` and `legacy logs/` directories for compatibility visibility.
+3. Removing root placeholders now would reduce recovery compatibility for misconfigured hosts (storage permission/path issues), increasing outage risk.
+
+Stage 8 decision: keep root `cache/` and `logs/` as controlled fallback, do not move business logic there, keep storage-first writes only.
