@@ -164,3 +164,25 @@ Wrapper rationale:
 - Root `languages/` и `modules/` оставлены временно из-за legacy direct include patterns и для безопасной обратной совместимости.
 - Бизнес-логика и реальные файлы теперь находятся в `app/languages/` и `app/modules/`.
 - Структурный guard помечает `languages` и `modules` как `Legacy wrappers (временная совместимость)`.
+
+## Stage 6B templates migration
+
+| Current path | Target path | Action | Compatibility | Risk | Result |
+|-------------|-------------|--------|---------------|------|--------|
+| `templates/` | `app/templates/` | copied all PHP templates to `app/templates/`; `LT_TEMPLATES_PATH` updated from `root/templates` to `app/templates`; added `LT_LEGACY_TEMPLATES_PATH`; added `lt_templates_path()` helper with fallback | root `templates/` kept as legacy public assets fallback; browser URLs `/templates/default/css/`, `/templates/default/images/` remain valid | medium | done |
+| `templates/default/head.php` | `app/templates/default/head.php` | PHP include updated via `lt_templates_path()`; HTML asset URLs (css/images) unchanged | browser `<link href="templates/...">` still resolves via root fallback | low | done |
+| `templates/default/foot.php` | `app/templates/default/foot.php` | PHP include updated via `lt_templates_path()` | same | low | done |
+| `templates/default/template.php` | `app/templates/default/template.php` | PHP include updated via `lt_templates_path()` | same | low | done |
+| `templates/default/tpl.*.php` | `app/templates/default/tpl.*.php` | all 9 tpl files; all require/include updated in news.php, profile.php, details.php, my.setting.php, my.friends.php, index.php, my.book.php, browse.php, app/modules/releases.arr.php | same | low | done |
+| `templates/default/css/my.css` | `app/templates/default/css/my.css` | copied to app/templates; browser CSS URL still points to root `templates/` | no breakage | low | done (root fallback) |
+| `templates/default/images/forgithub.png` | `app/templates/default/images/forgithub.png` | copied; browser image URL still points to root `templates/` | no breakage | low | done (root fallback) |
+
+Updated constants and helpers (Stage 6B):
+- `LT_TEMPLATES_PATH` = `LT_APP_PATH.'/templates'` (was `LT_ROOT_PATH.'/templates'`)
+- `LT_LEGACY_TEMPLATES_PATH` = `LT_ROOT_PATH.'/templates'` (new)
+- `lt_templates_path($relative)` — new helper; checks `app/templates/` first, falls back to root `templates/`
+- `functions.themes.php` — `is_file()` checks updated to use `LT_TEMPLATES_PATH`/`LT_LEGACY_TEMPLATES_PATH`
+
+Root `templates/` status after Stage 6B: **legacy public assets fallback** — PHP never includes from root `templates/` directly; new templates must go in `app/templates/`.
+
+High-risk legacy remaining after Stage 6B: **`system/`** only (Stage 6C candidate).

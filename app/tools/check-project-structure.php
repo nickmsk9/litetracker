@@ -32,9 +32,11 @@ $legacyFallback = array(
 	'cache',
 	'logs',
 );
+$legacyPublicAssets = array(
+	'templates',
+);
 $highRiskLegacy = array(
 	'system',
-	'templates',
 );
 $transientIgnore = array(
 	'node_modules',
@@ -79,8 +81,11 @@ if (!$unknown) {
 	if ($legacyFallback) {
 		echo "Legacy runtime fallback: ".implode(', ', $legacyFallback)."\n";
 	}
+	if ($legacyPublicAssets) {
+		echo "Legacy public assets fallback (Stage 6B): ".implode(', ', $legacyPublicAssets)."\n";
+	}
 	if ($highRiskLegacy) {
-		echo "High-risk legacy (Stage 6): ".implode(', ', $highRiskLegacy)."\n";
+		echo "High-risk legacy (Stage 6C): ".implode(', ', $highRiskLegacy)."\n";
 	}
 	exit(0);
 }

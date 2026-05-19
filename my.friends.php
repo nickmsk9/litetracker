@@ -187,7 +187,7 @@ if($id == $USER['id']) {
 				";
 
 				//Выводим шаблон
-				require 'templates/'.$config['template'].'/tpl.friends.php';
+				require lt_templates_path($config['template'].'/tpl.friends.php');
 			}
 		// end_frame();
 	}
@@ -215,7 +215,7 @@ $sql = $db->query("SELECT * FROM friends WHERE userid = ".$id." AND status = 'ye
 				$action = "<input type='button' value='Убрать из друзей' onClick='window.location.href=\"my.friends.php?act=check&friendid=".$arr['friendid']."&check=delete\" '>";
 
 				//Выводим шаблон
-				require 'templates/'.$config['template'].'/tpl.friends.php';
+				require lt_templates_path($config['template'].'/tpl.friends.php');
 			}
 		} else {
 			msg("Печаль - то какая :("  , "Вы еще ни с кем не подружились . <br>

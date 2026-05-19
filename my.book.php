@@ -219,7 +219,7 @@ list($pagertop, $pagerbottom) = pager((string) $perPage, $count, $pagerHref);
 					$user = get_user_info((int) $row['id_user']);
 					$torrentCard = lt_torrent_prepare_browse_card($row, $category, $user);
 					?>
-					<?php include __DIR__.'/templates/default/tpl.torrent.card.php'; ?>
+					<?php include lt_templates_path('default/tpl.torrent.card.php'); ?>
 					<?php } ?>
 				</div>
 				<?php } else { ?>
