@@ -295,7 +295,7 @@ function addComment($type = '', $object_id = '', $file = '')
         $postedText = (string) $_POST['descr'];
     }
 
-    $rootDir = dirname(__DIR__, 2);
+    $rootDir = LT_ROOT_PATH;
 
     $avatar = 'public/images/default_avatar.gif';
     if (!empty($USER['avatar']) && is_file($rootDir . '/public/avatars/small/' . $USER['avatar'])) {
@@ -1286,7 +1286,7 @@ function comments_render_node($node, $type, $objectId, $file, $level = 0, $conte
     $commentUserNameSafe = htmlspecialchars($commentUserName, ENT_QUOTES, 'UTF-8');
     $commentAuthorHtml = comments_user_color_html((int) ($commentUser['class'] ?? 0), $commentUserNameSafe, $privilegesByClass);
     $commentProfileHref = ($commentUser ? profile_href($commentUser) : ($commentUserId > 0 ? 'profile.php?id='.$commentUserId : 'profile.php'));
-    $rootDir = dirname(__DIR__, 2);
+    $rootDir = LT_ROOT_PATH;
     $commentAvatarPath = 'public/images/default_avatar.gif';
 
     if (!empty($commentUser['avatar']) && is_file($rootDir . '/public/avatars/small/' . $commentUser['avatar'])) {

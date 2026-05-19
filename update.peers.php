@@ -66,9 +66,9 @@ ignore_user_abort(true);
 set_time_limit(0);
 
 //Подключаем главный системный файл
-require DIRNAME.'/system/init.autoclean.php';
+require DIRNAME.'/app/system/init.autoclean.php';
 //Функции для обновления
-require DIRNAME.'/system/functions/functions.benc.php';
+require DIRNAME.'/app/system/functions/functions.benc.php';
 
 lt_require_cron_access();
 

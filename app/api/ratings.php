@@ -7,7 +7,7 @@ LiteTracker Source
 ===================================================================
 */
 
-require_once dirname(__DIR__, 2).'/system/functions/functions.details.php';
+require_once dirname(__DIR__, 2).'/app/system/functions/functions.details.php';
 
 api_require_post();
 api_require_login();

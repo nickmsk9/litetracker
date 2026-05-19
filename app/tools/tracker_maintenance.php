@@ -2,7 +2,7 @@
 #!/usr/bin/env php
 
 $rootDir = str_replace('\\', '/', dirname(__DIR__, 2));
-require $rootDir.'/system/init.autoclean.php';
+require $rootDir.'/app/system/init.autoclean.php';
 
 if (PHP_SAPI !== 'cli') {
 	header('HTTP/1.1 403 Forbidden');

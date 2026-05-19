@@ -10,7 +10,7 @@ $_SERVER['DOCUMENT_ROOT'] = $rootDir;
 $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 $_SERVER['REQUEST_URI'] = $_SERVER['REQUEST_URI'] ?? '/app/tools/seed_demo_activity.php';
 
-require $rootDir.'/system/init.php';
+require $rootDir.'/app/system/init.php';
 
 const DEMO_TORRENT_PREFIX = '[DEMO] ';
 const DEMO_TORRENT_COUNT = 20;

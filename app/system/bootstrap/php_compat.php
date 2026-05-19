@@ -5,9 +5,9 @@ if (function_exists('mysqli_report')) {
 }
 
 if (!defined('LT_ROOT_PATH')) {
-	$ltRootPath = realpath(dirname(__DIR__, 2));
+	$ltRootPath = realpath(dirname(__DIR__, 3));
 	if ($ltRootPath === false) {
-		$ltRootPath = dirname(__DIR__, 2);
+		$ltRootPath = dirname(__DIR__, 3);
 	}
 	$ltRootPath = rtrim(str_replace('\\', '/', (string) $ltRootPath), '/');
 	if ($ltRootPath === '') {

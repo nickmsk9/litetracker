@@ -606,7 +606,7 @@ function admin_dashboard_can_access($user = null, $priv = null)
 function lt_asset_url($entry) {
     static $manifest = null;
     if ($manifest === null) {
-        $manifestPath = dirname(__DIR__, 2) . '/public/dist/manifest.json';
+        $manifestPath = LT_PUBLIC_PATH . '/dist/manifest.json';
         if (is_file($manifestPath)) {
             $decoded  = json_decode(file_get_contents($manifestPath), true);
             $manifest = is_array($decoded) ? $decoded : [];

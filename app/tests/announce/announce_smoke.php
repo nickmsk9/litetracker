@@ -14,7 +14,7 @@ if (PHP_SAPI !== 'cli') {
 $root = dirname(__DIR__, 3);
 chdir($root);
 
-require_once $root.'/system/config/config.mysql.php';
+require_once $root.'/app/system/config/config.mysql.php';
 
 if (
 	empty($_ENV['P15_NO_DOCKER_FALLBACK'])

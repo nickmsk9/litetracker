@@ -9,7 +9,7 @@ by Nick
 ===================================================================
 */
 define('ANNOUNCE', true);
-require 'system/init.announce.php';
+require __DIR__ . '/app/system/init.announce.php';
 
 $request = announce_parse_request();
 $announce_start = microtime(true);

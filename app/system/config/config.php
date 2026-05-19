@@ -74,7 +74,7 @@ if (!function_exists('lt_runtime_environment')) {
     }
 }
 
-$ltRootDir = dirname(__DIR__, 2);
+$ltRootDir = dirname(__DIR__, 3);
 $ltRuntimeEnvironment = lt_runtime_environment();
 $ltCacheDriver = trim((string) lt_env('LITETRACKER_CACHE_DRIVER', 'memcached'));
 $ltDefaultMemcachedHost = ($ltRuntimeEnvironment === 'docker' ? 'memcached' : '127.0.0.1');
