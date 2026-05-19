@@ -227,6 +227,7 @@ function admin_dashboard_role_map($user, $priv)
 		'database' => $superadmin,
 		'comments' => $comments,
 		'users_manage' => $users,
+		'vip_plus' => $superadmin,
 		'superadmin' => $superadmin,
 	);
 }
@@ -714,6 +715,7 @@ $tabs = array(
 	'maintenance' => array('label' => 'Обслуживание', 'allowed' => $roles['maintenance']),
 	'cache' => array('label' => 'Кэш', 'allowed' => $roles['cache']),
 	'system' => array('label' => 'Система', 'allowed' => $roles['system']),
+	'vip_plus' => array('label' => 'VIP / Plus', 'allowed' => $roles['vip_plus']),
 );
 
 $sections = array(
@@ -1208,6 +1210,12 @@ head('Админка');
 		include $adminModuleFile;
 	}
 	?>
+	<?php } elseif ($activeTab === 'vip_plus' && !empty($roles['vip_plus'])) { ?>
+	<section class='admin-card'>
+		<h2 class='admin-card-title'>VIP / Plus</h2>
+		<p class='admin-card-text'>Этот модуль будет реализован позже. Сейчас раздел зарезервирован и недоступен.</p>
+		<div class='admin-empty' style='margin-top:18px;'>VIP / Plus: будет реализовано позже.</div>
+	</section>
 	<?php } elseif (!empty($settingsSchema[$activeTab]) && !empty($roles[$activeTab])) { ?>
 	<?php $settingsTab = $settingsSchema[$activeTab]; ?>
 	<section class='admin-settings-form'>
