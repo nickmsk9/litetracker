@@ -109,6 +109,18 @@ Path constants и helpers:
 - `cache`, `logs`
 - `system`, `templates`, `modules`, `languages`, `ajax`, `api`
 
+Dot-директории в корне (не проверяются guard-скриптом):
+
+- `.github` — GitHub Actions workflows и конфигурация платформы.
+- `.githooks` — локальные git-хуки (установка: `git config core.hooksPath .githooks`).
+
+## Stage 7 — `.github` CI и githooks
+
+| Path | Action | Notes |
+|------|--------|-------|
+| `.github/workflows/ci.yml` | добавлен | PHP lint, structure check, Vite build через GitHub Actions |
+| `.githooks/pre-commit` | обновлён | добавлена проверка структуры директорий перед дампом БД |
+
 ## Stage 6A languages/modules migration
 
 | Current path | Target path | Action | Compatibility | Risk | Result |

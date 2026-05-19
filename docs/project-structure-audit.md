@@ -207,3 +207,15 @@ Updated constants/helpers (Stage 6C):
 
 Root `system/` status after Stage 6C: **legacy compatibility wrappers only** (plus security `.htaccess`).
 High-risk legacy root list after Stage 6C: **empty**.
+
+## Stage 7 — `.github` CI и githooks
+
+| Path | Action | Compatibility | Risk | Result |
+|------|--------|---------------|------|--------|
+| `.github/workflows/ci.yml` | добавлен GitHub Actions CI: PHP lint, structure check, Vite build | нет нарушений совместимости | low | done |
+| `.githooks/pre-commit` | обновлён: добавлена проверка структуры корневых директорий (`SKIP_STRUCTURE_CHECK=1` для пропуска) | SKIP_DB_DUMP по-прежнему работает; структурная проверка выполняется до дампа | low | done |
+
+Dot-директории в корне после Stage 7:
+
+- `.github/` — GitHub Actions CI и конфигурация GitHub-платформы.
+- `.githooks/` — локальные git-хуки; установка через `git config core.hooksPath .githooks`.

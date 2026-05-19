@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-check:
+    name: PHP lint & structure check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: none
+          coverage: none
+
+      - name: Check root directory structure
+        run: php app/tools/check-project-structure.php
+
+      - name: PHP syntax check
+        run: |
+          find . \
+            -name "*.php" \
+            -not -path "./vendor/*" \
+            -not -path "./node_modules/*" \
+            -print0 \
+          | xargs -0 -n1 php -l \
+          | grep -v "^No syntax errors detected" \
+          && echo "PHP syntax errors found" && exit 1 \
+          || echo "PHP syntax OK"
+
+  build-frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build

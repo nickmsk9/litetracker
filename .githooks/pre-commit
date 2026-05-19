@@ -2,10 +2,14 @@
 
 set -euo pipefail
 
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+if [ "${SKIP_STRUCTURE_CHECK:-0}" != "1" ]; then
+  php "$REPO_ROOT/app/tools/check-project-structure.php"
+fi
+
 if [ "${SKIP_DB_DUMP:-0}" = "1" ]; then
   exit 0
 fi
-
-REPO_ROOT="$(git rev-parse --show-toplevel)"
 
 "$REPO_ROOT/app/tools/dump-db.sh"
