@@ -10,7 +10,7 @@ export default defineConfig({
         manifest: "manifest.json",
         rollupOptions: {
             input: {
-                app: resolve(__dirname, "src/app.js"),
+                app: resolve(__dirname, "app/frontend/app.js"),
             },
             // jQuery loaded globally from public/js/jquery.js — keep as external
             external: [],

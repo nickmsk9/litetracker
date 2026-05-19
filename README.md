@@ -54,19 +54,54 @@ LiteTracker Engine - это PHP-движок BitTorrent-трекера с лок
 
 ### Структура проекта
 
-```text
-.
-├── ajax/                    # AJAX-обработчики профилей, тегов и служебных действий
-├── blocks/                  # Блоки боковой панели и главной страницы
-├── database/                # Основной SQL-дамп
-├── docker/apache/           # Apache virtual hosts и стартовый скрипт TLS
-├── modules/                 # Модули релизов, магазина, видео, скриншотов
-├── public/                  # CSS, JavaScript, изображения и загруженные файлы
-├── scripts/                 # Служебные CLI-скрипты
-├── system/                  # Инициализация, конфиги, классы и функции
-├── templates/default/       # Шаблон интерфейса
-├── Dockerfile
-└── docker-compose.yml
+Основные директории проекта:
+
+- `app/` — ядро приложения, системная логика, админские и API-компоненты.
+- `public/` — публичные assets (`css`, `js`, `images`, `static`, `dist`).
+- `database/` — схема/дампы/миграции/seed-данные.
+- `storage/` — runtime-данные (`logs`, `cache`, `tmp`, `backups`, `uploads`).
+- `docs/` — документация и архив устаревших материалов.
+
+Runtime policy:
+
+- новые runtime-файлы должны использовать `storage/*`;
+- `cache/` и `logs/` в корне считаются legacy fallback путями на переходный период.
+
+Служебные корневые файлы:
+
+- `Dockerfile`
+- `docker-compose.yml`
+- `.env.example`
+- `.gitignore`
+
+Правило: новые модули не должны создавать новые папки в корне. Размещайте код и ресурсы в `app/`, `public/`, `database/`, `storage/` и `docs/`.
+
+Примечание по legacy routing: публичные PHP entrypoints в корне (`index.php`, `browse.php`, `details.php`, `upload.php`, `admin.php` и др.) пока остаются на месте для совместимости URL.
+
+Path constants и helpers:
+
+- Используйте `LT_*` константы (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`).
+- Для runtime-путей используйте `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`.
+
+## Root directory policy
+
+- Новые папки в корне запрещены.
+- Новые модули раскладываются только по `app/`, `public/`, `database/`, `storage/`, `docs/`.
+- Legacy-папки остаются временно до Stage 4.
+- Runtime-файлы должны идти только в `storage/*`.
+- `cache/` и `logs/` в корне — только fallback на переходный период.
+
+Разрешённые корневые директории:
+
+- `app`, `public`, `database`, `storage`, `docs`
+- `cache`, `logs`
+- `system`, `templates`, `admin`, `modules`, `languages`, `ajax`, `api`
+- `docker`, `tests`
+
+Проверка структуры:
+
+```bash
+php app/tools/check-project-structure.php
 ```
 
 ### Быстрый старт через Docker
@@ -110,7 +145,7 @@ HTTP-порт `8094` также опубликован, но Apache перена
 Дополнительно можно пересоздать демонстрационную активность:
 
 ```bash
-docker compose exec php php scripts/seed_demo_activity.php
+docker compose exec php php app/tools/seed_demo_activity.php
 ```
 
 Скрипт создает демо-пользователей и демо-релизы. Пароль для пользователей, созданных этим скриптом:
@@ -128,7 +163,7 @@ npm ci
 npm run build
 ```
 
-Примечание: приложение работает и без предварительной сборки. Если `public/dist/manifest.json` отсутствует, LiteTracker автоматически подключает исходный entrypoint `src/app.js`.
+Примечание: приложение работает и без предварительной сборки. Если `public/dist/manifest.json` отсутствует, LiteTracker автоматически подключает исходный entrypoint `app/frontend/app.js`.
 
 Запуск проекта:
 
@@ -164,7 +199,7 @@ docker compose up -d php
 Экспорт текущей базы в `database/litetracker.sql`:
 
 ```bash
-./scripts/dump-db.sh
+./app/tools/dump-db.sh
 ```
 
 Полная очистка локальной MySQL-базы Docker:
@@ -321,19 +356,54 @@ The repository includes an SQL dump with demo data, so the application can be st
 
 ### Project Structure
 
-```text
-.
-├── ajax/                    # AJAX handlers for profiles, tags, and service actions
-├── blocks/                  # Sidebar and homepage blocks
-├── database/                # Main SQL dump
-├── docker/apache/           # Apache virtual hosts and TLS startup script
-├── modules/                 # Release, shop, video, and screenshot modules
-├── public/                  # CSS, JavaScript, images, and uploaded files
-├── scripts/                 # Utility CLI scripts
-├── system/                  # Bootstrap, config, classes, and functions
-├── templates/default/       # Default UI template
-├── Dockerfile
-└── docker-compose.yml
+Primary directories:
+
+- `app/` — core application logic, system helpers, admin/API components.
+- `public/` — public assets (`css`, `js`, `images`, `static`, `dist`).
+- `database/` — schema, dumps, migrations, and seed data.
+- `storage/` — runtime data (`logs`, `cache`, `tmp`, `backups`, `uploads`).
+- `docs/` — project documentation and archives.
+
+Runtime policy:
+
+- new runtime files should use `storage/*`;
+- root-level `cache/` and `logs/` are legacy fallback paths during migration.
+
+Root-level operational files:
+
+- `Dockerfile`
+- `docker-compose.yml`
+- `.env.example`
+- `.gitignore`
+
+Rule: new modules must not create new root folders. Place code/resources under `app/`, `public/`, `database/`, `storage/`, and `docs/`.
+
+Legacy routing note: root PHP public entrypoints (`index.php`, `browse.php`, `details.php`, `upload.php`, `admin.php`, etc.) remain in place for URL compatibility.
+
+Path constants and helpers:
+
+- Use `LT_*` path constants (`LT_ROOT_PATH`, `LT_APP_PATH`, `LT_PUBLIC_PATH`, `LT_STORAGE_PATH`, `LT_DATABASE_PATH`, `LT_DOCS_PATH`, `LT_SYSTEM_PATH`, `LT_TEMPLATES_PATH`, `LT_ADMIN_PATH`, `LT_API_PATH`).
+- For runtime paths use `lt_path()`, `lt_storage_path()`, `lt_cache_path()`, `lt_logs_path()`, `lt_tmp_path()`, `lt_uploads_path()`.
+
+## Root directory policy
+
+- New root directories are prohibited.
+- New modules must be placed under `app/`, `public/`, `database/`, `storage/`, and `docs/`.
+- Legacy folders remain temporarily until Stage 4.
+- Runtime files should only use `storage/*`.
+- Root-level `cache/` and `logs/` are transition fallback paths only.
+
+Allowed root directories:
+
+- `app`, `public`, `database`, `storage`, `docs`
+- `cache`, `logs`
+- `system`, `templates`, `admin`, `modules`, `languages`, `ajax`, `api`
+- `docker`, `tests`
+
+Structure check:
+
+```bash
+php app/tools/check-project-structure.php
 ```
 
 ### Quick Start with Docker
@@ -377,7 +447,7 @@ HTTP port `8094` is also exposed, but Apache redirects HTTP requests to HTTPS. Y
 You can also regenerate demo activity:
 
 ```bash
-docker compose exec php php scripts/seed_demo_activity.php
+docker compose exec php php app/tools/seed_demo_activity.php
 ```
 
 The password for users created by this script is:
@@ -395,7 +465,7 @@ npm ci
 npm run build
 ```
 
-Note: the app also works without a prebuilt bundle. If `public/dist/manifest.json` is missing, LiteTracker automatically falls back to the source entrypoint `src/app.js`.
+Note: the app also works without a prebuilt bundle. If `public/dist/manifest.json` is missing, LiteTracker automatically falls back to the source entrypoint `app/frontend/app.js`.
 
 Start the project:
 
@@ -431,7 +501,7 @@ docker compose up -d php
 Export the current database to `database/litetracker.sql`:
 
 ```bash
-./scripts/dump-db.sh
+./app/tools/dump-db.sh
 ```
 
 Reset the local Docker MySQL data:

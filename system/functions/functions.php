@@ -644,7 +644,7 @@ function head($title = '' , $light = false , $description = '' , $keywords = '' 
 
 	//Формируем header
 	$header .= '<script type="text/javascript" src="public/js/jquery.js"></script>' . "\n";
-	$appBundle = lt_asset_url('src/app.js');
+	$appBundle = lt_asset_url('app/frontend/app.js');
 	$header .= '<script type="module" src="' . htmlspecialchars($appBundle, ENT_QUOTES, 'UTF-8') . '"></script>' . "\n";
 	$header .= '<script type="text/javascript" src="/public/js/notifications.js?v='.(int) @filemtime('public/js/notifications.js').'" defer></script>' . "\n";
 	$header .=	'<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />

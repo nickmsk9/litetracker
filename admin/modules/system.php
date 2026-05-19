@@ -22,9 +22,12 @@ try {
 
 // Directory checks
 $dirsToCheck = array(
-    'uploads/' => realpath(__DIR__.'/../../uploads') ?: (__DIR__.'/../../uploads'),
-    'cache/'   => realpath(__DIR__.'/../../cache') ?: (__DIR__.'/../../cache'),
-    'logs/'    => realpath(__DIR__.'/../../logs') ?: (__DIR__.'/../../logs'),
+    'storage/cache/'   => function_exists('lt_cache_path') ? lt_cache_path() : (realpath(__DIR__.'/../../storage/cache') ?: (__DIR__.'/../../storage/cache')),
+    'legacy cache/'    => realpath(__DIR__.'/../../cache') ?: (__DIR__.'/../../cache'),
+    'storage/logs/'    => function_exists('lt_logs_path') ? lt_logs_path() : (realpath(__DIR__.'/../../storage/logs') ?: (__DIR__.'/../../storage/logs')),
+    'legacy logs/'     => realpath(__DIR__.'/../../logs') ?: (__DIR__.'/../../logs'),
+    'storage/uploads/' => function_exists('lt_uploads_path') ? lt_uploads_path() : (realpath(__DIR__.'/../../storage/uploads') ?: (__DIR__.'/../../storage/uploads')),
+    'public/downloads/' => realpath(__DIR__.'/../../public/downloads') ?: (__DIR__.'/../../public/downloads'),
 );
 
 $dirStatuses = array();

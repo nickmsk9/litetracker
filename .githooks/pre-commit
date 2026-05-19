@@ -8,4 +8,4 @@ fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 
-"$REPO_ROOT/scripts/dump-db.sh"
+"$REPO_ROOT/app/tools/dump-db.sh"
