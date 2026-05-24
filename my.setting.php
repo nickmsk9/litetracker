@@ -90,6 +90,10 @@ if($status == '2') {
 	msg($language['default_1'] , $language['setting_30'] , 'error');
 }
 
+if (!empty($_GET['force_password']) && lt_user_must_change_password($USER)) {
+	msg($language['default_1'], 'Смените временный пароль администратора перед продолжением.', 'error');
+}
+
 require lt_templates_path($config['template'].'/tpl.setting.php');
 
 foot();

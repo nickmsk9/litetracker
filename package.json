@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
-    "preview": "vite preview"
+    "build": "vite build"
   },
   "devDependencies": {
     "esbuild": "^0.28.0",

@@ -99,7 +99,7 @@ if ($settingsActiveTabRaw === 'password') {
 					</section>
 
 					<section class="settings-section">
-						<h2 class="settings-section-title">Экспериментальные настройки</h2>
+						<h2 class="settings-section-title">Оформление</h2>
 						<div class="settings-checkbox-list">
 							<label class="settings-checkbox"><input type="checkbox" name="theme_dark" value="1"<?=(!empty($arr['theme_dark']) ? ' checked' : '');?>> Включить тёмную тему</label>
 						</div>

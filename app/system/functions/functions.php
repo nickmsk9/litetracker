@@ -1344,6 +1344,11 @@ function lt_password_hash_value($password)
 	return password_hash((string) $password, PASSWORD_DEFAULT);
 }
 
+function lt_user_must_change_password($userRow)
+{
+	return hash_equals('FORCE_CHANGE_PASSWORD', (string) ($userRow['password_code'] ?? ''));
+}
+
 function lt_password_verify_user($password, $userRow, &$needsRehash = false)
 {
 	$needsRehash = false;

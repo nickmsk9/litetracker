@@ -139,10 +139,6 @@ if (!function_exists('lt_path')) {
 				$base = LT_STORAGE_PATH.'/logs';
 				lt_path_ensure_dir($base);
 				break;
-			case 'tmp':
-				$base = LT_STORAGE_PATH.'/tmp';
-				lt_path_ensure_dir($base);
-				break;
 			case 'uploads':
 				$base = LT_STORAGE_PATH.'/uploads';
 				lt_path_ensure_dir($base);
@@ -213,13 +209,6 @@ if (!function_exists('lt_logs_path')) {
 	function lt_logs_path($relative = '')
 	{
 		return lt_path('logs', $relative);
-	}
-}
-
-if (!function_exists('lt_tmp_path')) {
-	function lt_tmp_path($relative = '')
-	{
-		return lt_path('tmp', $relative);
 	}
 }
 

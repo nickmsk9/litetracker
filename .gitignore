@@ -23,9 +23,6 @@ logs/*
 cache/*
 !cache/.gitkeep
 !cache/.htaccess
-system/cache/*.cache
-system/cache/locks/*
-!system/cache/locks/.gitkeep
 comments_debug.log
 
 public/downloads/*
@@ -39,15 +36,13 @@ public/downloads/*
 
 public/dist/*
 !public/dist/.gitkeep
+!public/dist/manifest.json
+!public/dist/assets/
+!public/dist/assets/*.js
 
 /storage/logs/*
 /storage/cache/*
-/storage/tmp/*
-/storage/backups/*
 /storage/uploads/*
 !/storage/logs/.gitkeep
 !/storage/cache/.gitkeep
-!/storage/tmp/
-!/storage/tmp/.gitkeep
-!/storage/backups/.gitkeep
 !/storage/uploads/.gitkeep

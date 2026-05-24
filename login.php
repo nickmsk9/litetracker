@@ -413,8 +413,10 @@ if($_POST) {
 	if ($loginModalError === '') {
 		if (!empty($passwordNeedsRehash)) {
 			$password_hash = lt_password_hash_value($password);
-			$db->pquery("UPDATE users SET password=?, password_code='' WHERE id=?", 'si', [$password_hash, (int) $arr['id']]);
+			$passwordCode = (lt_user_must_change_password($arr) ? 'FORCE_CHANGE_PASSWORD' : '');
+			$db->pquery("UPDATE users SET password=?, password_code=? WHERE id=?", 'ssi', [$password_hash, $passwordCode, (int) $arr['id']]);
 			$arr['password'] = $password_hash;
+			$arr['password_code'] = $passwordCode;
 		}
 
 		//Удаляем кеш
@@ -428,6 +430,11 @@ if($_POST) {
 		//Определяем cookies
 		logout_cookie();
 		login_cookie($arr['id'] , $password_hash );
+
+		if (lt_user_must_change_password($arr)) {
+			header('Location:my.setting.php?id='.(int) $arr['id'].'&tab=password&force_password=1');
+			die();
+		}
 
 		//Переадресация
 		if ($isModalView) {

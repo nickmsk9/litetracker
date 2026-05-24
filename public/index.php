@@ -23,7 +23,7 @@ if (strpos($relativePath, "\0") !== false || strpos($relativePath, '..') !== fal
 	exit('Bad Request');
 }
 
-$blockedPathPattern = '~^(?:app|storage|docs|database|system|logs|docker-data|docker|vendor|tests|node_modules|\.git)(?:/|$)~i';
+$blockedPathPattern = '~^(?:app|storage|docs|database|system|logs|docker|vendor|node_modules|\.git)(?:/|$)~i';
 $blockedFilePattern = '~^(?:\.env(?:\..*)?|composer\..*|package(?:-lock)?\.json|phpunit\.xml|docker-compose(?:\.[^/]+)?\.ya?ml|Dockerfile|README\.md)$~i';
 
 if (preg_match($blockedPathPattern, $relativePath) || preg_match($blockedFilePattern, $relativePath)) {

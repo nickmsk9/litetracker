@@ -162,6 +162,15 @@ header("Content-Type: text/html; charset=".$language['charset']."");
 //Определяем пользователя
 user_check();
 
+if (!empty($USER['id']) && function_exists('lt_user_must_change_password') && lt_user_must_change_password($USER)) {
+	$currentScript = basename((string) ($_SERVER['SCRIPT_NAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
+	$allowedForcePasswordScripts = array('my.setting.php', 'my.setting.take.php', 'exit.php');
+	if (!in_array($currentScript, $allowedForcePasswordScripts, true)) {
+		header('Location:my.setting.php?id='.(int) $USER['id'].'&tab=password&force_password=1');
+		die();
+	}
+}
+
 
 //Бан по IP - адресу
 if(!$PRIV['ip_util']) {
