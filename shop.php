@@ -77,7 +77,7 @@ if($act == 'edit') {
 		$update = array();
 
 		//Название
-		$name = trim($_POST['name']);
+		$name = trim((string) ($_POST['name'] ?? ''));
 		if(empty($name) ) {
 			err($language['default_1'] , 'Введите название товара' , 1);
 		}
@@ -87,16 +87,17 @@ if($act == 'edit') {
 
 
 		//Цена
-		$voice = $_POST['voice'];
+		$voice = trim((string) ($_POST['voice'] ?? ''));
 		if(!is_numeric($voice) || $voice <= 0) {
 			err($language['default_1'] , 'Не верный формат цены' , 1);
 		}
+		$voice = (float) $voice;
 		if($arr['voice'] != $voice) {
-			$update[] = 'voice="'.$voice.'"';
+			$update[] = 'voice="'.$db->safesql((string) $voice).'"';
 		}
 
 		//Файл обработки
-		$file = trim($_POST['file']);
+		$file = preg_replace('~[^a-zA-Z0-9_.-]+~', '', trim((string) ($_POST['file'] ?? '')));
 		if($file == '.' || $file == '..' || empty($file) )  {
 			err($language['default_1'] , 'Не выбран файл обработчика' , 1);
 		}
@@ -147,14 +148,9 @@ if($act == 'edit') {
 			// What is the temporary file name?
 			$ifile = $_FILES['image']['tmp_name'];
 
-			// Calculate what the next torrent id will be
-			if(!$id) {
-				$row = $db->super_query("SHOW TABLE STATUS LIKE 'shop'");
-				$id = $row['Auto_increment'];
-			}
-
 			// By what filename should the tracker associate the image with?
-			$ifilename = $id .  substr($_FILES['image']['name'], strlen($_FILES['image']['name'])-4, 4);
+			$imagePrefix = ($id ? (string) $id : 'pending_'.(int) $USER['id'].'_'.time().'_'.bin2hex(random_bytes(4)));
+			$ifilename = $imagePrefix .  substr((string) $_FILES['image']['name'], strlen((string) $_FILES['image']['name'])-4, 4);
 
 
 			// Upload the file

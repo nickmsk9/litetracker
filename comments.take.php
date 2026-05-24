@@ -129,7 +129,9 @@ if ($act === 'report' && !empty($input['id_comment'])) {
         comments_take_redirect($type, $object_id);
     }
 
-    comments_reports_ensure_table();
+    if (!comments_reports_ensure_table()) {
+        err($language['default_1'], 'Модуль жалоб на комментарии не подготовлен. Запустите миграции.', 1);
+    }
     $reportsTable = comments_reports_table_name();
     $existingReport = $db->psuper_query(
         "SELECT id FROM `".$reportsTable."`

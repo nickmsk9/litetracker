@@ -190,6 +190,12 @@ function lt_details_rating_table_ready()
 		return true;
 	}
 
+	if (!lt_schema_mutations_enabled()) {
+		// TODO: create torrent_ratings via migrations; runtime CREATE is disabled for web requests.
+		$ready = false;
+		return false;
+	}
+
 	$db->query(
 		"CREATE TABLE IF NOT EXISTS `".$tableName."` (
 			`id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -223,6 +229,12 @@ function lt_details_views_table_ready()
 	if (lt_table_exists($tableName)) {
 		$ready = true;
 		return true;
+	}
+
+	if (!lt_schema_mutations_enabled()) {
+		// TODO: create torrent_views via migrations; runtime CREATE is disabled for web requests.
+		$ready = false;
+		return false;
 	}
 
 	$db->query(

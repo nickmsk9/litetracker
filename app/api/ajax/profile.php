@@ -24,7 +24,17 @@ function profile_ajax_admin_ensure_schema()
 	static $ready = false;
 
 	if ($ready) {
-		return;
+		return true;
+	}
+
+	if (lt_table_exists('user_admin_notes')) {
+		$ready = true;
+		return true;
+	}
+
+	if (!lt_schema_mutations_enabled()) {
+		// TODO: create user_admin_notes via migrations; runtime CREATE is disabled for web requests.
+		return false;
 	}
 
 	$db->query(
@@ -40,6 +50,7 @@ function profile_ajax_admin_ensure_schema()
 	);
 
 	$ready = true;
+	return true;
 }
 
 $action = trim((string) ($_REQUEST['action'] ?? ''));
@@ -127,7 +138,9 @@ if ($action === 'toggle_blacklist') {
 
 if ($action === 'moderate_profile') {
 	profile_ajax_require_login();
-	profile_ajax_admin_ensure_schema();
+	if (!profile_ajax_admin_ensure_schema()) {
+		profile_ajax_response(false, 'Модуль заметок администратора не подготовлен. Запустите миграции.');
+	}
 
 	if (empty($PRIV['setting_user']) && empty($PRIV['EDIT_PRIV'])) {
 		profile_ajax_response(false, 'Недостаточно прав.');

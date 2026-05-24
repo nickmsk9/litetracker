@@ -106,42 +106,48 @@ if ($bonus_per_cleanup > 0) {
 ///////////////////////////////////////////////////////////////////
 $birthdayBonusAmount = (float) ($config['birthday_bonus_amount'] ?? $defaultBirthdayBonusAmount);
 if ($birthdayBonusAmount > 0) {
-	$db->query(
-		"CREATE TABLE IF NOT EXISTS `birthday_rewards` (
-			`id` int NOT NULL AUTO_INCREMENT,
-			`user_id` int NOT NULL,
-			`reward_year` int NOT NULL,
-			`created_at` datetime NOT NULL,
-			PRIMARY KEY (`id`),
-			UNIQUE KEY `user_year` (`user_id`, `reward_year`),
-			KEY `reward_year` (`reward_year`)
-		) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin"
-	);
+	if (!lt_table_exists('birthday_rewards') && lt_schema_mutations_enabled()) {
+		// TODO: create birthday_rewards via migrations; runtime CREATE is disabled for web requests.
+		$db->query(
+			"CREATE TABLE IF NOT EXISTS `birthday_rewards` (
+				`id` int NOT NULL AUTO_INCREMENT,
+				`user_id` int NOT NULL,
+				`reward_year` int NOT NULL,
+				`created_at` datetime NOT NULL,
+				PRIMARY KEY (`id`),
+				UNIQUE KEY `user_year` (`user_id`, `reward_year`),
+				KEY `reward_year` (`reward_year`)
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin"
+		);
+		lt_schema_cache_delete(lt_schema_table_cache_key('birthday_rewards'));
+	}
 
 	$currentYear = (int) date('Y');
 	$todayMonthDay = date($birthdayPhpMonthDayFormat);
-	$birthdayUsers = $db->query(
-		"SELECT id, name
-		 FROM users
-		 WHERE birthday_date IS NOT NULL
-		   AND birthday_date > '1000-01-01'
-		   AND DATE_FORMAT(birthday_date, '".$db->safesql($birthdayDateFormat)."') = '".$db->safesql($todayMonthDay)."'"
-	);
-	while ($birthdayUser = $db->get_row($birthdayUsers)) {
-		$userId = (int) ($birthdayUser['id'] ?? 0);
-		if ($userId <= 0) {
-			continue;
-		}
+	if (lt_table_exists('birthday_rewards', true)) {
+		$birthdayUsers = $db->query(
+			"SELECT id, name
+			 FROM users
+			 WHERE birthday_date IS NOT NULL
+			   AND birthday_date > '1000-01-01'
+			   AND DATE_FORMAT(birthday_date, '".$db->safesql($birthdayDateFormat)."') = '".$db->safesql($todayMonthDay)."'"
+		);
+		while ($birthdayUser = $db->get_row($birthdayUsers)) {
+			$userId = (int) ($birthdayUser['id'] ?? 0);
+			if ($userId <= 0) {
+				continue;
+			}
 
-		$alreadyRewarded = $db->super_query("SELECT id FROM birthday_rewards WHERE user_id = ".$userId." AND reward_year = ".$currentYear." LIMIT 1");
-		if (!empty($alreadyRewarded['id'])) {
-			continue;
-		}
+			$alreadyRewarded = $db->super_query("SELECT id FROM birthday_rewards WHERE user_id = ".$userId." AND reward_year = ".$currentYear." LIMIT 1");
+			if (!empty($alreadyRewarded['id'])) {
+				continue;
+			}
 
-		$db->query("UPDATE users SET {$bonusColumn} = ({$bonusColumn} + ".$birthdayBonusAmount.") WHERE id = ".$userId);
-		$db->query("INSERT INTO birthday_rewards (user_id, reward_year, created_at) VALUES (".$userId.", ".$currentYear.", NOW())");
-		send_msg($birthdayMessageSubject, sprintf($birthdayMessageTemplate, number_format($birthdayBonusAmount, 0, '.', ' ')), $userId, 0);
-		$memcached->delete('user_'.$userId);
+			$db->query("UPDATE users SET {$bonusColumn} = ({$bonusColumn} + ".$birthdayBonusAmount.") WHERE id = ".$userId);
+			$db->query("INSERT INTO birthday_rewards (user_id, reward_year, created_at) VALUES (".$userId.", ".$currentYear.", NOW())");
+			send_msg($birthdayMessageSubject, sprintf($birthdayMessageTemplate, number_format($birthdayBonusAmount, 0, '.', ' ')), $userId, 0);
+			$memcached->delete('user_'.$userId);
+		}
 	}
 }
 
@@ -171,18 +177,28 @@ if ($signupClassId > 0) {
 	$autoPromotionTargetId = (int) ($autoPromotionTarget['id'] ?? 0);
 
 	if ($autoPromotionTargetId > 0) {
-		$db->query(
-			"CREATE TABLE IF NOT EXISTS `user_auto_promotions` (
-				`id` int unsigned NOT NULL AUTO_INCREMENT,
-				`user_id` int unsigned NOT NULL,
-				`from_class` int unsigned NOT NULL,
-				`to_class` int unsigned NOT NULL,
-				`created_at` datetime NOT NULL,
-				PRIMARY KEY (`id`),
-				UNIQUE KEY `user_to_class` (`user_id`, `to_class`)
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin"
-		);
+		if (!lt_table_exists('user_auto_promotions') && lt_schema_mutations_enabled()) {
+			// TODO: create user_auto_promotions via migrations; runtime CREATE is disabled for web requests.
+			$db->query(
+				"CREATE TABLE IF NOT EXISTS `user_auto_promotions` (
+					`id` int unsigned NOT NULL AUTO_INCREMENT,
+					`user_id` int unsigned NOT NULL,
+					`from_class` int unsigned NOT NULL,
+					`to_class` int unsigned NOT NULL,
+					`created_at` datetime NOT NULL,
+					PRIMARY KEY (`id`),
+					UNIQUE KEY `user_to_class` (`user_id`, `to_class`)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin"
+			);
+			lt_schema_cache_delete(lt_schema_table_cache_key('user_auto_promotions'));
+		}
 
+		if (!lt_table_exists('user_auto_promotions', true)) {
+			$autoPromotionTargetId = 0;
+		}
+	}
+
+	if ($autoPromotionTargetId > 0) {
 		$eligibleUsers = $db->query(
 			"SELECT id, uploaded, downloaded
 			 FROM users

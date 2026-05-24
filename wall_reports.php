@@ -18,7 +18,9 @@ if (!user_wall_reports_can_moderate()) {
 	err('Ошибка', 'Недостаточно прав для просмотра жалоб.', 1);
 }
 
-user_wall_reports_ensure_table();
+if (!user_wall_reports_ensure_table()) {
+	err('Ошибка', 'Модуль жалоб не подготовлен. Запустите миграции.', 1);
+}
 
 function wall_reports_normalize_status($status)
 {

@@ -22,6 +22,18 @@ function lt_moderation_log_ensure_schema()
 		return true;
 	}
 
+	if (lt_table_exists('moderation_log')) {
+		$ready = true;
+		lt_schema_cache_set($schemaCacheKey, true);
+		return true;
+	}
+
+	if (!lt_schema_mutations_enabled()) {
+		// TODO: create moderation_log via migrations; runtime CREATE is disabled for web requests.
+		$ready = false;
+		return false;
+	}
+
 	$db->query(
 		"CREATE TABLE IF NOT EXISTS `moderation_log` (
 			`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

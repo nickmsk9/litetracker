@@ -81,15 +81,28 @@ function lt_torrent_status_ensure_schema()
 
 	foreach ($columns as $column => $sql) {
 		if (!lt_column_exists('torrents', $column)) {
+			if (!lt_schema_mutations_enabled()) {
+				// TODO: add torrent status columns via migrations; runtime ALTER is disabled for web requests.
+				$ready = false;
+				return false;
+			}
 			$db->query($sql, 0);
 			lt_schema_cache_delete(lt_schema_column_cache_key('torrents', $column));
 		}
 	}
 
 	if (!lt_torrent_index_exists('torrents', 'status_added')) {
+		if (!lt_schema_mutations_enabled()) {
+			$ready = false;
+			return false;
+		}
 		$db->query("ALTER TABLE `torrents` ADD KEY `status_added` (`status`, `added`)", 0);
 	}
 	if (!lt_torrent_index_exists('torrents', 'owner_status')) {
+		if (!lt_schema_mutations_enabled()) {
+			$ready = false;
+			return false;
+		}
 		$db->query("ALTER TABLE `torrents` ADD KEY `owner_status` (`id_user`, `status`)", 0);
 	}
 

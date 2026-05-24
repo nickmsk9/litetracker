@@ -484,7 +484,9 @@ if ($action === 'report') {
     }
 
     if ($type === 'users') {
-        user_wall_reports_ensure_table();
+        if (!user_wall_reports_ensure_table()) {
+            ajax_cm_response(0, 'Модуль жалоб не подготовлен. Запустите миграции.');
+        }
         $reportsTable = user_wall_reports_table_name();
         $existing = $db->super_query(
             "SELECT id
@@ -495,7 +497,9 @@ if ($action === 'report') {
              LIMIT 1"
         );
     } else {
-        comments_reports_ensure_table();
+        if (!comments_reports_ensure_table()) {
+            ajax_cm_response(0, 'Модуль жалоб не подготовлен. Запустите миграции.');
+        }
         $reportsTable = comments_reports_table_name();
         $existing = $db->super_query(
             "SELECT id FROM `{$reportsTable}`

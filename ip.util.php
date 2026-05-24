@@ -146,12 +146,12 @@ if($act == 'banned_ip') {
 	if($_POST) {
 		ip_util_require_action_token($ipUtilActionScope);
 		//Первичный IP
-		$ip_1 = trim($_POST['ip_1']);
+		$ip_1 = trim((string) ($_POST['ip_1'] ?? ''));
 		if (!validip($ip_1)) {
 			err('Ошибка' , 'Первичный IP введен не корректно' , 1);
 		}
 		//Вторичный IP
-		$ip_2 = trim($_POST['ip_2']);
+		$ip_2 = trim((string) ($_POST['ip_2'] ?? ''));
 		if(empty($ip_2) ) {
 			$ip_2 = $ip_1;
 		} else {
@@ -160,7 +160,7 @@ if($act == 'banned_ip') {
 			}
 		}
 		//Комментарий
-		$text = trim($_POST['text']);
+		$text = trim((string) ($_POST['text'] ?? ''));
 
 		$db->pquery(
 			"INSERT INTO bans (first, last, date, id_user, text) VALUES (?, ?, NOW(), ?, ?)",
@@ -387,13 +387,14 @@ begin_frame('Поиск');
 <?php
 end_frame();
 
-if($_GET['ip']) {
+if(trim((string) ($_GET['ip'] ?? '')) !== '') {
 
 	$where = array();
 	$get = array();
 
 	//Разбираем IP
-	$ip = trim($_GET['ip']);
+	$ipRaw = trim((string) ($_GET['ip'] ?? ''));
+	$ip = $ipRaw;
 
 	if(!empty($ip)) {
 		$ip = explode('.' , $ip);
@@ -417,7 +418,7 @@ if($_GET['ip']) {
 
 
 		$where[]  = "('$last_ip' >= ip AND '$first_ip' <= ip)";
-		$get[] = 'ip='.$ip;
+		$get[] = 'ip='.rawurlencode($ipRaw);
 	}
 
 

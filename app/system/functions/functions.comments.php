@@ -54,6 +54,11 @@ function comments_ensure_thread_support($type)
 
     $hasParentColumn = lt_column_exists($tableName, 'parent_id');
     if (!$hasParentColumn) {
+        if (!lt_schema_mutations_enabled()) {
+            // TODO: add `parent_id` through migrations; runtime ALTER is disabled for web requests.
+            $ready[$type] = false;
+            return false;
+        }
         $db->query("ALTER TABLE `".$tableName."` ADD COLUMN `parent_id` int NOT NULL DEFAULT '0' AFTER `text`");
         lt_schema_cache_delete(lt_schema_column_cache_key($tableName, 'parent_id'));
         $hasParentColumn = lt_column_exists($tableName, 'parent_id', true);
@@ -80,6 +85,11 @@ function comments_reports_ensure_table()
 
     $tableName = comments_reports_table_name();
     if (!lt_table_exists($tableName)) {
+        if (!lt_schema_mutations_enabled()) {
+            // TODO: create comments_reports via migrations; runtime CREATE is disabled for web requests.
+            $ready = false;
+            return false;
+        }
         $db->query(
             "CREATE TABLE IF NOT EXISTS `".$tableName."` (
                 `id` int NOT NULL AUTO_INCREMENT,
@@ -144,6 +154,11 @@ function comments_ensure_modern_tables()
     }
 
     if (!lt_table_exists('comment_pins')) {
+        if (!lt_schema_mutations_enabled()) {
+            // TODO: create modern comment tables via migrations; runtime CREATE is disabled for web requests.
+            $ready = false;
+            return false;
+        }
         $db->query(
             "CREATE TABLE IF NOT EXISTS `comment_pins` (
                 `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -162,6 +177,10 @@ function comments_ensure_modern_tables()
     }
 
     if (!lt_table_exists('comment_reactions')) {
+        if (!lt_schema_mutations_enabled()) {
+            $ready = false;
+            return false;
+        }
         $db->query(
             "CREATE TABLE IF NOT EXISTS `comment_reactions` (
                 `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -181,6 +200,10 @@ function comments_ensure_modern_tables()
     }
 
     if (!lt_table_exists('comment_edit_history')) {
+        if (!lt_schema_mutations_enabled()) {
+            $ready = false;
+            return false;
+        }
         $db->query(
             "CREATE TABLE IF NOT EXISTS `comment_edit_history` (
                 `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -243,6 +266,11 @@ function comments_ensure_moderation_columns($type)
 
     foreach ($columns as $column => $sql) {
         if (!lt_column_exists($tableName, $column)) {
+            if (!lt_schema_mutations_enabled()) {
+                // TODO: add comment moderation columns via migrations; runtime ALTER is disabled for web requests.
+                $ready[$type] = false;
+                return false;
+            }
             $db->query($sql, 0);
             lt_schema_cache_delete(lt_schema_column_cache_key($tableName, $column));
         }
@@ -250,6 +278,10 @@ function comments_ensure_moderation_columns($type)
 
     $indexName = 'idx_'.$tableName.'_deleted';
     if (!comments_index_exists($tableName, $indexName)) {
+        if (!lt_schema_mutations_enabled()) {
+            $ready[$type] = false;
+            return false;
+        }
         $db->query("ALTER TABLE `".$tableName."` ADD KEY `".$indexName."` (`is_deleted`, `date`)", 0);
         lt_schema_cache_delete('schema:index:'.$tableName.':'.$indexName.':exists');
     }
@@ -263,10 +295,12 @@ function comments_ensure_moderation_columns($type)
 
 function comments_ensure_modern_schema($type = '')
 {
-    comments_ensure_modern_tables();
+    $tablesReady = comments_ensure_modern_tables();
     if ($type !== '') {
-        comments_ensure_moderation_columns($type);
+        return ($tablesReady && comments_ensure_moderation_columns($type));
     }
+
+    return $tablesReady;
 }
 
 // Форма добавления комментария
@@ -598,7 +632,9 @@ function comments_history_add($type, $commentId, $editorId, $oldText, $newText, 
 {
     global $db;
 
-    comments_ensure_modern_tables();
+    if (!comments_ensure_modern_tables()) {
+        return false;
+    }
     $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
     $commentId = (int) $commentId;
     $editorId = (int) $editorId;
@@ -628,7 +664,9 @@ function comments_history_fetch($type, $commentId)
 {
     global $db;
 
-    comments_ensure_modern_tables();
+    if (!comments_ensure_modern_tables()) {
+        return array();
+    }
     $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
     $commentId = (int) $commentId;
     if ($type === '' || $commentId <= 0) {
@@ -661,7 +699,9 @@ function comments_pinned_row($type, $objectId)
 {
     global $db;
 
-    comments_ensure_modern_tables();
+    if (!comments_ensure_modern_tables()) {
+        return array();
+    }
     $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
     $objectId = (int) $objectId;
     if ($type === '' || $objectId <= 0) {
@@ -694,7 +734,9 @@ function comments_set_pin($type, $objectId, $commentId, $moderatorId)
 {
     global $db;
 
-    comments_ensure_modern_schema($type);
+    if (!comments_ensure_modern_schema($type)) {
+        return false;
+    }
     $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
     $objectId = (int) $objectId;
     $commentId = (int) $commentId;
@@ -725,7 +767,9 @@ function comments_unpin($type, $objectId)
 {
     global $db;
 
-    comments_ensure_modern_tables();
+    if (!comments_ensure_modern_tables()) {
+        return false;
+    }
     $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
     $objectId = (int) $objectId;
     if ($type === '' || $objectId <= 0) {
@@ -767,7 +811,9 @@ function comments_reaction_summary_for_ids($type, array $ids, $objectId = 0)
 {
     global $db;
 
-    comments_ensure_modern_tables();
+    if (!comments_ensure_modern_tables()) {
+        return $result;
+    }
     $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
     $objectId = (int) $objectId;
     $result = array();
@@ -825,7 +871,9 @@ function comments_current_user_reactions($type, array $ids, $userId)
 
     static $requestCache = array();
 
-    comments_ensure_modern_tables();
+    if (!comments_ensure_modern_tables()) {
+        return array();
+    }
     $type = preg_replace('~[^a-z0-9_]~i', '', (string) $type);
     $userId = (int) $userId;
     if ($type === '' || !$ids || $userId <= 0) {
@@ -948,7 +996,7 @@ function lt_comments_payload($contextType, $contextId, $currentUserId = 0)
     }
 
     comments_ensure_thread_support($type);
-    comments_ensure_modern_schema($type);
+    $modernSchemaReady = comments_ensure_modern_schema($type);
 
     $cacheKey = lt_cache_key_comments_payload($type, $objectId);
     $cached = lt_cache_get($cacheKey, lt_cache_key_comments_ns());
@@ -961,10 +1009,11 @@ function lt_comments_payload($contextType, $contextId, $currentUserId = 0)
     $tableName = comments_table_name($type);
     $objectColumn = comments_object_column($type);
     $parentSelect = (comments_supports_threads($type) ? 'parent_id' : '0 AS parent_id');
+    $moderationSelect = ($modernSchemaReady ? 'is_deleted, deleted_by, deleted_at, delete_reason' : '0 AS is_deleted, 0 AS deleted_by, NULL AS deleted_at, NULL AS delete_reason');
 
     $sql = $db->query(
         "SELECT id, `{$objectColumn}` AS object_id, id_user, date, text, id_user_edit, date_edit, {$parentSelect},
-                is_deleted, deleted_by, deleted_at, delete_reason
+                {$moderationSelect}
          FROM `{$tableName}`
          WHERE `{$objectColumn}` = {$objectId}
          ORDER BY date ASC, id ASC"
@@ -1025,15 +1074,16 @@ function comments_fetch_rows($type, $objectId, $limit = '', $desc = 0, $sort = '
     }
 
     comments_ensure_thread_support($type);
-    comments_ensure_modern_schema($type);
+    $modernSchemaReady = comments_ensure_modern_schema($type);
 
     $tableName = comments_table_name($type);
     $objectColumn = comments_object_column($type);
     $parentSelect = (comments_supports_threads($type) ? 'parent_id' : '0 AS parent_id');
+    $moderationSelect = ($modernSchemaReady ? 'is_deleted, deleted_by, deleted_at, delete_reason' : '0 AS is_deleted, 0 AS deleted_by, NULL AS deleted_at, NULL AS delete_reason');
 
     $sql = $db->query(
         "SELECT id, `{$objectColumn}` AS object_id, id_user, date, text, id_user_edit, date_edit, {$parentSelect},
-                is_deleted, deleted_by, deleted_at, delete_reason
+                {$moderationSelect}
          FROM `{$tableName}`
          WHERE `{$objectColumn}` = {$objectId}
          ORDER BY date ASC, id ASC
@@ -1617,6 +1667,11 @@ function user_wall_reports_ensure_table()
 
     $tableName = user_wall_reports_table_name();
     if (!lt_table_exists($tableName)) {
+        if (!lt_schema_mutations_enabled()) {
+            // TODO: create comments_users_reports via migrations; runtime CREATE is disabled for web requests.
+            $ready = false;
+            return false;
+        }
         $db->query(
             "CREATE TABLE IF NOT EXISTS `".$tableName."` (
                 `id` int NOT NULL AUTO_INCREMENT,

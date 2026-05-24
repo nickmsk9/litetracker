@@ -21,6 +21,8 @@ if(!$PRIV['EDIT_PRIV']) {
 	err($language['default_1'] , $language['edit_priv_1'] , 1);
 }
 
+$act = trim((string) ($_GET['act'] ?? ''));
+
 function edit_priv_permission_labels()
 {
 	return array(
@@ -86,7 +88,7 @@ function edit_priv_default_row()
 /////////////////////////////////////////////////////////////////
 //Перемещение пользователей
 /////////////////////////////////////////////////////////////////
-if($_GET['act'] == 'location') {
+if($act == 'location') {
 	//Обработка
 	if($_POST) {
 		if (!lt_csrf_validate('edit_priv_location')) {
@@ -284,14 +286,14 @@ if($_GET['act'] == 'add' || ($_GET['act'] == 'edit') ) {
 		}
 
 		//Время создания
-		if($_GET['act'] == 'add') {
+		if($act == 'add') {
 			$update[] = 'DATE = NOW()';
 		}
 
 		//Добавляем / Обновляем данные
-		if($_GET['act'] == 'add' && count($update) ) {
+		if($act == 'add' && count($update) ) {
 			$db->query("INSERT INTO priv SET ".implode(',' , $update));
-		} elseif($_GET['act'] == 'edit' && count($update) )  {
+		} elseif($act == 'edit' && count($update) )  {
 			$db->query("UPDATE priv SET ".implode(',' , $update)." WHERE id=".$id);
 		}
 

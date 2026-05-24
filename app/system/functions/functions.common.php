@@ -144,12 +144,33 @@ function get_priv_info($class) {
 	$row = lt_cache_get(lt_cache_key_priv_guest(), $cacheNs);
 
 	if ($row === false) {
-		$row = array();
-		$sql = $db->query("SHOW COLUMNS FROM priv");
-		while ($column = $db->get_row($sql)) {
-			$row[$column['Field']] = 0;
-		}
-		$db->free($sql);
+		$row = array_fill_keys(array(
+			'EDIT_PRIV',
+			'bad_rating',
+			'cats',
+			'comments_delete',
+			'comments_edit',
+			'details_banned_view',
+			'details_view',
+			'download_magnet',
+			'download_torrent',
+			'edit_banned',
+			'edit_news',
+			'edit_release',
+			'faq_moderate',
+			'ip_util',
+			'messages',
+			'multitracker_accounts',
+			'news_add',
+			'profile_view',
+			'search_query',
+			'sessions_clear',
+			'sessions_view',
+			'setting_user',
+			'upload',
+			'user_add',
+			'users_view',
+		), 0);
 
 		$row['id'] = 0;
 		$row['NAME'] = 'Гость';

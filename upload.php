@@ -47,13 +47,9 @@ function lt_upload_default_category_id($categories)
 	return (int) ($categories[0]['id'] ?? 0);
 }
 
-function lt_upload_next_torrent_id()
+function lt_upload_pending_asset_prefix()
 {
-	global $db;
-
-	$row = $db->super_query("SHOW TABLE STATUS LIKE 'torrents'");
-
-	return (!empty($row['Auto_increment']) ? (int) $row['Auto_increment'] : 0);
+	return 'pending_'.(int) ($GLOBALS['USER']['id'] ?? 0).'_'.time().'_'.bin2hex(random_bytes(4));
 }
 
 function lt_upload_retarget_asset($directory, $oldName, $newName)
@@ -358,14 +354,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		err($language['default_1'], $language['upload_26'], 1);
 	}
 
-	$nextId = lt_upload_next_torrent_id();
-	if ($nextId <= 0) {
-		err('Ошибка', 'Не удалось подготовить загрузку торрента.', 1);
-	}
+	$pendingAssetPrefix = lt_upload_pending_asset_prefix();
 
 	$coverExtension = lt_upload_asset_validate_image((array) ($_FILES['image'] ?? array()), 'Обложка', (int) $config['max_size_image'], false);
-	$coverName = lt_upload_asset_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $nextId.'.'.$coverExtension, 'обложку');
-	$screenshots = lt_upload_collect_screenshots($nextId);
+	$coverName = lt_upload_asset_move_uploaded_image((array) $_FILES['image'], 'public/downloads/images/', $pendingAssetPrefix.'.'.$coverExtension, 'обложку');
+	$screenshots = lt_upload_collect_screenshots($pendingAssetPrefix);
 	$tags = lt_upload_collect_tags($form['tags']);
 
 	$screenshots[0] = ($screenshots[0] ?? '');
@@ -411,18 +404,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 	$id = (int) $db->insert_id();
 
-	if ($id !== $nextId) {
-		$coverExtension = (string) pathinfo($coverName, PATHINFO_EXTENSION);
-		$coverName = lt_upload_retarget_asset('public/downloads/images/', $coverName, $id.($coverExtension !== '' ? '.'.$coverExtension : ''));
+	$coverExtension = (string) pathinfo($coverName, PATHINFO_EXTENSION);
+	$coverName = lt_upload_retarget_asset('public/downloads/images/', $coverName, $id.($coverExtension !== '' ? '.'.$coverExtension : ''));
 
-		foreach ($screenshots as $index => $screenName) {
-			if ($screenName === '') {
-				continue;
-			}
-
-			$screenExtension = (string) pathinfo($screenName, PATHINFO_EXTENSION);
-			$screenshots[$index] = lt_upload_retarget_asset('public/downloads/screens/', $screenName, $id.'_'.$index.($screenExtension !== '' ? '.'.$screenExtension : ''));
+	foreach ($screenshots as $index => $screenName) {
+		if ($screenName === '') {
+			continue;
 		}
+
+		$screenExtension = (string) pathinfo($screenName, PATHINFO_EXTENSION);
+		$screenshots[$index] = lt_upload_retarget_asset('public/downloads/screens/', $screenName, $id.'_'.$index.($screenExtension !== '' ? '.'.$screenExtension : ''));
 	}
 
 	$screenshots[0] = ($screenshots[0] ?? '');

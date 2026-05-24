@@ -124,14 +124,14 @@ if($act == 'topic') {
 
 		$array = array();
 		//Название темы
-		$subject = trim($_POST['subject']);
+		$subject = trim((string) ($_POST['subject'] ?? ''));
 		if(empty($subject) ) {
 			err('Ошибка' , 'Вы не ввели название темы' , 1);
 		}
 		$array[] = 'subject="'.$db->safesql($subject).'"';
 
 		//Текст темы
-		$text = trim($_POST['text']);
+		$text = trim((string) ($_POST['text'] ?? ''));
 		if(empty($text) ) {
 			err('Ошибка' , 'Вы не ввели название темы' , 1);
 		}

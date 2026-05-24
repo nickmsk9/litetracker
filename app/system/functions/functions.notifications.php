@@ -15,6 +15,11 @@ function lt_notifications_table_ready()
 		return true;
 	}
 
+	if (!lt_schema_mutations_enabled()) {
+		// TODO: create notifications via migrations; runtime CREATE is disabled for web requests.
+		return false;
+	}
+
 	$created = $db->query(
 		"CREATE TABLE IF NOT EXISTS `notifications` (
 			`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

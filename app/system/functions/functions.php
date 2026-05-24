@@ -227,6 +227,23 @@ function lt_column_exists($tableName, $columnName, $refresh = false)
 	return $cache[$key];
 }
 
+function lt_schema_mutations_enabled()
+{
+	global $config;
+
+	// TODO: move all schema changes into versioned migrations and remove runtime DDL fallbacks.
+	if (PHP_SAPI === 'cli') {
+		return true;
+	}
+
+	if (!empty($config['allow_runtime_ddl'])) {
+		return true;
+	}
+
+	$env = getenv('LITETRACKER_ALLOW_RUNTIME_DDL');
+	return ($env !== false && in_array(strtolower((string) $env), array('1', 'true', 'yes', 'on'), true));
+}
+
 function lt_schema_capabilities($refresh = false)
 {
 	global $db;
