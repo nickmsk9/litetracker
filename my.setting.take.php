@@ -179,13 +179,16 @@ if ((int) $id !== (int) $USER['id']) {
 	die();
 }
 
-$act = trim((string) ($_GET['act'] ?? ''));
+$act = trim((string) ($_POST['act'] ?? $_GET['act'] ?? ''));
 $settingsProfileScope = 'settings_profile_'.$id;
 $settingsPasswordScope = 'settings_password_'.$id;
 $settingsAvatarScope = 'settings_avatar_'.$id;
 $settingsModerationScope = 'settings_moderation_'.$id;
 
 if($act == 'ban_ip') {
+	if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+		err($language['default_1'], 'Действие доступно только POST-запросом.', 1);
+	}
 	if (!$PRIV['setting_user'] || !lt_csrf_validate($settingsModerationScope)) {
 		err($language['default_1'], 'Недостаточно прав или защитный токен устарел.', 1);
 	}
@@ -206,6 +209,9 @@ if($act == 'ban_ip') {
 }
 
 if($act == 'ban_account') {
+	if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+		err($language['default_1'], 'Действие доступно только POST-запросом.', 1);
+	}
 	if (!$PRIV['setting_user'] || !lt_csrf_validate($settingsModerationScope)) {
 		err($language['default_1'], 'Недостаточно прав или защитный токен устарел.', 1);
 	}
@@ -224,6 +230,9 @@ if($act == 'ban_account') {
 }
 
 if($act == 'foto_delete') {
+	if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+		err($language['default_1'], 'Удаление аватара доступно только POST-запросом.', 1);
+	}
 	if (!lt_csrf_validate($settingsAvatarScope)) {
 		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
 	}
@@ -237,6 +246,9 @@ if($act == 'foto_delete') {
 }
 
 if($act == 'password') {
+	if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+		err($language['default_1'], 'Смена пароля доступна только POST-запросом.', 1);
+	}
 	if (!lt_csrf_validate($settingsPasswordScope)) {
 		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
 	}

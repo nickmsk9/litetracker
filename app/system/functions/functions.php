@@ -1497,7 +1497,8 @@ function lt_csrf_validate($scope = 'default', $token = null)
 		$token = (string) ($_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '');
 	}
 
-	$expected = (string) ($_SESSION['lt_csrf'][$scope] ?? '');
+	$csrfStore = (isset($_SESSION['lt_csrf']) && is_array($_SESSION['lt_csrf']) ? $_SESSION['lt_csrf'] : array());
+	$expected = (string) ($csrfStore[$scope] ?? '');
 	if ($expected === '' || $token === '') {
 		if (function_exists('lt_session_commit')) {
 			lt_session_commit();
@@ -1522,6 +1523,7 @@ function login_cookie($id, $password_hash,  $expires = 0x7fffffff) {
 	$subnet[2] = $subnet[3] = 0;
 	$subnet = implode('.', $subnet); // 255.255.0.0
 
+	// TODO: replace legacy id/hash remember-me cookies with server-side selector/validator rotating tokens.
 	//Очищаем старые cookies
 	logout_cookie();
 	//Добавляем cookies
@@ -1540,6 +1542,9 @@ function logout_cookie() {
 	lt_set_cookie(COOKIE_ID, '', $expires, true, 'Lax');
 	lt_set_cookie(COOKIE_PASSWORD, '', $expires, true, 'Lax');
 	unset($_COOKIE[COOKIE_ID], $_COOKIE[COOKIE_PASSWORD]);
+	if (function_exists('lt_session_destroy_current')) {
+		lt_session_destroy_current();
+	}
 	if($USER && isset($USER['id'])) {
 		lt_cache_invalidate_user($USER['id']);
 	}

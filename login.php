@@ -420,6 +420,11 @@ if($_POST) {
 		//Удаляем кеш
 		lt_cache_invalidate_user($arr['id']);
 
+		// Rotate PHP session id after successful authentication.
+		if (function_exists('lt_session_regenerate')) {
+			lt_session_regenerate(true);
+		}
+
 		//Определяем cookies
 		logout_cookie();
 		login_cookie($arr['id'] , $password_hash );

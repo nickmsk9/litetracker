@@ -61,8 +61,8 @@ function lt_edit_parse_description($text)
 is_login();
 lt_torrent_status_ensure_schema();
 
-$act = isset($_GET['act']) ? (string) $_GET['act'] : '';
-$screen = isset($_GET['screen']) ? (int) $_GET['screen'] : 0;
+$act = isset($_POST['act']) ? (string) $_POST['act'] : (isset($_GET['act']) ? (string) $_GET['act'] : '');
+$screen = isset($_POST['screen']) ? (int) $_POST['screen'] : (isset($_GET['screen']) ? (int) $_GET['screen'] : 0);
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
 $sql = $db->query('SELECT * FROM torrents WHERE id='.(int) $id);
@@ -85,6 +85,9 @@ if ($isTorrentOwner && !$isTorrentModerator && in_array($torrentStatus, array('h
 }
 
 if ($act == 'delete_image') {
+	if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+		err($language['default_1'], 'Удаление обложки доступно только POST-запросом.', 1);
+	}
 	if (!lt_csrf_validate('edit_media_'.$id)) {
 		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
 	}
@@ -99,6 +102,9 @@ if ($act == 'delete_image') {
 }
 
 if ($act == 'delete_screen') {
+	if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+		err($language['default_1'], 'Удаление скриншота доступно только POST-запросом.', 1);
+	}
 	if (!lt_csrf_validate('edit_media_'.$id)) {
 		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
 	}
@@ -583,11 +589,11 @@ head($language['edit_3'], true);
 						<div class="upload-hint"><?=htmlspecialchars(lt_torrent_form_help_text('cover'), ENT_QUOTES, 'UTF-8');?></div>
 						<div class="upload-hint"><?=sprintf($language['upload_6'], mksize($config['max_size_image']));?></div>
 						<?php if ($currentCover !== '') { ?>
-						<div class="edit-media-card edit-media-card-cover">
-							<div class="edit-media-card-head">
-								<strong>Текущая обложка</strong>
-								<a class="upload-top-link upload-top-link-red" href="edit.php?id=<?=(int) $id;?>&amp;act=delete_image&amp;<?=lt_csrf_query('edit_media_'.$id);?>">Удалить</a>
-							</div>
+							<div class="edit-media-card edit-media-card-cover">
+								<div class="edit-media-card-head">
+									<strong>Текущая обложка</strong>
+									<button class="upload-top-link upload-top-link-red" type="submit" form="edit-delete-cover-form" style="border:0;background:transparent;padding:0;cursor:pointer;">Удалить</button>
+								</div>
 							<a class="edit-media-preview edit-media-preview-cover" href="public/downloads/images/<?=htmlspecialchars($currentCover, ENT_QUOTES, 'UTF-8');?>" target="_blank" rel="noopener noreferrer">
 								<img class="edit-media-preview-image edit-media-preview-image-cover" src="public/downloads/images/<?=htmlspecialchars($currentCover, ENT_QUOTES, 'UTF-8');?>" alt="Обложка">
 							</a>
@@ -614,7 +620,7 @@ head($language['edit_3'], true);
 									</a>
 									<div class="edit-media-preview-actions">
 										<span class="edit-media-preview-title">Скрин <?=htmlspecialchars((string) $screenItem['index'], ENT_QUOTES, 'UTF-8');?></span>
-										<a class="upload-top-link upload-top-link-red" href="edit.php?id=<?=(int) $id;?>&amp;act=delete_screen&amp;screen=<?=(int) $screenItem['index'];?>&amp;<?=lt_csrf_query('edit_media_'.$id);?>">Удалить</a>
+										<button class="upload-top-link upload-top-link-red" type="submit" form="edit-delete-screen-form-<?=(int) $screenItem['index'];?>" style="border:0;background:transparent;padding:0;cursor:pointer;">Удалить</button>
 									</div>
 								</div>
 								<?php } ?>
@@ -644,6 +650,19 @@ head($language['edit_3'], true);
 				<button class="upload-submit" type="submit"><?=$language['details_23'];?></button>
 			</div>
 		</form>
+		<?php if ($currentCover !== '') { ?>
+		<form id="edit-delete-cover-form" method="post" action="edit.php?id=<?=(int) $id;?>" hidden>
+			<?=lt_csrf_input('edit_media_'.$id);?>
+			<input type="hidden" name="act" value="delete_image">
+		</form>
+		<?php } ?>
+		<?php foreach ($currentScreens as $screenItem) { ?>
+		<form id="edit-delete-screen-form-<?=(int) $screenItem['index'];?>" method="post" action="edit.php?id=<?=(int) $id;?>" hidden>
+			<?=lt_csrf_input('edit_media_'.$id);?>
+			<input type="hidden" name="act" value="delete_screen">
+			<input type="hidden" name="screen" value="<?=(int) $screenItem['index'];?>">
+		</form>
+		<?php } ?>
 	</section>
 </div>
 

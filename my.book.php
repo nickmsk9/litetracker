@@ -77,7 +77,7 @@ if($act === 'check_delete') {
 
 	$array = $_POST['check'] ?? [];
 
-	if(!count($array) || !is_array($array)) {
+	if(!is_array($array) || !count($array)) {
 		err($language['default_1'] , $language['books_5'] , 1);
 	}
 

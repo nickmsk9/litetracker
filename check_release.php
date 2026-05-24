@@ -26,7 +26,7 @@ if ($_POST && !lt_csrf_validate('check_release')) {
 
 //Массив с данными
 $array = (isset($_POST['check']) && is_array($_POST['check']) ? $_POST['check'] : array());
-if(!count($array) || !is_array($array)) {
+if(!is_array($array) || !count($array)) {
 	err($language['default_1'] , 'Вы ничего не пометили' , 1);
 }
 
@@ -42,7 +42,8 @@ $ids = array_values(array_unique(array_filter($ids)));
 //////////////////////////////////////////////////////////////////////////////
 //Блокировка/Разблокировка релизов
 //////////////////////////////////////////////////////////////////////////////
-if($_POST['act'] == 'banned') {
+$action = (string) ($_POST['act'] ?? '');
+if($action == 'banned') {
 
 	$i = 0; //Счетчик
 	$banned = array();
@@ -81,7 +82,7 @@ if($_POST['act'] == 'banned') {
 //////////////////////////////////////////////////////////////////////////////
 //Перемещение релизов
 //////////////////////////////////////////////////////////////////////////////
-if($_POST['act'] == 'location') {
+if($action == 'location') {
 	//Проверяем категорию
 	$id_category = (int)$_POST['id_category'];
 	$db->query("SELECT * FROM categories WHERE id=".$id_category);
@@ -122,7 +123,7 @@ if($_POST['act'] == 'location') {
 //////////////////////////////////////////////////////////////////////////////
 //Удаление релизов
 //////////////////////////////////////////////////////////////////////////////
-if($_POST['act'] == 'delete') {
+if($action == 'delete') {
 	$i = 0; //Счетчик
 	foreach($ids AS $id) {
 		//Проверяем существование релиза
@@ -177,11 +178,12 @@ function check_value() {
 <!--Категории-->
 <?php
 $categories_array =  categories_array();
+$selectedCategoryId = (int) ($_GET['id_category'] ?? 0);
 foreach($categories_array AS $thisCat)
-	$cats .= '<option value="'.$thisCat['id'].'" '.($_GET['id_category'] == $thisCat['id'] ? "selected" : "").'>'.$thisCat['name'].'</option>';
+	$cats .= '<option value="'.$thisCat['id'].'" '.($selectedCategoryId == (int) $thisCat['id'] ? "selected" : "").'>'.$thisCat['name'].'</option>';
 ?>
 <select name="id_category"   class="search" style="float:left;display:none" id="id_category">
-	<option value="" <?=($_GET['id_category'] == '' ? 'selected' : '');?> >(<?=$language['search_4'];?>)</option>
+	<option value="" <?=($selectedCategoryId === 0 ? 'selected' : '');?> >(<?=$language['search_4'];?>)</option>
 	<?=$cats;?>
 </select>
 

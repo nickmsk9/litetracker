@@ -36,7 +36,7 @@ if ($settingsActiveTabRaw === 'password') {
 										<label class="settings-upload-button" for="avatar_upload">Загрузить аватар</label>
 										<input class="settings-upload-input" id="avatar_upload" type="file" name="avatar_upload" accept=".jpg,.jpeg,.png,.gif">
 										<?php if (!empty($arr['avatar'])) { ?>
-										<a class="settings-remove-button" href="my.setting.take.php?id=<?=$id;?>&amp;act=foto_delete&amp;<?=lt_csrf_query('settings_avatar_'.$id);?>">Удалить</a>
+										<button class="settings-remove-button" type="submit" form="settings-avatar-delete-form" style="border:0;cursor:pointer;">Удалить</button>
 										<?php } ?>
 									</div>
 								</div>
@@ -123,6 +123,12 @@ if ($settingsActiveTabRaw === 'password') {
 						<button class="settings-submit" type="submit">Сохранить</button>
 					</div>
 				</form>
+				<?php if (!empty($arr['avatar'])) { ?>
+				<form id="settings-avatar-delete-form" method="post" action="my.setting.take.php?id=<?=$id;?>" hidden>
+					<?=lt_csrf_input('settings_avatar_'.$id);?>
+					<input type="hidden" name="act" value="foto_delete">
+				</form>
+				<?php } ?>
 			</div>
 
 			<div class="settings-tab-pane" id="settings-tab-password">

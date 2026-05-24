@@ -201,7 +201,13 @@ $shouldIncludeMiscPageCss = in_array($currentScript, $miscPageScripts, true) || 
                                         </summary>
                                         <div class="site-user-menu">
                                             <?php foreach ($userMenu as $item) { ?>
+                                                <?php if (($item['icon'] ?? '') === 'logout') { ?>
+                                                <form method="post" action="<?= htmlspecialchars($item['href'], ENT_QUOTES, 'UTF-8'); ?>" style="margin:0;">
+                                                    <?=lt_csrf_input('logout');?>
+                                                    <button class="site-user-menu-link" type="submit" style="border:0;background:transparent;width:100%;cursor:pointer;text-align:left;">
+                                                <?php } else { ?>
                                                 <a class="site-user-menu-link" href="<?= $item['href']; ?>">
+                                                <?php } ?>
                                                     <span class="site-user-menu-icon" aria-hidden="true">
                                                         <?php if (($item['icon'] ?? '') === 'settings') { ?>
                                                             <svg viewBox="0 0 24 24" fill="none">
@@ -230,7 +236,12 @@ $shouldIncludeMiscPageCss = in_array($currentScript, $miscPageScripts, true) || 
                                                         <?php } ?>
                                                     </span>
                                                     <span><?= htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                                <?php if (($item['icon'] ?? '') === 'logout') { ?>
+                                                    </button>
+                                                </form>
+                                                <?php } else { ?>
                                                 </a>
+                                                <?php } ?>
                                             <?php } ?>
                                         </div>
                                     </details>

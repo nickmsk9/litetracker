@@ -15,17 +15,49 @@ require __DIR__ . '/app/system/init.php';
 //Проверяем пользователя
 is_login();
 
-$act = (string) ($_GET['act'] ?? '');
+$friendActionScope = 'friends_action';
+$act = (string) ($_POST['act'] ?? '');
 $status = (string) ($_GET['status'] ?? '');
+
+if (isset($_GET['act']) && in_array((string) $_GET['act'], array('add', 'check'), true)) {
+	err($language['default_1'], 'Действие доступно только через POST. Обновите страницу и повторите действие.', 1);
+}
+
+function lt_friends_action_form($label, $friendId, $action)
+{
+	global $friendActionScope;
+
+	return '<form method="post" action="my.friends.php" style="display:inline;margin:0;">'
+		.lt_csrf_input($friendActionScope)
+		.'<input type="hidden" name="act" value="check">'
+		.'<input type="hidden" name="friendid" value="'.(int) $friendId.'">'
+		.'<input type="hidden" name="check" value="'.htmlspecialchars((string) $action, ENT_QUOTES, 'UTF-8').'">'
+		.'<button type="submit">'.htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8').'</button>'
+		.'</form>';
+}
+
+function lt_friends_require_post_action($scope)
+{
+	global $language;
+
+	if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+		err($language['default_1'], 'Действие доступно только через POST.', 1);
+	}
+
+	if (!lt_csrf_validate($scope)) {
+		err($language['default_1'], 'Защитный токен устарел. Обновите страницу и попробуйте снова.', 1);
+	}
+}
 
 ///////////////////////////////////////////////////////////////
 //Одобрение / Не одобрение заявки
 ///////////////////////////////////////////////////////////////
 if($act == 'check') {
+	lt_friends_require_post_action($friendActionScope);
 
 	//ID друга
-	$friendid = (int)$_GET['friendid'];
-	$check  = $_GET['check'];
+	$friendid = (int)($_POST['friendid'] ?? 0);
+	$check  = (string) ($_POST['check'] ?? '');
 	$array_check = array('yes' , 'no' ,  'delete');
 	if(!in_array($check, $array_check) ) {
 		err('Ошибка' , 'Неверное действие');
@@ -36,7 +68,8 @@ if($act == 'check') {
 	}
 
 	//Проверяем заявку
-	$sql = $db->query("SELECT * FROM friends WHERE (userid=".$USER['id']." AND friendid=".$friendid.") OR (friendid=".$USER['id']." AND userid=".$friendid.")   AND ".($check == 'delete'  ? 'status = "yes"' :  'status="pending"'));
+	$friendStatusClause = ($check == 'delete'  ? 'status = "yes"' :  'status="pending"');
+	$sql = $db->query("SELECT * FROM friends WHERE ((userid=".$USER['id']." AND friendid=".$friendid.") OR (friendid=".$USER['id']." AND userid=".$friendid.")) AND ".$friendStatusClause);
 	$arr = $db->get_row($sql);
 
 	//Выводим ошибку, в зависимости от действия
@@ -90,8 +123,10 @@ if($act == 'check') {
 //Добавление в друзья
 ///////////////////////////////////////////////////////////////
 if($act == 'add') {
+	lt_friends_require_post_action($friendActionScope);
+
 	//ID друга
-	$friendid  = (int)$_GET['friendid'];
+	$friendid  = (int)($_POST['friendid'] ?? 0);
 
 	//Проверяем друга
 	$user_check = get_user_info($friendid);
@@ -111,6 +146,7 @@ if($act == 'add') {
 							    ");
 
 	//Если заявка существует
+	$arr = array();
 	if($db->num_rows($sql) ) {
 		$arr = $db->get_row($sql);
 	}
@@ -129,7 +165,7 @@ if($act == 'add') {
 	$db->query("UPDATE users SET num_friends = num_friends + 1 WHERE id=".$friendid);
 
 
-	$memcached->delete('user_'.$friendid , 0);
+	lt_cache_invalidate_user($friendid);
 
 	header('Location: my.friends.php?status=1');
 	die();
@@ -182,9 +218,7 @@ if($id == $USER['id']) {
 				$date  = convent_date($arr['date']);
 
 				//Действия
-				$action = "<input type='button' value='Добавить в друзья' onClick='window.location.href=\"my.friends.php?act=check&friendid=".$arr['userid']."&check=yes\"'>
-				<input type='button' value='Отклонить' onClick='window.location.href=\"my.friends.php?act=check&friendid=".$arr['userid']."&check=no\" '>
-				";
+				$action = lt_friends_action_form('Добавить в друзья', $arr['userid'], 'yes').' '.lt_friends_action_form('Отклонить', $arr['userid'], 'no');
 
 				//Выводим шаблон
 				require lt_templates_path($config['template'].'/tpl.friends.php');
@@ -212,7 +246,7 @@ $sql = $db->query("SELECT * FROM friends WHERE userid = ".$id." AND status = 'ye
 				$date  = convent_date($arr['date']);
 
 				//Действия
-				$action = "<input type='button' value='Убрать из друзей' onClick='window.location.href=\"my.friends.php?act=check&friendid=".$arr['friendid']."&check=delete\" '>";
+				$action = lt_friends_action_form('Убрать из друзей', $arr['friendid'], 'delete');
 
 				//Выводим шаблон
 				require lt_templates_path($config['template'].'/tpl.friends.php');
