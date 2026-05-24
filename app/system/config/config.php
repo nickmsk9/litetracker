@@ -120,9 +120,11 @@ if ($ltAnnouncePath[0] !== '/') {
 }
 $ltAnnounceUrl = trim((string) lt_env_value('LITETRACKER_ANNOUNCE_URL', $ltPublicScheme . '://' . $ltAnnounceHost . $ltAnnouncePath));
 $ltLocalRetrackerUrl = trim((string) lt_env_value('LITETRACKER_LOCAL_RETRACKER_URL', $ltAnnounceUrl));
+$ltPublicBaseUrl = rtrim($ltPublicScheme . '://' . $ltPublicHost, '/');
 
 $config  = array(
     'sitename' => 'LiteTracker Engine', //Название сайта
+    'site_url' => $ltPublicBaseUrl, //Публичный URL сайта для ссылок в torrent-файлах и письмах
     'gzip' => 1, //Использовать gzip-сжатие
     'template' => 'default', //Шаблон сайта
     'default_theme' => '', //Тема оформления по умолчанию (пусто = используется шаблон 'template')

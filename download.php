@@ -165,18 +165,10 @@ $dict = put_announce_urls($dict,$announce_urls_list);
 
 
 $dict['type'] = 'dictionary';
-$siteBaseUrl = rtrim((string) ($config['site_url'] ?? ''), '/');
-if ($siteBaseUrl === '') {
-	$scheme = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');
-	$host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
-	if ($host !== '') {
-		$siteBaseUrl = $scheme.'://'.$host;
-	}
-}
-
 $publisher = get_user_info((int) ($arr['id_user'] ?? 0));
 $publisherName = trim((string) ($publisher['name'] ?? 'LiteTracker'));
-$detailsUrl = ($siteBaseUrl !== '' ? $siteBaseUrl : '').'/details.php?id='.(int) $id;
+$detailsUrl = lt_torrent_details_url((int) $id);
+$siteBaseUrl = lt_torrent_site_base_url();
 $publisherUrl = ($siteBaseUrl !== '' ? $siteBaseUrl : '').'/profile.php?id='.(int) ($arr['id_user'] ?? 0);
 
 $dict['value']['comment']=bdec(benc_str($detailsUrl));

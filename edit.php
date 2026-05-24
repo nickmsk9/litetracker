@@ -371,7 +371,7 @@ if ($act == 'take') {
 		}
 
 		move_uploaded_file($tmpname, 'public/downloads/torrents/'.(int) $id.'.torrent');
-		lt_torrent_rewrite_file_announces('public/downloads/torrents/'.(int) $id.'.torrent', lt_torrent_site_announce_urls(null, false));
+		lt_torrent_rewrite_file_announces('public/downloads/torrents/'.(int) $id.'.torrent', lt_torrent_site_announce_urls(null, false), (int) $id);
 
 		$db->query('DELETE FROM trackers WHERE torrent='.(int) $id);
 		lt_torrent_store_trackers($id, $trackers);

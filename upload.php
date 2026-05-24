@@ -450,7 +450,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		err('Ошибка', 'Релиз добавлен, но torrent-файл не удалось сохранить на сервер.', 1);
 	}
 
-	lt_torrent_rewrite_file_announces('public/downloads/torrents/'.$id.'.torrent', lt_torrent_site_announce_urls(null, false));
+	lt_torrent_rewrite_file_announces('public/downloads/torrents/'.$id.'.torrent', lt_torrent_site_announce_urls(null, false), $id);
 
 	lt_cache_invalidate_cats();
 	lt_cache_delete('news_releases');

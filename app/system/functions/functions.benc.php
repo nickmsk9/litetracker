@@ -506,7 +506,32 @@ function lt_torrent_store_trackers($torrentId, $trackers) {
 	return $stored;
 }
 
-function lt_torrent_rewrite_file_announces($path, $announceUrls = null) {
+function lt_torrent_site_base_url() {
+	global $config;
+
+	$siteBaseUrl = rtrim((string) ($config['site_url'] ?? ''), '/');
+	if ($siteBaseUrl !== '') {
+		return $siteBaseUrl;
+	}
+
+	$scheme = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');
+	$host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+
+	return ($host !== '' ? $scheme.'://'.$host : '');
+}
+
+function lt_torrent_details_url($torrentId) {
+	$torrentId = (int) $torrentId;
+	if ($torrentId <= 0) {
+		return '';
+	}
+
+	$siteBaseUrl = lt_torrent_site_base_url();
+
+	return ($siteBaseUrl !== '' ? $siteBaseUrl : '').'/details.php?id='.$torrentId;
+}
+
+function lt_torrent_rewrite_file_announces($path, $announceUrls = null, $torrentId = null) {
 	$dict = lt_torrent_decode_file($path);
 	if (!is_array($dict)) {
 		return false;
@@ -519,6 +544,11 @@ function lt_torrent_rewrite_file_announces($path, $announceUrls = null) {
 	$dict = put_announce_urls($dict, (array) $announceUrls);
 	if (!is_array($dict)) {
 		return false;
+	}
+
+	$detailsUrl = lt_torrent_details_url((int) $torrentId);
+	if ($detailsUrl !== '') {
+		$dict['value']['comment'] = bdec(benc_str($detailsUrl));
 	}
 
 	return (file_put_contents($path, benc($dict), LOCK_EX) !== false);
